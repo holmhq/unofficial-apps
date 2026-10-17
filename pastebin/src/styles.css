@@ -426,7 +426,7 @@ body.dragging::after {
 .view { max-width: 1040px; margin: 0 auto; padding: 6px var(--gutter) 56px; }
 
 .owner-bar {
-  display: grid; gap: 12px; margin: 10px 0 26px; padding: 14px;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 10px 0 26px; padding: 14px;
   border: 1px solid var(--rule); border-radius: var(--radius); background: var(--sheet-2);
 }
 .owner-bar.just-made { border-color: var(--focus); }
@@ -662,20 +662,13 @@ dialog.confirm p { margin: 0 0 20px; color: var(--ink-2); }
   .top { gap: 12px; }
   .new-btn span { display: none; }
   .new-btn { width: 38px; padding: 0; }
-  .create {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0;
-    padding: 10px var(--gutter) max(10px, env(safe-area-inset-bottom));
-    background: color-mix(in srgb, var(--paper) 92%, transparent);
-    border-top: 1px solid var(--rule);
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  }
+  .create { margin-top: 12px; }
   .split { width: 100%; }
   /* Narrow phones: the sentence may wrap to two balanced lines rather than clip. */
   .split-main { flex: 1; min-width: 0; padding: 6px 4px 6px 10px; font-size: 15px; line-height: 1.35; white-space: normal; text-align: center; text-wrap: balance; }
   .tok, .split-go { white-space: nowrap; }
   .tok { padding: 1px 3px; }
   .split-more { width: 42px; }
-  body:has(.create) .foot { padding-bottom: 96px; }
   .row { align-items: flex-start; flex-wrap: wrap; }
   .row-actions { width: 100%; justify-content: flex-end; margin-top: -4px; }
   .row .file-ico { display: none; }
@@ -710,3 +703,136 @@ dialog.confirm p { margin: 0 0 20px; color: var(--ink-2); }
 /* Wrapped continuation lines hang under the first so indentation stays readable. */
 .code.wrap .ln > span.lc { padding-left: calc(16px + 2ch); text-indent: -2ch; }
 @media (max-width: 720px) { .code.wrap .ln > span.lc { padding-left: calc(12px + 2ch); } }
+
+/* ── Markdown (GitHub-flavoured) ────────────────────────── */
+
+.mode {
+  display: inline-flex; gap: 2px; padding: 2px; margin-left: 6px;
+  border: 1px solid var(--rule); border-radius: 999px; background: var(--sheet);
+}
+.mode button {
+  min-height: 26px; padding: 0 11px; border: 0; border-radius: 999px; background: none;
+  color: var(--ink-3); font-size: 13.5px; font-weight: 560; cursor: pointer;
+}
+.mode button:hover { color: var(--ink); }
+.mode button[aria-pressed="true"] { background: var(--wash); color: var(--ink); }
+.code-sheet.clipped .md { max-height: 420px; overflow: hidden; }
+
+/* Rendered Markdown follows the proportions of Tailwind's Typography
+   ("prose") defaults: a 65ch measure, 1.75 leading, quiet list markers, italic
+   quotes, backtick inline code and dark code blocks, in cyanotype colours. */
+.md { padding: 36px clamp(18px, 5vw, 56px) 44px; }
+.md-wait { color: var(--ink-3); margin: 0 auto; max-width: 65ch; }
+.md-body {
+  max-width: 65ch; margin: 0 auto; font-size: 16px; line-height: 1.75;
+  color: color-mix(in srgb, var(--ink) 84%, var(--ink-2));
+}
+.md-body > :first-child { margin-top: 0; }
+.md-body > :last-child { margin-bottom: 0; }
+.md-body p { margin: 1.25em 0; }
+.md-body :is(strong, b) { color: var(--ink); font-weight: 650; }
+.md-body a { color: var(--ink); font-weight: 560; text-decoration: underline; text-underline-offset: 0.18em; text-decoration-thickness: 1px; text-decoration-color: color-mix(in srgb, var(--focus) 70%, transparent); }
+.md-body a:hover { text-decoration-color: var(--focus); text-decoration-thickness: 2px; }
+.md-body :is(h1, h2, h3, h4, h5, h6) { position: relative; color: var(--ink); scroll-margin-top: 16px; letter-spacing: -0.02em; }
+.md-body h1 { font-size: 2.25em; font-weight: 780; line-height: 1.111; margin: 0 0 0.889em; letter-spacing: -0.03em; }
+.md-body h2 { font-size: 1.5em; font-weight: 700; line-height: 1.333; margin: 2em 0 1em; }
+.md-body h3 { font-size: 1.25em; font-weight: 640; line-height: 1.6; margin: 1.6em 0 0.6em; }
+.md-body h4 { font-size: 1em; font-weight: 640; line-height: 1.5; margin: 1.5em 0 0.5em; }
+.md-body :is(h5, h6) { font-size: 0.9em; font-weight: 640; margin: 1.5em 0 0.5em; color: var(--ink-2); }
+.md-body :is(h2, h3, h4) + * { margin-top: 0; }
+.md-anchor {
+  position: absolute; right: 100%; padding-right: 0.3em; color: var(--ink-3);
+  text-decoration: none; font-weight: 500; opacity: 0;
+}
+.md-body :is(h1, h2, h3, h4, h5, h6):hover .md-anchor, .md-anchor:focus-visible { opacity: 1; }
+.md-body :is(ul, ol) { margin: 1.25em 0; padding-left: 1.625em; }
+.md-body li { margin: 0.5em 0; padding-left: 0.375em; }
+.md-body li > :is(ul, ol) { margin: 0.75em 0; }
+.md-body li > p { margin: 0.75em 0; }
+.md-body ul > li::marker { color: var(--rule-2); }
+.md-body ol > li::marker { color: var(--ink-3); font-weight: 400; }
+.md-body li.task { list-style: none; margin-left: -1.625em; padding-left: 0; }
+.md-body li.task > input { margin: 0 0.6em 0 0; accent-color: var(--action); vertical-align: -0.1em; }
+.md-body blockquote {
+  margin: 1.6em 0; padding-left: 1em; border-left: 0.25rem solid var(--rule-2);
+  color: var(--ink); font-style: italic; font-weight: 500; quotes: "\201C" "\201D" "\2018" "\2019";
+}
+.md-body blockquote p:first-of-type::before { content: open-quote; }
+.md-body blockquote p:last-of-type::after { content: close-quote; }
+.md-body hr { height: 0; border: 0; border-top: 1px solid var(--rule); margin: 3em 0; }
+.md-body :is(del, s) { color: var(--ink-3); }
+.md-body img { max-width: 100%; height: auto; margin: 2em 0; border-radius: 8px; }
+.md-body img.remote-img { display: none; }
+.md-body :not(pre) > code { color: var(--ink); font-family: var(--font-code); font-weight: 600; font-size: 0.875em; }
+.md-body :not(pre) > code::before, .md-body :not(pre) > code::after { content: "`"; }
+.md-body kbd {
+  font-family: inherit; font-size: 0.875em; font-weight: 500; padding: 0.19em 0.38em; border-radius: 5px;
+  color: var(--ink); box-shadow: 0 0 0 1px var(--rule-2), 0 3px 0 var(--rule-2);
+}
+/* Code blocks are a cyanotype print set into the page: dark in both themes. */
+.md-pre {
+  --hl-keyword: #9cc2ff; --hl-string: #7fd8c4; --hl-number: #ffb48c; --hl-comment: #7690b4;
+  --hl-title: #cbb8ff; --hl-attr: #8ccfff; --hl-builtin: #f0d48a; --hl-meta: #9fb2cf;
+  position: relative; margin: 1.714em 0; padding: 0.857em 1.143em; overflow-x: auto;
+  border-radius: 8px; background: #102746; color: #dfe9f6;
+  font-family: var(--font-code); font-size: 0.875em; line-height: 1.714; tab-size: 4;
+}
+:root[data-theme="dark"] .md-pre { background: #071428; box-shadow: inset 0 0 0 1px var(--rule); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .md-pre { background: #071428; box-shadow: inset 0 0 0 1px var(--rule); } }
+.md-pre code { font: inherit; white-space: pre; color: inherit; }
+.md-copy {
+  position: absolute; top: 7px; right: 7px; width: 30px; height: 30px; padding: 0;
+  display: grid; place-items: center; border: 1px solid rgba(223, 233, 246, 0.2); border-radius: 7px;
+  background: rgba(16, 39, 70, 0.85); color: #dfe9f6; cursor: pointer; opacity: 0; transition: opacity 120ms ease;
+}
+.md-copy svg { width: 15px; height: 15px; }
+.md-pre:hover .md-copy, .md-copy:focus-visible { opacity: 1; }
+@media (hover: none) { .md-copy { opacity: 1; } }
+.md-table { margin: 2em 0; max-width: 100%; overflow-x: auto; }
+.md-body table { width: 100%; border-collapse: collapse; font-size: 0.875em; line-height: 1.714; text-align: left; }
+.md-body thead { border-bottom: 1px solid var(--rule-2); }
+.md-body th { color: var(--ink); font-weight: 640; vertical-align: bottom; padding: 0 0.571em 0.571em; white-space: nowrap; }
+.md-body tbody tr { border-bottom: 1px solid var(--rule); }
+.md-body tbody tr:last-child { border-bottom: 0; }
+.md-body td { vertical-align: baseline; padding: 0.571em; }
+.md-body :is(th, td):first-child { padding-left: 0; }
+.md-body :is(th, td):last-child { padding-right: 0; }
+.md-images {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 1.5em; padding: 10px 14px;
+  border-radius: 8px; background: var(--wash); color: var(--ink-2); font-size: 14px; line-height: 1.4;
+}
+.md-images > svg { width: 18px; height: 18px; flex: none; }
+.md-images span { flex: 1 1 180px; min-width: 0; }
+@media (max-width: 720px) {
+  .md { padding: 26px 18px 32px; }
+  .md-body { font-size: 15.5px; }
+  .md-anchor { display: none; }
+  .mode button { padding: 0 9px; }
+}
+
+/* ── Composer shell: the page never scrolls, the editor does ── */
+
+body.shell { height: 100vh; height: 100dvh; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+body.shell .top { flex: none; width: 100%; }
+body.shell main { flex: 1; min-height: 0; display: flex; }
+body.shell .compose { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; padding-bottom: 6px; }
+body.shell .compose-title { flex: none; margin: 6px 0 12px; }
+body.shell .compose > .sheet { flex: 1; min-height: 140px; display: flex; flex-direction: column; overflow: hidden; }
+body.shell .sheet-bar { flex: none; }
+/* The panel scrolls; the editor inside it is at least as tall as the panel so
+   a click anywhere lands in the textarea. */
+body.shell .editor-scroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+body.shell .editor { min-height: 100%; }
+body.shell .editor > textarea, body.shell .editor > pre { min-height: 0; }
+body.shell .attachments {
+  flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 150px; grid-template-columns: none;
+  overflow-x: auto; overscroll-behavior: contain; padding-bottom: 4px;
+}
+body.shell .form-error { flex: none; }
+body.shell .create { flex: none; }
+body.shell .foot { flex: none; padding-top: 4px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+@media (max-width: 720px) {
+  body.shell .compose-title { font-size: 26px; margin: 2px 0 10px; }
+  body.shell .attachments { grid-auto-columns: 120px; }
+  body.shell .att { grid-template-rows: 72px auto; }
+}

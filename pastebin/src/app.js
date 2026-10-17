@@ -175,7 +175,12 @@ function navigate(path, replace) {
   route()
 }
 
+// Path the current view was mounted for; a change of hash alone (a heading
+// anchor) must not re-mount it, or an opened one-time paste would be lost.
+let mountedPath = ''
+
 function route() {
+  mountedPath = location.pathname + location.search
   if (current && current.destroy) current.destroy()
   current = null
   document.querySelectorAll('.menu').forEach(m => m.remove())
@@ -204,7 +209,7 @@ function route() {
   }
   // The composer is the home page; elsewhere a quiet button leads back to it.
   document.querySelector('.new-btn').hidden = nav === 'new'
-  window.scrollTo(0, 0)
+  if (!location.hash) window.scrollTo(0, 0)
 }
 
 document.addEventListener('click', e => {
@@ -215,7 +220,10 @@ document.addEventListener('click', e => {
   e.preventDefault()
   navigate(url.pathname + url.search)
 })
-window.addEventListener('popstate', route)
+window.addEventListener('popstate', () => {
+  if (location.pathname + location.search === mountedPath) return
+  route()
+})
 
 // Boot: show the page right away; the session fills in when it arrives.
 renderAccount()

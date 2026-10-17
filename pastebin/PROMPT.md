@@ -37,6 +37,17 @@ Make the UI minimal.
   linking to the source.
 ```
 
+## 3. Render Markdown, keep the page still
+
+```text
+Render Markdown pastes as GitHub-flavoured Markdown, styled like Tailwind's
+Typography ("prose") plugin, with a Preview / Source switch. Sanitize the
+rendered HTML.
+
+Make the composer an app screen: the page never scrolls, only the editor
+panel does, however much is pasted.
+```
+
 ## The original requests
 
 The app in this folder came from these messages, typed as-is to a coding
@@ -80,8 +91,19 @@ agent.
 > is in the repo
 > - may holm icon & GH icon can be used nicely for a small nice footer
 
+**Iteration 3**, again two messages, the second sent mid-work:
+
+> Hey, pastebin is not doing markdown rendering properly?
+> - thats the most common one; and i would like GFM
+
+> There is a nice rendeirng style that Tailwind uses; i think its related to
+> prose system or so, any chance we have such esqusite rendering?
+> - also, i noticed that when I paste massive files the page scrolls
+> - i wish the page to never scroll but the panel to only scroll
+
 The prompts above are those messages with the machine-specific parts removed
 and one line added: use only holmhq.com. Everything else came from the agent:
 the visual design, the data model, how burn after reading works, the security
 headers, the CLI, and bugs it found in its own live testing. The other
-messages in that conversation stored the API key and asked for documentation.
+messages in that conversation were about the API key, documentation and
+publishing, not the app.

@@ -3,6 +3,7 @@
 
 import { h, icon, api, bytes, ago, left, fullDate, copyText, confirmDialog, toast, spinner, slugify, EXPIRY, plural, store, local, shareUrl } from '../lib.js'
 import { highlight, splitLines, langName, extFor, langForFile, detect, HIGHLIGHT_LIMIT } from '../code.js'
+import { renderMarkdown } from '../markdown.js'
 
 const GONE = {
   not_found: ['Nothing at this link', 'Check that the whole link was copied. Links are case-sensitive.'],
@@ -279,15 +280,45 @@ export function codeSheet(text, lang, { name, rawUrl, slug, downloadUrl } = {}) 
     e.currentTarget.closest('.code-sheet').classList.remove('clipped'); e.currentTarget.parentNode.remove()
   } }, 'Show all ' + plural(lines.length, 'line'))) : null
 
+  // Markdown opens rendered (GitHub-flavoured); Source shows the text.
+  const scroll = h('div.code-scroll', codeEl)
+  let preview = null
+  let modeSwitch = null
+  if (lang === 'markdown') {
+    preview = h('div.md', { role: 'document', 'aria-label': 'Rendered Markdown' }, h('p.md-wait', 'Rendering…'))
+    const setMode = mode => {
+      preview.hidden = mode !== 'preview'
+      scroll.hidden = mode === 'preview'
+      wrapBtn.hidden = mode === 'preview'
+      modeSwitch.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)))
+    }
+    modeSwitch = h('div.mode', { role: 'group', 'aria-label': 'View' },
+      h('button', { type: 'button', 'data-mode': 'preview', onclick: () => setMode('preview') }, 'Preview'),
+      h('button', { type: 'button', 'data-mode': 'source', onclick: () => setMode('source') }, 'Source'))
+    setMode('preview')
+    renderMarkdown(text)
+      .then(body => {
+        preview.replaceChildren(body)
+        // A shared link may point at a heading.
+        if (location.hash.startsWith('#md-')) {
+          const target = document.getElementById(decodeURIComponent(location.hash.slice(1)))
+          if (target) target.scrollIntoView()
+        }
+      })
+      .catch(() => { setMode('source'); modeSwitch.remove() })
+  }
+
   return h('section.sheet.code-sheet', { class: clip ? 'clipped' : null },
     h('div.sheet-bar',
       h('span.lang-tag', downloadUrl && name ? name : langName(lang)),
+      modeSwitch,
       h('span.grow'),
       wrapBtn,
       rawUrl ? h('a.btn.btn-quiet.btn-sm', { href: rawUrl, target: '_blank', rel: 'noopener', title: 'Open as plain text' }, icon('raw'), h('span.lbl', 'Raw')) : null,
       h('button.btn.btn-quiet.btn-sm', { type: 'button', title: 'Download', onclick: download }, icon('download'), h('span.lbl', 'Download')),
       h('button.btn.btn-sm', { type: 'button', onclick: () => copyText(text, 'Copied ' + plural(lines.length, 'line')) }, icon('copy'), h('span.lbl', 'Copy'))),
-    h('div.code-scroll', codeEl),
+    preview,
+    scroll,
     showAll,
     text.length > HIGHLIGHT_LIMIT ? h('p.too-long', 'Highlighting is off for pastes over 200 KB.') : null)
 }

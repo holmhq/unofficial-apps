@@ -30,6 +30,8 @@ export function mountCompose(main, ctx) {
   })
   ta.value = draft.content || ''
   const editor = h('div.editor', pre, ta)
+  // The panel scrolls; the textarea and its highlight layer grow inside it together.
+  const editorScroll = h('div.editor-scroll', editor)
 
   const langSelect = h('select.select.lang-select', { 'aria-label': 'Language' },
     h('option', { value: 'auto' }, 'Auto-detect'),
@@ -73,13 +75,15 @@ export function mountCompose(main, ctx) {
     title,
     h('div.sheet',
       h('div.sheet-bar', langSelect, h('span.grow'), stats, attachBtn),
-      editor),
+      editorScroll),
     fileInput,
     attachList,
     errorBox,
     h('div.create', split))
 
   main.replaceChildren(form)
+  // The composer is an app screen: the page stays put and only the editor scrolls.
+  document.body.classList.add('shell')
 
   // ── behaviour ──
   function effectiveLang() {
@@ -349,6 +353,7 @@ export function mountCompose(main, ctx) {
       window.removeEventListener('dragleave', onDragLeave)
       window.removeEventListener('drop', onDrop)
       document.body.classList.remove('dragging')
+      document.body.classList.remove('shell')
       const menu = document.querySelector('.menu.expiry-menu')
       if (menu) menu.remove()
       files.forEach(it => it.url && URL.revokeObjectURL(it.url))

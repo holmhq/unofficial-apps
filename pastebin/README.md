@@ -4,7 +4,7 @@ Private-first pastes on [Holm](https://holmhq.com). Text, code and files go
 behind a link that can expire, open only once, or be revoked. The author's
 name stays hidden unless they choose to show it.
 
-Live at <https://pastebin.zyt.app>. It was built from the two short requests
+Live at <https://pastebin.zyt.app>. It was built from the three short requests
 quoted in [`PROMPT.md`](PROMPT.md), which also has reusable versions of them.
 
 ## What it does
@@ -15,7 +15,9 @@ quoted in [`PROMPT.md`](PROMPT.md), which also has reusable versions of them.
   in the create button, which reads as a sentence: *Create one-time link with
   my name for 1h*. Clicking an italic word crosses it out, which turns it off
   without moving anything. The arrow picks the expiry. ⌘/Ctrl+Enter creates
-  the link, and the draft and options are remembered.
+  the link, and the draft and options are remembered. The composer is an app
+  screen: however much you paste, the page stays still and only the editor
+  scrolls.
 - **Share:**
   - Expiry from 10 minutes to 30 days, or never. A fuse line on the paste
     burns down to the deadline.
@@ -24,6 +26,11 @@ quoted in [`PROMPT.md`](PROMPT.md), which also has reusable versions of them.
     own preview never burns it.
   - Revoke or delete at any time.
 - **Read:**
+  - Markdown renders as GitHub-flavoured Markdown (tables, task lists,
+    strikethrough, autolinks, highlighted code, heading anchors). It's styled
+    after Tailwind's Typography "prose" defaults, with a Preview / Source
+    switch. Images from other sites stay hidden until the reader asks, so
+    those sites can't see who's reading.
   - Line-numbered code with copy, raw, download and wrap.
   - An image gallery with a lightbox.
   - Video and audio players.
@@ -44,8 +51,10 @@ build step and no dependency to install.
 
 ```text
 index.html              shell; applies the saved theme before first paint
-src/                    browser app: router, composer, viewer, lists (ES modules)
+src/                    browser app: router, composer, viewer, lists, Markdown (ES modules)
 vendor/highlight/       highlight.js 11.11.1 (BSD-3-Clause)
+vendor/marked/          marked 18.0.14, GFM parser (MIT), loaded only for Markdown
+vendor/dompurify/       DOMPurify 3.4.16, HTML sanitizer (Apache-2.0 or MPL-2.0)
 assets/                 icons, social card, fonts (SIL OFL 1.1)
 api/main.js             router
 api/pastes.js           create, list, owner actions, public read, burn claim, files
@@ -132,6 +141,9 @@ pb revoke <slug>                  # kill the link now
   `nosniff`. Only images, video, audio, PDFs and plain text open inline;
   HTML, SVG and everything else download. That way a paste can't run script
   on the app's own origin.
+- Rendered Markdown goes through DOMPurify. Scripts, event handlers,
+  `javascript:` links, styles, forms, frames and media are removed, and ids
+  are prefixed so a paste can't collide with the app's own elements.
 - The page sends no referrer and asks search engines not to index it.
 
 ## Known limits
@@ -159,4 +171,6 @@ The app is MIT-licensed (see the repository `LICENSE`). Vendored parts keep
 their own licenses:
 
 - highlight.js: BSD-3-Clause, `vendor/highlight/LICENSE`.
+- marked: MIT, `vendor/marked/LICENSE`.
+- DOMPurify: Apache-2.0 or MPL-2.0, `vendor/dompurify/LICENSE`.
 - Bricolage Grotesque and Fragment Mono: SIL OFL 1.1, `assets/fonts/`.
