@@ -30,6 +30,10 @@ or opens a pull request.
   `README.md`.
 - Add each new app to the table in the root `README.md`, and mention it in the
   `open` skill if it makes a better first demo than pastebin.
+- `manifest.json` carries the app's `version`. Changing any file the app
+  deploys means a version bump, then `node scripts/index.mjs` to refresh
+  `index.json` at the root. CI checks it and tags `<app>/v<version>` on
+  `main`. A released tag's files never change.
 
 ## Never commit
 

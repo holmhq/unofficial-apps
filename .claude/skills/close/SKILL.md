@@ -27,10 +27,14 @@ changed and any new ones. If nothing changed, say so and stop.
      knowledge.
 2. **The app's `README.md`:** update what it does, the file layout, known
    limits, and the licence of anything newly vendored.
-3. **A new app** needs `manifest.json`, `PROMPT.md` and `README.md` in its
-   folder, plus a row in the root `README.md` table. If it makes a better
-   first demo, mention it in `.claude/skills/open/SKILL.md`.
-4. **Checks:** run whatever the app ships with, such as `scripts/smoke.sh`.
+3. **A new app** needs `manifest.json` (with a `version`), `PROMPT.md` and
+   `README.md` in its folder, plus a row in the root `README.md` table. If it
+   makes a better first demo, mention it in `.claude/skills/open/SKILL.md`.
+4. **Version and index:** bump `version` in the app's `manifest.json` (patch
+   for fixes and docs, minor for features), then run `node scripts/index.mjs`
+   and `node scripts/index.mjs --check`. The check fails if a released
+   version's files changed. CI tags the new version once it reaches `main`.
+5. **Checks:** run whatever the app ships with, such as `scripts/smoke.sh`.
    Its README says what it needs; Holm test databases ask for explicit licence
    acceptance, so let the person decide. If a local node is running, offer to
    redeploy (`holm @local app deploy <app> --host <app>.holm.localhost --spa --no-build --force`)

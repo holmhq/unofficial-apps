@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "repository": "github.com/holmhq/unofficial-apps",
+  "apps": [
+    {
+      "name": "catalog",
+      "path": "catalog",
+      "version": "0.1.0",
+      "tag": "catalog/v0.1.0",
+      "h1": "h1:egKbE26Cpc+rZavGRN50kOTZho4DRYGTSTnwk7M+1C8=",
+      "files": 13,
+      "title": "catalog",
+      "description": "This page: every app in the repository, with each way to install it on your own Holm node.",
+      "themeColor": "#0e7c66",
+      "demo": "https://unofficial.zyt.app"
+    },
+    {
+      "name": "pastebin",
+      "path": "pastebin",
+      "version": "0.1.0",
+      "tag": "pastebin/v0.1.0",
+      "h1": "h1:ykKMia0wrubDfFxpoab5t/z3zLs5wRr4b/AG5jJ66q4=",
+      "files": 38,
+      "title": "pastebin",
+      "description": "Private-first text, code and media pastes with expiring links and burn-after-read sharing.",
+      "themeColor": "#7c5cff",
+      "demo": "https://pastebin.zyt.app"
+    }
+  ]
+}

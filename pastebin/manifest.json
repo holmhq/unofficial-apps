@@ -9,5 +9,8 @@
     "color": "#7c5cff",
     "tags": ["pastebin", "files", "privacy"],
     "featured": false
+  },
+  "ext": {
+    "com.holmhq.unofficial": { "demo": "https://pastebin.zyt.app" }
   }
 }
