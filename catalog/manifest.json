@@ -1,0 +1,16 @@
+{
+  "name": "catalog",
+  "version": "0.1.0",
+  "title": "catalog",
+  "description": "This page: every app in the repository, with each way to install it on your own Holm node.",
+  "spa": true,
+  "display": {
+    "icon": "apps",
+    "color": "#0e7c66",
+    "tags": ["catalog", "apps", "install"],
+    "featured": false
+  },
+  "ext": {
+    "com.holmhq.unofficial": { "demo": "https://unofficial.zyt.app" }
+  }
+}
