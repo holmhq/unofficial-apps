@@ -177,23 +177,17 @@ img, video { max-width: 100%; }
   text-decoration: none; font-weight: 720; font-size: 20px; letter-spacing: -0.02em;
 }
 .brand-mark { width: 24px; height: 24px; color: var(--ink); }
-.top-nav { display: flex; gap: 4px; }
-.top-nav a {
-  text-decoration: none; color: var(--ink-2); padding: 6px 10px; border-radius: var(--radius-sm);
-}
-.top-nav a:hover { color: var(--ink); background: var(--wash); }
-.top-nav a[aria-current="page"] { color: var(--ink); background: var(--wash); }
 .top-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 
 .theme {
   display: inline-flex; padding: 3px; gap: 2px;
   border: 1px solid var(--rule); border-radius: 999px; background: var(--sheet-2);
 }
-.theme button {
-  width: 30px; height: 26px; display: grid; place-items: center;
+.menu .theme button, .theme button {
+  width: 32px; height: 26px; padding: 0; display: grid; place-items: center;
   border: 0; border-radius: 999px; background: transparent; color: var(--ink-3); cursor: pointer;
 }
-.theme button svg { width: 15px; height: 15px; }
+.theme button svg, .menu .theme button svg { width: 15px; height: 15px; color: inherit; }
 .theme button:hover { color: var(--ink); }
 .theme button[aria-pressed="true"] { background: var(--sheet); color: var(--ink); box-shadow: 0 0 0 1px var(--rule); }
 
@@ -203,6 +197,9 @@ img, video { max-width: 100%; }
   border: 1px solid var(--rule-2); background: var(--wash);
 }
 .avatar-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-btn.is-guest { display: grid; place-items: center; color: var(--ink-2); background: var(--sheet); }
+.avatar-btn.is-guest svg { width: 18px; height: 18px; }
+.avatar-btn:hover { border-color: var(--ink-3); }
 
 .menu {
   position: absolute; z-index: 40; min-width: 220px; padding: 6px;
@@ -220,6 +217,11 @@ img, video { max-width: 100%; }
 .menu a:hover, .menu button:hover { background: var(--wash); }
 .menu svg { width: 16px; height: 16px; color: var(--ink-2); }
 .menu .danger, .menu .danger svg { color: var(--ember); }
+.menu-sep { height: 1px; margin: 6px 4px; background: var(--rule); }
+.menu-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 4px 6px 4px 10px; color: var(--ink-2); }
+.menu-label { padding: 6px 10px 4px; font-size: 13px; color: var(--ink-3); }
+.menu-gap { width: 16px; flex: none; }
+.expiry-menu { min-width: 190px; z-index: 45; }
 
 /* ── Buttons & controls ─────────────────────────────────── */
 
@@ -245,12 +247,6 @@ img, video { max-width: 100%; }
 .btn-sm { min-height: 32px; padding: 0 10px; font-size: 14px; }
 .btn-icon { width: 36px; padding: 0; }
 .btn-sm.btn-icon { width: 32px; }
-kbd {
-  font-family: var(--font-ui); font-size: 12px; font-weight: 500;
-  padding: 1px 5px; border-radius: 4px; opacity: 0.75;
-  border: 1px solid currentColor;
-}
-.btn-primary kbd { border-color: color-mix(in srgb, var(--on-action) 45%, transparent); }
 
 .field { display: grid; gap: 6px; }
 .field > span { font-size: 14px; color: var(--ink-2); }
@@ -283,27 +279,15 @@ kbd {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .switch input:checked + .switch-track::after { background: var(--on-action); }
 }
-.switch.ember input:checked + .switch-track { background: var(--ember); }
-.switch.ember input:checked + .switch-track::after { background: #fff; }
 .switch input:focus-visible + .switch-track { outline: 2px solid var(--focus); outline-offset: 2px; }
 .switch-text { display: grid; line-height: 1.3; }
 .switch-text small { color: var(--ink-3); font-size: 13px; }
 
-.seg {
-  display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px;
-  border: 1px solid var(--rule); border-radius: var(--radius-sm); background: var(--sheet-2);
-}
-.seg button {
-  min-height: 30px; padding: 0 10px; border: 0; border-radius: 5px; background: transparent;
-  color: var(--ink-2); cursor: pointer; font-size: 14px; font-weight: 520;
-}
-.seg button:hover { color: var(--ink); }
-.seg button[aria-pressed="true"] { background: var(--sheet); color: var(--ink); box-shadow: 0 0 0 1px var(--rule-2); }
 
 /* ── Page frame ─────────────────────────────────────────── */
 
 main { display: block; outline: none; }
-.page { max-width: 1040px; margin: 0 auto; padding: 8px var(--gutter) 96px; }
+.page { max-width: 1040px; margin: 0 auto; padding: 8px var(--gutter) 56px; }
 .page-narrow { max-width: 760px; }
 .page-head { margin: 18px 0 22px; }
 .page-head h1 {
@@ -314,7 +298,7 @@ main { display: block; outline: none; }
 
 /* ── Composer ───────────────────────────────────────────── */
 
-.compose { max-width: 1040px; margin: 0 auto; padding: 4px var(--gutter) 120px; }
+.compose { max-width: 1040px; margin: 0 auto; padding: 4px var(--gutter) 36px; }
 .compose-title {
   display: block; width: 100%; margin: 14px 0 14px; padding: 4px 0;
   border: 0; background: none; color: var(--ink);
@@ -360,13 +344,6 @@ main { display: block; outline: none; }
 .editor.plain > pre { visibility: hidden; }
 .sheet:focus-within { border-color: var(--rule-2); }
 
-.drop {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  margin-top: 14px; padding: 14px 16px;
-  border: 1.5px dashed var(--rule-2); border-radius: var(--radius); color: var(--ink-2);
-}
-.drop p { margin: 0; flex: 1; min-width: 180px; }
-.drop.is-over { border-color: var(--focus); background: var(--wash); color: var(--ink); }
 body.dragging::after {
   content: "Drop to attach"; position: fixed; inset: 10px; z-index: 60; pointer-events: none;
   display: grid; place-items: center; font-size: 28px; font-weight: 680; letter-spacing: -0.02em;
@@ -395,22 +372,58 @@ body.dragging::after {
 .att.too-big { border-color: var(--ember); }
 .att.too-big .att-meta span { color: var(--ember); }
 
-.options {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px 28px; align-items: start;
-  margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--rule);
+.form-error { color: var(--ember); font-size: 14px; margin: 12px 0 0; text-align: center; }
+
+/* The create button reads as a sentence. Italic words are toggles; turning
+   one off strikes it through instead of removing it, so nothing moves. */
+.create { display: flex; justify-content: center; margin-top: 26px; }
+.split {
+  position: relative; display: inline-flex; align-items: stretch; max-width: 100%;
+  border-radius: 12px; background: var(--action); color: var(--on-action); box-shadow: var(--shadow);
 }
-.option-group { display: grid; gap: 16px; }
-.option-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.option-label { font-size: 14px; color: var(--ink-2); min-width: 64px; }
-.toggles { display: flex; gap: 14px 28px; flex-wrap: wrap; }
-.create-wrap { display: grid; justify-items: end; gap: 8px; }
-.create-wrap .btn { min-height: 46px; padding: 0 20px; font-size: 16px; }
-.create-note { font-size: 13px; color: var(--ink-3); text-align: right; max-width: 36ch; margin: 0; text-wrap: balance; }
-.form-error { color: var(--ember); font-size: 14px; margin: 12px 0 0; }
+.split-main {
+  display: flex; align-items: center; justify-content: center; min-height: 50px; padding: 0 8px 0 18px;
+  border-radius: 12px 0 0 12px; cursor: pointer; white-space: nowrap;
+  font-size: 16px; font-weight: 560; letter-spacing: -0.005em;
+}
+.split-main:hover, .split-more:hover { background: var(--action-hover); }
+.split-go {
+  padding: 2px 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; cursor: pointer;
+}
+.tok {
+  display: inline-block; padding: 2px 4px; margin: 0 -1px; border: 0; border-radius: 6px;
+  background: none; color: inherit; font: inherit; font-style: italic; cursor: pointer;
+  text-decoration: underline dotted; text-decoration-thickness: 1.5px; text-underline-offset: 4px;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+.tok:hover { background: color-mix(in srgb, var(--on-action) 14%, transparent); }
+.tok.off { text-decoration: line-through; text-decoration-thickness: 2px; opacity: 0.5; }
+.tok-expiry { min-width: 3.4ch; text-align: left; }
+.split-more {
+  display: grid; place-items: center; width: 46px; padding: 0; border: 0; cursor: pointer;
+  border-left: 1px solid color-mix(in srgb, var(--on-action) 24%, transparent);
+  border-radius: 0 12px 12px 0; background: none; color: inherit;
+}
+.split-more svg { width: 18px; height: 18px; }
+.split :focus-visible { outline-color: var(--on-action); outline-offset: 1px; }
+.split-status { display: none; }
+.split.busy .split-sentence { display: none; }
+.split.busy .split-status { display: inline; }
+.split.busy .split-main { cursor: progress; }
+
+/* Footer: what this is and where its source lives. */
+.foot {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 22px;
+  max-width: 1040px; margin: 0 auto; padding: 8px var(--gutter) max(28px, env(safe-area-inset-bottom));
+  font-size: 13px;
+}
+.foot a { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-3); text-decoration: none; }
+.foot a:hover { color: var(--ink); }
+.foot svg { width: 15px; height: 15px; }
 
 /* ── Viewer ─────────────────────────────────────────────── */
 
-.view { max-width: 1040px; margin: 0 auto; padding: 6px var(--gutter) 96px; }
+.view { max-width: 1040px; margin: 0 auto; padding: 6px var(--gutter) 56px; }
 
 .owner-bar {
   display: grid; gap: 12px; margin: 10px 0 26px; padding: 14px;
@@ -647,20 +660,22 @@ dialog.confirm p { margin: 0 0 20px; color: var(--ink-2); }
 @media (max-width: 720px) {
   :root { --gutter: 16px; }
   .top { gap: 12px; }
-  .top-nav { display: none; }
   .new-btn span { display: none; }
   .new-btn { width: 38px; padding: 0; }
-  .options { grid-template-columns: 1fr; }
-  .create-wrap {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; justify-items: stretch; gap: 6px;
+  .create {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0;
     padding: 10px var(--gutter) max(10px, env(safe-area-inset-bottom));
     background: color-mix(in srgb, var(--paper) 92%, transparent);
     border-top: 1px solid var(--rule);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   }
-  .create-wrap .btn { width: 100%; }
-  .create-wrap kbd { display: none; }
-  .create-note { text-align: center; max-width: none; }
+  .split { width: 100%; }
+  /* Narrow phones: the sentence may wrap to two balanced lines rather than clip. */
+  .split-main { flex: 1; min-width: 0; padding: 6px 4px 6px 10px; font-size: 15px; line-height: 1.35; white-space: normal; text-align: center; text-wrap: balance; }
+  .tok, .split-go { white-space: nowrap; }
+  .tok { padding: 1px 3px; }
+  .split-more { width: 42px; }
+  body:has(.create) .foot { padding-bottom: 96px; }
   .row { align-items: flex-start; flex-wrap: wrap; }
   .row-actions { width: 100%; justify-content: flex-end; margin-top: -4px; }
   .row .file-ico { display: none; }

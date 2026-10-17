@@ -1,4 +1,5 @@
-// New paste: title, highlighted editor, attachments and link options.
+// New paste: title, highlighted editor, attachments, and one sentence-shaped
+// button that both sets the link options and creates the link.
 
 import { h, icon, api, upload, bytes, store, toast, EXPIRY, plural, shareUrl } from '../lib.js'
 import { languages, langName, detect, highlight } from '../code.js'
@@ -9,6 +10,8 @@ const MAX_TOTAL = 50 * 1024 * 1024
 const MAX_TEXT = 512 * 1024
 const LIVE_HIGHLIGHT = 60 * 1024
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
+// Short labels for the expiry word inside the button: "for 1h", "for ever".
+const SHORT = { never: 'ever', '10m': '10m', '1h': '1h', '1d': '1d', '7d': '7d', '30d': '30d' }
 
 export function mountCompose(main, ctx) {
   const draft = store.get('pb.draft', { title: '', content: '', language: 'auto' })
@@ -43,43 +46,38 @@ export function mountCompose(main, ctx) {
   // ── attachments ──
   const fileInput = h('input', { type: 'file', multiple: true, hidden: true })
   const attachList = h('div.attachments', { hidden: true })
-  const dropZone = h('div.drop',
-    h('button.btn', { type: 'button', onclick: () => fileInput.click() }, icon('paperclip'), 'Add files'),
-    h('p', 'Images, video, audio, PDFs or any file. Up to 10 files, 25 MB each.'),
-    fileInput)
+  const attachBtn = h('button.btn.btn-quiet.btn-sm.btn-icon', {
+    type: 'button', 'aria-label': 'Attach files', title: 'Attach files (or drop them anywhere)',
+    onclick: () => fileInput.click(),
+  }, icon('paperclip'))
 
-  // ── options ──
-  const expirySeg = h('div.seg', { role: 'group', 'aria-label': 'Expires' },
-    EXPIRY.map(([v, label]) => h('button', {
-      type: 'button', 'data-v': v, 'aria-pressed': String(opts.expires === v),
-      onclick: () => { opts.expires = v; saveOpts(); syncOptions() },
-    }, label)))
-
-  const burnBox = h('input', { type: 'checkbox', checked: !!opts.burn, onchange: () => { opts.burn = burnBox.checked; saveOpts(); syncOptions() } })
-  const authorBox = h('input', { type: 'checkbox', checked: !!opts.showAuthor, onchange: () => { opts.showAuthor = authorBox.checked; saveOpts(); syncOptions() } })
-  const authorHelp = h('small')
-
-  const createBtn = h('button.btn.btn-primary', { type: 'submit' })
-  const createNote = h('p.create-note')
+  // ── the create button ──
+  // "Create [one-time] link [with] my name for [1h] ▾". Clicking an italic
+  // word strikes it through rather than removing it, so the button keeps its
+  // width and nothing under the cursor moves.
+  const tokBurn = h('button.tok', { type: 'button', onclick: () => { opts.burn = !opts.burn; saveOpts(); syncOptions() } }, 'one-time')
+  const tokAuthor = h('button.tok', { type: 'button', onclick: () => { opts.showAuthor = !opts.showAuthor; saveOpts(); syncOptions() } }, 'with')
+  const tokExpiry = h('button.tok.tok-expiry', { type: 'button', 'aria-haspopup': 'menu', onclick: e => openExpiry(e.currentTarget) })
+  const goBtn = h('button.split-go', { type: 'submit', title: (isMac ? '⌘' : 'Ctrl') + '+Enter' }, 'Create')
+  const sentence = h('span.split-sentence', goBtn, ' ', tokBurn, ' link ', tokAuthor, ' my name for ', tokExpiry)
+  const status = h('span.split-status', { 'aria-live': 'polite' })
+  const splitMain = h('div.split-main', {
+    // Anywhere on the sentence that isn't a toggle creates the link.
+    onclick: e => { if (!e.target.closest('.tok, .split-go')) create() },
+  }, sentence, status)
+  const moreBtn = h('button.split-more', { type: 'button', 'aria-haspopup': 'menu', 'aria-label': 'Choose when the link expires', onclick: e => openExpiry(e.currentTarget) }, icon('down'))
+  const split = h('div.split', { role: 'group', 'aria-label': 'Create link' }, splitMain, moreBtn)
   const errorBox = h('p.form-error', { role: 'alert', hidden: true })
 
   const form = h('form.compose', { onsubmit: e => { e.preventDefault(); create() } },
     title,
     h('div.sheet',
-      h('div.sheet-bar', langSelect, h('span.grow'), stats),
+      h('div.sheet-bar', langSelect, h('span.grow'), stats, attachBtn),
       editor),
-    dropZone,
+    fileInput,
     attachList,
     errorBox,
-    h('div.options',
-      h('div.option-group',
-        h('div.option-row', h('span.option-label', 'Expires'), expirySeg),
-        h('div.toggles',
-          h('label.switch.ember', burnBox, h('span.switch-track'),
-            h('span.switch-text', h('span', 'Burn after reading'), h('small', 'The link opens once'))),
-          h('label.switch', authorBox, h('span.switch-track'),
-            h('span.switch-text', h('span', 'Show my name'), authorHelp)))),
-      h('div.create-wrap', createBtn, createNote)))
+    h('div.create', split))
 
   main.replaceChildren(form)
 
@@ -221,22 +219,67 @@ export function mountCompose(main, ctx) {
   window.addEventListener('drop', onDrop)
 
   function syncOptions() {
-    for (const b of expirySeg.children) b.setAttribute('aria-pressed', String(b.dataset.v === opts.expires))
-    const me = ctx.me()
-    authorHelp.textContent = opts.showAuthor
-      ? (me ? 'Recipients see ' + (me.name || 'your name') : 'Recipients see your name and photo')
-      : 'Recipients see no name'
     const label = (EXPIRY.find(e => e[0] === opts.expires) || EXPIRY[0])[1].toLowerCase()
-    if (opts.burn && opts.expires === 'never') createNote.textContent = 'The link opens once, then the paste is destroyed.'
-    else if (opts.burn) createNote.textContent = 'The link opens once, and expires in ' + label + ' if nobody opens it.'
-    else if (opts.expires === 'never') createNote.textContent = 'Anyone with the link can view it until you revoke it.'
-    else createNote.textContent = 'Anyone with the link can view it for ' + label + '.'
+    setTok(tokBurn, opts.burn, opts.burn ? 'Opens once, then it’s deleted. Click for a normal link.' : 'Click to make the link work only once.')
+    setTok(tokAuthor, opts.showAuthor, opts.showAuthor ? 'Your name and photo show. Click to hide them.' : 'Your name is hidden. Click to show it.')
+    tokExpiry.textContent = SHORT[opts.expires] || opts.expires
+    tokExpiry.title = opts.expires === 'never' ? 'Never expires. Click to choose.' : 'Expires after ' + label + '. Click to choose.'
+    goBtn.setAttribute('aria-label', 'Create ' + (opts.burn ? 'one-time ' : '') + 'link' +
+      (opts.showAuthor ? ' with my name' : ' without my name') +
+      (opts.expires === 'never' ? ', never expires' : ', expires after ' + label))
     setButton()
   }
 
+  function setTok(el, on, tip) {
+    el.classList.toggle('off', !on)
+    el.setAttribute('aria-pressed', String(on))
+    el.title = tip
+  }
+
   function setButton(text) {
-    createBtn.disabled = busy
-    createBtn.replaceChildren(text || 'Create link', text ? '' : h('kbd', isMac ? '⌘↵' : 'Ctrl ↵'))
+    if (text && !split.classList.contains('busy')) split.style.minWidth = split.offsetWidth + 'px'
+    split.classList.toggle('busy', !!text)
+    status.textContent = text || ''
+    goBtn.disabled = busy
+    if (!text) split.style.minWidth = ''
+  }
+
+  function openExpiry(anchor) {
+    const open = document.querySelector('.menu.expiry-menu')
+    if (open) { open.remove(); return }
+    const menu = h('div.menu.expiry-menu', { role: 'menu' },
+      h('div.menu-label', 'Link expires'),
+      EXPIRY.map(([v, label]) => h('button', {
+        type: 'button', role: 'menuitemradio', 'aria-checked': String(opts.expires === v),
+        onclick: () => { opts.expires = v; saveOpts(); syncOptions(); close() },
+      }, v === opts.expires ? icon('check') : h('span.menu-gap'), v === 'never' ? 'Never' : 'After ' + label.toLowerCase())))
+    document.body.append(menu)
+    const r = split.getBoundingClientRect()
+    const m = menu.getBoundingClientRect()
+    const below = window.innerHeight - r.bottom
+    const top = below > m.height + 12 ? r.bottom + 8 : r.top - m.height - 8
+    menu.style.position = 'fixed'
+    menu.style.top = Math.max(8, top) + 'px'
+    menu.style.left = Math.min(window.innerWidth - m.width - 8, Math.max(8, r.right - m.width)) + 'px'
+    const current = menu.querySelector('[aria-checked="true"]')
+    ;(current || menu.querySelector('button')).focus()
+    function close() {
+      menu.remove()
+      document.removeEventListener('click', outside, true)
+      document.removeEventListener('keydown', onKey)
+      anchor.focus()
+    }
+    const outside = e => { if (!menu.contains(e.target) && !anchor.contains(e.target)) close() }
+    const onKey = e => {
+      if (e.key === 'Escape') { e.preventDefault(); close() }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const items = Array.from(menu.querySelectorAll('button'))
+        const i = items.indexOf(document.activeElement)
+        items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus()
+        e.preventDefault()
+      }
+    }
+    setTimeout(() => { document.addEventListener('click', outside, true); document.addEventListener('keydown', onKey) })
   }
 
   function showError(msg) { errorBox.textContent = msg; errorBox.hidden = false }
@@ -257,7 +300,7 @@ export function mountCompose(main, ctx) {
     }
 
     busy = true
-    setButton(files.length ? 'Uploading…' : 'Creating…')
+    setButton(files.length ? 'Uploading…' : 'Creating link…')
     const fields = {
       title: title.value.trim(),
       language: langSelect.value === 'auto' ? (content.trim() ? detected : '') : langSelect.value,
@@ -306,6 +349,8 @@ export function mountCompose(main, ctx) {
       window.removeEventListener('dragleave', onDragLeave)
       window.removeEventListener('drop', onDrop)
       document.body.classList.remove('dragging')
+      const menu = document.querySelector('.menu.expiry-menu')
+      if (menu) menu.remove()
       files.forEach(it => it.url && URL.revokeObjectURL(it.url))
     },
   }

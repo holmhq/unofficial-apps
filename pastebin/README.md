@@ -4,14 +4,18 @@ Private-first pastes on [Holm](https://holmhq.com). Text, code and files go
 behind a link that can expire, open only once, or be revoked. The author's
 name stays hidden unless they choose to show it.
 
-Live at <https://pastebin.zyt.app>. It was built from the one-message request
-quoted in [`PROMPT.md`](PROMPT.md), which also has a reusable version of it.
+Live at <https://pastebin.zyt.app>. It was built from the two short requests
+quoted in [`PROMPT.md`](PROMPT.md), which also has reusable versions of them.
 
 ## What it does
 
 - **Write:** a composer with live syntax highlighting and language
-  auto-detection. Drop, pick or paste up to 10 files, each up to 25 MB. The
-  draft and your options are remembered. ⌘/Ctrl+Enter creates the link.
+  auto-detection. Attach up to 10 files of up to 25 MB each with the paperclip,
+  by dropping them anywhere, or by pasting a screenshot. The link options live
+  in the create button, which reads as a sentence: *Create one-time link with
+  my name for 1h*. Clicking an italic word crosses it out, which turns it off
+  without moving anything. The arrow picks the expiry. ⌘/Ctrl+Enter creates
+  the link, and the draft and options are remembered.
 - **Share:**
   - Expiry from 10 minutes to 30 days, or never. A fuse line on the paste
     burns down to the deadline.
@@ -25,9 +29,11 @@ quoted in [`PROMPT.md`](PROMPT.md), which also has a reusable version of it.
   - Video and audio players.
   - Attached text files are highlighted.
 - **Automate:** API keys, an HTTP API and the `pb` CLI.
-- **Look:** a "cyanotype" design. Light is Prussian ink on white paper; dark
-  is the print itself, pale ink on Prussian blue. Ember marks anything that
-  burns. It also follows the system theme. Fonts and the highlighter are
+- **Look:** a minimal "cyanotype" design. Light is Prussian ink on white
+  paper; dark is the print itself, pale ink on Prussian blue. Ember marks
+  anything that burns. The header holds only the brand and an avatar menu
+  (your pastes, API keys, the light / system / dark switch, sign-out). A small
+  footer says it's a Holm app and links here. Fonts and the highlighter are
   vendored, so nothing loads from a CDN.
 
 ## How it is built

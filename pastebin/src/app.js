@@ -20,30 +20,41 @@ const ctx = {
 
 // ── theme ──────────────────────────────────────────────────
 
-const THEME_ICONS = { light: 'sun', system: 'system', dark: 'moon' }
-const themeButtons = document.querySelectorAll('[data-theme-set]')
+const THEMES = [['light', 'sun', 'Light'], ['system', 'system', 'System'], ['dark', 'moon', 'Dark']]
+
+function savedTheme() {
+  try { return localStorage.getItem('pb.theme') || 'system' } catch (e) { return 'system' }
+}
 
 function applyTheme(choice) {
   const root = document.documentElement
   if (choice === 'light' || choice === 'dark') root.setAttribute('data-theme', choice)
   else root.removeAttribute('data-theme')
-  themeButtons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeSet === choice)))
   const dark = choice === 'dark' || (choice === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
   document.querySelectorAll('meta[name="theme-color"]').forEach(m => {
     if (choice === 'system') m.setAttribute('content', m.media.includes('dark') ? '#0d2340' : '#f3f6fa')
     else m.setAttribute('content', dark ? '#0d2340' : '#f3f6fa')
   })
 }
+applyTheme(savedTheme())
 
-themeButtons.forEach(b => {
-  b.append(icon(THEME_ICONS[b.dataset.themeSet]))
-  b.addEventListener('click', () => {
-    let choice = b.dataset.themeSet
-    try { localStorage.setItem('pb.theme', choice) } catch (e) { /* private mode */ }
-    applyTheme(choice)
-  })
-})
-applyTheme((() => { try { return localStorage.getItem('pb.theme') || 'system' } catch (e) { return 'system' } })())
+// Light / System / Dark, shown inside the account menu.
+function themeSwitch() {
+  const group = h('div.theme', { role: 'group', 'aria-label': 'Theme' })
+  const paint = () => group.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.theme === savedTheme())))
+  for (const [id, ico, label] of THEMES) {
+    group.append(h('button', {
+      type: 'button', 'data-theme': id, 'aria-label': label + ' theme', title: label,
+      onclick: () => {
+        try { localStorage.setItem('pb.theme', id) } catch (e) { /* private mode */ }
+        applyTheme(id)
+        paint()
+      },
+    }, icon(ico)))
+  }
+  paint()
+  return group
+}
 
 document.querySelector('.new-btn').append(icon('plus'), h('span', 'New paste'))
 
@@ -62,33 +73,44 @@ async function refreshMe() {
 
 function renderAccount() {
   const host = document.getElementById('account')
-  if (!me) {
-    host.replaceChildren(h('button.btn.btn-quiet', { type: 'button', onclick: () => signIn().catch(() => {}) }, 'Sign in'))
-    return
-  }
-  const btn = h('button.avatar-btn', { type: 'button', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-label': 'Account menu' },
-    h('img', { src: local(me.avatar) || '/auth/avatar?seed=' + encodeURIComponent(me.id), alt: '', referrerpolicy: 'no-referrer' }))
+  const face = me
+    ? h('img', { src: local(me.avatar) || '/auth/avatar?seed=' + encodeURIComponent(me.id), alt: '', referrerpolicy: 'no-referrer' })
+    : icon('user')
+  const btn = h('button.avatar-btn', {
+    type: 'button', class: me ? null : 'is-guest', 'aria-haspopup': 'menu', 'aria-expanded': 'false',
+    'aria-label': me ? 'Account and settings' : 'Sign in and settings',
+  }, face)
   btn.addEventListener('click', e => { e.stopPropagation(); openMenu(btn) })
   host.replaceChildren(btn)
 }
 
 function openMenu(anchor) {
-  const existing = document.querySelector('.menu')
+  const existing = document.querySelector('.account-menu')
   if (existing) { existing.remove(); anchor.setAttribute('aria-expanded', 'false'); return }
-  const menu = h('div.menu', { role: 'menu' },
-    h('div.menu-head', h('strong', me.name || 'Signed in'), me.email ? h('span', me.email) : null),
-    h('a', { href: '/mine', 'data-link': true, role: 'menuitem' }, icon('list'), 'My pastes'),
-    h('a', { href: '/keys', 'data-link': true, role: 'menuitem' }, icon('key'), 'API keys'),
-    h('button.danger', { type: 'button', role: 'menuitem', onclick: signOut }, icon('out'), 'Sign out'))
+  const theme = h('div.menu-row', h('span', 'Theme'), themeSwitch())
+  const menu = me
+    ? h('div.menu.account-menu', { role: 'menu' },
+        h('div.menu-head', h('strong', me.name || 'Signed in'), me.email ? h('span', me.email) : null),
+        h('a', { href: '/mine', 'data-link': true, role: 'menuitem' }, icon('list'), 'My pastes'),
+        h('a', { href: '/keys', 'data-link': true, role: 'menuitem' }, icon('key'), 'API keys'),
+        h('div.menu-sep'),
+        theme,
+        h('div.menu-sep'),
+        h('button.danger', { type: 'button', role: 'menuitem', onclick: signOut }, icon('out'), 'Sign out'))
+    : h('div.menu.account-menu', { role: 'menu' },
+        h('button', { type: 'button', role: 'menuitem', onclick: () => signIn().catch(() => {}) }, icon('user'), 'Sign in'),
+        h('div.menu-sep'),
+        theme)
   const r = anchor.getBoundingClientRect()
   menu.style.top = (r.bottom + window.scrollY + 8) + 'px'
   menu.style.right = Math.max(12, document.documentElement.clientWidth - r.right) + 'px'
   document.body.append(menu)
   anchor.setAttribute('aria-expanded', 'true')
-  menu.querySelector('a').focus()
+  menu.querySelector('a, button').focus()
   const close = e => {
     if (e.type === 'keydown' && e.key !== 'Escape') return
-    if (e.type === 'click' && menu.contains(e.target) && !e.target.closest('a,button')) return
+    // Theme buttons and the menu's own padding keep it open.
+    if (e.type === 'click' && menu.contains(e.target) && (!e.target.closest('a,button') || e.target.closest('.theme'))) return
     menu.remove()
     anchor.setAttribute('aria-expanded', 'false')
     document.removeEventListener('click', close, true)
@@ -156,8 +178,7 @@ function navigate(path, replace) {
 function route() {
   if (current && current.destroy) current.destroy()
   current = null
-  const menu = document.querySelector('.menu')
-  if (menu) menu.remove()
+  document.querySelectorAll('.menu').forEach(m => m.remove())
 
   const path = location.pathname.replace(/\/+$/, '') || '/'
   let nav = ''
@@ -181,10 +202,8 @@ function route() {
   } else {
     current = mountView(main, '__missing__', ctx)
   }
-  document.querySelectorAll('[data-nav]').forEach(a => {
-    if (a.dataset.nav === nav) a.setAttribute('aria-current', 'page')
-    else a.removeAttribute('aria-current')
-  })
+  // The composer is the home page; elsewhere a quiet button leads back to it.
+  document.querySelector('.new-btn').hidden = nav === 'new'
   window.scrollTo(0, 0)
 }
 
