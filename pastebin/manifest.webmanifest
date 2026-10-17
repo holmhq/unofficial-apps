@@ -1,0 +1,13 @@
+{
+  "name": "pastebin",
+  "short_name": "pastebin",
+  "description": "Share text, code and files with links that expire, open once, or can be revoked.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d2340",
+  "theme_color": "#0d2340",
+  "icons": [
+    { "src": "/assets/icon-192-v1.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/icon-512-v1.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

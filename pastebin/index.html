@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>pastebin</title>
+  <meta name="description" content="Share text, code and files with links that expire, open once, or can be revoked.">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f3f6fa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d2340" media="(prefers-color-scheme: dark)">
+  <meta property="og:title" content="pastebin">
+  <meta property="og:description" content="A shared paste. Open the link to view it.">
+  <meta property="og:image" content="/assets/og-v1.png">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="/assets/favicon-v1.ico" sizes="32x32">
+  <link rel="icon" href="/assets/favicon-v1.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon-v1.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preload" href="/assets/fonts/bricolage-grotesque-opsz.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/fragment-mono.woff2" as="font" type="font/woff2" crossorigin>
+  <script>
+    // Apply the saved theme before first paint so there is no flash.
+    (function () {
+      var t = 'system'
+      try { t = localStorage.getItem('pb.theme') || 'system' } catch (e) {}
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+    })()
+  </script>
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="top" id="top">
+    <a class="brand" href="/" data-link aria-label="pastebin, new paste">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 4.5h12.5L25 10v17.5H7z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M19.5 4.5V10H25" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M11 15h10M11 19.5h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <span>pastebin</span>
+    </a>
+    <nav class="top-nav" aria-label="Main">
+      <a href="/mine" data-link data-nav="mine">My pastes</a>
+      <a href="/keys" data-link data-nav="keys">API keys</a>
+    </nav>
+    <div class="top-actions">
+      <div class="theme" role="group" aria-label="Theme">
+        <button type="button" data-theme-set="light" aria-label="Light theme" title="Light"></button>
+        <button type="button" data-theme-set="system" aria-label="Match system theme" title="System"></button>
+        <button type="button" data-theme-set="dark" aria-label="Dark theme" title="Dark"></button>
+      </div>
+      <a class="btn btn-quiet new-btn" href="/" data-link data-nav="new"></a>
+      <div class="account" id="account"></div>
+    </div>
+  </header>
+  <main id="main" tabindex="-1"></main>
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+  <script src="/vendor/highlight/highlight.min.js"></script>
+  <script src="/vendor/highlight/extra-languages.min.js"></script>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>

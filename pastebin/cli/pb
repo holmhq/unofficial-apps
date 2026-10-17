@@ -1,0 +1,126 @@
+#!/bin/sh
+# pb — private-first pastes at https://pastebin.zyt.app (requires curl and jq).
+#   pb login <key>                         save an API key
+#   pb new [text | path | -] [options]     create; no argument reads stdin
+#   pb new --file path [--file path ...]   upload attachments
+#   pb ls | pb revoke <slug> | pb rm <slug>
+# Options: -t title, -l language, -e 1h, --burn, --show-me, --file path
+# Env: PB_KEY; PB_URL; XDG_CONFIG_HOME (default ~/.config/pastebin/key).
+set -eu
+PB_URL=${PB_URL:-https://pastebin.zyt.app}; PB_URL=${PB_URL%/}
+CONF_DIR=${XDG_CONFIG_HOME:-$HOME/.config}/pastebin
+KEY_FILE=$CONF_DIR/key
+TEMP=''
+trap '[ -z "$TEMP" ] || rm -rf "$TEMP"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+die() { printf 'pb: %s\n' "$*" >&2; exit 1; }
+key() {
+  if [ -n "${PB_KEY:-}" ]; then printf '%s' "$PB_KEY"; return; fi
+  [ -r "$KEY_FILE" ] || die 'no key yet — run: pb login <key>'
+  tr -d '\r\n' < "$KEY_FILE"
+}
+call() { # method path [curl arguments...]; capture status without mixing it with JSON.
+  method=$1; path=$2; shift 2
+  response=$(curl -sS -X "$method" "$PB_URL$path" -H "Authorization: Bearer $(key)" "$@" -w '\n%{http_code}') || die 'request failed'
+  code=$(printf '%s\n' "$response" | tail -n 1)
+  result=$(printf '%s\n' "$response" | sed '$d')
+  case "$code" in 2??) ;; *)
+    message=$(printf '%s' "$result" | jq -r '.error.message // "Request failed"' 2>/dev/null) || message='Invalid server response'
+    die "$code: $message" ;; esac
+  printf '%s\n' "$result"
+}
+slug() {
+  value=${1##*/}
+  [ "${#value}" -eq 12 ] || die 'expected a 12-character paste slug or paste URL'
+  case "$value" in *[!A-Za-z0-9]*) die 'invalid paste slug' ;; esac
+  printf '%s' "$value"
+}
+cmd=${1:-help}; [ $# -eq 0 ] || shift
+case "$cmd" in
+  help|-h|--help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  login)
+    [ $# -eq 1 ] || die 'usage: pb login <key>'
+    case "$1" in pb_*) ;; *) die 'keys start with pb_' ;; esac
+    suffix=${1#pb_}
+    [ "${#suffix}" -eq 32 ] || die 'a key has 32 characters after pb_'
+    case "$suffix" in *[!A-Za-z0-9]*) die 'invalid key' ;; esac
+    umask 077; mkdir -p "$CONF_DIR"; printf '%s' "$1" > "$KEY_FILE"; chmod 600 "$KEY_FILE"
+    printf 'Saved key to %s\n' "$KEY_FILE"; exit 0 ;;
+esac
+command -v curl >/dev/null 2>&1 || die 'curl is required'
+command -v jq >/dev/null 2>&1 || die 'jq is required'
+case "$cmd" in
+  new)
+    umask 077; TEMP=$(mktemp -d "${TMPDIR:-/tmp}/pb.XXXXXX")
+    title=''; language=''; expires='never'; burn=false; show=false; source=''; have_source=false; file_count=0
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        -t|--title|-l|--language|-e|--expires|--file)
+          [ $# -ge 2 ] || die "$1 needs a value"
+          case "$1" in
+            -t|--title) title=$2 ;;
+            -l|--language) language=$2 ;;
+            -e|--expires) expires=$2 ;;
+            --file)
+              [ -f "$2" ] && [ -r "$2" ] || die "cannot read file: $2"
+              file_count=$((file_count + 1)); [ "$file_count" -le 10 ] || die 'at most ten files'
+              printf '%s' "$2" > "$TEMP/file$file_count" ;;
+          esac
+          shift 2 ;;
+        --burn) burn=true; shift ;;
+        --show-me) show=true; shift ;;
+        --)
+          shift; [ $# -eq 1 ] || die 'provide one text argument, a file path, or -'
+          [ "$have_source" = false ] || die 'provide only one text source'
+          source=$1; have_source=true; shift ;;
+        -*)
+          [ "$1" = '-' ] || die "unknown option: $1"
+          [ "$have_source" = false ] || die 'provide only one text source'
+          source='-'; have_source=true; shift ;;
+        *)
+          [ "$have_source" = false ] || die 'quote text as one argument'
+          source=$1; have_source=true; shift ;;
+      esac
+    done
+    if [ "$have_source" = false ] && [ "$file_count" -gt 0 ]; then : > "$TEMP/content"
+    elif [ "$have_source" = false ] || [ "$source" = '-' ]; then cat > "$TEMP/content"
+    elif [ -f "$source" ]; then cat < "$source" > "$TEMP/content"; [ -n "$title" ] || title=$(basename "$source")
+    else printf '%s' "$source" > "$TEMP/content"; fi
+    if [ "$file_count" -eq 0 ]; then
+      jq -n --rawfile content "$TEMP/content" --arg title "$title" --arg language "$language" --arg expires "$expires" --argjson burn "$burn" --argjson show "$show" \
+        '{content:$content,title:$title,language:$language,expires_in:$expires,burn_after_read:$burn,show_author:$show}' > "$TEMP/body"
+      result=$(call POST /api/pastes -H 'Content-Type: application/json' --data-binary "@$TEMP/body")
+      printf '%s' "$result" | jq -er '.url'
+    else
+      set -- --form "content=<$TEMP/content" --form-string "title=$title" --form-string "language=$language" --form-string "expires_in=$expires" --form-string "burn_after_read=$burn" --form-string "show_author=$show"
+      i=1
+      while [ "$i" -le "$file_count" ]; do
+        path=$(cat "$TEMP/file$i"); case "$path" in /*) ;; *) path="$PWD/$path" ;; esac
+        escaped=$(printf '%s' "$path" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
+        set -- "$@" --form "file$i=@\"$escaped\""
+        i=$((i + 1))
+      done
+      result=$(call POST /api/pastes "$@")
+      printf '%s' "$result" | jq -er '.url'
+    fi ;;
+  ls)
+    [ $# -eq 0 ] || die 'usage: pb ls'
+    cursor=''
+    while :; do
+      path=/api/pastes
+      [ -z "$cursor" ] || path="$path?cursor=$(printf '%s' "$cursor" | jq -sRr @uri)"
+      page=$(call GET "$path")
+      printf '%s' "$page" | jq -r '.pastes[] | [.slug,.state,(.title // ""),.url] | @tsv'
+      cursor=$(printf '%s' "$page" | jq -r '.cursor // empty')
+      [ -n "$cursor" ] || break
+    done ;;
+  revoke|rm)
+    [ $# -eq 1 ] || die "usage: pb $cmd <slug|url>"
+    id=$(slug "$1")
+    if [ "$cmd" = revoke ]; then call POST "/api/pastes/$id/revoke" >/dev/null
+    else call DELETE "/api/pastes/$id" >/dev/null; fi
+    printf '%s: %s\n' "$cmd" "$id" ;;
+  *) die "unknown command '$cmd' (try: pb help)" ;;
+esac
