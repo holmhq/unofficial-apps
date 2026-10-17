@@ -28,8 +28,12 @@ The `open` skill gets you to a good starting point:
   from a prompt.
 - It asks before installing anything or accepting a licence.
 
+When you're done, type `/close`. It records your request in the app's
+`PROMPT.md`, checks nothing private is about to be published, and commits.
+It then pushes or offers to open a pull request.
+
 If your agent has no slash commands, ask it to follow
-`.claude/skills/open/SKILL.md`. To do it by hand instead, follow Holm's
+`.claude/skills/open/SKILL.md` (or `close/SKILL.md`). To do it by hand instead, follow Holm's
 ten-minute local start in section 4 of <https://holmhq.com/llm.txt>.
 
 ## Apps

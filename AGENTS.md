@@ -10,6 +10,11 @@ When someone types `/open` or `open`, or asks where to begin, follow
 welcomes newcomers, helps them install Holm from its public quick start, and
 offers to run one of the apps locally.
 
+When someone types `/close` or `close`, or says they're done, follow
+`.claude/skills/close/SKILL.md`. It records the session's request in each
+touched app's `PROMPT.md`, checks for private content, commits, and then pushes
+or opens a pull request.
+
 ## Every app folder
 
 - The folder is a deployable Holm app at its root, with no build step unless
@@ -30,8 +35,9 @@ offers to run one of the apps locally.
 
 - Holm repository source, private Holm docs, plans or issue references.
 - Credentials, API keys, `.env` files, or machine-specific paths.
-- Personal names or emails. Credit "The Holm Authors"; commits here are made
-  as `The Holm Authors <authors@holmhq.com>` (repo-local git config).
+- Personal names or emails in files. Maintainers commit as
+  `The Holm Authors <authors@holmhq.com>` (repo-local git config, which a fresh
+  clone does not carry); contributors commit under their own name.
 - Private planning notes. Keep those in your private tracker.
 
 ## Work

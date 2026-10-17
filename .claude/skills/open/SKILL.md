@@ -32,6 +32,9 @@ In four or five short lines, tell them:
 
 ## 2. Check the machine (read-only)
 
+Run `git status --short`. If there are uncommitted changes, this is a
+returning contributor: summarise them and mention that `/close` wraps them up.
+
 Run `holm --version`.
 
 - **Installed:** report the version, then run `holm peer list` to see whether
