@@ -3,6 +3,13 @@
 This repository is **public**. It holds unofficial, open-source Holm apps that
 show how such apps are built.
 
+## Starting a session
+
+When someone types `/open` or `open`, or asks where to begin, follow
+`.claude/skills/open/SKILL.md`; it is linked into `.pi/skills/` too. It
+welcomes newcomers, helps them install Holm from its public quick start, and
+offers to run one of the apps locally.
+
 ## Every app folder
 
 - The folder is a deployable Holm app at its root, with no build step unless
@@ -16,7 +23,8 @@ show how such apps are built.
   licenses of anything vendored.
 - Everything in an app folder deploys publicly, including `PROMPT.md` and
   `README.md`.
-- Add each new app to the table in the root `README.md`.
+- Add each new app to the table in the root `README.md`, and mention it in the
+  `open` skill if it makes a better first demo than pastebin.
 
 ## Never commit
 

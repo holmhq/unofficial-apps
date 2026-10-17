@@ -9,6 +9,31 @@ build the app from, using only the public reference at
 The prompts are the point. They show how little you need to say to get a
 finished, deployed app.
 
+## Quick start
+
+1. Clone the repo:
+
+   ```sh
+   git clone https://github.com/holmhq/unofficial-apps && cd unofficial-apps
+   ```
+
+2. Open a coding agent in the folder: Claude Code, pi, Codex or similar.
+3. Type `/open`.
+
+The `open` skill gets you to a good starting point:
+
+- It explains what's here and checks whether Holm is installed. If it isn't,
+  it walks you through Holm's own quick start.
+- It offers to run one of these apps on your machine, or to build a new one
+  from a prompt.
+- It asks before installing anything or accepting a licence.
+
+If your agent has no slash commands, ask it to follow
+`.claude/skills/open/SKILL.md`. To do it by hand instead, follow Holm's
+ten-minute local start in section 4 of <https://holmhq.com/llm.txt>.
+
+## Apps
+
 | App | Live | What it shows |
 | --- | --- | --- |
 | [`pastebin`](pastebin/) | [pastebin.zyt.app](https://pastebin.zyt.app) | Expiring, one-time and revocable links; media; API keys and a CLI |
