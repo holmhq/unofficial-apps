@@ -63,6 +63,8 @@ tile Holm's sign-in page shows. Credit its creator in the README.
 - Give the button on sites the app's icon.
 - Switching a project's tabs should change only what's below them, not
   redraw the page.
+- When the app's link is shared, show feedback's own title, description and
+  preview image, not Holm's.
 ```
 
 ## The original requests
@@ -102,6 +104,13 @@ documentation removed:
 > May be feedback button's icon needs to match the logo?
 > - also the whole page re-renders when i tab
 > - anyway to make it such taht only that details change
+
+**Iteration 6:**
+
+> I shared feedback app in WhatsApp
+> - and it shows holm's preview images
+> - and metadata of holm
+> - can we change it to feedback's?
 
 Everything in the prompts beyond what's quoted came from the agent: the
 button in a shadow root and the form in an iframe, the carbon-copy tickets,

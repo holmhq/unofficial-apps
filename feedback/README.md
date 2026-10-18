@@ -100,7 +100,7 @@ src/keys.js         the API keys page
 src/widget.js       the panel's logic
 src/lib.js          DOM, API and formatting helpers, icons
 src/styles.css      the app's design;  src/widget.css  the panel's
-assets/             icon, favicon and fonts (SIL OFL 1.1)
+assets/             icon, favicon, link preview and fonts (SIL OFL 1.1)
 vendor/qrcode/      qrcode-generator 2.0.4 (MIT)
 api/main.js         routes (below)
 api/projects.js     projects, their settings and custom addresses
@@ -131,6 +131,9 @@ The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
   with a sandboxing CSP. **`holm.image.thumbnail`** makes the previews.
 - **Framing:** Holm serves app pages with `frame-ancestors *`, so any site can
   show the form.
+- **Head metadata:** Holm fills in link-preview tags a page leaves out, with
+  its own text and picture. `index.html` writes every one except `og:url`,
+  so a shared link shows feedback's title, description and `assets/og.png`.
 
 | Route | Who | Purpose |
 | --- | --- | --- |
@@ -221,6 +224,9 @@ holm policy set auth.public_signup false --app <app-id>
 - Custom addresses are first come, first served across the whole app, and a
   few words the app uses itself (like `stats` and `projects`) are reserved.
 - Files are owner-only and can't be shown on the public page.
+- A shared feedback page previews as the app, not as its project: link
+  previews read the static `index.html`, and the page is drawn in the
+  browser.
 
 ## Licenses
 
