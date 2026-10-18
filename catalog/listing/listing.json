@@ -1,8 +1,8 @@
 {
   "subtitle": "A store for app repositories",
   "category": "Developer tools",
-  "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, a description and the prompt that built it, and installs it on your node from a Get button.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
-  "whatsNew": "Fits iPhones without sideways scrolling, and the install sheet no longer zooms the page when you type your node. A footer links to Holm and the source.",
+  "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
+  "whatsNew": "Sign in with the avatar at the top right. Rate and review apps; reviews go live once approved. Admins get an admin page: show or hide apps, light numbers for views, Gets and copied commands, review approval, and the store's colour.",
   "screenshots": [
     {
       "file": "store.webp",
@@ -10,11 +10,19 @@
     },
     {
       "file": "app.webp",
-      "alt": "An app's page in dark mode: icon, subtitle, facts and screenshots"
+      "alt": "An app's page in dark mode: icon, rating, facts and screenshots"
+    },
+    {
+      "file": "reviews.webp",
+      "alt": "Ratings and reviews on an app's page, with a button to write one"
     },
     {
       "file": "install.webp",
       "alt": "The install sheet, with the terminal commands written for your node"
+    },
+    {
+      "file": "admin.webp",
+      "alt": "The admin page: apps with their numbers and a switch to show or hide each one"
     }
   ]
 }

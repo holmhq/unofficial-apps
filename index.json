@@ -5,11 +5,11 @@
     {
       "name": "catalog",
       "path": "catalog",
-      "version": "0.2.1",
-      "tag": "catalog/v0.2.1",
-      "h1": "h1:yel6tRFL+yztzgdDLXOBfq+RkRgJikJ4TSsXaniRdrs=",
-      "files": 16,
-      "size": 160629,
+      "version": "0.3.0",
+      "tag": "catalog/v0.3.0",
+      "h1": "h1:2QWnQzShXN9OjtVl5RGGTa5hUzBchIfGHfFgbNBd/VA=",
+      "files": 21,
+      "size": 204335,
       "title": "catalog",
       "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
       "themeColor": "#0e7c66",
@@ -18,8 +18,8 @@
       "listing": {
         "subtitle": "A store for app repositories",
         "category": "Developer tools",
-        "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, a description and the prompt that built it, and installs it on your node from a Get button.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
-        "whatsNew": "Fits iPhones without sideways scrolling, and the install sheet no longer zooms the page when you type your node. A footer links to Holm and the source.",
+        "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
+        "whatsNew": "Sign in with the avatar at the top right. Rate and review apps; reviews go live once approved. Admins get an admin page: show or hide apps, light numbers for views, Gets and copied commands, review approval, and the store's colour.",
         "featured": false,
         "screenshots": [
           {
@@ -30,13 +30,25 @@
           },
           {
             "path": "listing/app.webp",
-            "alt": "An app's page in dark mode: icon, subtitle, facts and screenshots",
+            "alt": "An app's page in dark mode: icon, rating, facts and screenshots",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/reviews.webp",
+            "alt": "Ratings and reviews on an app's page, with a button to write one",
             "width": 780,
             "height": 1688
           },
           {
             "path": "listing/install.webp",
             "alt": "The install sheet, with the terminal commands written for your node",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/admin.webp",
+            "alt": "The admin page: apps with their numbers and a switch to show or hide each one",
             "width": 780,
             "height": 1688
           }

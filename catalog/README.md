@@ -1,8 +1,9 @@
 # catalog
 
 An app store for this repository, live at <https://unofficial.zyt.app>. Every
-app gets its own page, and a Get button opens a sheet that installs it on
-your own Holm node.
+app gets its own page with ratings and reviews, a Get button opens a sheet
+that installs it on your own Holm node, and the node's owner and admins
+manage the store from `/admin`.
 
 It was built from the requests quoted in [`PROMPT.md`](PROMPT.md).
 
@@ -26,9 +27,26 @@ It was built from the requests quoted in [`PROMPT.md`](PROMPT.md).
     the README.
   - **`holm app install`:** trust the repository once, then install by name
     and version. Not in Holm yet, so it's marked as coming.
+- **Accounts:** an avatar circle at the top right signs people in through
+  Holm's hosted sign-in page, shown in an overlay so nobody loses their
+  place. Its menu has Admin for those allowed in, and Sign out.
+- **Ratings and reviews:** anyone signed in can rate an app and write a
+  review, one per app, and edit or delete it. A new or edited review is shown
+  only to its author, marked as waiting, until an admin approves it. Approved
+  reviews give each app its average rating, shown on its row and page.
+- **Admin** at `/admin`, for the node's owner and admins and the app's own
+  admins:
+  - show or hide each app; a hidden app, its reviews and its screenshots are
+    gone for everyone else;
+  - light numbers per app for this week and the last 30 days: page views, Get
+    taps and copied commands;
+  - approve, reject, unpublish or delete reviews;
+  - the store's tint: six presets or any colour, previewed live before saving,
+    with a warning if it would be hard to read.
 - **Look:** slate ink on cool paper, light and dark following the system.
-  Each app brings its colour through its icon. Fonts are vendored, so nothing
-  loads from a CDN.
+  Each app brings its colour through its icon, and everything else takes the
+  tint. Fonts are vendored, so nothing loads from a CDN. A footer links to
+  Holm and the source, as in pastebin.
 
 ## How it is built
 
@@ -39,11 +57,16 @@ handles `/api/*`. There is no build step.
 index.html          page shell and the install <dialog>
 src/app.js          router, front page and app pages
 src/install.js      the install sheet and its commands
-src/lib.js          DOM helpers and the app icon
+src/account.js      avatar, menu, sign-in overlay
+src/reviews.js      ratings, reviews and the review form
+src/admin.js        /admin
+src/lib.js          DOM and API helpers, the app icon, counting
 src/styles.css      the whole design, light and dark
 assets/             favicon and fonts (SIL OFL 1.1)
-api/main.js         GET /api/index and GET /api/file
+api/main.js         routes (below)
 api/index.js        reads index.json and screenshots from GitHub, cached
+api/store.js        settings, counters and reviews
+api/lib.js          responses, request checks, who is asking
 holm.symbol.svg     this app's own icon
 listing/            this app's store listing (not deployed)
 ```
@@ -60,6 +83,14 @@ README. The Holm primitives it uses, all described in
   that one host.
 - **Shared KV, `holm.app.kv`:** the last good index for each ref (refreshed
   after five minutes) and the freshness marks for cached screenshots.
+- **`holm.auth`:** who is signed in, and whether they are the node's owner or
+  an admin (`isNodeOwner`, `isNodeAdmin`) or one of the app's own
+  (`isAppOwner`, `isAppAdmin`). Every admin route checks on the server.
+- **Document store, `holm.app.ds`:** reviews, one per person per app, with
+  their status.
+- **Shared KV, again:** the settings (tint, hidden apps) and the counters, one
+  key per app, day and kind, each expiring after 40 days. Counting keeps
+  nothing about who, and skips admins.
 - **Blob store, `holm.app.s3`:** cached screenshots. `/api/file` serves only
   the screenshots the index lists, so the store can't be used to fetch
   anything else from GitHub. If GitHub doesn't answer, the last good copy is
@@ -81,8 +112,27 @@ holm net allow raw.githubusercontent.com --app <app-id>
 `?ref=<branch>` on any page shows the store at another branch or tag, which is
 handy for checking a pull request before it merges.
 
+The API:
+
+| Route | Who | Purpose |
+| --- | --- | --- |
+| `GET /api/me` | anyone | who is signed in, and whether they're an admin |
+| `GET /api/index` | anyone | the apps they may see, with ratings and the tint |
+| `GET /api/file` | anyone | a screenshot the index lists |
+| `POST /api/events` | anyone | count a view, Get or copy |
+| `GET /api/reviews/<app>` | anyone | approved reviews, and your own |
+| `PUT`, `DELETE /api/reviews/<app>` | signed in | write or remove your review |
+| `GET /api/admin` | admins | apps, numbers, every review, settings |
+| `PUT /api/admin/settings` | admins | the tint and hidden apps |
+| `POST`, `DELETE /api/admin/reviews/<id>` | admins | set a review's status, or delete it |
+
 ## Known limits
 
+- Reviews need a way to sign in on the node: magic-link email or an OAuth
+  provider (see section 13 of llm.txt). Anyone who can sign up can review.
+- The counters accept anonymous requests and aren't rate-limited, so a
+  determined visitor could inflate them. They're a rough guide, not a
+  measurement.
 - `holm app install` isn't in Holm yet; the sheet shows the command it is
   expected to take.
 - Pages are drawn in the browser, so link previews show the store's generic

@@ -48,6 +48,22 @@ Make the catalog look and work like Apple's App Store.
 - Take real screenshots of each app with sample data.
 ```
 
+## 3. Accounts, reviews and an admin
+
+```text
+Add accounts, reviews and an admin to the store.
+
+- An avatar circle at the top right signs in with Holm's sign-in page. Its
+  menu shows Admin to the node's owner and admins (and the app's admins).
+- Signed-in people can rate and review an app. Reviews go public only once
+  an admin approves them.
+- /admin: show or hide apps; count page views, Get taps and copied commands
+  per app, lightly and without tracking who; approve reviews; and pick the
+  store's tint colour.
+- A footer like pastebin's, and make sure it fits iPhones without sideways
+  scrolling.
+```
+
 ## The original requests
 
 The app in this folder came from these messages, typed as-is to a coding
@@ -75,6 +91,26 @@ Asked where the page should get its list, they answered:
 > - provide the hash in the page feels needless?
 > - shouldnt the app being installed from this repo be enough verification
 > - if someone can change files in this repo, they can also change the hash
+
+**Iteration 3**, then a message sent while the agent was working on it:
+
+> some small nit picks, can we have a "/admin" to manage things like: say: enable / disable apps?
+> - see some light analytics (we can possibly pull from the native analytics)
+> - we need click/taps for each apps
+> - if that analytics is pointless / needless overwork lets avoid it
+> - we also would like to change the tint color of the site from green to something else? as an option in /admin
+> - admin is only accessible for the node/app admin
+> - we need a login system
+> - do a avatar circle at the top right
+> - the admin link will be in the popup for qualified ones
+> - for others logging in, they can leave reviews; which will require approval to be public
+
+> May be have a footer like in paste bin for the app store too
+> - i just got feedback that the app store doesnt gracefully fit in iPhones, and causes horizontal scroll bars
+
+Holm's native analytics only see requests that reach the server, and the
+store changes pages in the browser, so the agent counted views, Gets and
+copies itself instead.
 
 The prompts above spell out the norms (per-app release tags, the `h1`
 fingerprint, a root `index.json`, the `holm.symbol.svg` icon form), so they

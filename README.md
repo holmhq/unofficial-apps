@@ -40,7 +40,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llm.txt>.
 
 | App | Live | What it shows |
 | --- | --- | --- |
-| [`catalog`](catalog/) | [unofficial.zyt.app](https://unofficial.zyt.app) | An app store for this repository: a page per app, and Get to install |
+| [`catalog`](catalog/) | [unofficial.zyt.app](https://unofficial.zyt.app) | An app store: a page per app, reviews, Get to install, and an admin |
 | [`pastebin`](pastebin/) | [pastebin.zyt.app](https://pastebin.zyt.app) | Expiring, one-time and revocable links; media; API keys and a CLI |
 
 ## Layout of an app

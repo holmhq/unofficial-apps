@@ -1,7 +1,10 @@
 // The store: a front page of every app, and a page for each one. Data comes
 // from the repository's index.json through /api/index.
-import { $, el, icon, bytes, paragraphs, REPO } from './lib.js'
+import { $, el, icon, bytes, paragraphs, stars, track, applyTint, REPO } from './lib.js'
 import { openInstall } from './install.js'
+import { loadViewer, onViewer } from './account.js'
+import { reviewsSection } from './reviews.js'
+import { adminPage } from './admin.js'
 
 const ref = new URLSearchParams(location.search).get('ref') || 'main'
 const withRef = path => ref === 'main' ? path : path + '?ref=' + encodeURIComponent(ref)
@@ -13,9 +16,19 @@ const show = (...sections) => main.replaceChildren(...sections.filter(Boolean))
 
 const subtitle = app => (app.listing && app.listing.subtitle) || app.description
 const shotURL = (app, shot) => `/api/file?ref=${encodeURIComponent(ref)}&app=${app.path}&path=${encodeURIComponent(shot.path)}`
+// PROMPT.md wraps its lines at 80 columns; rejoin them so the prompt reflows
+// on a phone, keeping paragraphs and list items.
+const reflow = text => text.replace(/\n(?!\n|- )\s*/g, ' ')
 const external = (href, ...children) => el('a', { href, rel: 'noopener', target: '_blank' }, ...children)
 
 const getButton = app => el('button', { type: 'button', class: 'get', 'aria-label': 'Get ' + app.title, onclick: () => openInstall(app) }, 'Get')
+
+// Category, rating, and for admins whether the store is hiding the app.
+const meta = app => [
+  app.listing && app.listing.category,
+  app.rating && [stars(app.rating.average, false), ` ${app.rating.average.toFixed(1)}`],
+  app.hidden && 'Hidden from the store'
+].filter(Boolean).flatMap((part, i) => i ? ['  ', part] : [part])
 
 function chevron() {
   const ns = 'http://www.w3.org/2000/svg'
@@ -35,7 +48,7 @@ function row(app) {
       el('span', { class: 'row-text' },
         el('span', { class: 'row-title' }, app.title),
         el('span', { class: 'row-sub' }, subtitle(app)),
-        app.listing && el('span', { class: 'row-meta' }, app.listing.category))),
+        el('span', { class: 'row-meta' }, meta(app)))),
     getButton(app))
 }
 
@@ -71,8 +84,10 @@ function productPage(app) {
   document.title = `${app.title} – Unofficial Holm apps`
   const listing = app.listing || { screenshots: [] }
   const others = index.apps.filter(other => other !== app)
+  track(app.path, 'view')
   show(
     el('nav', { class: 'back' }, el('a', { href: withRef('/'), 'data-link': true }, chevron(), 'Apps')),
+    app.hidden && el('p', { class: 'notice' }, 'This app is hidden from the store. Only admins can see this page.'),
     el('header', { class: 'product' },
       icon(app, 'xl'),
       el('div', { class: 'product-text' },
@@ -82,6 +97,7 @@ function productPage(app) {
           getButton(app),
           app.demo && external(app.demo, 'Open the live copy')))),
     el('ul', { class: 'facts' },
+      app.rating && fact(`${app.rating.average.toFixed(1)} ★`, `${app.rating.count} ${app.rating.count === 1 ? 'rating' : 'ratings'}`),
       fact(app.version, 'Version'),
       fact(bytes(app.size), 'Size'),
       fact(listing.category, 'Category'),
@@ -93,10 +109,11 @@ function productPage(app) {
     listing.whatsNew && el('section', { class: 'news' },
       el('div', { class: 'section-head' }, el('h2', {}, 'What’s new'), el('span', {}, 'Version ' + app.version)),
       paragraphs(listing.whatsNew).map(text => el('p', {}, text))),
+    reviewsSection(app),
     app.prompt && el('section', { class: 'prompt' },
       el('h2', {}, 'Built from a prompt'),
       el('p', {}, 'A coding agent built this app from this request, with Holm’s public reference as its only guide.'),
-      el('blockquote', {}, el('pre', {}, app.prompt)),
+      el('blockquote', {}, el('pre', {}, reflow(app.prompt))),
       external(`${REPO}/blob/${encodeURI(app.tag)}/${app.path}/PROMPT.md`, 'Read every request in PROMPT.md')),
     el('section', { class: 'info' },
       el('h2', {}, 'Information'),
@@ -121,6 +138,7 @@ function notFound(path) {
 }
 
 function route() {
+  if (location.pathname.replace(/\/+$/, '') === '/admin') return adminPage(main, show)
   if (!index) return
   const match = /^\/apps\/([a-z0-9-]+)\/?$/.exec(location.pathname)
   if (!match) return storefront()
@@ -142,10 +160,11 @@ addEventListener('popstate', route)
 
 async function load() {
   try {
-    const response = await fetch('/api/index?ref=' + encodeURIComponent(ref))
+    const response = await fetch('/api/index?ref=' + encodeURIComponent(ref), { cache: 'no-store' })
     const body = await response.json()
     if (!body.ok) throw new Error(body.error?.message || 'The index could not be read.')
     index = body.index
+    applyTint(body.settings && body.settings.tint)
     route()
   } catch (error) {
     main.replaceChildren(el('div', { class: 'status error' },
@@ -155,4 +174,7 @@ async function load() {
   }
 }
 
-load()
+// Signing in or out can change what's visible (admins see hidden apps), so
+// the index is read again for the new viewer.
+onViewer(() => load())
+loadViewer()

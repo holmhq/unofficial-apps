@@ -10,6 +10,10 @@
   <meta name="theme-color" content="#0f1a1e" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/assets/fonts/bricolage-grotesque-opsz.woff2" as="font" type="font/woff2" crossorigin>
+  <script>
+    // The admin-chosen tint, before first paint, so the page doesn't flash green.
+    try { var t = JSON.parse(localStorage.getItem('catalog.tint')); if (/^#[0-9a-f]{6}$/i.test(t)) document.documentElement.style.setProperty('--tint', t) } catch (e) {}
+  </script>
   <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
@@ -38,6 +42,7 @@
   </footer>
 
   <dialog class="sheet" id="install" aria-labelledby="install-title"></dialog>
+  <dialog class="sheet" id="review" aria-labelledby="review-title"></dialog>
 
   <script type="module" src="/src/app.js"></script>
 </body>

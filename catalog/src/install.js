@@ -1,6 +1,6 @@
 // The install sheet: what "Get" opens. The reader's node and chosen way are
 // remembered, and every command is written for their node.
-import { $, el, store, icon, REPO, ALIAS } from './lib.js'
+import { $, el, store, icon, track, REPO, ALIAS } from './lib.js'
 
 const node = Object.assign({ peer: '', domain: '' }, store.get('node', {}))
 const WAY_IDS = ['terminal', 'agent', 'install']
@@ -16,7 +16,7 @@ const plain = parts => parts.map(part => typeof part === 'string' ? part : part.
 
 // Shell commands keep their line breaks (long ones continue with a
 // backslash); a prompt is one paragraph that wraps.
-function block(lines, label, kind = 'Terminal') {
+function block(app, lines, label, kind = 'Terminal') {
   const code = el('code', {}, lines.map(line =>
     el('span', { class: 'line' }, line.map(part => typeof part === 'string' ? part : el('span', { class: 'you' }, part.you)))))
   const copy = el('button', { type: 'button', class: 'copy', 'aria-label': 'Copy ' + label }, 'Copy')
@@ -24,6 +24,7 @@ function block(lines, label, kind = 'Terminal') {
     try {
       await navigator.clipboard.writeText(lines.map(plain).join('\n'))
       copy.textContent = 'Copied'
+      track(app.path, 'copy')
     } catch {
       copy.textContent = 'Select and copy'
     }
@@ -39,7 +40,7 @@ const WAYS = {
     label: 'Terminal',
     ready: true,
     render: app => [
-      block([
+      block(app, [
         ['git clone --depth 1 \\'],
         ['  --branch ', app.tag, ' \\'],
         ['  ', REPO],
@@ -56,7 +57,7 @@ const WAYS = {
     label: 'Ask an agent',
     ready: true,
     render: app => [
-      block([[
+      block(app, [[
         'Install ', app.title, ' ', app.version, ' on my Holm node from ', REPO, ': clone the ',
         app.tag, ' tag and deploy its ', app.path, ' folder with `holm ', ...peer(), 'app deploy ', app.path,
         ' --host ', ...host(app), ' --spa --no-build`. Then follow its README.md for any setup. ',
@@ -70,7 +71,7 @@ const WAYS = {
     label: 'holm app install',
     ready: false,
     render: app => [
-      block([
+      block(app, [
         ['holm ', ...peer(), 'app repo add ', ALIAS, ' ', REPO],
         ['holm ', ...peer(), 'app install ', ALIAS, '/', app.path, '@v', app.version, ' \\'],
         ['  --host ', ...host(app)]
@@ -140,6 +141,7 @@ function render(dialog, app) {
 }
 
 export function openInstall(app) {
+  track(app.path, 'get')
   const dialog = $('#install')
   render(dialog, app)
   // showModal focuses Done; focusing a field would open a phone's keyboard
