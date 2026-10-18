@@ -33,6 +33,15 @@ stored hashed), accepted as bearer tokens on every owner route, and the
 project's snippet in the reply.
 ```
 
+## 3. Its icon
+
+```text
+Make this SVG, a smiling speech bubble from the Noun Project, the app's icon.
+Turn it into one black path filling a 24 × 24 frame for holm.symbol.svg,
+keeping its holes, and use the same shape in the header, the favicon and the
+tile Holm's sign-in page shows. Credit its creator in the README.
+```
+
 ## The original requests
 
 **Iteration 1** came from this message, typed as-is to a coding agent while
@@ -46,6 +55,12 @@ sign-in page:
 
 > - can feedback app have a api system that i can then provide you so that when asked to add it to a new site, you can simply go & set it up?
 
+**Iteration 3**, with the path to a downloaded icon file and to Holm's
+documentation removed:
+
+> can you see if the icon downloaded from thenounproject can be normalised (perhaps manually as described in holm) and set as the icon in feedback app
+
 Everything in the prompts beyond what's quoted came from the agent: the
 button in a shadow root and the form in an iframe, the carbon-copy tickets,
-the public board and votes, the spam guards and the shape of the API.
+the public board and votes, the spam guards, the shape of the API and the
+icon's credit.

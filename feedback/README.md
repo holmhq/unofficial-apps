@@ -183,3 +183,9 @@ holm policy set auth.public_signup false --app <app-id>
 
 The app is MIT-licensed (see the repository `LICENSE`). Bricolage Grotesque
 and Fragment Mono are under the SIL OFL 1.1, in `assets/fonts/`.
+
+The icon, a smiling speech bubble, is by Side Project from
+[Noun Project](https://thenounproject.com) and is used under
+[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). It was rescaled
+into Holm's 24 × 24 symbol frame for `holm.symbol.svg`, and appears in
+`assets/icon.svg`, `assets/favicon.svg` and the page header.

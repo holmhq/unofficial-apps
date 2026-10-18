@@ -2,7 +2,7 @@
   "subtitle": "A feedback button for any site",
   "category": "Developer tools",
   "description": "Add one script tag to your website and a feedback button appears. Visitors send a bug, an idea or a question from the page they're on, with an email if they'd like a reply.\n\nEverything arrives in one inbox per project. Mark items planned, in progress, done or closed, keep private notes, and see which page and browser each came from.\n\nWhen you're ready, turn on a public board: it shows only the items you choose, grouped by status, and visitors can vote for what matters to them.",
-  "whatsNew": "API keys: make one in the avatar menu, and scripts or a coding agent can set up projects, fetch their snippets and sort what arrives for you. Holm's sign-in page now shows feedback's own icon and colour.",
+  "whatsNew": "A new icon, a smiling speech bubble, in the store, on Holm's sign-in page and in the browser tab.",
   "screenshots": [
     {
       "file": "landing.webp",
