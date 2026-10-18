@@ -64,6 +64,14 @@ Add accounts, reviews and an admin to the store.
   scrolling.
 ```
 
+## 4. Brand Holm's sign-in page
+
+```text
+Holm's sign-in page shows Holm's logo and blue instead of the store's. Give
+the store an icon file, and set the node's per-app brand name, icon and
+accent for it (see llm.txt §6.3 settings).
+```
+
 ## The original requests
 
 The app in this folder came from these messages, typed as-is to a coding
@@ -107,6 +115,15 @@ Asked where the page should get its list, they answered:
 
 > May be have a footer like in paste bin for the app store too
 > - i just got feedback that the app store doesnt gracefully fit in iPhones, and causes horizontal scroll bars
+
+**Iteration 4**, from a message whose last point went to the feedback app:
+
+> Question:
+> - the signin dialog is not showing the logo of the site but the logo of the node / holm
+> - i believe there was a tinting too, that also seems to be not being applied
+
+The tint asked for here is the sign-in page's accent, a node setting; the
+store's own `/admin` tint can't change node settings.
 
 Holm's native analytics only see requests that reach the server, and the
 store changes pages in the browser, so the agent counted views, Gets and
