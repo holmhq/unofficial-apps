@@ -417,8 +417,9 @@ body.dragging::after {
   max-width: 1040px; margin: 0 auto; padding: 8px var(--gutter) max(28px, env(safe-area-inset-bottom));
   font-size: 13px;
 }
-.foot a { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-3); text-decoration: none; }
-.foot a:hover { color: var(--ink); }
+.foot a, .foot button { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-3); text-decoration: none; }
+.foot button { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
+.foot a:hover, .foot button:hover { color: var(--ink); }
 .foot svg { width: 15px; height: 15px; }
 
 /* ── Viewer ─────────────────────────────────────────────── */

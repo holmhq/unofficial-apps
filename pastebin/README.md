@@ -40,8 +40,9 @@ quoted in [`PROMPT.md`](PROMPT.md), which also has reusable versions of them.
   paper; dark is the print itself, pale ink on Prussian blue. Ember marks
   anything that burns. The header holds only the brand and an avatar menu
   (your pastes, API keys, the light / system / dark switch, sign-out). A small
-  footer says it's a Holm app and links here. Fonts and the highlighter are
-  vendored, so nothing loads from a CDN.
+  footer says it's a Holm app, links here, and has Send feedback, which opens
+  a feedback form over the page. Fonts and the highlighter are vendored, so
+  nothing loads from a CDN.
 
 ## How it is built
 
@@ -55,6 +56,7 @@ src/                    browser app: router, composer, viewer, lists, Markdown (
 vendor/highlight/       highlight.js 11.11.1 (BSD-3-Clause)
 vendor/marked/          marked 18.0.14, GFM parser (MIT), loaded only for Markdown
 vendor/dompurify/       DOMPurify 3.4.16, HTML sanitizer (Apache-2.0 or MPL-2.0)
+vendor/feedback/        embed.js from this repository's feedback app (MIT)
 assets/                 icons, social card, fonts (SIL OFL 1.1)
 api/main.js             router
 api/pastes.js           create, list, owner actions, public read, burn claim, files
@@ -94,6 +96,17 @@ so give it pastebin's own:
 holm settings set settings.apps.<app-id>.brand.name pastebin
 holm settings set settings.apps.<app-id>.brand.icon_url /assets/icon-192-v1.png
 holm settings set settings.apps.<app-id>.theme.accent '#173a72'
+```
+
+The footer's Send feedback opens the form of the owner's
+[feedback](../feedback/) project. Holm pages run only their own scripts, so
+`vendor/feedback/embed.js` is a copy of that app's script, and the page must be
+allowed to frame the feedback app. In your copy, change `data-project` and
+`data-origin` in `index.html` to your own project (or delete that script tag
+and the footer button), then:
+
+```sh
+holm policy set security.csp.frame_src "https://feedback.example.com" --app <app-id>
 ```
 
 Anyone can sign up by default. To keep the app to yourself, close signup once
@@ -184,4 +197,5 @@ their own licenses:
 - highlight.js: BSD-3-Clause, `vendor/highlight/LICENSE`.
 - marked: MIT, `vendor/marked/LICENSE`.
 - DOMPurify: Apache-2.0 or MPL-2.0, `vendor/dompurify/LICENSE`.
+- feedback's `embed.js`: MIT, part of this repository.
 - Bricolage Grotesque and Fragment Mono: SIL OFL 1.1, `assets/fonts/`.

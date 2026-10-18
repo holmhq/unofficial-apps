@@ -225,6 +225,9 @@ window.addEventListener('popstate', () => {
   route()
 })
 
+// The footer's feedback link opens the feedback form (vendor/feedback/embed.js).
+document.getElementById('feedback').addEventListener('click', () => window.HolmFeedback && window.HolmFeedback.open())
+
 // Boot: show the page right away; the session fills in when it arrives.
 renderAccount()
 meReady = refreshMe()

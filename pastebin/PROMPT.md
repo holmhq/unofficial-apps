@@ -60,6 +60,13 @@ Give the app a store listing for this repository's app store.
   sample data, in light and dark.
 ```
 
+## 5. Add a feedback link
+
+```text
+Add a "Send feedback" link to the footer that opens the feedback form from
+my feedback app (feedback.<my-domain>), for a project made for this site.
+```
+
 ## The original requests
 
 The app in this folder came from these messages, typed as-is to a coding
@@ -118,6 +125,13 @@ app; the listing was the agent's part of it:
 
 > i want something that resembles Apple AppStore
 > - so that each app gets its own page
+
+**Iteration 5**, after the feedback app had an API and an agent skill:
+
+> I just set the env variable; can you add a feedback widget to pastebin?
+
+The agent chose a footer link over the floating button, which would have
+covered the create button on phones.
 
 The prompts above are those messages with the machine-specific parts removed
 and one line added: use only holmhq.com. Everything else came from the agent:
