@@ -88,7 +88,7 @@ function productPage(app) {
       fact('MIT', 'License')),
     listing.screenshots.length > 0 && el('section', { class: 'shots', 'aria-label': 'Screenshots' },
       el('ul', {}, listing.screenshots.map(shot => el('li', {},
-        el('img', { src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height, loading: 'lazy' }))))),
+        el('img', { src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height, loading: 'lazy', style: `--ratio: ${(shot.width / shot.height).toFixed(4)}` }))))),
     el('section', { class: 'about' }, paragraphs(listing.description || app.description).map(text => el('p', {}, text))),
     listing.whatsNew && el('section', { class: 'news' },
       el('div', { class: 'section-head' }, el('h2', {}, 'What’s new'), el('span', {}, 'Version ' + app.version)),

@@ -142,8 +142,9 @@ function render(dialog, app) {
 export function openInstall(app) {
   const dialog = $('#install')
   render(dialog, app)
+  // showModal focuses Done; focusing a field would open a phone's keyboard
+  // over the sheet before the reader has seen it.
   dialog.showModal()
-  $('input[name="peer"]', dialog).focus()
 }
 
 // A click on the backdrop closes the sheet.

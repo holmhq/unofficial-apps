@@ -5,11 +5,11 @@
     {
       "name": "catalog",
       "path": "catalog",
-      "version": "0.2.0",
-      "tag": "catalog/v0.2.0",
-      "h1": "h1:K8tE5LljUNybRNF0ZJtXx2MAS9j//z+WgiCxhxZNNII=",
+      "version": "0.2.1",
+      "tag": "catalog/v0.2.1",
+      "h1": "h1:yel6tRFL+yztzgdDLXOBfq+RkRgJikJ4TSsXaniRdrs=",
       "files": 16,
-      "size": 158513,
+      "size": 160629,
       "title": "catalog",
       "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
       "themeColor": "#0e7c66",
@@ -19,7 +19,7 @@
         "subtitle": "A store for app repositories",
         "category": "Developer tools",
         "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, a description and the prompt that built it, and installs it on your node from a Get button.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
-        "whatsNew": "Now a store: a front page of every app, a page for each one, and a Get button that opens an install sheet written for your node.",
+        "whatsNew": "Fits iPhones without sideways scrolling, and the install sheet no longer zooms the page when you type your node. A footer links to Holm and the source.",
         "featured": false,
         "screenshots": [
           {

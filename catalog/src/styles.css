@@ -55,6 +55,9 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
+  /* Nothing may widen the page sideways, whatever an engine does with a
+     stray element; scrollers inside the page keep their own scrolling. */
+  overflow-x: clip;
   background: var(--paper);
   color: var(--ink);
   font: 400 1.0625rem/1.55 var(--font);
@@ -94,8 +97,14 @@ h2 { font-size: 1.35rem; line-height: 1.2; }
 }
 .quiet:hover { color: var(--ink); }
 
-.foot { padding-block: 3rem; font-size: 0.88rem; color: var(--ink-3); }
-.foot p { margin: 0; max-width: 40em; }
+.foot {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 0.4rem 1.4rem;
+  padding-block: 3rem max(2rem, env(safe-area-inset-bottom));
+  font-size: 0.82rem;
+}
+.foot a { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--ink-3); text-decoration: none; }
+.foot a:hover { color: var(--ink); }
+.foot svg { width: 0.95rem; height: 0.95rem; }
 
 .status { margin: 3rem 0; color: var(--ink-2); }
 .status.error { padding: 1rem 1.1rem; background: var(--planned-wash); border-radius: 12px; color: var(--ink); }
@@ -217,9 +226,12 @@ h2 { font-size: 1.35rem; line-height: 1.2; }
   display: flex; gap: 1rem;
   overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 1rem;
 }
+.shots { --shot-height: 32rem; }
 .shots li { flex: none; scroll-snap-align: start; }
+/* Each width is set from the screenshot's own proportions, so no engine has
+   to work it out from the image. */
 .shots img {
-  display: block; height: 32rem; width: auto;
+  display: block; height: var(--shot-height); width: calc(var(--shot-height) * var(--ratio, 0.462));
   border-radius: 20px;
   border: 1px solid var(--rule);
   background: var(--sheet);
@@ -229,7 +241,7 @@ h2 { font-size: 1.35rem; line-height: 1.2; }
   .shots ul { padding-inline: 2rem; scroll-padding-inline: 2rem; }
 }
 @media (max-width: 36rem) {
-  .shots img { height: 26rem; }
+  .shots { --shot-height: 26rem; }
 }
 
 .about { margin-top: 1.75rem; }
@@ -296,7 +308,8 @@ h2 { font-size: 1.35rem; line-height: 1.2; }
 .node label { display: grid; gap: 0.3rem; font-size: 0.88rem; color: var(--ink-2); }
 .node input {
   width: 100%;
-  font-size: 0.95rem;
+  /* 16px or more, or iPhones zoom the page when the field is focused. */
+  font-size: max(1rem, 16px);
   color: var(--ink);
   background: var(--sheet);
   border: 1px solid var(--rule);
