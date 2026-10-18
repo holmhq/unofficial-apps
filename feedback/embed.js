@@ -9,7 +9,9 @@
  * data-color="#c2410c", data-position="right" | "left",
  * data-button="pill" | "icon" | "none" (none: open the form from your own
  * control with window.HolmFeedback.open()), and data-theme="light" | "dark" |
- * "auto". Use data-origin="https://feedback.example.com" when this file is
+ * "auto". A "holmfeedback:ready" event on window, and HolmFeedback.ready,
+ * say the form is there.
+ * Use data-origin="https://feedback.example.com" when this file is
  * copied into the site itself (Holm-hosted sites must, since their pages
  * only run their own scripts).
  *
@@ -155,7 +157,14 @@
     paint()
   }
   var shown = false
-  function reveal() { if (!shown) { shown = true; paint() } }
+  // Sites that open the form from their own link can wait for this event.
+  function reveal() {
+    if (shown) return
+    shown = true
+    paint()
+    if (window.HolmFeedback) window.HolmFeedback.ready = true
+    try { window.dispatchEvent(new Event('holmfeedback:ready')) } catch (error) {}
+  }
 
   function page() {
     return origin + '/widget.html?p=' + project +

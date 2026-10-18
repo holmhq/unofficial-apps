@@ -1,6 +1,20 @@
 {
   "releases": [
     {
+      "version": "0.7.0",
+      "date": "2026-10-19",
+      "title": "Room for hundreds",
+      "changes": [
+        "Your projects sit in a panel that scrolls on its own: the page doesn't move, and the footer stays at the bottom.",
+        "Each project shows the site it's on, and its feedback page, at a glance.",
+        "Every project gets an icon. Pick another in Design, from 48, or its first letter; a logo still wins. It shows on the form and your page too.",
+        "An inbox built for hundreds: sort by newest, oldest, votes, rating or last change; filter by when, where it came from, whether you can reply and whether it's on your page; search every word, or #12. Fifty at a time, with a count and a Clear.",
+        "On a phone, the filters fold behind one button and the statuses scroll in a row.",
+        "Press / to search the inbox.",
+        "Feedback about this app now has a home: Feedback, in the footer."
+      ]
+    },
+    {
       "version": "0.6.0",
       "date": "2026-10-18",
       "title": "A button people want on their site",

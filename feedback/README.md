@@ -34,14 +34,20 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
   delighted. Ask for it, optionally or always, with your own words above it.
   If it can't load, plain stars stand in.
 - **Projects:** sign in and make one per site, shop, restaurant or event.
-  Tabs: Inbox, Stats, Design, Form, Share and Set up; switching tabs changes
-  only what's below them.
-- **Design:** the project's name, colour, logo and cover, the title and
+  They sit in a panel that scrolls on its own, so the page never does and the
+  footer stays at the bottom. Each row shows the project's icon or logo, the
+  site it's on (its allowed sites, or where its button is live), its
+  feedback page and what's waiting. Tabs: Inbox, Stats, Design, Form, Share
+  and Set up; switching tabs changes only what's below them.
+- **Design:** the project's name, colour, icon, logo and cover, the title and
   words at the top of the panel and the page, the button's style, text and
   corner, and the panel's theme. Beside them, a preview runs the real button
   on a stand-in page, at a computer's width or a phone's; it follows every
   change as you make it, and the button opens and closes it as on a site.
   Saved changes reach sites on their next page load, with the same snippet.
+  The icon is one of 48 from [Lucide](https://lucide.dev), or the first
+  letter; a new project gets one at random, and a logo shows instead
+  wherever there is one.
 - **Form:** what it's made for, which picks the kinds (a website or app
   gets Issue, Idea and Question; a place or event gets Praise, Problem and
   Idea), the rating, whether to ask for an email and a phone number (off,
@@ -57,10 +63,15 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
   here too.
 - **Inbox:** every item as a ticket, numbered per project and tinted by its
   status like a carbon-copy form: white for new, canary for planned, pink for
-  in progress, mint for done, grey for closed. Filter by status, kind, the
-  answer to any choice question, its rating, whether it has photos, or
-  search its words. Each item shows the message, its rating and answers, the
-  page and its title, the
+  in progress, mint for done, grey for closed. It's built for hundreds: sort
+  by newest, oldest, votes, rating or last change; filter by status (each
+  with its count), when it came (today, 7, 30 or 90 days), kind, rating,
+  which site or the feedback page it came from, the answer to any choice
+  question, photos, whether you can reply, whether it's on your page, and
+  comments to approve; search every word of it, or `#12` (press `/` to
+  search). It shows how many match and fifty at a time; Clear resets the
+  filters. On a phone the filters fold behind one button. Each item shows
+  the message, its rating and answers, the page and its title, the
   browser, the window size, the email and phone, and its files (pictures as
   thumbnails). Its **thread**, for your team only, lists when it came in,
   every note and every change of status, kind or visibility, by whom. Only
@@ -87,6 +98,9 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
   anything the owner can, so setting up feedback on a new site is one
   request. Keys are shown once and stored as SHA-256 hashes; a key can't make
   more keys.
+- **Its own feedback:** the footer's Feedback link opens this app's own form,
+  through the same `embed.js` every site uses, sent to its maintainers'
+  project on feedback.zyt.app. It isn't on projects' feedback pages.
 - **Look:** aubergine ink, a burnt-orange signal, light and dark following
   the system, or picked in the avatar menu. Dropdowns, switches and
   segmented choices are drawn to match, with keyboard support. The panel on
@@ -104,7 +118,9 @@ changes in Design need no new snippet. Attributes on the tag win over them:
 `data-label`, `data-color`, `data-position` (`left` or `right`),
 `data-button` (`pill`, `icon`, or `none` to open the form from your own
 link with `HolmFeedback.open()`), and `data-theme` (`light`, `dark` or
-`auto`). `HolmFeedback.close()` and `HolmFeedback.toggle()` work too.
+`auto`). `HolmFeedback.close()` and `HolmFeedback.toggle()` work too. Once
+the form is there, `HolmFeedback.ready` is true and a `holmfeedback:ready`
+event fires on `window`, so a link of your own can wait to show.
 
 The button and panel live in a closed shadow root, so your CSS and the
 widget's never touch. The form is an iframe on the feedback app's own origin,
@@ -147,6 +163,7 @@ src/stats.js        the stats views and their chart
 src/changelog.js    the changelog page
 src/preview.js      starts embed.js on the stand-in site
 src/qr.js           QR codes and the poster
+src/icons.js        a project's mark: its logo, icon or initial
 src/account.js      avatar, menu, theme and Holm's sign-in page in an overlay
 src/keys.js         the API keys page
 src/widget.js       the panel's logic
@@ -155,6 +172,7 @@ src/lib.js          DOM, API and formatting helpers, icons, dropdown,
 src/styles.css      the app's design;  src/widget.css  the panel's
 assets/             icon, favicon, link preview and fonts (SIL OFL 1.1)
 vendor/qrcode/      qrcode-generator 2.0.4 (MIT)
+vendor/lucide/      48 Lucide icons (ISC; MIT for those from Feather)
 api/main.js         routes (below)
 api/projects.js     projects, their settings and custom addresses
 api/items.js        sending, triage, notes, the page and votes
@@ -207,7 +225,7 @@ The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
 | `POST /api/boards/<page>/items` | anyone | send feedback from the page |
 | `POST /api/boards/<page>/items/<id>/vote` | anyone | vote, once per browser |
 | `GET`, `POST /api/boards/<page>/items/<id>/comments` | anyone | approved comments; add one |
-| `GET`, `POST /api/projects` | owner | your projects; make one |
+| `GET`, `POST /api/projects` | owner | your projects, with the sites each is on; make one |
 | `GET`, `PATCH`, `DELETE /api/projects/<id>` | owner | one project |
 | `GET /api/projects/<id>/items[?status=]` | owner | its inbox: `open`, `new`, `planned`, `progress`, `done`, `closed` |
 | `GET /api/projects/<id>/stats?days=` | owner | its stats over 7, 30 or 90 days |
@@ -234,7 +252,8 @@ curl https://feedback.example.com/api/projects \
 ```
 
 The reply's `project.snippet` is the script tag to paste before `</body>`.
-A project takes `name`, `label` (the button's text), `color`, `position`
+A project takes `name`, `icon` (one of the 48 in `api/projects.js`, or
+`letter`), `label` (the button's text), `color`, `position`
 (`right` or `left`), `button` (`pill`, `icon` or `none`), `theme` (the
 panel's: `light`, `dark` or `auto`), `origins` (allowed sites; empty means
 any), `attachments` (whether visitors can add files), `for` (`site` or
@@ -268,7 +287,9 @@ the runtime doesn't pass the request host to apps yet. Set it to your host.
 holm app deploy feedback --host feedback.example.com --spa --no-build
 ```
 
-Set `ORIGIN` in `api/projects.js` to your host first (see API). Holm's
+Set `ORIGIN` in `api/projects.js` to your host first (see API). The footer's
+Feedback link goes to a project on feedback.zyt.app; on your copy it stays
+hidden, or make a project for your own and put its id in `index.html`. Holm's
 sign-in page takes the app's name, icon and colour from node settings, so give
 it feedback's own:
 
@@ -287,6 +308,8 @@ holm policy set auth.public_signup false --app <app-id>
 
 ## Known limits
 
+- The inbox reads a project's newest 1,000 items and filters them in the
+  browser; older ones are still kept, and still counted in Stats.
 - No notifications yet: check the inbox. Email needs a configured sender.
 - One owner per project; there are no teammates yet.
 - Votes are counted once per browser, not per person; clearing storage votes
@@ -321,9 +344,11 @@ and Fragment Mono are under the SIL OFL 1.1, in `assets/fonts/`.
 feed-stars 0.0.3, the star rating, is MIT-licensed and loaded from Holm's
 own [`holmhq/cdn`](https://github.com/holmhq/cdn) through jsDelivr; its
 animation is adapted from Aaron Iker's "Stars rating animation" on CodePen.
-qrcode-generator 2.0.4 by Kazuhiko Arase is MIT-licensed, in
-`vendor/qrcode/` with its `LICENSE`. "QR Code" is a registered trademark of
-DENSO WAVE INCORPORATED.
+The project icons are from Lucide (lucide-static 1.52.0), ISC-licensed, with
+those derived from Feather under the MIT licence; both are in
+`vendor/lucide/LICENSE`. qrcode-generator 2.0.4 by Kazuhiko Arase is
+MIT-licensed, in `vendor/qrcode/` with its `LICENSE`. "QR Code" is a
+registered trademark of DENSO WAVE INCORPORATED.
 
 The icon, a smiling speech bubble, is by Side Project from
 [Noun Project](https://thenounproject.com) and is used under

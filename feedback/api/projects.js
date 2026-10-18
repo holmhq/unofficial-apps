@@ -5,7 +5,7 @@ import { removeProject as removeFiles } from './files.js'
 import { removeProjectStats } from './stats.js'
 import { pictureURL, storePicture, removePicture } from './page.js'
 import { contactOf, fieldsOf, ratingOf, contactSetting, fieldsSetting, ratingSetting } from './form.js'
-import { removeInstalls } from './installs.js'
+import { removeInstalls, installs } from './installs.js'
 
 // Snippets and page links in API replies are absolute. The runtime doesn't
 // pass the request host to apps yet, so they use this. Set it to your host.
@@ -20,6 +20,17 @@ export const kindsOf = doc => KIND_SETS[doc.for] || KIND_SETS.site
 // follows the visitor's system.
 const BUTTONS = ['pill', 'icon', 'none']
 const THEMES = ['light', 'dark', 'auto']
+// A project's mark, when it has no logo: one of these icons (vendor/lucide,
+// which src/icons.js draws) or its initial ("letter"). A new project gets one
+// at random; older ones get one picked by their id.
+export const ICONS = ['flame', 'rocket', 'globe', 'store', 'utensils', 'coffee', 'shopping-bag', 'heart',
+  'star', 'sparkles', 'zap', 'leaf', 'music', 'camera', 'book-open', 'graduation-cap',
+  'briefcase', 'building', 'house', 'gamepad-2', 'palette', 'code', 'terminal', 'bot',
+  'cloud', 'package', 'map-pin', 'calendar', 'ticket', 'mic', 'film', 'dumbbell',
+  'plane', 'pizza', 'wine', 'gift', 'flower-2', 'mountain', 'face-grinning', 'paw-print',
+  'gem', 'trophy', 'compass', 'feather', 'wrench', 'shield', 'bike', 'stethoscope']
+export const iconOf = doc => doc.icon === 'letter' || ICONS.includes(doc.icon) ? doc.icon
+  : ICONS[doc.id.split('').reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) % 9973, 7) % ICONS.length]
 const MAX_PROJECTS = 20
 // A custom address: 3 to 40 lowercase letters, digits and inner hyphens.
 const SLUG = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/
@@ -47,7 +58,7 @@ export function projectDTO(doc) {
 export const publicConfig = doc => ({
   id: doc.id, name: doc.name, label: doc.label, color: doc.color, position: doc.position,
   button: BUTTONS.includes(doc.button) ? doc.button : 'pill', theme: THEMES.includes(doc.theme) ? doc.theme : 'light',
-  title: doc.title || '', intro: doc.intro || '', logo: pictureURL(doc, 'logo'), cover: pictureURL(doc, 'cover'),
+  title: doc.title || '', intro: doc.intro || '', icon: iconOf(doc), logo: pictureURL(doc, 'logo'), cover: pictureURL(doc, 'cover'),
   attachments: doc.attachments !== false, for: KIND_SETS[doc.for] ? doc.for : 'site', kinds: kindsOf(doc),
   contact: contactOf(doc), rating: ratingOf(doc), fields: fieldsOf(doc)
 })
@@ -98,6 +109,7 @@ function settings(input, doc = {}) {
   const out = {}
   if ('name' in input) out.name = text(input.name, 60) || reject(400, 'invalid_name', 'Give the project a name.')
   if ('label' in input) out.label = text(input.label, 24) || 'Feedback'
+  if ('icon' in input) out.icon = input.icon === 'letter' || ICONS.includes(input.icon) ? input.icon : reject(400, 'invalid_icon', 'Pick one of the icons, or "letter".')
   if ('color' in input) out.color = COLOR.test(input.color || '') ? input.color.toLowerCase() : reject(400, 'invalid_color', 'A colour is like #c2410c.')
   if ('position' in input) out.position = input.position === 'left' ? 'left' : 'right'
   if ('button' in input) out.button = BUTTONS.includes(input.button) ? input.button : reject(400, 'invalid_button', 'The button is "pill", "icon" or "none".')
@@ -115,10 +127,13 @@ function settings(input, doc = {}) {
   return out
 }
 
-// The projects list also says what is waiting: new items and comments to approve.
+// The projects list also says what is waiting (new items and comments to
+// approve) and which sites each is for: its allowed sites, then where its
+// button is live.
 export function listProjects(user) {
   return ds().find('projects', { ownerId: user.id }, { limit: MAX_PROJECTS, orderBy: 'createdAt', order: 'desc' }).map(doc => ({
     ...projectDTO(doc),
+    sites: [...new Set([...doc.origins, ...installs(doc.id).map(entry => entry.origin)])].slice(0, 5),
     waiting: { items: ds().count('items', { project: doc.id, status: 'new' }), comments: ds().count('comments', { project: doc.id, approved: false }) }
   }))
 }
@@ -127,7 +142,7 @@ export function createProject(user, input) {
   if (ds().count('projects', { ownerId: user.id }) >= MAX_PROJECTS) reject(409, 'too_many', `You can have up to ${MAX_PROJECTS} projects.`)
   let id = random(8)
   while (findProject(id) || ds().findOne('projects', { slug: id })) id = random(8)
-  const doc = { label: 'Feedback', color: '#c2410c', position: 'right', button: 'pill', theme: 'light', origins: [], public: false, slug: null, intro: '', attachments: true, for: 'site', ...settings({ name: '', ...input }, { id }) }
+  const doc = { icon: ICONS[Math.floor(Math.random() * ICONS.length)], label: 'Feedback', color: '#c2410c', position: 'right', button: 'pill', theme: 'light', origins: [], public: false, slug: null, intro: '', attachments: true, for: 'site', ...settings({ name: '', ...input }, { id }) }
   ds().insert('projects', { ...doc, id, ownerId: user.id, createdAt: now() })
   return projectDTO(findProject(id))
 }

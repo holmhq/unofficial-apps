@@ -5,6 +5,7 @@ import { show, go } from './app.js'
 import { statsView } from './stats.js'
 import { qrSVG, qrColor, poster } from './qr.js'
 import { ratingLabel } from './compose.js'
+import { ICON_NAMES, icon, mark } from './icons.js'
 
 const OPEN = ['new', 'planned', 'progress']
 const FILTERS = [['open', 'Open'], ['new', 'New'], ['planned', 'Planned'], ['progress', 'In progress'], ['done', 'Done'], ['closed', 'Closed'], ['all', 'All']]
@@ -103,52 +104,133 @@ export async function projectPage(id, view) {
 const answerText = answer => answer.value === true ? answer.label : Array.isArray(answer.value) ? answer.value.join(', ') : answer.value
 const choiceFields = project => project.fields.filter(field => field.type !== 'text' && field.options.length)
 
+// How the inbox sorts, and how far back it looks.
+const SORTS = [
+  { value: 'new', label: 'Newest first' }, { value: 'old', label: 'Oldest first' },
+  { value: 'votes', label: 'Most votes' }, { value: 'active', label: 'Recently changed' },
+  { value: 'high', label: 'Highest rated' }, { value: 'low', label: 'Lowest rated' }]
+const TIMES = [{ value: 'today', label: 'Today' }, { value: '7', label: 'Last 7 days' }, { value: '30', label: 'Last 30 days' }, { value: '90', label: 'Last 90 days' }]
+const PAGE = 50
+const time = value => Date.parse(value) || 0
+const ORDER = {
+  new: (a, b) => time(b.createdAt) - time(a.createdAt),
+  old: (a, b) => time(a.createdAt) - time(b.createdAt),
+  votes: (a, b) => b.votes - a.votes || ORDER.new(a, b),
+  active: (a, b) => time(b.updatedAt) - time(a.updatedAt),
+  high: (a, b) => (b.rating || 0) - (a.rating || 0) || ORDER.new(a, b),
+  low: (a, b) => (a.rating || 6) - (b.rating || 6) || ORDER.new(a, b)
+}
+// Where an item came from: the feedback page, or the site that sent it.
+const sourceOf = item => {
+  if (item.source === 'page') return 'page'
+  try { return new URL(item.page).origin } catch { return 'unknown' }
+}
+const sourceName = source => source === 'page' ? 'Your feedback page' : source === 'unknown' ? 'An unknown page' : source.replace(/^https?:\/\//, '')
+
+// "/" jumps to the inbox's search box.
+document.addEventListener('keydown', event => {
+  if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey || event.target.closest?.('input, textarea, select, [contenteditable]')) return
+  const box = document.querySelector('.filters input[type="search"]')
+  if (box) { event.preventDefault(); box.focus() }
+})
+
+// The inbox: search, sort, filters that each say how many they'd leave, and
+// the list fifty at a time.
 function inbox(project, items) {
   let filter = store.get('filter', 'open')
+  let sort = store.get('sort', 'new')
+  let limit = PAGE
   // Filters beyond status last while you move between tabs.
-  const more = shell.filters?.project === project.id ? shell.filters : (shell.filters = { project: project.id, kind: '', rating: '', photos: false, text: '', answers: {} })
+  const blank = () => ({ project: project.id, kind: '', rating: '', time: '', from: '', photos: false, contact: false, shown: false, waiting: false, text: '', answers: {} })
+  const more = shell.filters?.project === project.id ? shell.filters : (shell.filters = blank())
   const list = el('ul', { class: 'tickets' })
-  const chips = el('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by status' })
+  const chips = el('div', { class: 'chips inbox-chips', role: 'group', 'aria-label': 'Filter by status' })
+  const summary = el('p', { class: 'inbox-summary', role: 'status' })
+  const moreButton = el('button', { type: 'button', class: 'button show-more', onclick: () => { limit += PAGE; paint() } })
   const matchesStatus = (item, key) => key === 'all' || (key === 'open' ? OPEN.includes(item.status) : item.status === key)
+  const since = () => {
+    if (!more.time) return 0
+    if (more.time === 'today') { const day = new Date(); day.setHours(0, 0, 0, 0); return day.getTime() }
+    return Date.now() - Number(more.time) * 86400000
+  }
   const matchesMore = item => {
     if (more.kind && item.kind !== more.kind) return false
     if (more.rating && String(item.rating) !== more.rating) return false
+    if (more.time && time(item.createdAt) < since()) return false
+    if (more.from && sourceOf(item) !== more.from) return false
     if (more.photos && !item.files.some(file => file.kind === 'image')) return false
+    if (more.contact && !item.email && !item.phone) return false
+    if (more.shown && !item.public) return false
+    if (more.waiting && !item.pending) return false
     for (const [id, wanted] of Object.entries(more.answers)) {
       if (!wanted) continue
       const answer = item.answers.find(entry => entry.id === id)
       if (!answer || !(Array.isArray(answer.value) ? answer.value.includes(wanted) : answer.value === wanted)) return false
     }
     if (more.text) {
-      const haystack = [item.title, item.body, item.email, item.phone, ...item.answers.map(answerText)].join(' ').toLowerCase()
-      if (!haystack.includes(more.text.toLowerCase())) return false
+      const words = more.text.toLowerCase().split(/\s+/)
+      const haystack = ['#' + item.number, item.title, item.body, item.email, item.phone, item.page, item.pageTitle, ...item.answers.map(answerText)].join(' ').toLowerCase()
+      if (!words.every(word => haystack.includes(word))) return false
     }
     return true
   }
+  const set = () => ['kind', 'rating', 'time', 'from', 'photos', 'contact', 'shown', 'waiting'].filter(key => more[key]).length + Object.values(more.answers).filter(Boolean).length
+  const active = () => !!more.text || set() > 0
   const waiting = items.reduce((total, item) => total + item.pending, 0)
   const kinds = [...new Set([...project.kinds, ...items.map(item => item.kind)])]
+  const sources = [...new Set(items.map(sourceOf))]
   // Each filter is a dropdown that reads as a chip, dark once it's set.
-  const dropdown = (label, value, options, onchange) => picker({
-    label, value, className: 'filter',
+  const dropdown = (label, key, options, set = value => { more[key] = value }) => picker({
+    label, value: key in more ? more[key] : more.answers[key] || '', className: 'filter',
     options: [{ value: '', label }, ...options],
-    onchange: next => { onchange(next); paint() }
+    onchange: next => { set(next); limit = PAGE; paint() }
   })
+  const toggle = (key, label, icon) => el('button', {
+    type: 'button', class: 'chip-toggle', 'aria-pressed': String(more[key]),
+    onclick: event => { more[key] = !more[key]; event.currentTarget.setAttribute('aria-pressed', String(more[key])); limit = PAGE; paint() }
+  }, icon && glyph(icon, 'glyph line'), label)
   const rated = project.rating.ask !== 'off' || items.some(item => item.rating)
-  const bar = el('div', { class: 'filters' },
-    el('input', { type: 'search', placeholder: 'Search', value: more.text, 'aria-label': 'Search the inbox', oninput: event => { more.text = event.target.value.trim(); paint() } }),
-    dropdown('Any kind', more.kind, kinds.map(kind => ({ value: kind, label: KIND[kind], icon: kind, line: false })), value => { more.kind = value }),
-    rated && dropdown('Any rating', more.rating, [5, 4, 3, 2, 1].map(n => ({ value: String(n), label: `${n} ${n === 1 ? 'star' : 'stars'}`, icon: 'star', line: false })), value => { more.rating = value }),
-    choiceFields(project).map(field => dropdown(field.label, more.answers[field.id] || '', field.options.map(option => ({ value: option, label: option })), value => { more.answers[field.id] = value })),
-    el('button', { type: 'button', class: 'chip-toggle', 'aria-pressed': String(more.photos), onclick: event => { more.photos = !more.photos; event.currentTarget.setAttribute('aria-pressed', String(more.photos)); paint() } }, glyph('camera', 'glyph line'), 'With photos'))
+  const asks = project.contact.email !== 'off' || project.contact.phone !== 'off' || items.some(item => item.email || item.phone)
+  const search = el('input', { type: 'search', placeholder: 'Search words, emails, answers or #12', value: more.text, 'aria-label': 'Search the inbox', 'aria-keyshortcuts': '/',
+    oninput: event => { more.text = event.target.value.trim(); limit = PAGE; paint() } })
+  const sorter = picker({ label: 'Sort', value: sort, className: 'filter sort', options: SORTS.filter(option => rated || !['high', 'low'].includes(option.value)),
+    onchange: value => { sort = value; store.set('sort', value); paint() } })
+  const clear = el('button', { type: 'button', class: 'clear-filters', onclick: () => { shell.filters = null; inbox(project, items) } }, glyph('x', 'glyph line'), 'Clear')
+  // On a phone the filters fold behind a button that counts the ones set.
+  const setCount = el('span', { class: 'count' })
+  const fold = el('button', { type: 'button', class: 'chip-toggle filters-fold', 'aria-expanded': 'false', 'aria-controls': 'inbox-filters',
+    onclick: () => { const open = !bar.classList.toggle('folded'); fold.setAttribute('aria-expanded', String(open)) } }, glyph('sliders', 'glyph line'), 'Filters', setCount)
+  const bar = el('div', { class: 'filters folded' },
+    el('div', { class: 'filters-top' }, el('span', { class: 'search' }, glyph('search', 'glyph line'), search, el('kbd', {}, '/')), fold, sorter),
+    el('div', { class: 'filters-more', id: 'inbox-filters' },
+      dropdown('Any time', 'time', TIMES),
+      dropdown('Any kind', 'kind', kinds.map(kind => ({ value: kind, label: KIND[kind], icon: kind, line: false }))),
+      rated && dropdown('Any rating', 'rating', [5, 4, 3, 2, 1].map(n => ({ value: String(n), label: `${n} ${n === 1 ? 'star' : 'stars'}`, icon: 'star', line: false }))),
+      sources.length > 1 && dropdown('From anywhere', 'from', sources.map(source => ({ value: source, label: sourceName(source), icon: source === 'page' ? 'link' : 'globe' }))),
+      choiceFields(project).map(field => dropdown(field.label, field.id, field.options.map(option => ({ value: option, label: option })), value => { more.answers[field.id] = value })),
+      toggle('photos', 'With photos', 'camera'),
+      asks && toggle('contact', 'Can reply', 'reply'),
+      (project.public || items.some(item => item.public)) && toggle('shown', 'On your page', 'out'),
+      waiting > 0 && toggle('waiting', 'Comments to approve', null),
+      clear))
 
   const paint = () => {
     const pool = items.filter(matchesMore)
+    clear.hidden = !active()
+    setCount.textContent = set() || ''
     chips.replaceChildren(...FILTERS.map(([key, label]) => el('button', {
       type: 'button', 'aria-pressed': String(key === filter),
-      onclick: () => { filter = key; store.set('filter', key); paint() }
+      onclick: () => { filter = key; store.set('filter', key); limit = PAGE; paint() }
     }, label, el('span', { class: 'count' }, pool.filter(item => matchesStatus(item, key)).length))))
-    const shown = pool.filter(item => matchesStatus(item, filter))
-    list.replaceChildren(...(shown.length ? shown.map(item => el('li', {},
+    const shown = pool.filter(item => matchesStatus(item, filter)).sort(ORDER[sort] || ORDER.new)
+    const page = shown.slice(0, limit)
+    summary.replaceChildren(...[
+      el('strong', {}, shown.length), ` ${shown.length === 1 ? 'item' : 'items'}`,
+      shown.length < items.length && el('span', { class: 'muted' }, ` of ${items.length}`),
+      items.length >= 1000 && el('span', { class: 'muted' }, ' · the newest 1,000 are here')].filter(Boolean))
+    moreButton.hidden = shown.length <= limit
+    moreButton.textContent = `Show ${Math.min(PAGE, shown.length - limit)} more · ${shown.length - limit} left`
+    list.replaceChildren(...(page.length ? page.map(item => el('li', {},
       el('a', { class: 'ticket', href: `/projects/${project.id}/items/${item.number}`, 'data-link': true },
         stub(item),
         el('span', { class: 'ticket-body' },
@@ -162,13 +244,13 @@ function inbox(project, items) {
           item.pending > 0 && el('span', { class: 'ticket-waiting' }, glyph('comment'), `${item.pending} ${item.pending === 1 ? 'comment' : 'comments'} to approve`)),
         el('span', { class: `pill status-${item.status}` }, STATUS[item.status])))) :
       [el('li', { class: 'empty' }, items.length
-        ? 'Nothing here. Try another filter.'
+        ? el('span', {}, 'Nothing matches. ', active() ? el('button', { type: 'button', class: 'link-button', onclick: () => clear.click() }, 'Clear the filters') : 'Try another status', '.')
         : el('span', {}, 'No feedback yet. ', el('a', { href: `/projects/${project.id}/setup`, 'data-link': true }, 'Add the snippet to your site'),
           ' or ', el('a', { href: `/projects/${project.id}/share`, 'data-link': true }, 'share your feedback page'), ', and it will arrive here.'))]))
   }
   paint()
   put(waiting > 0 && el('p', { class: 'notice' }, glyph('comment'), `${waiting} ${waiting === 1 ? 'comment is' : 'comments are'} waiting for your approval.`),
-    items.length > 0 && bar, chips, list)
+    items.length > 0 && bar, chips, items.length > 0 && summary, list, moreButton)
 }
 
 function attachments(item) {
@@ -374,13 +456,15 @@ function saveBar(saved) {
 // and the page, the button, and the panel's theme. The logo and cover upload
 // as they're picked; the rest waits for Save.
 function design(project, saved = '') {
-  const draft = { name: project.name, color: project.color, title: project.title, intro: project.intro, label: project.label, position: project.position, button: project.button, theme: project.theme }
+  const draft = { name: project.name, color: project.color, icon: project.icon, title: project.title, intro: project.intro, label: project.label, position: project.position, button: project.button, theme: project.theme }
   let base = project
   const pane = previewPane(project, () => ({ ...base, ...draft }))
   const bar = saveBar(saved)
   const changed = () => { bar.changed(); pane.send() }
   const input = (key, attrs, fallback = '') => el('input', { ...attrs, value: draft[key], oninput: event => { draft[key] = event.target.value || fallback; changed() } })
 
+  const picked = pictures(project, next => { base = { ...base, logo: next.logo, cover: next.cover }; pane.send() }, () => draft.icon)
+  const icons = iconPicker(draft.icon, value => { draft.icon = value; picked.refresh(); changed() })
   const custom = el('input', { type: 'color', value: draft.color, 'aria-label': 'Any colour', oninput: event => { draft.color = event.target.value; paintSwatches(); changed() } })
   const customSwatch = el('label', { class: 'swatch custom', title: 'Any colour' }, custom)
   const swatches = el('div', { class: 'swatches', role: 'group', 'aria-label': 'Colour' },
@@ -389,12 +473,15 @@ function design(project, saved = '') {
       onclick: () => { draft.color = color; paintSwatches(); changed() }
     })), customSwatch)
   const paintSwatches = () => {
+    icons.style.setProperty('--pick', draft.color)
+    icons.style.setProperty('--pick-ink', inkOn(draft.color))
     swatches.querySelectorAll('button.swatch').forEach(button => button.setAttribute('aria-pressed', String(draft.color === button.dataset.color)))
     custom.value = draft.color
     customSwatch.classList.toggle('chosen', !COLORS.includes(draft.color))
     customSwatch.style.setProperty('--color', draft.color)
   }
   paintSwatches()
+
 
   const place = project.kinds.includes('praise')
   const intro = el('textarea', { rows: '3', maxlength: '280', placeholder: place
@@ -419,7 +506,9 @@ function design(project, saved = '') {
     group('Brand',
       el('label', { class: 'field' }, el('span', {}, 'Name'), input('name', { maxlength: '60', required: true })),
       el('div', { class: 'field' }, el('span', {}, 'Colour'), swatches),
-      pictures(project, next => { base = { ...base, logo: next.logo, cover: next.cover }; pane.send() })),
+      el('div', { class: 'field' }, el('span', {}, 'Icon'), icons,
+        el('small', {}, 'On the panel, your page and your projects, wherever there’s no logo.')),
+      picked),
     group('Words',
       el('label', { class: 'field' }, el('span', {}, 'Title'), input('title', { maxlength: '80', placeholder: `Tell ${project.name} what you think` })),
       el('label', { class: 'field' }, el('span', {}, 'Description'), intro),
@@ -560,7 +649,7 @@ async function upload(path, file) {
 
 // The logo and cover, each with a thumbnail, a picker and a way back to the
 // default. They upload as soon as they're picked; onChange hears the result.
-function pictures(project, onChange) {
+function pictures(project, onChange, iconOf = () => project.icon) {
   const status = el('p', { class: 'muted picture-status', role: 'status' })
   const block = el('div', { class: 'pictures-pick' })
   const tint = () => `--accent: ${project.color}; --accent-ink: ${inkOn(project.color)}; --project-soft: ${lighten(project.color, 0.55)}`
@@ -573,9 +662,7 @@ function pictures(project, onChange) {
       try { done((await upload(`/api/projects/${project.id}/${which}`, file)).project, `The ${which} is up.`) } catch (problem) { status.textContent = problem.message }
     } })
     const thumb = which === 'logo'
-      ? project.logo
-        ? el('span', { class: 'board-mark has-logo' }, el('img', { src: project.logo, alt: '' }))
-        : el('span', { class: 'board-mark', style: tint(), 'aria-hidden': 'true' }, project.name.trim().charAt(0).toUpperCase() || '?')
+      ? mark({ ...project, icon: iconOf() }, 'board-mark', 'has-logo', { style: project.logo ? null : tint() })
       : el('span', { class: project.cover ? 'board-cover' : 'board-cover pattern', style: project.cover ? `background-image: url("${project.cover}")` : tint() })
     return el('div', { class: `picture ${which}-pick` },
       thumb,
@@ -594,7 +681,21 @@ function pictures(project, onChange) {
     pick('cover', 'Cover', 'A wide picture, about 1800 × 640. Without one, a pattern in your colour.'),
     status)
   paint()
+  block.refresh = paint
   return block
+}
+
+// The project's icon: one of the vendored set, or its first letter.
+function iconPicker(value, onchange) {
+  const names = ['letter', ...ICON_NAMES]
+  const title = name => name === 'letter' ? 'First letter' : name.replace(/-\d$/, '').replace(/^face-/, '').replace(/-/g, ' ')
+  const grid = el('div', { class: 'icon-grid', role: 'group', 'aria-label': 'Icon' })
+  const paint = () => grid.replaceChildren(...names.map(name => el('button', {
+    type: 'button', 'aria-pressed': String(name === value), 'aria-label': title(name), title: title(name),
+    onclick: () => { if (name !== value) { value = name; paint(); onchange(name) } }
+  }, name === 'letter' ? el('span', { class: 'letter' }, 'Aa') : icon(name))))
+  paint()
+  return grid
 }
 
 // The snippet for a site. A Holm site runs only its own scripts and can't

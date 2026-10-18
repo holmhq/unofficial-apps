@@ -1,7 +1,7 @@
 // Feedback items: sent by anyone through a project's widget, triaged by the
 // project's owner, and shown on the public board only when the owner says so.
 import { ds, kv, now, iso, text, reject, random, kindOf } from './lib.js'
-import { findProject, findBoard, ownProject, kindsOf } from './projects.js'
+import { findProject, findBoard, ownProject, kindsOf, iconOf } from './projects.js'
 import { uploads, store, remove, fileDTO, serve } from './files.js'
 import { count } from './stats.js'
 import { pictureURL } from './page.js'
@@ -11,6 +11,8 @@ import { contactOf, fieldsOf, ratingOf, answersFor, contactFor, ratingFor } from
 export const KINDS = ['issue', 'idea', 'question', 'praise', 'problem']
 export const STATUSES = ['new', 'planned', 'progress', 'done', 'closed']
 const HOURLY_LIMIT = 120
+// The inbox reads the newest items in one go and filters them in the browser.
+const INBOX_LIMIT = 1000
 
 function itemDTO(doc) {
   return {
@@ -88,7 +90,7 @@ export function listItems(user, projectId, status) {
   const query = { project: project.id }
   if (status === 'open') query.status = { $in: ['new', 'planned', 'progress'] }
   else if (STATUSES.includes(status)) query.status = status
-  return ds().find('items', query, { limit: 500, orderBy: 'createdAt', order: 'desc' }).map(itemDTO)
+  return ds().find('items', query, { limit: INBOX_LIMIT, orderBy: 'createdAt', order: 'desc' }).map(itemDTO)
 }
 
 function ownItem(user, id) {
@@ -174,7 +176,7 @@ export function board(key, query = {}) {
   return {
     project: {
       id: project.id, name: project.name, color: project.color, slug: project.slug || null, title: project.title || '', intro: project.intro || '',
-      logo: pictureURL(project, 'logo'), cover: pictureURL(project, 'cover'), attachments: project.attachments !== false, kinds: kindsOf(project),
+      icon: iconOf(project), logo: pictureURL(project, 'logo'), cover: pictureURL(project, 'cover'), attachments: project.attachments !== false, kinds: kindsOf(project),
       contact: contactOf(project), rating: ratingOf(project), fields: fieldsOf(project)
     },
     items: items.map(boardDTO)

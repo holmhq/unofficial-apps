@@ -3,6 +3,7 @@
 // tall the panel should be and when to close it.
 import { el, glyph, inkOn, lighten, KIND_SETS } from './lib.js'
 import { composer, sentMark, loadStars } from './compose.js'
+import { mark as markOf } from './icons.js'
 
 const params = new URLSearchParams(location.search)
 const projectId = params.get('p') || ''
@@ -15,7 +16,7 @@ const DEFAULTS = {
   name: '', title: '', intro: '', color: '#c2410c', theme: 'light', logo: null, cover: null, attachments: true,
   kinds: KIND_SETS.site, fields: [], contact: { email: 'optional', phone: 'off' }, rating: { ask: 'off', label: '' }
 }
-const DEMO = { ...DEFAULTS, name: 'Acme', rating: { ask: 'optional', label: '' } }
+const DEMO = { ...DEFAULTS, name: 'Acme', icon: 'rocket', rating: { ask: 'optional', label: '' } }
 let config = demo ? DEMO : DEFAULTS
 // Unsaved settings from the Design and Form tabs win over the saved ones.
 let override = {}
@@ -42,10 +43,8 @@ const introOf = () => config.intro || (place()
   ? 'Loved something? Something not right? Tell us, with a photo if you like. It goes straight to the team.'
   : 'Report an issue, suggest an idea or ask a question. It goes straight to the team.')
 
-// The project's logo, or its initial on its colour.
-const mark = () => config.logo
-  ? el('span', { class: 'mark logo' }, el('img', { src: config.logo, alt: '' }))
-  : el('span', { class: 'mark', 'aria-hidden': 'true' }, (config.name || 'F').trim().charAt(0).toUpperCase())
+// The project's logo, or its icon on its colour.
+const mark = () => markOf({ ...config, name: config.name || 'F' }, 'mark', 'logo')
 
 function header(words = true) {
   return el('header', { class: config.cover ? 'head' : 'head plain' },

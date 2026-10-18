@@ -1,8 +1,8 @@
 {
   "subtitle": "Feedback for websites, shops and events",
   "category": "Developer tools",
-  "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project. Filter by status, kind, rating or any answer, keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-  "whatsNew": "A button people want on their site: your cover, logo, title and words on the form, smooth transitions, light or dark, and an optional star rating with faces. A new Design tab with a live preview, a smarter Set up that shows where the button is live, designed dropdowns, \"Issue\" instead of \"Bug\", and a changelog.",
+  "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
+  "whatsNew": "Room for hundreds: your projects in a calm panel with each one's site and icon (pick from 48, or keep the random one), and an inbox that sorts by newest, votes or rating and filters by when, where and who can get a reply. Fifty at a time, with a count, a Clear, and / to search.",
   "screenshots": [
     {
       "file": "widget.webp",
@@ -14,7 +14,7 @@
     },
     {
       "file": "design.webp",
-      "alt": "The Design tab: the panel's theme and a live preview of the button and form on a stand-in page"
+      "alt": "The Design tab: the project's colour and icon, picked from 48, with the logo beside them"
     },
     {
       "file": "form.webp",
@@ -25,8 +25,12 @@
       "alt": "Set up: a one-line snippet with its copy button, and the sites where the button is live"
     },
     {
+      "file": "projects.webp",
+      "alt": "Your projects in one panel, each with its icon or logo, its site and what is new"
+    },
+    {
       "file": "inbox.webp",
-      "alt": "A restaurant's inbox with filters for kind, rating and its own questions, each item a ticket"
+      "alt": "A coffee shop's inbox with 340 items: search, sort, and filters for time, kind, rating, site and its own question"
     },
     {
       "file": "item.webp",

@@ -5,6 +5,7 @@
 import { el, api, glyph, store, ago, inkOn, lighten, STATUS, KIND, KIND_SETS } from './lib.js'
 import { show } from './app.js'
 import { composer, sentMark } from './compose.js'
+import { mark as markOf } from './icons.js'
 
 const SECTIONS = ['progress', 'planned', 'new', 'done']
 const TITLES = { progress: 'In progress', planned: 'Planned', new: 'Under review', done: 'Done' }
@@ -65,10 +66,8 @@ export async function boardPage(key, number) {
   return item ? itemView(data, item, base) : listView(data, base)
 }
 
-// The project's logo, or its initial on its colour.
-const mark = project => project.logo
-  ? el('span', { class: 'board-mark has-logo' }, el('img', { src: project.logo, alt: '' }))
-  : el('span', { class: 'board-mark', 'aria-hidden': 'true' }, project.name.trim().charAt(0).toUpperCase() || '?')
+// The project's logo, or its icon on its colour.
+const mark = project => markOf(project, 'board-mark')
 
 // The page's top: its cover (or a pattern in its colour), logo and name. An
 // item's page has the name row only.

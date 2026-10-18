@@ -104,6 +104,18 @@ tile Holm's sign-in page shows. Credit its creator in the README.
 - Say "Issue" instead of "Bug".
 ```
 
+## 9. Room for hundreds
+
+```text
+- Use the app's own feedback button in the app itself.
+- Make the projects page minimal: it never scrolls, the footer stays at the
+  bottom, and the projects sit in a panel, each with the website it's on.
+  No underline on hover.
+- Give each project an icon, an open-source one like Lucide's, at random,
+  and let me pick another.
+- Assume hundreds of items arrive: give the inbox sane filters.
+```
+
 ## The original requests
 
 **Iteration 1** came from this message, typed as-is to a coding agent while
@@ -193,6 +205,19 @@ maintained by us".
 > - all the drop downs is too lame, design it well
 > - instead of Bug, say issue? that may be more generic?
 
+**Iteration 10**, with a line about another site's feedback project removed:
+
+> Lets do some feedback app refinements:
+> - Can we use a feedback widget in the feedback app itself
+> - then in main page, can we do some minimal designs:
+> - make the page never scroll
+> - the footer stays put at the bottom
+> - the projects appear in a panel
+> - the projects should show the website it links in, if available
+> - avoid underline on hover
+> - set some random icon (say lucide or so) for a project / or enable them to set an icon
+> - assume 100s of feedback happens, provide sane filters
+
 Everything in the prompts beyond what's quoted came from the agent: the
 button in a shadow root and the form in an iframe, the carbon-copy tickets,
 the public board and votes, the spam guards, the shape of the API, the
@@ -200,7 +225,10 @@ icon's credit, in iteration 4 the page's layout, the file limits, the poster
 and what the stats count, in iteration 5 changing an item's status in
 place too, in iteration 7 the kinds for places, the scan tags and the
 default cover, in iteration 8 the question types' details and the
-inbox's filters, and in iteration 9 the Design tab and its preview running
+inbox's filters, in iteration 9 the Design tab and its preview running
 the real button, the panel's theme and button styles, a snippet that reads
 the look as the page loads, "where it's live", and the rating's place in
-the inbox and Stats.
+the inbox and Stats, and in iteration 10 a Feedback link in the footer rather
+than a floating button, the sites shown from allowed sites and where the
+button is live, the icon on the form and the page too, the sort orders and
+filters, fifty items at a time, and the filters folding away on a phone.
