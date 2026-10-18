@@ -40,7 +40,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llm.txt>.
 
 | App | Live | What it shows |
 | --- | --- | --- |
-| [`catalog`](catalog/) | [unofficial.zyt.app](https://unofficial.zyt.app) | This repository's front page: every app, and each way to install it |
+| [`catalog`](catalog/) | [unofficial.zyt.app](https://unofficial.zyt.app) | An app store for this repository: a page per app, and Get to install |
 | [`pastebin`](pastebin/) | [pastebin.zyt.app](https://pastebin.zyt.app) | Expiring, one-time and revocable links; media; API keys and a CLI |
 
 ## Layout of an app
@@ -68,23 +68,34 @@ A node owner can trust this whole repository with one command:
 holm app repo add unofficial https://github.com/holmhq/unofficial-apps
 ```
 
-Every app is released and pinned the same way, so it can be installed one by
-one. [unofficial.zyt.app](https://unofficial.zyt.app) shows each way to do it.
+Trusting the repository is the security decision: anyone who can change its
+files can change anything else in it too. Every app is then released the same
+way, so it can be installed one by one, and
+[unofficial.zyt.app](https://unofficial.zyt.app) is its store.
 
 - **Release tags:** each version is tagged after its app, like
   `pastebin/v0.1.0`, so apps in one repository version independently.
 - **Fingerprint:** `h1` is a SHA-256 over every file the app deploys,
-  computed like Go's `dirhash.Hash1` (the `h1:` lines in `go.sum`). An
-  install that finds different files under the same tag refuses them.
+  computed like Go's `dirhash.Hash1` (the `h1:` lines in `go.sum`). It isn't
+  a signature. A node records it at install, so a tag that is later moved to
+  different files is noticed, and CI uses it to keep released versions fixed.
+  The store doesn't show it.
 - **Index:** [`index.json`](index.json) lists every app folder with its
-  version, tag, fingerprint and display details. `holm app install
+  version, tag, fingerprint and store listing. `holm app install
   unofficial/<app>@v<version>` will read it; until then, clone the tag and
   deploy the folder.
+- **Store listing:** an app's icon is `holm.symbol.svg`, one black path in a
+  24×24 box that the store paints on the app's `themeColor`. Its `listing/`
+  folder holds `listing.json` (subtitle, category, description, what's new,
+  screenshots) and the screenshots, and stays out of the deploy with
+  `"publish": {"exclude": ["/listing/"]}` in `manifest.json`. Listing changes
+  don't need a version bump.
 
 To release a change to an app:
 
 1. Bump `version` in its `manifest.json`. Any change to a deployed file
-   needs one, including its README and PROMPT.
+   needs one, including its README and PROMPT. Say what changed in
+   `whatsNew` in its `listing/listing.json`.
 2. Run `node scripts/index.mjs` and commit `index.json` with the change.
 3. Merge to `main`. CI runs `node scripts/index.mjs --check`, which fails if
    the index is stale or a released version's files changed, then tags the

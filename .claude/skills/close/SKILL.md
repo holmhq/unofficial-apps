@@ -31,7 +31,9 @@ changed and any new ones. If nothing changed, say so and stop.
    `README.md` in its folder, plus a row in the root `README.md` table. If it
    makes a better first demo, mention it in `.claude/skills/open/SKILL.md`.
 4. **Version and index:** bump `version` in the app's `manifest.json` (patch
-   for fixes and docs, minor for features), then run `node scripts/index.mjs`
+   for fixes and docs, minor for features) and update `whatsNew` in its
+   `listing/listing.json`. If the app looks different, retake its
+   screenshots with sample data. Then run `node scripts/index.mjs`
    and `node scripts/index.mjs --check`. The check fails if a released
    version's files changed. CI tags the new version once it reaches `main`.
 5. **Checks:** run whatever the app ships with, such as `scripts/smoke.sh`.

@@ -34,6 +34,9 @@ or opens a pull request.
   deploys means a version bump, then `node scripts/index.mjs` to refresh
   `index.json` at the root. CI checks it and tags `<app>/v<version>` on
   `main`. A released tag's files never change.
+- An app's store listing is `holm.symbol.svg` (its icon) and a `listing/`
+  folder with `listing.json` and screenshots, excluded from the deploy. Take
+  screenshots with sample data, never real users' content.
 
 ## Never commit
 

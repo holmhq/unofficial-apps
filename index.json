@@ -5,26 +5,92 @@
     {
       "name": "catalog",
       "path": "catalog",
-      "version": "0.1.0",
-      "tag": "catalog/v0.1.0",
-      "h1": "h1:egKbE26Cpc+rZavGRN50kOTZho4DRYGTSTnwk7M+1C8=",
-      "files": 13,
+      "version": "0.2.0",
+      "tag": "catalog/v0.2.0",
+      "h1": "h1:K8tE5LljUNybRNF0ZJtXx2MAS9j//z+WgiCxhxZNNII=",
+      "files": 16,
+      "size": 158513,
       "title": "catalog",
-      "description": "This page: every app in the repository, with each way to install it on your own Holm node.",
+      "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
       "themeColor": "#0e7c66",
-      "demo": "https://unofficial.zyt.app"
+      "symbol": "M 2.5 0 L 8 0 A 2.5 2.5 0 0 1 10.5 2.5 L 10.5 8 A 2.5 2.5 0 0 1 8 10.5 L 2.5 10.5 A 2.5 2.5 0 0 1 0 8 L 0 2.5 A 2.5 2.5 0 0 1 2.5 0 Z M 16 0 L 21.5 0 A 2.5 2.5 0 0 1 24 2.5 L 24 8 A 2.5 2.5 0 0 1 21.5 10.5 L 16 10.5 A 2.5 2.5 0 0 1 13.5 8 L 13.5 2.5 A 2.5 2.5 0 0 1 16 0 Z M 2.5 13.5 L 8 13.5 A 2.5 2.5 0 0 1 10.5 16 L 10.5 21.5 A 2.5 2.5 0 0 1 8 24 L 2.5 24 A 2.5 2.5 0 0 1 0 21.5 L 0 16 A 2.5 2.5 0 0 1 2.5 13.5 Z M 13.5 18.75 A 5.25 5.25 0 1 1 24 18.75 A 5.25 5.25 0 1 1 13.5 18.75 Z",
+      "demo": "https://unofficial.zyt.app",
+      "listing": {
+        "subtitle": "A store for app repositories",
+        "category": "Developer tools",
+        "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, a description and the prompt that built it, and installs it on your node from a Get button.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
+        "whatsNew": "Now a store: a front page of every app, a page for each one, and a Get button that opens an install sheet written for your node.",
+        "featured": false,
+        "screenshots": [
+          {
+            "path": "listing/store.webp",
+            "alt": "The front page: a featured app and the list of all apps, each with a Get button",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/app.webp",
+            "alt": "An app's page in dark mode: icon, subtitle, facts and screenshots",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/install.webp",
+            "alt": "The install sheet, with the terminal commands written for your node",
+            "width": 780,
+            "height": 1688
+          }
+        ]
+      },
+      "prompt": "Make this repository installable app by app, and build a catalog for it as a\nHolm app. Use https://holmhq.com/llm.txt as your only Holm reference.\n\n- Each top-level folder with a manifest.json is an app. Give each a version.\n- Write scripts/index.mjs (Node, no dependencies). It writes index.json at\n  the root: one entry per app with its name, path, version, a release tag\n  named <app>/v<version>, and h1, a fingerprint of the files Holm would\n  deploy, computed like Go's dirhash.Hash1 (as in go.sum). With --check it\n  fails if index.json is out of date or an app changed after its version was\n  tagged; with --tag it tags new versions.\n- Run the check in CI, and tag new versions on main.\n- In catalog/, build a page that reads index.json from GitHub on the server\n  and shows each app with every way to install it on my node: clone and\n  deploy, `holm app install` (not in Holm yet), and a prompt for a coding\n  agent. Trusting the repository is one command, `holm app repo add`. Let me\n  enter my peer and domain once, so every command fits my node.\n- Deploy it to unofficial.<my-domain>."
     },
     {
       "name": "pastebin",
       "path": "pastebin",
-      "version": "0.1.0",
-      "tag": "pastebin/v0.1.0",
-      "h1": "h1:ykKMia0wrubDfFxpoab5t/z3zLs5wRr4b/AG5jJ66q4=",
-      "files": 38,
+      "version": "0.1.1",
+      "tag": "pastebin/v0.1.1",
+      "h1": "h1:ftnYG6Gb8u4QRIrKcmXr6n7CvvdjsTMmHkXKe8y6wTU=",
+      "files": 39,
+      "size": 581342,
       "title": "pastebin",
       "description": "Private-first text, code and media pastes with expiring links and burn-after-read sharing.",
-      "themeColor": "#7c5cff",
-      "demo": "https://pastebin.zyt.app"
+      "themeColor": "#173a72",
+      "symbol": "M 3 0 L 15 0 L 21 6 L 21 24 L 3 24 Z M 13.5 1.5 L 13.5 7.5 L 19.5 7.5 Z M 7 12 L 7 14.5 L 17 14.5 L 17 12 Z M 7 17 L 7 19.5 L 14 19.5 L 14 17 Z",
+      "demo": "https://pastebin.zyt.app",
+      "listing": {
+        "subtitle": "Links that expire or burn",
+        "category": "Utilities",
+        "description": "Paste text, code or files and share them behind a link that expires, opens only once, or can be revoked at any time.\n\nCode is highlighted as you type. Markdown renders like GitHub's, and images, video and audio play in place. Your name stays off the paste unless you choose to show it.\n\nAPI keys and a small command-line tool let scripts and agents file pastes for you.",
+        "whatsNew": "A new app icon, and the app's colour now matches its Prussian-blue design.",
+        "featured": true,
+        "screenshots": [
+          {
+            "path": "listing/compose.webp",
+            "alt": "Writing a paste: highlighted code, and a create button that reads as a sentence",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/markdown.webp",
+            "alt": "A Markdown paste rendered with headings, emphasis and lists",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/code.webp",
+            "alt": "A TypeScript paste in dark mode, with line numbers and a fuse showing when it expires",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/once.webp",
+            "alt": "A one-time paste, sealed until the reader chooses to open it",
+            "width": 780,
+            "height": 1688
+          }
+        ]
+      },
+      "prompt": "Build a pastebin as a Holm app. Use https://holmhq.com/llm.txt as your only\nreference for Holm, and read its app-building sections before you write code.\n\n- Make it really aesthetic, with light, dark and system themes.\n- The UX should be excellent on mobile and desktop.\n- Highlight syntax.\n- A paste can hold text and media: images, video, audio or any file.\n- Every link can expire, open only once, or be revoked by me.\n- Hide my name on shared links by default; let me choose to show my name and avatar.\n- After I sign in, let me create API keys, so scripts and agents can create\n  pastes over HTTP. Include a small CLI.\n- Deploy it to pastebin.<my-domain>."
     }
   ]
 }
