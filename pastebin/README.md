@@ -62,6 +62,8 @@ api/keys.js             API keys and /api/me
 api/lib.js              validation, expiry state, purge, safe file responses
 cli/pb                  POSIX sh CLI (curl + jq)
 scripts/smoke.sh        runtime smoke through `holm test run`
+holm.symbol.svg         app icon: one black path that stores paint on the theme colour
+listing/                store listing and screenshots (not deployed)
 ```
 
 The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:

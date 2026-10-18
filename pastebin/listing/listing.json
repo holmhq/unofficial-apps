@@ -1,0 +1,13 @@
+{
+  "subtitle": "Links that expire or burn",
+  "category": "Utilities",
+  "featured": true,
+  "description": "Paste text, code or files and share them behind a link that expires, opens only once, or can be revoked at any time.\n\nCode is highlighted as you type. Markdown renders like GitHub's, and images, video and audio play in place. Your name stays off the paste unless you choose to show it.\n\nAPI keys and a small command-line tool let scripts and agents file pastes for you.",
+  "whatsNew": "A new app icon, and the app's colour now matches its Prussian-blue design.",
+  "screenshots": [
+    { "file": "compose.webp", "alt": "Writing a paste: highlighted code, and a create button that reads as a sentence" },
+    { "file": "markdown.webp", "alt": "A Markdown paste rendered with headings, emphasis and lists" },
+    { "file": "code.webp", "alt": "A TypeScript paste in dark mode, with line numbers and a fuse showing when it expires" },
+    { "file": "once.webp", "alt": "A one-time paste, sealed until the reader chooses to open it" }
+  ]
+}

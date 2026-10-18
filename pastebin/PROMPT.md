@@ -48,6 +48,18 @@ Make the composer an app screen: the page never scrolls, only the editor
 panel does, however much is pasted.
 ```
 
+## 4. Give it a store listing
+
+```text
+Give the app a store listing for this repository's app store.
+
+- An icon as holm.symbol.svg: one black path, no strokes, in a 0 0 24 24
+  viewBox, fitted tight and centred. Set themeColor to the app's own colour.
+- A listing/ folder, kept out of the deploy, with listing.json (subtitle,
+  category, description, what's new) and phone screenshots of the app with
+  sample data, in light and dark.
+```
+
 ## The original requests
 
 The app in this folder came from these messages, typed as-is to a coding
@@ -100,6 +112,12 @@ agent.
 > prose system or so, any chance we have such esqusite rendering?
 > - also, i noticed that when I paste massive files the page scrolls
 > - i wish the page to never scroll but the panel to only scroll
+
+**Iteration 4** came from a request about the repository's store, not this
+app; the listing was the agent's part of it:
+
+> i want something that resembles Apple AppStore
+> - so that each app gets its own page
 
 The prompts above are those messages with the machine-specific parts removed
 and one line added: use only holmhq.com. Everything else came from the agent:
