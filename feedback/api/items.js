@@ -5,19 +5,20 @@ import { findProject, findBoard, ownProject, kindsOf } from './projects.js'
 import { uploads, store, remove, fileDTO, serve } from './files.js'
 import { count } from './stats.js'
 import { pictureURL } from './page.js'
+import { contactOf, fieldsOf, answersFor, contactFor } from './form.js'
 
 // Every kind there is; each project offers one set of three (KIND_SETS).
 export const KINDS = ['bug', 'idea', 'question', 'praise', 'problem']
 export const STATUSES = ['new', 'planned', 'progress', 'done', 'closed']
 const HOURLY_LIMIT = 120
-const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/
 
 function itemDTO(doc) {
   return {
     id: doc.id, number: doc.number, kind: doc.kind, status: doc.status, public: !!doc.public,
-    title: doc.title, body: doc.body, email: doc.email || '', page: doc.page || '', pageTitle: doc.pageTitle || '',
+    title: doc.title, body: doc.body, email: doc.email || '', phone: doc.phone || '', answers: doc.answers || [],
+    page: doc.page || '', pageTitle: doc.pageTitle || '',
     browser: doc.browser || '', viewport: doc.viewport || '', votes: doc.votes || 0, source: doc.source || 'widget',
-    files: (doc.files || []).map(fileDTO), comments: doc.comments || 0, pending: doc.pending || 0,
+    files: (doc.files || []).map(fileDTO), comments: doc.comments || 0, pending: doc.pending || 0, notes: doc.notes || 0,
     createdAt: iso(doc.createdAt), updatedAt: iso(doc.updatedAt)
   }
 }
@@ -46,8 +47,8 @@ export function submit(project, input, request, source = 'widget') {
   const hour = new Date(now()).toISOString().slice(0, 13)
   if (kv().increment(`rate:${project.id}:${hour}`, 1) > HOURLY_LIMIT) reject(429, 'busy', 'Too much feedback this hour. Try again later.')
   const words = text(input.body, 4000, true)
-  const email = text(input.email, 200)
-  if (email && !EMAIL.test(email)) reject(400, 'invalid_email', 'That email address doesn’t look right.')
+  const answers = answersFor(project, input)
+  const { email, phone } = contactFor(project, input)
   const checked = uploads(request, project)
   // A photo on its own is enough, for someone at a table in a hurry.
   if (words.length < 3 && !checked.length) reject(400, 'invalid_body', 'Write a few words or add a photo.')
@@ -64,7 +65,7 @@ export function submit(project, input, request, source = 'widget') {
     kind: kinds.includes(input.kind) ? input.kind : 'idea',
     status: 'new', public: false, votes: 0, comments: 0, pending: 0, source,
     title: words.split('\n')[0].slice(0, 90) || untitled,
-    body: words, email, files,
+    body: words, email, phone, answers, files,
     page: from, pageTitle: source === 'page' ? '' : text(input.title, 200),
     browser: text(Array.isArray(agent) ? agent[0] : agent, 300),
     viewport: /^\d{2,5}x\d{2,5}$/.test(input.viewport || '') ? input.viewport : '',
@@ -103,9 +104,20 @@ export function updateItem(user, id, input) {
   if ('kind' in input) changes.kind = KINDS.includes(input.kind) ? input.kind : reject(400, 'invalid_kind', 'Unknown kind.')
   if ('public' in input) changes.public = input.public === true
   if ('title' in input) changes.title = text(input.title, 90) || doc.title
-  ds().update('items', { id: doc.id }, { $set: changes })
+  // The item's thread keeps who changed what, beside the notes.
+  const said = []
+  if (changes.status && changes.status !== doc.status) said.push(`marked it ${STATUS_NAMES[changes.status]}`)
+  if (changes.kind && changes.kind !== doc.kind) said.push(`made it ${KIND_NAMES[changes.kind]}`)
+  if ('public' in changes && changes.public !== !!doc.public) said.push(changes.public ? 'showed it on the public page' : 'took it off the public page')
+  ds().transaction(tx => {
+    tx.update('items', { id: doc.id }, { $set: changes })
+    if (said.length) tx.insert('notes', { id: random(24), item: doc.id, project: doc.project, type: 'event', name: user.name, avatar: user.avatar, body: said.join(' and '), createdAt: now() })
+  })
   return itemDTO(ds().findOne('items', { id: doc.id }))
 }
+
+const STATUS_NAMES = { new: 'new', planned: 'planned', progress: 'in progress', done: 'done', closed: 'closed' }
+const KIND_NAMES = { bug: 'a bug', idea: 'an idea', question: 'a question', praise: 'praise', problem: 'a problem' }
 
 export function deleteItem(user, id) {
   const doc = ownItem(user, id)
@@ -126,14 +138,17 @@ export function itemFile(user, id, index, query = {}) {
 export function listNotes(user, itemId) {
   const doc = ownItem(user, itemId)
   return ds().find('notes', { item: doc.id }, { limit: 200, orderBy: 'createdAt', order: 'asc' })
-    .map(note => ({ id: note.id, name: note.name, avatar: note.avatar, body: note.body, createdAt: iso(note.createdAt) }))
+    .map(note => ({ id: note.id, type: note.type || 'note', name: note.name, avatar: note.avatar, body: note.body, createdAt: iso(note.createdAt) }))
 }
 
 export function addNote(user, itemId, input) {
   const doc = ownItem(user, itemId)
   const words = text(input.body, 4000, true)
   if (!words) reject(400, 'invalid_note', 'Write a note first.')
-  ds().insert('notes', { id: random(24), item: doc.id, project: doc.project, name: user.name, avatar: user.avatar, body: words, createdAt: now() })
+  ds().transaction(tx => {
+    tx.insert('notes', { id: random(24), item: doc.id, project: doc.project, name: user.name, avatar: user.avatar, body: words, createdAt: now() })
+    tx.update('items', { id: doc.id }, { $inc: { notes: 1 } })
+  })
   return listNotes(user, itemId)
 }
 
@@ -158,7 +173,8 @@ export function board(key, query = {}) {
   return {
     project: {
       id: project.id, name: project.name, color: project.color, slug: project.slug || null, title: project.title || '', intro: project.intro || '',
-      logo: pictureURL(project, 'logo'), cover: pictureURL(project, 'cover'), attachments: project.attachments !== false, kinds: kindsOf(project)
+      logo: pictureURL(project, 'logo'), cover: pictureURL(project, 'cover'), attachments: project.attachments !== false, kinds: kindsOf(project),
+      contact: contactOf(project), fields: fieldsOf(project)
     },
     items: items.map(boardDTO)
   }

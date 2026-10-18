@@ -4,6 +4,7 @@ import { ds, now, iso, text, reject, random } from './lib.js'
 import { removeProject as removeFiles } from './files.js'
 import { removeProjectStats } from './stats.js'
 import { pictureURL, storePicture, removePicture } from './page.js'
+import { contactOf, fieldsOf, contactSetting, fieldsSetting } from './form.js'
 
 // Snippets and page links in API replies are absolute. The runtime doesn't
 // pass the request host to apps yet, so they use this. Set it to your host.
@@ -39,13 +40,17 @@ export function projectDTO(doc) {
     id: doc.id, name: doc.name, label: doc.label, color: doc.color, position: doc.position,
     origins: doc.origins, public: doc.public, slug: doc.slug || null, title: doc.title || '', intro: doc.intro || '',
     logo: pictureURL(doc, 'logo'), cover: pictureURL(doc, 'cover'),
-    attachments: doc.attachments !== false, for: KIND_SETS[doc.for] ? doc.for : 'site', kinds: kindsOf(doc), createdAt: iso(doc.createdAt),
+    attachments: doc.attachments !== false, for: KIND_SETS[doc.for] ? doc.for : 'site', kinds: kindsOf(doc),
+    contact: contactOf(doc), fields: fieldsOf(doc), createdAt: iso(doc.createdAt),
     snippet: snippet(doc), board: doc.public ? pageURL(doc) : null
   }
 }
 
 // The parts a visitor's browser may see: no owner, no allowed sites.
-export const publicConfig = doc => ({ id: doc.id, name: doc.name, label: doc.label, color: doc.color, position: doc.position, attachments: doc.attachments !== false, kinds: kindsOf(doc) })
+export const publicConfig = doc => ({
+  id: doc.id, name: doc.name, label: doc.label, color: doc.color, position: doc.position,
+  attachments: doc.attachments !== false, kinds: kindsOf(doc), contact: contactOf(doc), fields: fieldsOf(doc)
+})
 
 export function findProject(id) {
   return /^[a-z0-9]{8}$/.test(id || '') ? ds().findOne('projects', { id }) : null
@@ -102,6 +107,8 @@ function settings(input, doc = {}) {
   if ('intro' in input) out.intro = text(input.intro, 280, true)
   if ('attachments' in input) out.attachments = input.attachments !== false
   if ('for' in input) out.for = KIND_SETS[input.for] ? input.for : reject(400, 'invalid_for', 'A project is for a "site" or a "place".')
+  if ('contact' in input) out.contact = contactSetting(input.contact)
+  if ('fields' in input) out.fields = fieldsSetting(input.fields)
   return out
 }
 

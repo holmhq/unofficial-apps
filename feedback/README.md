@@ -26,13 +26,20 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
   them. Set up shows the snippet with your choices filled in and a preview of
   the button and form that follows every change as you make it. Settings
   renames or deletes the project.
+- **Form:** what it's made for, whether to ask for an email and a phone
+  number (off, optional or required), files on or off, and up to eight
+  questions of your own: a short answer, a dropdown, one choice, or
+  checkboxes (no choices makes one box to tick). The preview follows every
+  change. Answers are kept with each question's wording at the time.
 - **Inbox:** every item as a ticket, numbered per project and tinted by its
   status like a carbon-copy form: white for new, canary for planned, pink for
-  in progress, mint for done, grey for closed. Filter by status. Each item
-  shows the message, the page and its title, the browser, the window size and
-  the reply address, and its files (pictures as thumbnails); change its
-  status or kind, keep private notes, delete it. Only the owner can open the
-  files.
+  in progress, mint for done, grey for closed. Filter by status, kind, the
+  answer to any choice question, whether it has photos, or search its words.
+  Each item shows the message, its answers, the page and its title, the
+  browser, the window size, the email and phone, and its files (pictures as
+  thumbnails). Its **thread**, for your team only, lists when it came in,
+  every note and every change of status, kind or visibility, by whom. Only
+  the owner can open the files.
 - **The feedback page,** off by default, at `/<custom-address>` (or
   `/b/<project>`, which always works): made for someone who arrives from a
   link or a QR code, so it stands alone in the project's name and colour,
@@ -115,6 +122,7 @@ api/projects.js     projects, their settings and custom addresses
 api/items.js        sending, triage, notes, the page and votes
 api/files.js        attachments: checks, storage, previews, serving
 api/page.js         a page's logo and cover: resizing and serving
+api/form.js         contact rules, a project's questions, checking answers
 api/comments.js     public comments and their approval
 api/stats.js        daily counters and the stats replies
 api/keys.js         API keys and who an owner request is from
@@ -184,9 +192,13 @@ The reply's `project.snippet` is the script tag to paste before `</body>`.
 A project takes `name`, `label` (the button's text), `color`, `position`
 (`right` or `left`), `origins` (allowed sites; empty means any),
 `attachments` (whether visitors can add files), `for` (`site` or `place`,
-which picks the kinds), `public` (the feedback page), `slug` (its custom
-address, 3 to 40 lowercase letters, digits and hyphens), and the page's
-`title` and `intro`. `PATCH` takes the same fields.
+which picks the kinds), `contact` (`{"email": "optional", "phone": "off"}`,
+each `off`, `optional` or `required`), `fields` (up to eight questions, each
+`{"type": "text" | "select" | "radio" | "checkbox", "label", "required",
+"options"}`), `public` (the feedback page), `slug` (its custom address, 3 to
+40 lowercase letters, digits and hyphens), and the page's `title` and
+`intro`. `PATCH` takes the same fields. A sender's answers go in `answers`,
+keyed by question id; with files, as a JSON string field.
 
 To read and sort what arrived:
 

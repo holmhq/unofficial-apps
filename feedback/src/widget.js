@@ -10,7 +10,7 @@ const projectId = params.get('p') || ''
 const preview = params.has('preview') || projectId === 'demo'
 const root = document.getElementById('widget')
 
-let config = { name: '', label: 'Feedback', color: '#c2410c', attachments: true, kinds: KIND_SETS.site }
+let config = { name: '', label: 'Feedback', color: '#c2410c', attachments: true, kinds: KIND_SETS.site, fields: [], contact: { email: 'optional', phone: 'off' } }
 // Unsaved settings from the set-up page win over the saved ones.
 let override = {}
 
@@ -32,6 +32,8 @@ function form() {
   root.replaceChildren(header(), composer({
     endpoint: `/api/embed/${projectId}/items`,
     kinds: config.kinds,
+    fields: config.fields,
+    contact: config.contact,
     attachments: config.attachments,
     preview,
     context: { url: params.get('url') || '', title: params.get('title') || '', viewport: params.get('viewport') || '' },
@@ -62,7 +64,8 @@ if (preview) {
     if (event.origin !== location.origin || !event.data || event.data.source !== 'feedback-setup') return
     override = event.data.config || {}
     const next = { ...config, ...override }
-    const rebuild = next.attachments !== config.attachments || String(next.kinds) !== String(config.kinds)
+    const shape = c => JSON.stringify([c.attachments, c.kinds, c.fields, c.contact])
+    const rebuild = shape(next) !== shape(config)
     config = next
     paintColor()
     const title = root.querySelector('header h1')

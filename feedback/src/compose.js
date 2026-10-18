@@ -31,18 +31,53 @@ async function shrink(file) {
   }
 }
 
+let uid = 0
+const nextId = () => 'q' + (++uid)
+
+// One of the project's own questions, and how to read its answer.
+function question(field) {
+  const id = nextId()
+  const mark = field.required ? el('span', { class: 'required', 'aria-hidden': 'true' }, ' *') : null
+  if (field.type === 'text') {
+    const input = el('input', { id, maxlength: '200', required: field.required })
+    return { node: el('label', { class: 'field', for: id }, el('span', {}, field.label, mark), input), read: () => input.value.trim(), focus: input }
+  }
+  if (field.type === 'select') {
+    const select = el('select', { id, required: field.required },
+      el('option', { value: '' }, 'Choose…'), field.options.map(option => el('option', { value: option }, option)))
+    return { node: el('label', { class: 'field', for: id }, el('span', {}, field.label, mark), select), read: () => select.value, focus: select }
+  }
+  if (field.type === 'checkbox' && !field.options.length) {
+    const box = el('input', { type: 'checkbox', id })
+    return { node: el('label', { class: 'check-one', for: id }, box, el('span', {}, field.label, mark)), read: () => box.checked, focus: box }
+  }
+  // One choice (radio) or several (checkbox), as pills.
+  const type = field.type === 'radio' ? 'radio' : 'checkbox'
+  const inputs = field.options.map(option => el('input', { type, name: id, value: option }))
+  return {
+    node: el('fieldset', { class: 'field choices' }, el('legend', {}, field.label, mark),
+      el('div', { class: 'pills' }, inputs.map((input, i) => el('label', {}, input, el('span', {}, field.options[i]))))),
+    read: () => type === 'radio' ? (inputs.find(input => input.checked)?.value || '') : inputs.filter(input => input.checked).map(input => input.value),
+    focus: inputs[0]
+  }
+}
+
 // On a phone, a camera button: one tap to a photo.
 const touch = () => matchMedia('(pointer: coarse)').matches
 
-// Options: endpoint to POST to, the project's kinds, whether files are
-// allowed, preview (sends nothing), extra context fields, and onSent(number)
-// once it's in.
-export function composer({ endpoint, kinds = KIND_SETS.site, attachments = true, preview = false, context = {}, onSent, fine }) {
+// Options: endpoint to POST to, the project's kinds, its own questions,
+// which contact details to ask for, whether files are allowed, preview
+// (sends nothing), extra context fields, and onSent(number) once it's in.
+export function composer({ endpoint, kinds = KIND_SETS.site, fields = [], contact = { email: 'optional', phone: 'off' }, attachments = true, preview = false, context = {}, onSent, fine }) {
   // A place starts on praise; a site on an idea.
   let kind = kinds.includes('praise') ? 'praise' : 'idea'
   const files = []
   const message = el('textarea', { name: 'body', required: true, maxlength: '4000', rows: '5' })
   const email = el('input', { name: 'email', type: 'email', autocomplete: 'email', maxlength: '200', placeholder: 'you@example.com' })
+  const phone = el('input', { name: 'phone', type: 'tel', autocomplete: 'tel', maxlength: '30', placeholder: '+1 555 123 4567' })
+  const questions = fields.map(field => ({ field, ...question(field) }))
+  const contactField = (input, ask, optional, required) => ask !== 'off' &&
+    el('label', { class: 'field' }, el('span', {}, ask === 'required' ? required : optional, ask === 'required' && el('span', { class: 'required', 'aria-hidden': 'true' }, ' *')), input)
   const trap = el('input', { name: 'website', tabindex: '-1', autocomplete: 'off', class: 'trap', 'aria-hidden': 'true' })
   const error = el('p', { class: 'error', role: 'alert', hidden: true })
   const send = el('button', { type: 'submit', class: 'send' }, 'Send')
@@ -93,11 +128,19 @@ export function composer({ endpoint, kinds = KIND_SETS.site, attachments = true,
     event.preventDefault()
     error.hidden = true
     if (message.value.trim().length < 3 && !files.length) { showError(attachments ? 'Write a few words or add a photo.' : 'Write a few words first.'); message.focus(); return }
+    const answers = {}
+    for (const { field, read, focus } of questions) {
+      const value = read()
+      if (field.required && (Array.isArray(value) ? !value.length : !value)) { showError(`Please answer “${field.label}”.`); focus.focus(); return }
+      answers[field.id] = value
+    }
+    if (contact.email === 'required' && !email.value.trim()) { showError('Please leave your email.'); email.focus(); return }
+    if (contact.phone === 'required' && !phone.value.trim()) { showError('Please leave your phone number.'); phone.focus(); return }
     if (preview) return onSent(null)
     send.disabled = true
     send.textContent = files.length ? 'Uploading…' : 'Sending…'
     try {
-      const fields = { kind, body: message.value, email: email.value, website: trap.value, ...context }
+      const fields = { kind, body: message.value, email: email.value, phone: phone.value, answers: JSON.stringify(answers), website: trap.value, ...context }
       let request = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) }
       if (files.length) {
         const data = new FormData()
@@ -120,9 +163,11 @@ export function composer({ endpoint, kinds = KIND_SETS.site, attachments = true,
   const form = el('form', { class: 'compose', onsubmit: onSubmit, novalidate: true },
     choices,
     message,
+    questions.map(entry => entry.node),
     attachRow,
     list,
-    el('label', { class: 'field' }, el('span', {}, 'Email, if you’d like a reply'), email),
+    contactField(email, contact.email, 'Email, if you’d like a reply', 'Your email'),
+    contactField(phone, contact.phone, 'Phone, if you’d like a call', 'Your phone number'),
     trap,
     error,
     send,

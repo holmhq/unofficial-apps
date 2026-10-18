@@ -81,7 +81,7 @@ function route() {
   if ((match = /^\/b\/([a-z0-9-]{3,40})(?:\/(\d+))?$/.exec(path))) return boardPage(match[1], match[2] && Number(match[2]))
   if (path === '/keys') return viewer().me ? keysPage() : landing()
   if (path === '/stats') return viewer().me ? statsPage() : landing()
-  if ((match = /^\/projects\/([a-z0-9]{8})(?:\/(setup|share|settings|stats|items\/(\d+)))?$/.exec(path))) {
+  if ((match = /^\/projects\/([a-z0-9]{8})(?:\/(setup|form|share|settings|stats|items\/(\d+)))?$/.exec(path))) {
     if (!viewer().me) return landing()
     return projectPage(match[1], match[3] ? Number(match[3]) : match[2] || 'inbox')
   }

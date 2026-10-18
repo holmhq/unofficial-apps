@@ -130,9 +130,11 @@ function listView(data, base) {
     composer({
       endpoint: `/api/boards/${project.id}/items`,
       kinds: project.kinds || KIND_SETS.site,
+      fields: project.fields || [],
+      contact: project.contact,
       attachments: project.attachments,
       onSent: number => { card.replaceChildren(thanks(project, number, fresh)); card.scrollIntoView({ block: 'nearest' }) },
-      fine: 'Your email is only shown to the team.'
+      fine: project.contact && project.contact.email === 'off' && project.contact.phone === 'off' ? null : 'Your contact details are only shown to the team.'
     }))
   fresh()
 

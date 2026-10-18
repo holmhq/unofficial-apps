@@ -80,6 +80,16 @@ tile Holm's sign-in page shows. Credit its creator in the README.
   visits on their own.
 ```
 
+## 7. A form of my own
+
+```text
+- Let me ask for an email or a phone number, optional or required.
+- Let me add a few questions of my own: a short answer, a dropdown, one
+  choice or checkboxes. Show the answers on each item and filter the inbox by
+  them.
+- Make each item a thread for my team: notes and every change, in order.
+```
+
 ## The original requests
 
 **Iteration 1** came from this message, typed as-is to a coding agent while
@@ -139,10 +149,20 @@ documentation removed:
 > - you can send it via email
 > - may be a title, description, logo & cover (provide default if none) will make it much nicer?
 
+**Iteration 8**, a message sent while the agent worked; asked, the owner
+chose a thread for the team only, and no email for now:
+
+> we can ask for phone number/email if needed
+> - each one the feedback should actually create a thread?
+> - so that manager can easily filter / see?
+> - if possible we can even think of a super simple form?
+> - field, dropdown, radio, checkbox etc only?
+
 Everything in the prompts beyond what's quoted came from the agent: the
 button in a shadow root and the form in an iframe, the carbon-copy tickets,
 the public board and votes, the spam guards, the shape of the API, the
 icon's credit, in iteration 4 the page's layout, the file limits, the poster
 and what the stats count, in iteration 5 changing an item's status in
-place too, and in iteration 7 the kinds for places, the scan tags and the
-default cover.
+place too, in iteration 7 the kinds for places, the scan tags and the
+default cover, and in iteration 8 the question types' details and the
+inbox's filters.

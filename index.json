@@ -59,11 +59,11 @@
     {
       "name": "feedback",
       "path": "feedback",
-      "version": "0.4.0",
-      "tag": "feedback/v0.4.0",
-      "h1": "h1:aGfu6AMsy6K4xt1vTxWv2L1xUK3aFlh49kQbZYV2SS0=",
-      "files": 37,
-      "size": 568405,
+      "version": "0.5.0",
+      "tag": "feedback/v0.5.0",
+      "h1": "h1:MwCRajwlIVG5IZYu+Juf1YKtF4QPiOUhgGid48X1+ng=",
+      "files": 38,
+      "size": 594249,
       "title": "feedback",
       "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
       "themeColor": "#c2410c",
@@ -72,8 +72,8 @@
       "listing": {
         "subtitle": "Feedback for websites, shops and events",
         "category": "Developer tools",
-        "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and an email if they'd like a reply.\n\nEach project gets a page of its own with your title, logo and cover, a custom address and a poster to print. Anyone can vote for what others asked and comment; comments wait for your approval.\n\nEverything arrives in one inbox per project. Sort it by status, keep private notes, and see how many people scanned, visited and sent something.",
-        "whatsNew": "Made for places and events: Praise, Problem and Idea, a one-tap camera button, and a page with your title, logo and cover. Stats count QR scans and email visits, and Share can email the link.",
+        "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap.\n\nMake the form your own: ask for an email or a phone number, and add a few questions like a table number or which meal. Each project gets a page with your title, logo and cover, a custom address and a poster to print.\n\nEverything arrives in one inbox per project. Filter by status, kind or any answer, keep a thread of notes for your team, and see how many people scanned, visited and sent something.",
+        "whatsNew": "A form of your own: ask for an email or phone, and add short answers, dropdowns, one-choice and checkbox questions. The inbox filters by kind, answer, photos or words, and each item keeps a thread of your team's notes and changes.",
         "featured": false,
         "screenshots": [
           {
@@ -89,8 +89,14 @@
             "height": 1688
           },
           {
+            "path": "listing/form.webp",
+            "alt": "The Form tab: contact details to ask for and a restaurant's own questions",
+            "width": 780,
+            "height": 1688
+          },
+          {
             "path": "listing/inbox.webp",
-            "alt": "A project's inbox: each item a ticket, tinted by its status, and a comment waiting for approval",
+            "alt": "A project's inbox with search and filters, each item a ticket tinted by its status",
             "width": 780,
             "height": 1688
           },
