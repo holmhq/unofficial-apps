@@ -42,6 +42,21 @@ keeping its holes, and use the same shape in the header, the favicon and the
 tile Holm's sign-in page shows. Credit its creator in the README.
 ```
 
+## 4. A page of its own, files and stats
+
+```text
+- Make the set-up preview follow colour, label and position as they change.
+- Give each project a public page that stands alone for someone arriving
+  from a link or a QR code: the form first, then the items I make public,
+  with votes and comments. Visitors' comments show only after I approve them.
+- Let the form take files: screenshots, videos and PDFs.
+- Let me pick a custom address for the page, and download its QR code.
+- Let me rename and delete projects.
+- Light, dark and system themes in the avatar menu.
+- Light stats for each account and project: how many people saw a form and
+  how many sent something, per day.
+```
+
 ## The original requests
 
 **Iteration 1** came from this message, typed as-is to a coding agent while
@@ -60,7 +75,22 @@ documentation removed:
 
 > can you see if the icon downloaded from thenounproject can be normalised (perhaps manually as described in holm) and set as the icon in feedback app
 
+**Iteration 4**, right after; "it worked" is the new icon:
+
+> Great, it worked!
+> - changing colors doesnt update preview in real time
+> - the public board should be designed better: assume someone just lands on it from say a QR code / link
+> - the page should look fully contained to provide feedback
+> - i think the page should be able to accept files?
+> - we need to also be able to set custom urls?
+> - and get QR codes
+> - comments can be made public, but it only appears after approving
+> - we need abilities to edit/delete the projects (if its not there yet)
+> - also give light/dark/system theme options in avatar popup
+> - build a light analytics system for each account to see how many people click/post
+
 Everything in the prompts beyond what's quoted came from the agent: the
 button in a shadow root and the form in an iframe, the carbon-copy tickets,
-the public board and votes, the spam guards, the shape of the API and the
-icon's credit.
+the public board and votes, the spam guards, the shape of the API, the
+icon's credit, and in iteration 4 the page's layout, the file limits, the
+poster and what the stats count.

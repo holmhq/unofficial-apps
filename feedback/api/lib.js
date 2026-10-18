@@ -22,8 +22,11 @@ export function text(value, max, lines = false) {
   return cleaned.slice(0, max)
 }
 
+// A JSON object, or a multipart request's fields (always strings). A
+// files-only multipart request has no fields, so Holm leaves body unset.
 export function body(request) {
   const value = request.body
+  if (value == null && Object.keys(request.files || {}).length) return {}
   if (!value || typeof value !== 'object' || Array.isArray(value)) reject(400, 'invalid_body', 'Send a JSON object.')
   return value
 }

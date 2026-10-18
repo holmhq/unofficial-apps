@@ -42,7 +42,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llm.txt>.
 | --- | --- | --- |
 | [`catalog`](catalog/) | [unofficial.zyt.app](https://unofficial.zyt.app) | An app store: a page per app, reviews, Get to install, and an admin |
 | [`pastebin`](pastebin/) | [pastebin.zyt.app](https://pastebin.zyt.app) | Expiring, one-time and revocable links; media; API keys and a CLI |
-| [`feedback`](feedback/) | [feedback.zyt.app](https://feedback.zyt.app) | A feedback button for any website, an inbox per project, a public board |
+| [`feedback`](feedback/) | [feedback.zyt.app](https://feedback.zyt.app) | A feedback button for any website, a page with a QR code, an inbox and stats per project |
 
 ## Layout of an app
 

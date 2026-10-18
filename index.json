@@ -59,50 +59,56 @@
     {
       "name": "feedback",
       "path": "feedback",
-      "version": "0.2.1",
-      "tag": "feedback/v0.2.1",
-      "h1": "h1:opZm21jOyoJLir9xUHfr9q7Qdt4reRdRmSiGwmgPNQM=",
-      "files": 27,
-      "size": 219038,
+      "version": "0.3.0",
+      "tag": "feedback/v0.3.0",
+      "h1": "h1:tT4h4jE0o4zfUB3zZqe0hr5wyj2mVfgAtBHm7dTJZEk=",
+      "files": 35,
+      "size": 358280,
       "title": "feedback",
-      "description": "A feedback button for any website: visitors send bugs and ideas from the page they're on, you triage them in one inbox.",
+      "description": "A feedback button for any website, or a page of its own with a QR code: visitors send bugs and ideas, you triage them in one inbox.",
       "themeColor": "#c2410c",
       "symbol": "M 12.000149 0.0002 C 5.383922 0.001176 0.000191 5.382931 0.000191 12.000157 C 0.000191 13.95425 0.484565 15.887893 1.406436 17.620137 L 0.034366 22.741119 C -0.058406 23.086818 0.040226 23.454016 0.293165 23.70694 C 0.546105 23.959865 0.914263 24.058489 1.258987 23.96574 L 6.379969 22.593669 C 8.112387 23.514566 10.046956 23.999914 11.999949 23.999914 C 15.308437 23.999914 18.307426 22.654219 20.481418 20.481427 C 22.654261 18.30761 23.999906 15.308695 23.999906 11.999957 C 23.999906 5.383731 18.617175 0 11.999949 0 Z M 12.000149 22.000122 C 6.477668 22.000122 2.000184 17.522638 2.000184 12.000157 C 2.000184 6.477677 6.477668 2.000193 12.000149 2.000193 C 17.522629 2.000193 22.000113 6.476677 22.000113 12.000157 C 22.000113 17.522638 17.522629 22.000122 12.000149 22.000122 Z M 8.500161 10.000164 C 8.500161 10.552887 8.052888 11.000161 7.500165 11.000161 C 6.947442 11.000161 6.500168 10.552887 6.500168 10.000164 C 6.500168 9.447441 6.947442 9.000168 7.500165 9.000168 C 8.052888 9.000168 8.500161 9.447441 8.500161 10.000164 Z M 14.605639 13.204153 C 15.045088 13.539102 15.130062 14.166074 14.796069 14.605523 C 14.122246 15.492245 13.1037 16.000043 12.000079 16.000043 C 10.896458 16.000043 9.878011 15.492245 9.204089 14.605523 C 8.870115 14.166074 8.956042 13.538152 9.395493 13.204153 C 9.834941 12.870179 10.462864 12.957084 10.796863 13.395557 C 11.380836 14.164104 12.619131 14.164104 13.205054 13.395557 C 13.537078 12.955134 14.164026 12.870159 14.605449 13.204153 Z M 17.500129 10.000164 C 17.500129 10.552887 17.052856 11.000161 16.500133 11.000161 C 15.94741 11.000161 15.500136 10.552887 15.500136 10.000164 C 15.500136 9.447441 15.94741 9.000168 16.500133 9.000168 C 17.052856 9.000168 17.500129 9.447441 17.500129 10.000164 Z",
       "demo": "https://feedback.zyt.app",
       "listing": {
-        "subtitle": "A feedback button for any site",
+        "subtitle": "A feedback button and page for any site",
         "category": "Developer tools",
-        "description": "Add one script tag to your website and a feedback button appears. Visitors send a bug, an idea or a question from the page they're on, with an email if they'd like a reply.\n\nEverything arrives in one inbox per project. Mark items planned, in progress, done or closed, keep private notes, and see which page and browser each came from.\n\nWhen you're ready, turn on a public board: it shows only the items you choose, grouped by status, and visitors can vote for what matters to them.",
-        "whatsNew": "A new icon, a smiling speech bubble, in the store, on Holm's sign-in page and in the browser tab.",
+        "description": "Add one script tag to your website and a feedback button appears. Visitors send a bug, an idea or a question from the page they're on, with screenshots if they like, and an email if they'd like a reply.\n\nOr share a page of its own: pick its address, print its QR code, and anyone who scans it can send feedback, vote for what others asked and comment. Comments wait for your approval.\n\nEverything arrives in one inbox per project. Mark items planned, in progress, done or closed, keep private notes, choose what goes on the page, and see how many people saw a form and how many sent something.",
+        "whatsNew": "A feedback page for every project, with a custom address and a QR code poster to print. Files on feedback, public comments you approve, light stats, a live set-up preview and a theme switch in the avatar menu.",
         "featured": false,
         "screenshots": [
           {
-            "path": "listing/landing.webp",
-            "alt": "The front page, with a live preview of the feedback form",
+            "path": "listing/page.webp",
+            "alt": "A project's own feedback page, as someone arriving from a QR code sees it",
             "width": 780,
             "height": 1688
           },
           {
             "path": "listing/widget.webp",
-            "alt": "The feedback form open on a shop's checkout page",
+            "alt": "The feedback form open on a shop's checkout page, with room for files",
             "width": 780,
             "height": 1688
           },
           {
             "path": "listing/inbox.webp",
-            "alt": "A project's inbox: each item a ticket, tinted by its status",
+            "alt": "A project's inbox: each item a ticket, tinted by its status, and a comment waiting for approval",
             "width": 780,
             "height": 1688
           },
           {
             "path": "listing/item.webp",
-            "alt": "One bug report in dark mode, with its status, page and browser",
+            "alt": "A bug report in dark mode, with its screenshot, status, page and browser",
             "width": 780,
             "height": 1688
           },
           {
-            "path": "listing/board.webp",
-            "alt": "The public board, grouped by status, with votes",
+            "path": "listing/stats.webp",
+            "alt": "Stats for a project: how many saw a form and how many sent something, per day",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/share.webp",
+            "alt": "Sharing the feedback page: its link, its QR code and a poster to print",
             "width": 780,
             "height": 1688
           }

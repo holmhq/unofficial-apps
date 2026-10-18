@@ -1,28 +1,32 @@
 {
-  "subtitle": "A feedback button for any site",
+  "subtitle": "A feedback button and page for any site",
   "category": "Developer tools",
-  "description": "Add one script tag to your website and a feedback button appears. Visitors send a bug, an idea or a question from the page they're on, with an email if they'd like a reply.\n\nEverything arrives in one inbox per project. Mark items planned, in progress, done or closed, keep private notes, and see which page and browser each came from.\n\nWhen you're ready, turn on a public board: it shows only the items you choose, grouped by status, and visitors can vote for what matters to them.",
-  "whatsNew": "A new icon, a smiling speech bubble, in the store, on Holm's sign-in page and in the browser tab.",
+  "description": "Add one script tag to your website and a feedback button appears. Visitors send a bug, an idea or a question from the page they're on, with screenshots if they like, and an email if they'd like a reply.\n\nOr share a page of its own: pick its address, print its QR code, and anyone who scans it can send feedback, vote for what others asked and comment. Comments wait for your approval.\n\nEverything arrives in one inbox per project. Mark items planned, in progress, done or closed, keep private notes, choose what goes on the page, and see how many people saw a form and how many sent something.",
+  "whatsNew": "A feedback page for every project, with a custom address and a QR code poster to print. Files on feedback, public comments you approve, light stats, a live set-up preview and a theme switch in the avatar menu.",
   "screenshots": [
     {
-      "file": "landing.webp",
-      "alt": "The front page, with a live preview of the feedback form"
+      "file": "page.webp",
+      "alt": "A project's own feedback page, as someone arriving from a QR code sees it"
     },
     {
       "file": "widget.webp",
-      "alt": "The feedback form open on a shop's checkout page"
+      "alt": "The feedback form open on a shop's checkout page, with room for files"
     },
     {
       "file": "inbox.webp",
-      "alt": "A project's inbox: each item a ticket, tinted by its status"
+      "alt": "A project's inbox: each item a ticket, tinted by its status, and a comment waiting for approval"
     },
     {
       "file": "item.webp",
-      "alt": "One bug report in dark mode, with its status, page and browser"
+      "alt": "A bug report in dark mode, with its screenshot, status, page and browser"
     },
     {
-      "file": "board.webp",
-      "alt": "The public board, grouped by status, with votes"
+      "file": "stats.webp",
+      "alt": "Stats for a project: how many saw a form and how many sent something, per day"
+    },
+    {
+      "file": "share.webp",
+      "alt": "Sharing the feedback page: its link, its QR code and a poster to print"
     }
   ]
 }

@@ -1,6 +1,34 @@
-// Who is signed in: the avatar circle, its menu, and Holm's hosted sign-in page
-// in an overlay, so the reader keeps their place.
-import { $, el, api } from './lib.js'
+// Who is signed in: the avatar circle, its menu (with the theme), and Holm's
+// hosted sign-in page in an overlay, so the reader keeps their place.
+import { $, el, api, glyph, store } from './lib.js'
+
+// Light, dark or the system's choice. index.html applies the saved one
+// before the first paint.
+const THEMES = [['light', 'sun', 'Light'], ['system', 'system', 'System'], ['dark', 'moon', 'Dark']]
+
+function applyTheme(choice) {
+  const root = document.documentElement
+  if (choice === 'light' || choice === 'dark') root.dataset.theme = choice
+  else delete root.dataset.theme
+  document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+    const dark = choice === 'dark' || (choice !== 'light' && meta.media.includes('dark'))
+    meta.content = dark ? '#17151f' : '#f4f3f1'
+  })
+}
+applyTheme(store.get('theme', 'system'))
+
+function themeSwitch() {
+  const group = el('div', { class: 'theme', role: 'group', 'aria-label': 'Theme' })
+  const paint = () => group.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.choice === store.get('theme', 'system'))))
+  for (const [choice, icon, label] of THEMES) {
+    group.append(el('button', {
+      type: 'button', 'data-choice': choice, 'aria-label': label + ' theme', title: label,
+      onclick: () => { store.set('theme', choice); applyTheme(choice); paint() }
+    }, glyph(icon)))
+  }
+  paint()
+  return group
+}
 
 let me = null
 const listeners = []
@@ -42,20 +70,25 @@ function render() {
 function toggleMenu(button) {
   const open = $('.menu')
   if (open) return close(open, button)
+  const theme = el('div', { class: 'menu-row' }, el('span', {}, 'Theme'), themeSwitch())
   const menu = me
     ? el('div', { class: 'menu', role: 'menu' },
         el('div', { class: 'menu-head' }, el('strong', {}, me.name), me.email && el('span', {}, me.email)),
         el('a', { href: '/', 'data-link': true, role: 'menuitem' }, 'Your projects'),
+        el('a', { href: '/stats', 'data-link': true, role: 'menuitem' }, 'Stats'),
         el('a', { href: '/keys', 'data-link': true, role: 'menuitem' }, 'API keys'),
+        theme,
         el('button', { type: 'button', role: 'menuitem', onclick: signOut }, 'Sign out'))
     : el('div', { class: 'menu', role: 'menu' },
-        el('button', { type: 'button', role: 'menuitem', onclick: () => signIn().catch(() => {}) }, 'Sign in'))
+        el('button', { type: 'button', role: 'menuitem', onclick: () => signIn().catch(() => {}) }, 'Sign in'),
+        theme)
   $('#account').append(menu)
   button.setAttribute('aria-expanded', 'true')
   menu.querySelector('a, button').focus()
   const dismiss = event => {
     if (event.type === 'keydown' && event.key !== 'Escape') return
-    if (event.type === 'click' && menu.contains(event.target) && !event.target.closest('a, button')) return
+    // The theme buttons and the menu's own padding keep it open.
+    if (event.type === 'click' && menu.contains(event.target) && (!event.target.closest('a, button') || event.target.closest('.theme'))) return
     close(menu, button, event.type === 'keydown')
     document.removeEventListener('click', dismiss, true)
     document.removeEventListener('keydown', dismiss)

@@ -1,10 +1,16 @@
-// A project's public board: the items its owner chose to show, by status,
-// with one vote per browser.
-import { el, api, glyph, store, STATUS, KIND } from './lib.js'
+// A project's public page, for people who arrive from a link or a QR code:
+// a feedback form anyone can use, then the items the owner chose to show, by
+// status, with votes and comments. It wears the project's name and colour,
+// not the app's.
+import { el, api, glyph, store, ago, inkOn, lighten, STATUS, KIND } from './lib.js'
 import { show } from './app.js'
+import { composer } from './compose.js'
 
 const SECTIONS = ['progress', 'planned', 'new', 'done']
 const TITLES = { progress: 'In progress', planned: 'Planned', new: 'Under review', done: 'Done' }
+// One fetch per page load, so moving between the list and an item neither
+// refetches nor counts another visit.
+const cache = new Map()
 
 function voterToken() {
   let token = store.get('voter')
@@ -15,54 +21,180 @@ function voterToken() {
   return token
 }
 
-export async function boardPage(id) {
-  show(el('p', { class: 'muted page-loading' }, 'Loading…'))
-  let data
-  try {
-    data = await api('GET', '/api/boards/' + id)
-  } catch (problem) {
-    document.title = 'Board not found – feedback'
-    return show(el('section', { class: 'page-head' }, el('h1', {}, 'No public board here'), el('p', { class: 'lede' }, problem.message)))
+// The project's colour leads; dark mode uses a lighter step of it.
+function paint(project) {
+  const style = document.body.style
+  const dark = lighten(project.color, 0.3)
+  style.setProperty('--project', project.color)
+  style.setProperty('--project-ink', inkOn(project.color))
+  style.setProperty('--project-d', dark)
+  style.setProperty('--project-d-ink', inkOn(dark))
+}
+
+export async function boardPage(key, number) {
+  let data = cache.get(key)
+  if (!data) {
+    show(el('p', { class: 'muted page-loading' }, 'Loading…'))
+    try {
+      data = await api('GET', `/api/boards/${encodeURIComponent(key)}?visit=1`)
+    } catch (problem) {
+      document.title = 'Not found – feedback'
+      return show(el('section', { class: 'page-head' }, el('h1', {}, 'No feedback page here'), el('p', { class: 'lede' }, problem.message)))
+    }
+    for (const name of [key, data.project.id, data.project.slug]) if (name) cache.set(name, data)
   }
+  const { project } = data
+  // The custom address is the one to share; old /b/<id> links move to it.
+  const base = project.slug ? `/${project.slug}` : `/b/${project.id}`
+  const want = base + (number ? `/${number}` : '')
+  if (location.pathname !== want) history.replaceState(null, '', want)
+  document.body.classList.add('on-board')
+  paint(project)
+  const item = number && data.items.find(entry => entry.number === number)
+  return item ? itemView(data, item, base) : listView(data, base)
+}
+
+function brand(project) {
+  return el('header', { class: 'board-brand' },
+    el('span', { class: 'board-mark', 'aria-hidden': 'true' }, project.name.trim().charAt(0).toUpperCase() || '?'),
+    el('span', {}, el('strong', {}, project.name), el('span', { class: 'muted' }, 'Feedback')))
+}
+
+// The body without its first line when that line is the title.
+const rest = item => {
+  const [first, ...more] = item.body.split('\n')
+  return first === item.title ? more.join('\n').trim() : item.body
+}
+
+const powered = () => el('p', { class: 'powered' }, 'Powered by ', el('a', { href: '/' }, 'feedback'))
+
+function voteButton(project, item, voted, large) {
+  const count = el('span', {}, item.votes)
+  const button = el('button', {
+    type: 'button', class: large ? 'vote large' : 'vote', 'aria-pressed': String(voted.has(item.id)),
+    'aria-label': `Vote for #${item.number}, ${item.votes} ${item.votes === 1 ? 'vote' : 'votes'}`,
+    onclick: async () => {
+      if (voted.has(item.id)) return
+      try {
+        const reply = await api('POST', `/api/boards/${project.id}/items/${item.id}/vote`, { voter: voterToken() })
+        voted.add(item.id)
+        store.set('voted', [...voted])
+        item.votes = reply.votes
+        count.textContent = reply.votes
+        button.setAttribute('aria-pressed', 'true')
+      } catch (problem) { alert(problem.message) }
+    }
+  }, glyph('up'), count)
+  return button
+}
+
+function thanks(project, number, again) {
+  return el('div', { class: 'board-thanks', role: 'status' },
+    el('span', { class: 'tick' }, glyph('check', 'glyph line')),
+    el('h2', {}, 'Thanks, it’s sent'),
+    el('p', {}, number ? `It’s #${number} in ${project.name}’s inbox.` : `It’s in ${project.name}’s inbox.`,
+      ' If they add it to this page, it will show up below.'),
+    el('button', { type: 'button', class: 'button', onclick: again }, 'Send another'))
+}
+
+function listView(data, base) {
   const { project, items } = data
   document.title = `${project.name} – feedback`
-  document.getElementById('main').style.setProperty('--project', project.color)
   const voted = new Set(store.get('voted', []))
-  const card = item => {
-    const count = el('span', {}, item.votes)
-    const button = el('button', {
-      type: 'button', class: 'vote', 'aria-pressed': String(voted.has(item.id)),
-      'aria-label': `Vote for #${item.number}, ${item.votes} ${item.votes === 1 ? 'vote' : 'votes'}`,
-      onclick: async () => {
-        if (voted.has(item.id)) return
-        try {
-          const reply = await api('POST', `/api/boards/${project.id}/items/${item.id}/vote`, { voter: voterToken() })
-          voted.add(item.id)
-          store.set('voted', [...voted])
-          count.textContent = reply.votes
-          button.setAttribute('aria-pressed', 'true')
-        } catch (problem) { alert(problem.message) }
-      }
-    }, glyph('up'), count)
-    return el('li', { class: 'board-card' }, button,
-      el('div', {},
-        el('h3', {}, item.title),
-        item.body !== item.title && el('p', {}, item.body.slice(item.title.length).trim().slice(0, 280)),
-        el('span', { class: 'muted' }, KIND[item.kind], ' #', item.number)))
-  }
-  // The board has the project's own feedback button, so readers can add to it.
-  if (!window.HolmFeedback && !document.querySelector('script[data-project]')) {
-    document.body.append(el('script', { src: '/embed.js', 'data-project': project.id, 'data-color': project.color, async: true }))
-  }
-  show(
-    el('section', { class: 'page-head board-head', style: `--project: ${project.color}` },
-      el('h1', {}, project.name),
-      el('p', { class: 'lede' }, 'What people have asked for, and where it stands. Vote for what matters to you.')),
-    items.length === 0 && el('p', { class: 'empty' }, 'Nothing on the board yet.'),
-    SECTIONS.map(status => {
-      const list = items.filter(item => item.status === status).sort((a, b) => b.votes - a.votes)
-      return list.length > 0 && el('section', { class: 'board-section' },
-        el('h2', {}, el('span', { class: `pill status-${status}` }, TITLES[status] || STATUS[status]), el('span', { class: 'muted' }, list.length)),
-        el('ul', { class: 'board-list' }, list.map(card)))
+  const shown = items.filter(item => SECTIONS.includes(item.status))
+
+  const card = el('section', { class: 'compose-card', 'aria-labelledby': 'send-title' })
+  const fresh = () => card.replaceChildren(
+    el('h1', { id: 'send-title' }, `Tell ${project.name} what you think`),
+    el('p', { class: 'lede' }, project.intro || 'Report a bug, suggest an idea or ask a question. It goes straight to the team.'),
+    composer({
+      endpoint: `/api/boards/${project.id}/items`,
+      attachments: project.attachments,
+      onSent: number => { card.replaceChildren(thanks(project, number, fresh)); card.scrollIntoView({ block: 'nearest' }) },
+      fine: 'Your email is only shown to the team.'
     }))
+  fresh()
+
+  const ticket = item => el('li', { class: 'board-card' },
+    voteButton(project, item, voted),
+    el('a', { class: 'board-card-body', href: `${base}/${item.number}`, 'data-link': true },
+      el('h3', {}, item.title),
+      rest(item) && el('p', {}, rest(item).slice(0, 200)),
+      el('span', { class: 'board-meta' },
+        el('span', { class: `pill status-${item.status}` }, TITLES[item.status]),
+        el('span', {}, KIND[item.kind], ' #', item.number),
+        item.comments > 0 && el('span', { class: 'comments-count' }, glyph('comment'), item.comments))))
+
+  let filter = 'all'
+  const chips = el('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by status' })
+  const list = el('ul', { class: 'board-list' })
+  const paintList = () => {
+    const counts = Object.fromEntries(SECTIONS.map(status => [status, shown.filter(item => item.status === status).length]))
+    chips.replaceChildren(...[['all', 'All', shown.length], ...SECTIONS.filter(status => counts[status]).map(status => [status, TITLES[status], counts[status]])]
+      .map(([key, label, n]) => el('button', { type: 'button', 'aria-pressed': String(key === filter), onclick: () => { filter = key; paintList() } },
+        label, el('span', { class: 'count' }, n))))
+    const order = item => SECTIONS.indexOf(item.status)
+    list.replaceChildren(...shown.filter(item => filter === 'all' || item.status === filter)
+      .sort((a, b) => order(a) - order(b) || b.votes - a.votes).map(ticket))
+  }
+  paintList()
+
+  show(
+    brand(project),
+    el('div', { class: shown.length ? 'board-page' : 'board-page solo' },
+      card,
+      shown.length > 0 && el('section', { class: 'board-items', id: 'board', 'aria-labelledby': 'board-title' },
+        el('h2', { id: 'board-title' }, 'What people have asked for'),
+        el('p', { class: 'muted' }, 'Vote for what matters to you, or open one to comment.'),
+        chips, list)),
+    powered())
+}
+
+function itemView(data, item, base) {
+  const { project } = data
+  document.title = `${item.title} – ${project.name}`
+  const voted = new Set(store.get('voted', []))
+  const comments = el('ol', { class: 'comments' }, el('li', { class: 'muted' }, 'Loading comments…'))
+  api('GET', `/api/boards/${project.id}/items/${item.id}/comments`).then(reply => {
+    comments.replaceChildren(...(reply.comments.length ? reply.comments.map(comment => el('li', { class: comment.team ? 'team' : null },
+      el('div', { class: 'comment-by' },
+        el('strong', {}, comment.name || 'Someone'),
+        comment.team && el('span', { class: 'team-badge' }, 'Team'),
+        el('span', { class: 'muted' }, ago(comment.createdAt))),
+      el('p', {}, comment.body))) : [el('li', { class: 'muted empty-comments' }, 'No comments yet.')]))
+  }).catch(() => comments.replaceChildren(el('li', { class: 'form-error' }, 'Comments didn’t load.')))
+
+  const body = el('textarea', { rows: '3', maxlength: '2000', required: true, placeholder: 'Add to this, or say why it matters to you', 'aria-label': 'Your comment' })
+  const name = el('input', { maxlength: '40', autocomplete: 'nickname', placeholder: 'Your name (optional)', 'aria-label': 'Your name' })
+  const trap = el('input', { name: 'website', tabindex: '-1', autocomplete: 'off', class: 'trap', 'aria-hidden': 'true' })
+  const error = el('p', { class: 'form-error', role: 'alert', hidden: true })
+  const post = el('button', { type: 'submit', class: 'button primary' }, 'Post comment')
+  const form = el('form', { class: 'comment-form', novalidate: true, onsubmit: async event => {
+    event.preventDefault()
+    error.hidden = true
+    if (body.value.trim().length < 2) { error.textContent = 'Write a comment first.'; error.hidden = false; return }
+    post.disabled = true
+    try {
+      await api('POST', `/api/boards/${project.id}/items/${item.id}/comments`, { body: body.value, name: name.value, website: trap.value })
+      form.replaceWith(el('p', { class: 'comment-sent', role: 'status' }, glyph('check', 'glyph line'), `Thanks. Your comment will show here once ${project.name} approves it.`))
+    } catch (problem) { error.textContent = problem.message; error.hidden = false; post.disabled = false }
+  } }, body, el('div', { class: 'comment-row' }, name, post), trap, error,
+    el('p', { class: 'muted fine' }, `Comments appear once ${project.name} approves them.`))
+
+  show(
+    brand(project),
+    el('article', { class: 'board-item' },
+      el('a', { class: 'back', href: base, 'data-link': true }, glyph('chevron'), 'All feedback'),
+      el('div', { class: 'board-item-head' },
+        voteButton(project, item, voted, true),
+        el('div', {},
+          el('span', { class: `pill status-${item.status}` }, TITLES[item.status] || STATUS[item.status]),
+          el('h1', {}, item.title),
+          el('p', { class: 'muted' }, KIND[item.kind], ' #', item.number, ' · ', ago(item.createdAt)))),
+      rest(item) && el('p', { class: 'board-item-body' }, rest(item)),
+      el('section', { class: 'comments-section', 'aria-labelledby': 'comments-title' },
+        el('h2', { id: 'comments-title' }, 'Comments'),
+        comments,
+        form)),
+    powered())
 }

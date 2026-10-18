@@ -2,8 +2,9 @@
 
 A feedback button for any website, as a [Holm](https://holmhq.com) app. One
 script tag adds the button; visitors send a bug, an idea or a question from
-the page they're on, and it lands in your inbox. Turn on a public board when
-you want to show what's planned.
+the page they're on, with screenshots if they like, and it lands in your
+inbox. Each project can also have a page of its own, with a custom address
+and a QR code, where anyone can send feedback, vote and comment.
 
 Live at <https://feedback.zyt.app>. It was built from the request quoted in
 [`PROMPT.md`](PROMPT.md).
@@ -12,28 +13,43 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
 
 - **The button,** on your site: a pill in the corner (left or right) in your
   colour, with your label. It opens a small form: Bug, Idea or Question, a
-  message, and an email if the sender wants a reply. On a phone the form is a
-  bottom sheet. Escape or the close button dismisses it.
-- **Projects:** sign in and make one per site or product. Each gets its
-  snippet, its inbox and its board. Set up shows the snippet with your
-  choices filled in and a live preview of the form.
+  message, up to four files (pictures, videos, PDFs or text, 8 MB in all;
+  big photos shrink in the browser first; paste or drop them too), and an
+  email if the sender wants a reply. On a phone the form is a bottom sheet.
+  Escape or the close button dismisses it.
+- **Projects:** sign in and make one per site or product. Tabs: Inbox, Stats,
+  Share, Set up and Settings. Set up shows the snippet with your choices
+  filled in and a preview of the button and form that follows every change as
+  you make it. Settings renames or deletes the project.
 - **Inbox:** every item as a ticket, numbered per project and tinted by its
   status like a carbon-copy form: white for new, canary for planned, pink for
   in progress, mint for done, grey for closed. Filter by status. Each item
   shows the message, the page and its title, the browser, the window size and
-  the reply address; change its status or kind, keep private notes, delete
-  it.
-- **Public board** at `/b/<project>`, off by default: only the items you mark
-  public, grouped as in progress, planned, under review and done, sorted by
-  votes. Anyone can vote, once per browser. It never shows emails, pages or
-  browsers. The board has the project's own feedback button.
+  the reply address, and its files (pictures as thumbnails); change its
+  status or kind, keep private notes, delete it. Only the owner can open the
+  files.
+- **The feedback page,** off by default, at `/<custom-address>` (or
+  `/b/<project>`, which always works): made for someone who arrives from a
+  link or a QR code, so it stands alone in the project's name and colour. The
+  form comes first; below it are the items you mark public, by status and
+  votes. Anyone can vote, once per browser, and open an item to comment.
+  Visitors' comments wait until you approve them; your replies show at once
+  under the project's name. It never shows emails, pages, browsers or files.
+- **Share:** turn the page on, pick its address and a line for the top, copy
+  the link, and download its QR code as an SVG or a poster to print.
+- **Stats,** per project and for your account (the avatar menu): page visits,
+  form opens, items sent, votes and comments per day over 7, 30 or 90 days,
+  with what share of people who saw a form sent something, where feedback
+  came from and what kind it was. They count events, not people: no cookies,
+  no visitor ids.
 - **API keys,** in the avatar menu: a key lets a script or a coding agent do
   anything the owner can, so setting up feedback on a new site is one
   request. Keys are shown once and stored as SHA-256 hashes; a key can't make
   more keys.
 - **Look:** aubergine ink, a burnt-orange signal, light and dark following
-  the system. The form on your site is always light and uses the system font,
-  so it sits quietly on any design. Fonts are vendored.
+  the system, or picked in the avatar menu. The form on your site is always
+  light and uses the system font, so it sits quietly on any design. Fonts are
+  vendored.
 
 ## Add it to a site
 
@@ -69,21 +85,28 @@ A Holm app is a folder: static files are served as-is, and `api/main.js`
 handles `/api/*`. There is no build step.
 
 ```text
-index.html          the app: landing, projects, inbox, items, set up, boards
+index.html          the app: landing, projects, inbox, stats, feedback pages
 embed.js            the script sites add: button and panel in a shadow root
 widget.html         the form inside the panel
 src/app.js          router, landing and projects
-src/project.js      inbox, item page and set up
-src/board.js        the public board
-src/account.js      avatar, menu and Holm's sign-in page in an overlay
+src/project.js      inbox, item page, share, set up and settings
+src/board.js        a project's feedback page
+src/compose.js      the form, shared by the panel and the feedback page
+src/stats.js        the stats views and their chart
+src/qr.js           QR codes and the poster
+src/account.js      avatar, menu, theme and Holm's sign-in page in an overlay
 src/keys.js         the API keys page
-src/widget.js       the form's logic
+src/widget.js       the panel's logic
 src/lib.js          DOM, API and formatting helpers, icons
-src/styles.css      the app's design;  src/widget.css  the form's
+src/styles.css      the app's design;  src/widget.css  the panel's
 assets/             icon, favicon and fonts (SIL OFL 1.1)
+vendor/qrcode/      qrcode-generator 2.0.4 (MIT)
 api/main.js         routes (below)
-api/projects.js     projects and their settings
-api/items.js        sending, triage, notes, the board and votes
+api/projects.js     projects, their settings and custom addresses
+api/items.js        sending, triage, notes, the page and votes
+api/files.js        attachments: checks, storage, previews, serving
+api/comments.js     public comments and their approval
+api/stats.js        daily counters and the stats replies
 api/keys.js         API keys and who an owner request is from
 api/lib.js          responses, request checks, ids, who is asking
 holm.symbol.svg     the app's icon
@@ -95,26 +118,38 @@ The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
 - **`holm.auth`:** who is signed in. Owner routes also accept an app API key
   as a bearer token, and check that the project belongs to its owner,
   answering "not found" otherwise. Hashes use `crypto.subtle`.
-- **Document store, `holm.app.ds`:** projects, items and notes. Votes are an
-  `$inc` on the item.
+- **Document store, `holm.app.ds`:** projects, items, notes and comments.
+  Votes are an `$inc` on the item; a comment and its item's counts change in
+  one `transaction`. Stats tally pages and kinds from `find`.
 - **Shared KV, `holm.app.kv`:** each project's item counter (for `#12`
-  numbers), an hourly cap on incoming items per project, and which browser
-  tokens have voted.
+  numbers), hourly caps on items and comments per project, a daily cap on
+  file bytes, which browser tokens have voted, and the stats: one
+  `increment`ed counter per project, day and event.
+- **Blob storage, `holm.app.s3`:** attachments, put straight from the
+  multipart upload handles in `request.files`, served back only to the owner
+  with a sandboxing CSP. **`holm.image.thumbnail`** makes the previews.
 - **Framing:** Holm serves app pages with `frame-ancestors *`, so any site can
   show the form.
 
 | Route | Who | Purpose |
 | --- | --- | --- |
 | `GET /api/me` | anyone | who is signed in |
-| `GET /api/embed/<project>` | anyone | the form's name, label and colour |
-| `POST /api/embed/<project>/items` | anyone | send feedback |
-| `GET /api/boards/<project>` | anyone | a public board |
-| `POST /api/boards/<project>/items/<id>/vote` | anyone | vote, once per browser |
+| `GET /api/embed/<project>[?open=1]` | anyone | the form's settings; `open=1` counts an open |
+| `POST /api/embed/<project>/items` | anyone | send feedback, JSON or multipart with `file0`… |
+| `GET /api/boards/<page>[?visit=1]` | anyone | a feedback page, by address or id |
+| `POST /api/boards/<page>/items` | anyone | send feedback from the page |
+| `POST /api/boards/<page>/items/<id>/vote` | anyone | vote, once per browser |
+| `GET`, `POST /api/boards/<page>/items/<id>/comments` | anyone | approved comments; add one |
 | `GET`, `POST /api/projects` | owner | your projects; make one |
 | `GET`, `PATCH`, `DELETE /api/projects/<id>` | owner | one project |
 | `GET /api/projects/<id>/items[?status=]` | owner | its inbox: `open`, `new`, `planned`, `progress`, `done`, `closed` |
+| `GET /api/projects/<id>/stats?days=` | owner | its stats over 7, 30 or 90 days |
+| `GET /api/stats?days=` | owner | stats for all your projects |
 | `PATCH`, `DELETE /api/items/<id>` | owner | status, kind, public; delete |
+| `GET /api/items/<id>/files/<n>` | owner | a file; `?preview=1`, `?download=1` |
 | `GET`, `POST /api/items/<id>/notes` | owner | private notes |
+| `GET`, `POST /api/items/<id>/comments` | owner | all comments; reply publicly |
+| `PATCH`, `DELETE /api/comments/<id>` | owner | approve (`{"approved":true}`); delete |
 | `GET`, `POST /api/keys`, `DELETE /api/keys/<id>` | signed in | API keys |
 
 "Owner" means signed in, or an API key sent as `Authorization: Bearer fb_…`.
@@ -131,8 +166,10 @@ curl https://feedback.example.com/api/projects \
 
 The reply's `project.snippet` is the script tag to paste before `</body>`.
 A project takes `name`, `label` (the button's text), `color`, `position`
-(`right` or `left`), `origins` (allowed sites; empty means any) and `public`
-(the board). `PATCH` takes the same fields.
+(`right` or `left`), `origins` (allowed sites; empty means any),
+`attachments` (whether visitors can add files), `public` (the feedback page),
+`slug` (its custom address, 3 to 40 lowercase letters, digits and hyphens)
+and `intro` (a line at the top of the page). `PATCH` takes the same fields.
 
 To read and sort what arrived:
 
@@ -142,7 +179,7 @@ curl -X PATCH https://feedback.example.com/api/items/<item-id> -H "Authorization
   -H 'Content-Type: application/json' -d '{"status":"planned","public":true}'
 ```
 
-Snippets and board links in replies use `ORIGIN` in `api/projects.js`, because
+Snippets and page links in replies use `ORIGIN` in `api/projects.js`, because
 the runtime doesn't pass the request host to apps yet. Set it to your host.
 
 ## Deploy your own
@@ -175,14 +212,22 @@ holm policy set auth.public_signup false --app <app-id>
 - Votes are counted once per browser, not per person; clearing storage votes
   again.
 - "Allowed sites" checks the page address the form sends, so it stops casual
-  misuse, not a determined sender. Spam is held back by a hidden trap field
-  and a cap of 120 items per project per hour.
-- No screenshots or attachments in reports.
+  misuse, not a determined sender. Spam is held back by a hidden trap field,
+  caps of 120 items and 60 comments per project per hour, and 200 MB of files
+  per project per day.
+- Stats count events: two opens by one person count twice, and the owner's
+  own visits count too. Counters are kept for about a year.
+- Custom addresses are first come, first served across the whole app, and a
+  few words the app uses itself (like `stats` and `projects`) are reserved.
+- Files are owner-only and can't be shown on the public page.
 
 ## Licenses
 
 The app is MIT-licensed (see the repository `LICENSE`). Bricolage Grotesque
 and Fragment Mono are under the SIL OFL 1.1, in `assets/fonts/`.
+qrcode-generator 2.0.4 by Kazuhiko Arase is MIT-licensed, in
+`vendor/qrcode/` with its `LICENSE`. "QR Code" is a registered trademark of
+DENSO WAVE INCORPORATED.
 
 The icon, a smiling speech bubble, is by Side Project from
 [Noun Project](https://thenounproject.com) and is used under

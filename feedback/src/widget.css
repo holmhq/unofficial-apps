@@ -2,6 +2,7 @@
    so it sits quietly on any site. The project's colour leads. */
 :root {
   --color: #c2410c;
+  --on-color: #ffffff;
   --ink: #1c1917;
   --ink-2: #57534e;
   --ink-3: #8a837d;
@@ -11,6 +12,8 @@
   color-scheme: light;
 }
 *, *::before, *::after { box-sizing: border-box; }
+/* Display rules below must never undo the hidden attribute. */
+[hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; background: var(--paper); }
 body { color: var(--ink); font: 400 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
 main { min-height: 100%; display: flex; flex-direction: column; padding: 18px 18px 14px; }
@@ -36,7 +39,7 @@ textarea, input {
   border: 1px solid var(--rule); border-radius: 12px; background: var(--paper);
   padding: 10px 12px;
 }
-textarea { resize: none; flex: 1; min-height: 120px; }
+textarea { resize: none; flex: 1; min-height: 96px; }
 textarea:focus-visible, input:focus-visible { outline-offset: 0; border-color: var(--color); }
 .field { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); }
 .trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
@@ -44,7 +47,7 @@ textarea:focus-visible, input:focus-visible { outline-offset: 0; border-color: v
 
 .send {
   padding: 12px; border: 0; border-radius: 12px;
-  background: var(--color); color: #fff; font: inherit; font-weight: 650; cursor: pointer;
+  background: var(--color); color: var(--on-color); font: inherit; font-weight: 650; cursor: pointer;
 }
 .send:hover { filter: brightness(1.07); }
 .send:disabled { opacity: 0.6; cursor: default; }
@@ -57,3 +60,25 @@ textarea:focus-visible, input:focus-visible { outline-offset: 0; border-color: v
 .thanks p { margin: 0 0 14px; color: var(--ink-2); }
 .thanks .actions { display: grid; gap: 4px; width: 100%; max-width: 240px; }
 .missing { color: var(--ink-2); }
+
+/* Files */
+.glyph.line { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.attach-row { display: flex; align-items: center; gap: 10px; margin-top: -4px; }
+.attach {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  padding: 6px 11px 6px 9px; border: 1px solid var(--rule); border-radius: 999px;
+  background: var(--paper); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 550; cursor: pointer;
+}
+.attach:hover { color: var(--ink); border-color: var(--ink-3); }
+.attach svg { width: 15px; height: 15px; }
+.attach-hint { font-size: 12px; color: var(--ink-3); min-width: 0; }
+.files { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.files li { display: flex; align-items: center; gap: 8px; padding: 5px 6px 5px 5px; border: 1px solid var(--rule); border-radius: 10px; background: var(--wash); font-size: 13px; }
+.files img, .files li > svg { width: 30px; height: 30px; flex: none; border-radius: 6px; object-fit: cover; }
+.files li > svg { padding: 6px; background: var(--paper); color: var(--ink-3); }
+.file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-size { color: var(--ink-3); flex: none; }
+.remove { width: 26px; height: 26px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ink-3); cursor: pointer; }
+.remove:hover { background: var(--paper); color: var(--ink); }
+.remove svg { width: 14px; height: 14px; }
+form.dropping textarea { border-color: var(--color); border-style: dashed; }
