@@ -56,7 +56,8 @@
   button.type = 'button'
   button.className = 'button'
   button.setAttribute('aria-expanded', 'false')
-  button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2h16a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-8l-6 5v-5H4a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3Zm7 4v6h2V6h-2Zm0 8v2h2v-2h-2Z"/></svg>'
+  // The app's own mark: a smiling speech bubble.
+  button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C5.38 0 0 5.38 0 12C0 13.95 0.48 15.89 1.41 17.62L0.03 22.74C-0.06 23.09 0.04 23.45 0.29 23.71C0.55 23.96 0.91 24.06 1.26 23.97L6.38 22.59C8.11 23.51 10.05 24 12 24C15.31 24 18.31 22.65 20.48 20.48C22.65 18.31 24 15.31 24 12C24 5.38 18.62 0 12 0ZM12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22ZM8.5 10C8.5 10.55 8.05 11 7.5 11C6.95 11 6.5 10.55 6.5 10C6.5 9.45 6.95 9 7.5 9C8.05 9 8.5 9.45 8.5 10ZM14.61 13.2C15.05 13.54 15.13 14.17 14.8 14.61C14.12 15.49 13.1 16 12 16C10.9 16 9.88 15.49 9.2 14.61C8.87 14.17 8.96 13.54 9.4 13.2C9.83 12.87 10.46 12.96 10.8 13.4C11.38 14.16 12.62 14.16 13.21 13.4C13.54 12.96 14.16 12.87 14.61 13.2ZM17.5 10C17.5 10.55 17.05 11 16.5 11C15.95 11 15.5 10.55 15.5 10C15.5 9.45 15.95 9 16.5 9C17.05 9 17.5 9.45 17.5 10Z"/></svg>'
   button.appendChild(document.createTextNode(label))
   if (data.button === 'none') button.style.display = 'none'
   root.appendChild(panel)

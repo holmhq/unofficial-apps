@@ -57,6 +57,14 @@ tile Holm's sign-in page shows. Credit its creator in the README.
   how many sent something, per day.
 ```
 
+## 5. Polish
+
+```text
+- Give the button on sites the app's icon.
+- Switching a project's tabs should change only what's below them, not
+  redraw the page.
+```
+
 ## The original requests
 
 **Iteration 1** came from this message, typed as-is to a coding agent while
@@ -89,8 +97,15 @@ documentation removed:
 > - also give light/dark/system theme options in avatar popup
 > - build a light analytics system for each account to see how many people click/post
 
+**Iteration 5:**
+
+> May be feedback button's icon needs to match the logo?
+> - also the whole page re-renders when i tab
+> - anyway to make it such taht only that details change
+
 Everything in the prompts beyond what's quoted came from the agent: the
 button in a shadow root and the form in an iframe, the carbon-copy tickets,
 the public board and votes, the spam guards, the shape of the API, the
-icon's credit, and in iteration 4 the page's layout, the file limits, the
-poster and what the stats count.
+icon's credit, in iteration 4 the page's layout, the file limits, the poster
+and what the stats count, and in iteration 5 changing an item's status in
+place too.

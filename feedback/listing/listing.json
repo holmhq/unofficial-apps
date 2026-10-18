@@ -2,7 +2,7 @@
   "subtitle": "A feedback button and page for any site",
   "category": "Developer tools",
   "description": "Add one script tag to your website and a feedback button appears. Visitors send a bug, an idea or a question from the page they're on, with screenshots if they like, and an email if they'd like a reply.\n\nOr share a page of its own: pick its address, print its QR code, and anyone who scans it can send feedback, vote for what others asked and comment. Comments wait for your approval.\n\nEverything arrives in one inbox per project. Mark items planned, in progress, done or closed, keep private notes, choose what goes on the page, and see how many people saw a form and how many sent something.",
-  "whatsNew": "A feedback page for every project, with a custom address and a QR code poster to print. Files on feedback, public comments you approve, light stats, a live set-up preview and a theme switch in the avatar menu.",
+  "whatsNew": "The button on your site now wears the app's smiling-bubble mark, and a project's tabs switch without redrawing the page. New in 0.3: a feedback page with a custom address and a QR code poster, files, public comments you approve, and light stats.",
   "screenshots": [
     {
       "file": "page.webp",

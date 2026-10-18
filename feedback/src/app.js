@@ -96,6 +96,8 @@ document.addEventListener('click', event => {
   event.preventDefault()
   if (link.href !== location.href) history.pushState(null, '', link.href)
   route()
+  // A project's tabs keep the page where it is, and focus on the tab.
+  if (link.dataset.tab) return
   scrollTo(0, 0)
   main.focus({ preventScroll: true })
 })

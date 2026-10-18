@@ -10,20 +10,36 @@ const FILTERS = [['open', 'Open'], ['new', 'New'], ['planned', 'Planned'], ['pro
 const COLORS = ['#c2410c', '#b42318', '#7c3aed', '#1d4ed8', '#0e7c66', '#26233a']
 const TABS = [['inbox', 'Inbox', ''], ['stats', 'Stats', '/stats'], ['share', 'Share', '/share'], ['setup', 'Set up', '/setup'], ['settings', 'Settings', '/settings']]
 // The button on a site, as embed.js draws it.
-const LAUNCHER = 'M4 2h16a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-8l-6 5v-5H4a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3Zm7 4v6h2V6h-2Zm0 8v2h2v-2h-2Z'
+const LAUNCHER = 'M12 0C5.38 0 0 5.38 0 12C0 13.95 0.48 15.89 1.41 17.62L0.03 22.74C-0.06 23.09 0.04 23.45 0.29 23.71C0.55 23.96 0.91 24.06 1.26 23.97L6.38 22.59C8.11 23.51 10.05 24 12 24C15.31 24 18.31 22.65 20.48 20.48C22.65 18.31 24 15.31 24 12C24 5.38 18.62 0 12 0ZM12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22ZM8.5 10C8.5 10.55 8.05 11 7.5 11C6.95 11 6.5 10.55 6.5 10C6.5 9.45 6.95 9 7.5 9C8.05 9 8.5 9.45 8.5 10ZM14.61 13.2C15.05 13.54 15.13 14.17 14.8 14.61C14.12 15.49 13.1 16 12 16C10.9 16 9.88 15.49 9.2 14.61C8.87 14.17 8.96 13.54 9.4 13.2C9.83 12.87 10.46 12.96 10.8 13.4C11.38 14.16 12.62 14.16 13.21 13.4C13.54 12.96 14.16 12.87 14.61 13.2ZM17.5 10C17.5 10.55 17.05 11 16.5 11C15.95 11 15.5 10.55 15.5 10C15.5 9.45 15.95 9 16.5 9C17.05 9 17.5 9.45 17.5 10Z'
 
 const pageURL = project => `${location.origin}/${project.slug || 'b/' + project.id}`
 
-function tabs(project, active) {
-  return el('nav', { class: 'tabs', 'aria-label': project.name },
-    TABS.map(([key, label, path]) => el('a', { href: `/projects/${project.id}${path}`, 'data-link': true, 'aria-current': active === key ? 'page' : null }, label)))
+// The project's head and tabs are drawn once; each tab swaps only what's
+// below them. `shell.ticket` drops replies from a tab already left.
+let shell = null
+
+function frame(project) {
+  const title = el('h1', {}, project.name)
+  const nav = el('nav', { class: 'tabs', 'aria-label': project.name },
+    TABS.map(([key, label, path]) => el('a', { href: `/projects/${project.id}${path}`, 'data-link': true, 'data-tab': key }, label)))
+  const body = el('div', { class: 'project-body' })
+  const root = el('div', {},
+    el('section', { class: 'page-head' },
+      el('a', { class: 'back', href: '/', 'data-link': true }, glyph('chevron'), 'Projects'),
+      title, nav),
+    body)
+  return { project, items: null, ticket: 0, root, title, nav, body }
 }
 
-function head(project, active) {
-  return el('section', { class: 'page-head' },
-    el('a', { class: 'back', href: '/', 'data-link': true }, glyph('chevron'), 'Projects'),
-    el('h1', {}, project.name),
-    tabs(project, active))
+// Optional parts pass false or undefined; leave them out.
+const put = (...parts) => shell.body.replaceChildren(...parts.flat(Infinity).filter(Boolean))
+
+// After a rename, the head follows.
+function renamed(project) {
+  shell.project = project
+  shell.title.textContent = project.name
+  shell.nav.setAttribute('aria-label', project.name)
+  document.title = `${project.name} – feedback`
 }
 
 // A ticket stub: the item's number and kind on a perforated edge, in the
@@ -34,24 +50,44 @@ function stub(item) {
 }
 
 export async function projectPage(id, view) {
-  show(el('p', { class: 'muted page-loading' }, 'Loading…'))
-  let project, items
-  try {
-    ;[{ project }, { items }] = await Promise.all([api('GET', '/api/projects/' + id), api('GET', `/api/projects/${id}/items`)])
-  } catch (problem) {
-    return show(el('section', { class: 'page-head' }, el('h1', {}, 'Not found'), el('p', { class: 'lede' }, problem.message, ' ',
-      el('a', { href: '/', 'data-link': true }, 'Your projects'), '.')))
+  if (!shell || shell.project.id !== id || !shell.root.isConnected) {
+    show(el('p', { class: 'muted page-loading' }, 'Loading…'))
+    try {
+      shell = frame((await api('GET', '/api/projects/' + id)).project)
+    } catch (problem) {
+      shell = null
+      return show(el('section', { class: 'page-head' }, el('h1', {}, 'Not found'), el('p', { class: 'lede' }, problem.message, ' ',
+        el('a', { href: '/', 'data-link': true }, 'Your projects'), '.')))
+    }
+    show(shell.root)
   }
+  const ticket = ++shell.ticket
+  const tab = typeof view === 'number' ? 'inbox' : view
+  shell.nav.querySelectorAll('a').forEach(link => link.dataset.tab === tab ? link.setAttribute('aria-current', 'page') : link.removeAttribute('aria-current'))
+  const { project } = shell
   document.title = `${project.name} – feedback`
   if (view === 'setup') return setup(project)
   if (view === 'share') return share(project)
   if (view === 'settings') return settings(project)
-  if (view === 'stats') return show(head(project, 'stats'), statsView({ project }))
-  if (typeof view === 'number') {
-    const item = items.find(entry => entry.number === view)
+  if (view === 'stats') return put(statsView({ project }))
+
+  // The inbox and its items: draw what's known at once, then again only if
+  // a fresh copy differs.
+  const draw = items => {
+    const item = typeof view === 'number' && items.find(entry => entry.number === view)
     return item ? itemPage(project, item) : inbox(project, items)
   }
-  inbox(project, items)
+  const known = shell.items
+  if (known) draw(known)
+  else put(el('p', { class: 'muted page-loading' }, 'Loading…'))
+  try {
+    const { items } = await api('GET', `/api/projects/${id}/items`)
+    if (ticket !== shell.ticket) return
+    shell.items = items
+    if (!known || JSON.stringify(known) !== JSON.stringify(items)) draw(items)
+  } catch (problem) {
+    if (ticket === shell.ticket && !known) put(el('p', { class: 'form-error' }, problem.message))
+  }
 }
 
 function inbox(project, items) {
@@ -83,8 +119,7 @@ function inbox(project, items) {
           ' or ', el('a', { href: `/projects/${project.id}/share`, 'data-link': true }, 'share your feedback page'), ', and it will arrive here.'))]))
   }
   paint()
-  show(head(project, 'inbox'),
-    waiting > 0 && el('p', { class: 'notice' }, glyph('comment'), `${waiting} ${waiting === 1 ? 'comment is' : 'comments are'} waiting for your approval.`),
+  put(waiting > 0 && el('p', { class: 'notice' }, glyph('comment'), `${waiting} ${waiting === 1 ? 'comment is' : 'comments are'} waiting for your approval.`),
     chips, list)
 }
 
@@ -103,10 +138,11 @@ function attachments(item) {
       el('a', { class: 'icon-link', href: url(file, '?download=1'), 'aria-label': `Download ${file.name}` }, glyph('download', 'glyph line'))))))
 }
 
-function publicComments(project, item, refresh) {
+function publicComments(project, item) {
   const list = el('ol', { class: 'comments' })
+  const load = () => api('GET', `/api/items/${item.id}/comments`).then(reply => paint(reply.comments)).catch(() => {})
   const act = async (method, path, data) => {
-    try { await api(method, path, data); refresh() } catch (problem) { alert(problem.message) }
+    try { await api(method, path, data); load() } catch (problem) { alert(problem.message) }
   }
   const paint = comments => list.replaceChildren(...(comments.length ? comments.map(comment => el('li', { class: comment.approved ? (comment.team ? 'team' : null) : 'waiting' },
     el('div', { class: 'comment-by' },
@@ -119,7 +155,7 @@ function publicComments(project, item, refresh) {
       !comment.approved && el('button', { type: 'button', class: 'button primary', onclick: () => act('PATCH', '/api/comments/' + comment.id, { approved: true }) }, 'Approve'),
       el('button', { type: 'button', class: 'button danger', onclick: () => confirm('Delete this comment?') && act('DELETE', '/api/comments/' + comment.id) }, 'Delete')))) :
     [el('li', { class: 'muted empty-comments' }, 'No comments yet.')]))
-  api('GET', `/api/items/${item.id}/comments`).then(reply => paint(reply.comments)).catch(() => {})
+  load()
 
   const body = el('textarea', { rows: '2', maxlength: '2000', placeholder: `Reply publicly as ${project.name}`, 'aria-label': 'Public reply' })
   const form = el('form', { class: 'add-note', onsubmit: async event => {
@@ -135,6 +171,8 @@ function publicComments(project, item, refresh) {
     list, item.public && form)
 }
 
+// Changes show at once and are undone if the server says no; only the
+// parts they touch are redrawn.
 function itemPage(project, item) {
   document.title = `#${item.number} ${item.title} – feedback`
   const notes = el('ol', { class: 'notes' })
@@ -143,15 +181,46 @@ function itemPage(project, item) {
     el('p', {}, note.body))))
   api('GET', `/api/items/${item.id}/notes`).then(reply => paintNotes(reply.notes)).catch(() => {})
 
-  const reload = async () => {
-    try { itemPage(project, (await api('GET', `/api/projects/${project.id}/items`)).items.find(entry => entry.id === item.id) || item) } catch {}
+  let ticketStub = stub(item)
+  let comments = publicComments(project, item)
+  const statuses = el('div', { class: 'statuses', role: 'radiogroup', 'aria-label': 'Status' },
+    Object.entries(STATUS).map(([key, label]) => el('button', {
+      type: 'button', role: 'radio', class: `status-${key}`, 'data-status': key,
+      onclick: () => item.status !== key && save({ status: key })
+    }, label)))
+  const kind = el('select', { 'aria-label': 'Kind', onchange: event => save({ kind: event.target.value }) },
+    Object.entries(KIND).map(([key, label]) => el('option', { value: key }, label)))
+  const shown = el('input', { type: 'checkbox', onchange: event => save({ public: event.target.checked }) })
+  const paint = (before = {}) => {
+    const next = stub(item)
+    ticketStub.replaceWith(next)
+    ticketStub = next
+    statuses.querySelectorAll('button').forEach(button => button.setAttribute('aria-checked', String(button.dataset.status === item.status)))
+    kind.value = item.kind
+    shown.checked = item.public
+    if ('public' in before && before.public !== item.public) {
+      const fresh = publicComments(project, item)
+      comments.replaceWith(fresh)
+      comments = fresh
+    }
   }
+  const remember = () => { if (shell?.items) shell.items = shell.items.map(entry => entry.id === item.id ? item : entry) }
   const save = async changes => {
+    const before = item
+    item = { ...item, ...changes }
+    paint(before)
     try {
       item = (await api('PATCH', '/api/items/' + item.id, changes)).item
-      itemPage(project, item)
-    } catch (problem) { alert(problem.message) }
+      remember()
+    } catch (problem) {
+      const failed = item
+      item = before
+      paint(failed)
+      alert(problem.message)
+    }
   }
+  paint()
+
   const noteBody = el('textarea', { rows: '3', maxlength: '4000', placeholder: 'A note only you can see', 'aria-label': 'Add a note' })
   const addNote = el('form', { class: 'add-note', onsubmit: async event => {
     event.preventDefault()
@@ -163,37 +232,33 @@ function itemPage(project, item) {
   } }, noteBody, el('button', { type: 'submit', class: 'button' }, 'Add note'))
 
   const fact = (label, ...value) => value.some(Boolean) && el('div', {}, el('dt', {}, label), el('dd', {}, ...value))
-  show(
-    head(project, 'inbox'),
-    el('article', { class: 'item' },
-      el('header', { class: 'item-head' }, stub(item), el('h2', {}, item.title)),
-      el('div', { class: 'statuses', role: 'radiogroup', 'aria-label': 'Status' },
-        Object.entries(STATUS).map(([key, label]) => el('button', {
-          type: 'button', role: 'radio', class: `status-${key}`, 'aria-checked': String(item.status === key),
-          onclick: () => item.status !== key && save({ status: key })
-        }, label))),
-      el('p', { class: 'item-body' }, item.body),
-      attachments(item),
-      el('dl', { class: 'facts' },
-        fact('Kind', el('select', { 'aria-label': 'Kind', onchange: event => save({ kind: event.target.value }) },
-          Object.entries(KIND).map(([key, label]) => el('option', { value: key, selected: item.kind === key }, label)))),
-        fact('Sent', new Date(item.createdAt).toLocaleString()),
-        fact('From', item.source === 'page'
-          ? el('a', { href: pageURL(project), target: '_blank', rel: 'noopener' }, 'Your feedback page')
-          : item.page && el('a', { href: item.page, rel: 'noopener noreferrer', target: '_blank' }, item.pageTitle || item.page)),
-        fact('Reply to', item.email && el('a', { href: 'mailto:' + item.email }, item.email)),
-        fact('Browser', item.browser),
-        fact('Window', item.viewport && item.viewport.replace('x', ' × '))),
-      el('div', { class: 'item-actions' },
-        el('label', { class: 'toggle' },
-          el('input', { type: 'checkbox', checked: item.public, onchange: event => save({ public: event.target.checked }) }),
-          project.public ? 'Show on your public page' : 'Show on your public page (the page is off)'),
-        el('button', { type: 'button', class: 'button danger', onclick: async () => {
-          if (!confirm(`Delete #${item.number} for good?`)) return
-          try { await api('DELETE', '/api/items/' + item.id); go(`/projects/${project.id}`) } catch (problem) { alert(problem.message) }
-        } }, 'Delete')),
-      publicComments(project, item, reload),
-      el('section', { class: 'notes-section' }, el('h3', {}, 'Private notes'), notes, addNote)))
+  put(el('article', { class: 'item' },
+    el('header', { class: 'item-head' }, ticketStub, el('h2', {}, item.title)),
+    statuses,
+    el('p', { class: 'item-body' }, item.body),
+    attachments(item),
+    el('dl', { class: 'facts' },
+      fact('Kind', kind),
+      fact('Sent', new Date(item.createdAt).toLocaleString()),
+      fact('From', item.source === 'page'
+        ? el('a', { href: pageURL(project), target: '_blank', rel: 'noopener' }, 'Your feedback page')
+        : item.page && el('a', { href: item.page, rel: 'noopener noreferrer', target: '_blank' }, item.pageTitle || item.page)),
+      fact('Reply to', item.email && el('a', { href: 'mailto:' + item.email }, item.email)),
+      fact('Browser', item.browser),
+      fact('Window', item.viewport && item.viewport.replace('x', ' × '))),
+    el('div', { class: 'item-actions' },
+      el('label', { class: 'toggle' }, shown,
+        project.public ? 'Show on your public page' : 'Show on your public page (the page is off)'),
+      el('button', { type: 'button', class: 'button danger', onclick: async () => {
+        if (!confirm(`Delete #${item.number} for good?`)) return
+        try {
+          await api('DELETE', '/api/items/' + item.id)
+          if (shell?.items) shell.items = shell.items.filter(entry => entry.id !== item.id)
+          go(`/projects/${project.id}`)
+        } catch (problem) { alert(problem.message) }
+      } }, 'Delete')),
+    comments,
+    el('section', { class: 'notes-section' }, el('h3', {}, 'Private notes'), notes, addNote)))
 }
 
 function setup(project) {
@@ -255,6 +320,7 @@ function setup(project) {
       const origins = sites.value.split(/[\s,]+/).filter(Boolean)
       project = (await api('PATCH', '/api/projects/' + project.id, { label: draft.label, color: draft.color, position: draft.position, attachments: draft.attachments, origins })).project
       Object.assign(draft, project)
+      shell.project = project
       status.textContent = 'Saved. Sites with the snippet pick it up on their next page load.'
       sync()
     } catch (problem) { status.textContent = problem.message }
@@ -268,8 +334,7 @@ function setup(project) {
       el('small', {}, 'Leave empty to accept feedback from any site. Your own feedback page is always allowed.')),
     el('div', { class: 'form-actions' }, status, saveButton))
 
-  show(
-    head(project, 'setup'),
+  put(
     el('section', { class: 'snippet' },
       el('h2', {}, 'Add it to your site'),
       el('p', { class: 'muted' }, 'Paste this before the closing ', el('code', {}, '</body>'), ' of every page that should have the button.'),
@@ -291,20 +356,21 @@ function download(blob, name) {
   setTimeout(() => URL.revokeObjectURL(link.href), 1000)
 }
 
-function share(project) {
+function share(project, saved = '') {
   const origin = location.origin.replace(/^https?:\/\//, '')
   const on = el('input', { type: 'checkbox', checked: project.public })
   const slug = el('input', { value: project.slug || '', maxlength: '40', placeholder: project.name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'my-site', spellcheck: 'false', autocapitalize: 'none', 'aria-label': 'Custom address' })
   const intro = el('textarea', { rows: '3', maxlength: '280', placeholder: 'Report a bug, suggest an idea or ask a question. It goes straight to the team.' })
   intro.value = project.intro
-  const status = el('p', { class: 'muted', role: 'status' })
+  const status = el('p', { class: 'muted', role: 'status' }, saved)
   const saveButton = el('button', { type: 'submit', class: 'button primary' }, 'Save')
   const form = el('form', { class: 'setup', onsubmit: async event => {
     event.preventDefault()
     saveButton.disabled = true
     try {
       project = (await api('PATCH', '/api/projects/' + project.id, { public: on.checked, slug: slug.value.trim(), intro: intro.value })).project
-      share(project)
+      shell.project = project
+      share(project, 'Saved.')
     } catch (problem) { status.textContent = problem.message; saveButton.disabled = false }
   } },
     el('label', { class: 'toggle' }, on, 'Turn on the public page'),
@@ -331,8 +397,7 @@ function share(project) {
         el('button', { type: 'button', class: 'button primary', onclick: async () => download(await poster(url, project), `${project.slug || project.id}-poster.png`) }, glyph('download', 'glyph line'), 'Poster (PNG)'),
         el('button', { type: 'button', class: 'button', onclick: () => download(new Blob([qrSVG(url, color)], { type: 'image/svg+xml' }), `${project.slug || project.id}-qr.svg`) }, glyph('download', 'glyph line'), 'QR code (SVG)'))))
 
-  show(
-    head(project, 'share'),
+  put(
     el('div', { class: 'share-grid' },
       el('section', {},
         el('h2', {}, 'Your feedback page'),
@@ -341,29 +406,29 @@ function share(project) {
       handout || el('section', { class: 'handout off' }, el('h2', {}, 'Link and QR code'), el('p', { class: 'muted' }, 'Turn the page on to get its link and QR code.'))))
 }
 
-function settings(project) {
+function settings(project, saved = '') {
   const name = el('input', { value: project.name, maxlength: '60', required: true })
-  const status = el('p', { class: 'muted', role: 'status' })
+  const status = el('p', { class: 'muted', role: 'status' }, saved)
   const saveButton = el('button', { type: 'submit', class: 'button primary' }, 'Save')
   const form = el('form', { class: 'setup', onsubmit: async event => {
     event.preventDefault()
     saveButton.disabled = true
     try {
       project = (await api('PATCH', '/api/projects/' + project.id, { name: name.value })).project
-      settings(project)
+      renamed(project)
+      settings(project, 'Saved.')
     } catch (problem) { status.textContent = problem.message; saveButton.disabled = false }
   } },
     el('label', { class: 'field' }, el('span', {}, 'Project name'), name,
       el('small', {}, 'Shown on the form, your public page and its poster.')),
     el('div', { class: 'form-actions' }, status, saveButton))
-  show(
-    head(project, 'settings'),
+  put(
     el('section', { class: 'settings' }, el('h2', {}, 'Project'), form),
     el('section', { class: 'danger-zone' },
       el('h2', {}, 'Delete project'),
       el('p', { class: 'muted' }, 'Deletes the project with every item, file, comment, note and stat in it. The snippet and the public page stop working.'),
       el('button', { type: 'button', class: 'button danger', onclick: async () => {
         if (!confirm(`Delete ${project.name} and all its feedback for good?`)) return
-        try { await api('DELETE', '/api/projects/' + project.id); go('/') } catch (problem) { alert(problem.message) }
+        try { await api('DELETE', '/api/projects/' + project.id); shell = null; go('/') } catch (problem) { alert(problem.message) }
       } }, 'Delete project')))
 }

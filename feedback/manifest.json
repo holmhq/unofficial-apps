@@ -1,6 +1,6 @@
 {
   "name": "feedback",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "title": "feedback",
   "description": "A feedback button for any website, or a page of its own with a QR code: visitors send bugs and ideas, you triage them in one inbox.",
   "themeColor": "#c2410c",

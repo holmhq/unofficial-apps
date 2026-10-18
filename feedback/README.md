@@ -12,13 +12,14 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
 ## What it does
 
 - **The button,** on your site: a pill in the corner (left or right) in your
-  colour, with your label. It opens a small form: Bug, Idea or Question, a
+  colour, with your label and the app's smiling-bubble mark. It opens a small form: Bug, Idea or Question, a
   message, up to four files (pictures, videos, PDFs or text, 8 MB in all;
   big photos shrink in the browser first; paste or drop them too), and an
   email if the sender wants a reply. On a phone the form is a bottom sheet.
   Escape or the close button dismisses it.
 - **Projects:** sign in and make one per site or product. Tabs: Inbox, Stats,
-  Share, Set up and Settings. Set up shows the snippet with your choices
+  Share, Set up and Settings; switching tabs changes only what's below them.
+  Set up shows the snippet with your choices
   filled in and a preview of the button and form that follows every change as
   you make it. Settings renames or deletes the project.
 - **Inbox:** every item as a ticket, numbered per project and tinted by its
