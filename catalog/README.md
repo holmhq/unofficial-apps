@@ -62,7 +62,7 @@ src/reviews.js      ratings, reviews and the review form
 src/admin.js        /admin
 src/lib.js          DOM and API helpers, the app icon, counting
 src/styles.css      the whole design, light and dark
-assets/             favicon and fonts (SIL OFL 1.1)
+assets/             icon, favicon and fonts (SIL OFL 1.1)
 api/main.js         routes (below)
 api/index.js        reads index.json and screenshots from GitHub, cached
 api/store.js        settings, counters and reviews
@@ -107,6 +107,16 @@ your repository, then:
 ```sh
 holm app deploy catalog --host apps.example.com --spa --no-build
 holm net allow raw.githubusercontent.com --app <app-id>
+```
+
+Holm's sign-in page takes the app's name, icon and colour from node settings,
+so give it the store's own (the tint chosen in `/admin` stays inside the
+store; it can't change node settings):
+
+```sh
+holm settings set settings.apps.<app-id>.brand.name 'Unofficial Holm apps'
+holm settings set settings.apps.<app-id>.brand.icon_url /assets/icon.svg
+holm settings set settings.apps.<app-id>.theme.accent '#0e7c66'
 ```
 
 `?ref=<branch>` on any page shows the store at another branch or tag, which is
