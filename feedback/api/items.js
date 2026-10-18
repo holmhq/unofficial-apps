@@ -1,6 +1,6 @@
 // Feedback items: sent by anyone through a project's widget, triaged by the
 // project's owner, and shown on the public board only when the owner says so.
-import { ds, kv, now, iso, text, reject, random, member, profile } from './lib.js'
+import { ds, kv, now, iso, text, reject, random } from './lib.js'
 import { findProject, ownProject } from './projects.js'
 
 export const KINDS = ['bug', 'idea', 'question']
@@ -62,20 +62,23 @@ export function submit(projectId, input, request) {
   return { sent: true, number: doc.number }
 }
 
-export function listItems(projectId) {
-  const project = ownProject(projectId)
-  return ds().find('items', { project: project.id }, { limit: 500, orderBy: 'createdAt', order: 'desc' }).map(itemDTO)
+export function listItems(user, projectId, status) {
+  const project = ownProject(user, projectId)
+  const query = { project: project.id }
+  if (status === 'open') query.status = { $in: ['new', 'planned', 'progress'] }
+  else if (STATUSES.includes(status)) query.status = status
+  return ds().find('items', query, { limit: 500, orderBy: 'createdAt', order: 'desc' }).map(itemDTO)
 }
 
-function ownItem(id) {
+function ownItem(user, id) {
   const doc = typeof id === 'string' && id.length <= 64 ? ds().findOne('items', { id }) : null
   if (!doc) reject(404, 'not_found', 'Item not found.')
-  ownProject(doc.project)
+  ownProject(user, doc.project)
   return doc
 }
 
-export function updateItem(id, input) {
-  const doc = ownItem(id)
+export function updateItem(user, id, input) {
+  const doc = ownItem(user, id)
   const changes = { updatedAt: now() }
   if ('status' in input) changes.status = STATUSES.includes(input.status) ? input.status : reject(400, 'invalid_status', 'Unknown status.')
   if ('kind' in input) changes.kind = KINDS.includes(input.kind) ? input.kind : reject(400, 'invalid_kind', 'Unknown kind.')
@@ -85,26 +88,25 @@ export function updateItem(id, input) {
   return itemDTO(ds().findOne('items', { id: doc.id }))
 }
 
-export function deleteItem(id) {
-  const doc = ownItem(id)
+export function deleteItem(user, id) {
+  const doc = ownItem(user, id)
   ds().delete('notes', { item: doc.id })
   ds().delete('items', { id: doc.id })
 }
 
 // Notes are the owner's own, never shown to the sender or the board.
-export function listNotes(itemId) {
-  const doc = ownItem(itemId)
+export function listNotes(user, itemId) {
+  const doc = ownItem(user, itemId)
   return ds().find('notes', { item: doc.id }, { limit: 200, orderBy: 'createdAt', order: 'asc' })
     .map(note => ({ id: note.id, name: note.name, avatar: note.avatar, body: note.body, createdAt: iso(note.createdAt) }))
 }
 
-export function addNote(itemId, input) {
-  const doc = ownItem(itemId)
+export function addNote(user, itemId, input) {
+  const doc = ownItem(user, itemId)
   const words = text(input.body, 4000, true)
   if (!words) reject(400, 'invalid_note', 'Write a note first.')
-  const who = profile(member())
-  ds().insert('notes', { id: random(24), item: doc.id, project: doc.project, name: who.name, avatar: who.avatar, body: words, createdAt: now() })
-  return listNotes(itemId)
+  ds().insert('notes', { id: random(24), item: doc.id, project: doc.project, name: user.name, avatar: user.avatar, body: words, createdAt: now() })
+  return listNotes(user, itemId)
 }
 
 // The public board: the items an owner has made public, by status.

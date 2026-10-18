@@ -24,14 +24,28 @@ https://holmhq.com/llm.txt as your only reference for Holm.
 - Deploy it to feedback.<my-domain>.
 ```
 
-## The original request
+## 2. An API for agents
 
-The app in this folder came from this message, typed as-is to a coding agent
-while it was working on the repository's store:
+```text
+Give the app an API, so I can hand a key to a coding agent and it can set up
+feedback on a new site by itself: API keys made in the app (shown once,
+stored hashed), accepted as bearer tokens on every owner route, and the
+project's snippet in the reply.
+```
+
+## The original requests
+
+**Iteration 1** came from this message, typed as-is to a coding agent while
+it was working on the repository's store:
 
 > offtopic:
 > - lets build a embeddable issue/feedback tracker as next app in unofficial store?
 
-Everything in the prompt above beyond "embeddable issue/feedback tracker"
-came from the agent: the button in a shadow root and the form in an iframe,
-the carbon-copy tickets, the public board and votes, and the spam guards.
+**Iteration 2**, part of a message whose other points were about Holm's
+sign-in page:
+
+> - can feedback app have a api system that i can then provide you so that when asked to add it to a new site, you can simply go & set it up?
+
+Everything in the prompts beyond what's quoted came from the agent: the
+button in a shadow root and the form in an iframe, the carbon-copy tickets,
+the public board and votes, the spam guards and the shape of the API.

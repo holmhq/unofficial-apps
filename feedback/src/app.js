@@ -3,6 +3,7 @@ import { $, el, api } from './lib.js'
 import { loadViewer, onViewer, viewer, signIn } from './account.js'
 import { projectPage } from './project.js'
 import { boardPage } from './board.js'
+import { keysPage } from './keys.js'
 
 const main = $('#main')
 // Optional sections pass false or undefined; leave them out of the page.
@@ -65,6 +66,7 @@ function route() {
   const path = location.pathname.replace(/\/+$/, '') || '/'
   let match
   if ((match = /^\/b\/([a-z0-9]{8})$/.exec(path))) return boardPage(match[1])
+  if (path === '/keys') return viewer().me ? keysPage() : landing()
   if ((match = /^\/projects\/([a-z0-9]{8})(?:\/(setup|items\/(\d+)))?$/.exec(path))) {
     if (!viewer().me) return landing()
     return projectPage(match[1], match[2] === 'setup' ? 'setup' : match[3] ? Number(match[3]) : 'inbox')

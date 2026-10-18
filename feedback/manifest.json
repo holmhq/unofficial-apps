@@ -1,6 +1,6 @@
 {
   "name": "feedback",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "title": "feedback",
   "description": "A feedback button for any website: visitors send bugs and ideas from the page they're on, you triage them in one inbox.",
   "themeColor": "#c2410c",

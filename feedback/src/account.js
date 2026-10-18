@@ -46,6 +46,7 @@ function toggleMenu(button) {
     ? el('div', { class: 'menu', role: 'menu' },
         el('div', { class: 'menu-head' }, el('strong', {}, me.name), me.email && el('span', {}, me.email)),
         el('a', { href: '/', 'data-link': true, role: 'menuitem' }, 'Your projects'),
+        el('a', { href: '/keys', 'data-link': true, role: 'menuitem' }, 'API keys'),
         el('button', { type: 'button', role: 'menuitem', onclick: signOut }, 'Sign out'))
     : el('div', { class: 'menu', role: 'menu' },
         el('button', { type: 'button', role: 'menuitem', onclick: () => signIn().catch(() => {}) }, 'Sign in'))

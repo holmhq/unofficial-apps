@@ -323,3 +323,19 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .vote svg { width: 1rem; height: 1rem; fill: currentColor; }
 .vote[aria-pressed="true"] { background: var(--project, var(--accent)); border-color: transparent; color: #fff; }
 .empty { color: var(--ink-3); }
+
+/* API keys */
+
+.key-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.9rem; }
+.key-row > div { min-width: 0; overflow-wrap: anywhere; }
+.key-row .muted { font-size: 0.88rem; }
+.new-key { margin-top: 1rem; padding: 1rem; border: 1px solid var(--accent); border-radius: 14px; background: var(--sheet); }
+.new-key p { margin: 0 0 0.6rem; }
+.new-key pre, .api-help pre {
+  margin: 0 0 0.75rem; padding: 0.8rem 1rem; overflow-x: auto;
+  background: var(--paper); border: 1px solid var(--rule); border-radius: 10px;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.api-help { margin-top: 2.5rem; }
+.api-help h2 { margin-bottom: 0.75rem; }
+.api-help p { font-size: 0.92rem; }

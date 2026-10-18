@@ -27,6 +27,10 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
   public, grouped as in progress, planned, under review and done, sorted by
   votes. Anyone can vote, once per browser. It never shows emails, pages or
   browsers. The board has the project's own feedback button.
+- **API keys,** in the avatar menu: a key lets a script or a coding agent do
+  anything the owner can, so setting up feedback on a new site is one
+  request. Keys are shown once and stored as SHA-256 hashes; a key can't make
+  more keys.
 - **Look:** aubergine ink, a burnt-orange signal, light and dark following
   the system. The form on your site is always light and uses the system font,
   so it sits quietly on any design. Fonts are vendored.
@@ -72,13 +76,15 @@ src/app.js          router, landing and projects
 src/project.js      inbox, item page and set up
 src/board.js        the public board
 src/account.js      avatar, menu and Holm's sign-in page in an overlay
+src/keys.js         the API keys page
 src/widget.js       the form's logic
 src/lib.js          DOM, API and formatting helpers, icons
 src/styles.css      the app's design;  src/widget.css  the form's
-assets/             favicon and fonts (SIL OFL 1.1)
+assets/             icon, favicon and fonts (SIL OFL 1.1)
 api/main.js         routes (below)
 api/projects.js     projects and their settings
 api/items.js        sending, triage, notes, the board and votes
+api/keys.js         API keys and who an owner request is from
 api/lib.js          responses, request checks, ids, who is asking
 holm.symbol.svg     the app's icon
 listing/            its store listing (not deployed)
@@ -86,8 +92,9 @@ listing/            its store listing (not deployed)
 
 The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
 
-- **`holm.auth`:** who is signed in. Every owner route checks that the
-  project belongs to them and answers "not found" otherwise.
+- **`holm.auth`:** who is signed in. Owner routes also accept an app API key
+  as a bearer token, and check that the project belongs to its owner,
+  answering "not found" otherwise. Hashes use `crypto.subtle`.
 - **Document store, `holm.app.ds`:** projects, items and notes. Votes are an
   `$inc` on the item.
 - **Shared KV, `holm.app.kv`:** each project's item counter (for `#12`
@@ -103,16 +110,55 @@ The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
 | `POST /api/embed/<project>/items` | anyone | send feedback |
 | `GET /api/boards/<project>` | anyone | a public board |
 | `POST /api/boards/<project>/items/<id>/vote` | anyone | vote, once per browser |
-| `GET`, `POST /api/projects` | signed in | your projects; make one |
+| `GET`, `POST /api/projects` | owner | your projects; make one |
 | `GET`, `PATCH`, `DELETE /api/projects/<id>` | owner | one project |
-| `GET /api/projects/<id>/items` | owner | its inbox |
+| `GET /api/projects/<id>/items[?status=]` | owner | its inbox: `open`, `new`, `planned`, `progress`, `done`, `closed` |
 | `PATCH`, `DELETE /api/items/<id>` | owner | status, kind, public; delete |
 | `GET`, `POST /api/items/<id>/notes` | owner | private notes |
+| `GET`, `POST /api/keys`, `DELETE /api/keys/<id>` | signed in | API keys |
+
+"Owner" means signed in, or an API key sent as `Authorization: Bearer fb_…`.
+
+## API
+
+Make a key under API keys in the avatar menu. Then, to set up a new site:
+
+```sh
+curl https://feedback.example.com/api/projects \
+  -H "Authorization: Bearer $FEEDBACK_KEY" -H 'Content-Type: application/json' \
+  -d '{"name":"My blog","origins":["https://blog.example.com"],"color":"#1d4ed8"}'
+```
+
+The reply's `project.snippet` is the script tag to paste before `</body>`.
+A project takes `name`, `label` (the button's text), `color`, `position`
+(`right` or `left`), `origins` (allowed sites; empty means any) and `public`
+(the board). `PATCH` takes the same fields.
+
+To read and sort what arrived:
+
+```sh
+curl "https://feedback.example.com/api/projects/<id>/items?status=new" -H "Authorization: Bearer $FEEDBACK_KEY"
+curl -X PATCH https://feedback.example.com/api/items/<item-id> -H "Authorization: Bearer $FEEDBACK_KEY" \
+  -H 'Content-Type: application/json' -d '{"status":"planned","public":true}'
+```
+
+Snippets and board links in replies use `ORIGIN` in `api/projects.js`, because
+the runtime doesn't pass the request host to apps yet. Set it to your host.
 
 ## Deploy your own
 
 ```sh
 holm app deploy feedback --host feedback.example.com --spa --no-build
+```
+
+Set `ORIGIN` in `api/projects.js` to your host first (see API). Holm's
+sign-in page takes the app's name, icon and colour from node settings, so give
+it feedback's own:
+
+```sh
+holm settings set settings.apps.<app-id>.brand.name feedback
+holm settings set settings.apps.<app-id>.brand.icon_url /assets/icon.svg
+holm settings set settings.apps.<app-id>.theme.accent '#c2410c'
 ```
 
 Anyone who can sign in can make projects. To keep it to yourself, close
