@@ -4,88 +4,34 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Unofficial Holm apps</title>
-  <meta name="description" content="Small, real apps for your Holm node, each pinned by a fingerprint, with every way to install them.">
+  <meta name="description" content="Small, real apps for your Holm node, each with its own page and a sheet that installs it.">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#f2f5f4" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0f1a1e" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/assets/fonts/bricolage-grotesque-opsz.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/assets/fonts/fragment-mono.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
-  <a class="skip" href="#apps">Skip to the apps</a>
+  <a class="skip" href="#main">Skip to content</a>
   <header class="top">
-    <a class="brand" href="/">
+    <a class="brand" href="/" data-link>
       <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0Z"/><path fill="var(--paper)" d="M6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>
       <span>unofficial</span>
     </a>
     <a class="quiet" href="https://github.com/holmhq/unofficial-apps" rel="noopener" target="_blank">Source on GitHub</a>
   </header>
 
-  <main>
-    <section class="intro">
-      <h1>Small, real apps for your Holm&nbsp;node.</h1>
-      <p class="lede">Each app is a folder in one public repository, released under a tag and pinned by
-        the fingerprint of its files. Trust the repository once, then install any app from it.</p>
-
-      <form class="node" id="node" autocomplete="off">
-        <label>
-          <span>Peer</span>
-          <input name="peer" placeholder="default" spellcheck="false" inputmode="text" aria-describedby="node-help">
-        </label>
-        <label>
-          <span>Domain</span>
-          <input name="domain" placeholder="example.com" spellcheck="false" inputmode="url" aria-describedby="node-help">
-        </label>
-        <p id="node-help">Your node, as the <code>holm</code> CLI knows it. Every command below uses it.</p>
-      </form>
-
-      <div class="trust">
-        <h2>Trust this repository</h2>
-        <div id="trust-command"></div>
-        <p>Only the node owner can run this. Holm already trusts its official repository; every other one
-          needs this step, once, before anything installs from it.</p>
-      </div>
-    </section>
-
-    <section id="apps" class="apps" aria-live="polite" tabindex="-1">
-      <p class="status">Reading the index…</p>
-    </section>
-
-    <section class="pinning">
-      <h2>How an install stays pinned</h2>
-      <dl>
-        <div><dt>Repository</dt><dd>Trust covers the whole repository. Adding it is one owner command; removing it stops new installs and leaves deployed apps alone.</dd></div>
-        <div><dt>Tag</dt><dd>Each release is a tag named after the app, like <code>pastebin/v0.1.0</code>, so apps in one repository version independently.</dd></div>
-        <div><dt>Fingerprint</dt><dd>The <code>h1</code> is a SHA-256 over every file the app deploys, computed the way Go’s <code>go.sum</code> does. If a tag is moved to different files, the fingerprint no longer matches and the install is refused. The seal beside each app is drawn from its fingerprint.</dd></div>
-        <div><dt>Index</dt><dd><a href="https://github.com/holmhq/unofficial-apps/blob/main/index.json" rel="noopener" target="_blank"><code>index.json</code></a> lists every app folder with its version, tag and fingerprint. A check on every push fails if any of them is out of date.</dd></div>
-      </dl>
-    </section>
+  <main id="main" tabindex="-1">
+    <p class="status">Loading the apps…</p>
   </main>
 
   <footer class="foot">
-    <span>A Holm app. These apps are unofficial: built in the open to show how Holm apps are made.</span>
+    <p>Every app here installs from <a href="https://github.com/holmhq/unofficial-apps" rel="noopener" target="_blank">github.com/holmhq/unofficial-apps</a>
+      at its release tag. These apps are unofficial: built in the open to show how Holm apps are made.</p>
   </footer>
 
-  <template id="app-template">
-    <article class="app">
-      <div class="seal" aria-hidden="true"></div>
-      <div class="body">
-        <header>
-          <h2 class="title"></h2>
-          <span class="version"></span>
-        </header>
-        <p class="description"></p>
-        <p class="links"></p>
-        <p class="print"><code class="h1 hash"></code> <span class="files"></span></p>
-        <div class="install">
-          <div class="tabs" role="tablist" aria-label="Ways to install"></div>
-          <div class="panel" role="tabpanel"></div>
-        </div>
-      </div>
-    </article>
-  </template>
+  <dialog class="sheet" id="install" aria-labelledby="install-title"></dialog>
 
   <script type="module" src="/src/app.js"></script>
 </body>

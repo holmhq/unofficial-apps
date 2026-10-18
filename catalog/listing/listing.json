@@ -1,0 +1,11 @@
+{
+  "subtitle": "A store for app repositories",
+  "category": "Developer tools",
+  "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, a description and the prompt that built it, and installs it on your node from a Get button.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
+  "whatsNew": "Now a store: a front page of every app, a page for each one, and a Get button that opens an install sheet written for your node.",
+  "screenshots": [
+    { "file": "store.webp", "alt": "The front page: a featured app and the list of all apps, each with a Get button" },
+    { "file": "app.webp", "alt": "An app's page in dark mode: icon, subtitle, facts and screenshots" },
+    { "file": "install.webp", "alt": "The install sheet, with the terminal commands written for your node" }
+  ]
+}

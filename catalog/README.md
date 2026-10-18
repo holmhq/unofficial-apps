@@ -1,32 +1,34 @@
 # catalog
 
-The front page of this repository, live at <https://unofficial.zyt.app>. It
-lists every app here and shows each way to install it on your own Holm node,
-side by side, so the install experience itself can be tried and compared.
+An app store for this repository, live at <https://unofficial.zyt.app>. Every
+app gets its own page, and a Get button opens a sheet that installs it on
+your own Holm node.
 
-It was built from the request quoted in [`PROMPT.md`](PROMPT.md).
+It was built from the requests quoted in [`PROMPT.md`](PROMPT.md).
 
 ## What it does
 
-- **Your node, once:** type your peer name and domain at the top. Every command
-  on the page fills them in, highlighted, so you can see what changed.
-- **Trust the repository:** the one owner command,
-  `holm app repo add unofficial https://github.com/holmhq/unofficial-apps`.
-- **Each app:** its title, description, version, release tag, file count and
-  fingerprint (`h1`), with links to the live copy, the source at that tag, and
-  the README.
-- **Three ways to install**, as tabs. The one you pick applies to every app and
-  is remembered:
-  - **Clone and deploy:** clone the release tag, check the fingerprint with
-    `scripts/index.mjs --check`, then `holm app deploy`. Works today.
-  - **`holm app install`:** the one-line install from a trusted repository,
-    pinned to a version. Not in Holm yet, so it's marked as coming.
-  - **Ask an agent:** a prompt for any coding agent that clones the tag,
-    checks the fingerprint, deploys, and follows the README.
-- **The seal:** each app's mark is a ring of 32 ticks, one per byte of its
-  fingerprint, in the app's own colour. If the files change, the seal changes.
-- **Look:** slate ink on cool paper, with light and dark following the
-  system. Fonts are vendored, so nothing loads from a CDN.
+- **Front page:** a featured app on its own colour, then every app as a row
+  with its icon, subtitle, category and a Get button.
+- **App pages** at `/apps/<app>`:
+  - the icon, title, subtitle, Get and a link to the live copy;
+  - a strip of facts: version, size, category, license;
+  - screenshots you can swipe through;
+  - the description and what's new in this version;
+  - **Built from a prompt:** the request a coding agent built the app from;
+  - information: repository, release tag, size and file count, README.
+- **The install sheet:** type your peer and domain once and every command is
+  written for your node, with your parts highlighted. Three ways, as tabs; the
+  one you pick is remembered:
+  - **Terminal:** clone the release tag and `holm app deploy` the folder.
+    Works today.
+  - **Ask an agent:** a prompt for any coding agent to do the same and follow
+    the README.
+  - **`holm app install`:** trust the repository once, then install by name
+    and version. Not in Holm yet, so it's marked as coming.
+- **Look:** slate ink on cool paper, light and dark following the system.
+  Each app brings its colour through its icon. Fonts are vendored, so nothing
+  loads from a CDN.
 
 ## How it is built
 
@@ -34,29 +36,41 @@ A Holm app is a folder: static files are served as-is, and `api/main.js`
 handles `/api/*`. There is no build step.
 
 ```text
-index.html          page shell and the app-entry template
-src/app.js          reads /api/index, renders apps, commands, tabs and seals
+index.html          page shell and the install <dialog>
+src/app.js          router, front page and app pages
+src/install.js      the install sheet and its commands
+src/lib.js          DOM helpers and the app icon
 src/styles.css      the whole design, light and dark
 assets/             favicon and fonts (SIL OFL 1.1)
-api/main.js         GET /api/index[?ref=<branch|tag|commit>]
-api/index.js        fetches index.json from GitHub, cleans it, caches it
+api/main.js         GET /api/index and GET /api/file
+api/index.js        reads index.json and screenshots from GitHub, cached
+holm.symbol.svg     this app's own icon
+listing/            this app's store listing (not deployed)
 ```
 
-The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
+Everything the store shows comes from the repository's
+[`index.json`](../index.json), which `scripts/index.mjs` builds from each
+app's manifest, its `holm.symbol.svg` and its `listing/` folder; see the root
+README. The Holm primitives it uses, all described in
+<https://holmhq.com/llm.txt>:
 
-- **`holm.net.fetch`:** reads `index.json` from `raw.githubusercontent.com`
-  at a ref, the same file a node or the CLI would read from a trusted
-  repository. Egress is deny-by-default, so the operator allows that one host.
-- **Shared KV, `holm.app.kv`:** the last good copy of each ref's index. It is
-  refreshed after five minutes; if GitHub doesn't answer, the page shows the
-  last good copy and says so.
+- **`holm.net.fetch`:** reads `index.json` and screenshots from
+  `raw.githubusercontent.com` at a ref, the same files a node would read from
+  a repository it trusts. Egress is deny-by-default, so the operator allows
+  that one host.
+- **Shared KV, `holm.app.kv`:** the last good index for each ref (refreshed
+  after five minutes) and the freshness marks for cached screenshots.
+- **Blob store, `holm.app.s3`:** cached screenshots. `/api/file` serves only
+  the screenshots the index lists, so the store can't be used to fetch
+  anything else from GitHub. If GitHub doesn't answer, the last good copy is
+  served.
 
-The index itself comes from [`scripts/index.mjs`](../scripts/index.mjs) at
-the repository root; see the root README.
+App icons are drawn, not downloaded: the index carries each app's
+`holm.symbol.svg` path, painted in white on the app's theme colour.
 
 ## Deploy your own
 
-For a fork, point `SOURCE` in `api/index.js` and `REPO` in `src/app.js` at
+For a fork, point `SOURCE` in `api/index.js` and `REPO` in `src/lib.js` at
 your repository, then:
 
 ```sh
@@ -64,15 +78,15 @@ holm app deploy catalog --host apps.example.com --spa --no-build
 holm net allow raw.githubusercontent.com --app <app-id>
 ```
 
-`?ref=<branch>` on the page shows the index on another branch or tag, which
-is handy for checking a pull request before it merges.
+`?ref=<branch>` on any page shows the store at another branch or tag, which is
+handy for checking a pull request before it merges.
 
 ## Known limits
 
-- `holm app install` isn't in Holm yet; the page shows the command it is
+- `holm app install` isn't in Holm yet; the sheet shows the command it is
   expected to take.
-- The page reads only the index; it doesn't fetch or verify app files. The
-  fingerprint check happens on the machine that installs.
+- Pages are drawn in the browser, so link previews show the store's generic
+  title and description rather than the app's.
 
 ## Licenses
 
