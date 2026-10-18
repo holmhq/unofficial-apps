@@ -87,6 +87,15 @@ Set `DEFAULT_ORIGIN` in `api/lib.js` to your host first. Links in API replies
 use it, because the runtime doesn't pass the request host to apps yet. The
 web UI builds its links from the page's own origin and needs no setting.
 
+Holm's sign-in page takes the app's name, icon and colour from node settings,
+so give it pastebin's own:
+
+```sh
+holm settings set settings.apps.<app-id>.brand.name pastebin
+holm settings set settings.apps.<app-id>.brand.icon_url /assets/icon-192-v1.png
+holm settings set settings.apps.<app-id>.theme.accent '#173a72'
+```
+
 Anyone can sign up by default. To keep the app to yourself, close signup once
 your account exists:
 

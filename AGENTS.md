@@ -54,3 +54,6 @@ or opens a pull request.
 - Verify in a real browser on mobile and desktop, in light and dark, before
   deploying.
 - Deploy: `holm @<peer> app deploy <app> --host <host> --spa --no-build`.
+- Holm's hosted sign-in page shows the app's name, icon and colour only if the
+  node has them: set `settings.apps.<app-id>.brand.name`, `brand.icon_url` and
+  `theme.accent` after the first deploy, as each app's README shows.

@@ -5,11 +5,11 @@
     {
       "name": "catalog",
       "path": "catalog",
-      "version": "0.3.0",
-      "tag": "catalog/v0.3.0",
-      "h1": "h1:2QWnQzShXN9OjtVl5RGGTa5hUzBchIfGHfFgbNBd/VA=",
-      "files": 21,
-      "size": 204335,
+      "version": "0.3.1",
+      "tag": "catalog/v0.3.1",
+      "h1": "h1:m5364dIw1jbWdhBLiTyUYMQJlpL3SAe9yuL44nTK03A=",
+      "files": 22,
+      "size": 205437,
       "title": "catalog",
       "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
       "themeColor": "#0e7c66",
@@ -19,7 +19,7 @@
         "subtitle": "A store for app repositories",
         "category": "Developer tools",
         "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
-        "whatsNew": "Sign in with the avatar at the top right. Rate and review apps; reviews go live once approved. Admins get an admin page: show or hide apps, light numbers for views, Gets and copied commands, review approval, and the store's colour.",
+        "whatsNew": "Its own icon, so Holm's sign-in page shows the store instead of Holm.",
         "featured": false,
         "screenshots": [
           {
@@ -59,11 +59,11 @@
     {
       "name": "feedback",
       "path": "feedback",
-      "version": "0.1.0",
-      "tag": "feedback/v0.1.0",
-      "h1": "h1:MVZxbiOU9u1eYZA+3A7dOJay3ruKN1MqQuKNcRNnPtc=",
-      "files": 24,
-      "size": 199226,
+      "version": "0.2.0",
+      "tag": "feedback/v0.2.0",
+      "h1": "h1:xz9HREtCESvj21Msb+/DH77zLVRgJvFSaua/sLrd+SE=",
+      "files": 27,
+      "size": 210524,
       "title": "feedback",
       "description": "A feedback button for any website: visitors send bugs and ideas from the page they're on, you triage them in one inbox.",
       "themeColor": "#c2410c",
@@ -73,7 +73,7 @@
         "subtitle": "A feedback button for any site",
         "category": "Developer tools",
         "description": "Add one script tag to your website and a feedback button appears. Visitors send a bug, an idea or a question from the page they're on, with an email if they'd like a reply.\n\nEverything arrives in one inbox per project. Mark items planned, in progress, done or closed, keep private notes, and see which page and browser each came from.\n\nWhen you're ready, turn on a public board: it shows only the items you choose, grouped by status, and visitors can vote for what matters to them.",
-        "whatsNew": "First release: the embeddable button and form, an inbox per project with statuses and notes, and an optional public board with votes.",
+        "whatsNew": "API keys: make one in the avatar menu, and scripts or a coding agent can set up projects, fetch their snippets and sort what arrives for you. Holm's sign-in page now shows feedback's own icon and colour.",
         "featured": false,
         "screenshots": [
           {
@@ -113,11 +113,11 @@
     {
       "name": "pastebin",
       "path": "pastebin",
-      "version": "0.1.1",
-      "tag": "pastebin/v0.1.1",
-      "h1": "h1:ftnYG6Gb8u4QRIrKcmXr6n7CvvdjsTMmHkXKe8y6wTU=",
+      "version": "0.1.2",
+      "tag": "pastebin/v0.1.2",
+      "h1": "h1:P1z966dDCdUhWjUl55XT7BPNFa04p0Nw1TpTas04L3I=",
       "files": 39,
-      "size": 581342,
+      "size": 581664,
       "title": "pastebin",
       "description": "Private-first text, code and media pastes with expiring links and burn-after-read sharing.",
       "themeColor": "#173a72",
@@ -127,7 +127,7 @@
         "subtitle": "Links that expire or burn",
         "category": "Utilities",
         "description": "Paste text, code or files and share them behind a link that expires, opens only once, or can be revoked at any time.\n\nCode is highlighted as you type. Markdown renders like GitHub's, and images, video and audio play in place. Your name stays off the paste unless you choose to show it.\n\nAPI keys and a small command-line tool let scripts and agents file pastes for you.",
-        "whatsNew": "A new app icon, and the app's colour now matches its Prussian-blue design.",
+        "whatsNew": "Notes for operators on giving Holm's sign-in page pastebin's name, icon and colour.",
         "featured": true,
         "screenshots": [
           {
