@@ -1,0 +1,18 @@
+{
+  "name": "feedback",
+  "version": "0.1.0",
+  "title": "feedback",
+  "description": "A feedback button for any website: visitors send bugs and ideas from the page they're on, you triage them in one inbox.",
+  "themeColor": "#c2410c",
+  "spa": true,
+  "publish": { "exclude": ["/listing/"] },
+  "display": {
+    "icon": "feedback",
+    "color": "#c2410c",
+    "tags": ["feedback", "issues", "widget"],
+    "featured": false
+  },
+  "ext": {
+    "com.holmhq.unofficial": { "demo": "https://feedback.zyt.app" }
+  }
+}

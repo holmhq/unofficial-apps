@@ -1,0 +1,13 @@
+{
+  "subtitle": "A feedback button for any site",
+  "category": "Developer tools",
+  "description": "Add one script tag to your website and a feedback button appears. Visitors send a bug, an idea or a question from the page they're on, with an email if they'd like a reply.\n\nEverything arrives in one inbox per project. Mark items planned, in progress, done or closed, keep private notes, and see which page and browser each came from.\n\nWhen you're ready, turn on a public board: it shows only the items you choose, grouped by status, and visitors can vote for what matters to them.",
+  "whatsNew": "First release: the embeddable button and form, an inbox per project with statuses and notes, and an optional public board with votes.",
+  "screenshots": [
+    { "file": "landing.webp", "alt": "The front page, with a live preview of the feedback form" },
+    { "file": "widget.webp", "alt": "The feedback form open on a shop's checkout page" },
+    { "file": "inbox.webp", "alt": "A project's inbox: each item a ticket, tinted by its status" },
+    { "file": "item.webp", "alt": "One bug report in dark mode, with its status, page and browser" },
+    { "file": "board.webp", "alt": "The public board, grouped by status, with votes" }
+  ]
+}

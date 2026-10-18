@@ -57,6 +57,60 @@
       "prompt": "Make this repository installable app by app, and build a catalog for it as a\nHolm app. Use https://holmhq.com/llm.txt as your only Holm reference.\n\n- Each top-level folder with a manifest.json is an app. Give each a version.\n- Write scripts/index.mjs (Node, no dependencies). It writes index.json at\n  the root: one entry per app with its name, path, version, a release tag\n  named <app>/v<version>, and h1, a fingerprint of the files Holm would\n  deploy, computed like Go's dirhash.Hash1 (as in go.sum). With --check it\n  fails if index.json is out of date or an app changed after its version was\n  tagged; with --tag it tags new versions.\n- Run the check in CI, and tag new versions on main.\n- In catalog/, build a page that reads index.json from GitHub on the server\n  and shows each app with every way to install it on my node: clone and\n  deploy, `holm app install` (not in Holm yet), and a prompt for a coding\n  agent. Trusting the repository is one command, `holm app repo add`. Let me\n  enter my peer and domain once, so every command fits my node.\n- Deploy it to unofficial.<my-domain>."
     },
     {
+      "name": "feedback",
+      "path": "feedback",
+      "version": "0.1.0",
+      "tag": "feedback/v0.1.0",
+      "h1": "h1:MVZxbiOU9u1eYZA+3A7dOJay3ruKN1MqQuKNcRNnPtc=",
+      "files": 24,
+      "size": 199226,
+      "title": "feedback",
+      "description": "A feedback button for any website: visitors send bugs and ideas from the page they're on, you triage them in one inbox.",
+      "themeColor": "#c2410c",
+      "symbol": "M 4 0 L 20 0 A 4 4 0 0 1 24 4 L 24 14 A 4 4 0 0 1 20 18 L 11 18 L 5 24 L 5 18 L 4 18 A 4 4 0 0 1 0 14 L 0 4 A 4 4 0 0 1 4 0 Z M 10.75 3.5 L 10.75 10.5 L 13.25 10.5 L 13.25 3.5 Z M 10.75 12.25 L 10.75 14.75 L 13.25 14.75 L 13.25 12.25 Z",
+      "demo": "https://feedback.zyt.app",
+      "listing": {
+        "subtitle": "A feedback button for any site",
+        "category": "Developer tools",
+        "description": "Add one script tag to your website and a feedback button appears. Visitors send a bug, an idea or a question from the page they're on, with an email if they'd like a reply.\n\nEverything arrives in one inbox per project. Mark items planned, in progress, done or closed, keep private notes, and see which page and browser each came from.\n\nWhen you're ready, turn on a public board: it shows only the items you choose, grouped by status, and visitors can vote for what matters to them.",
+        "whatsNew": "First release: the embeddable button and form, an inbox per project with statuses and notes, and an optional public board with votes.",
+        "featured": false,
+        "screenshots": [
+          {
+            "path": "listing/landing.webp",
+            "alt": "The front page, with a live preview of the feedback form",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/widget.webp",
+            "alt": "The feedback form open on a shop's checkout page",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/inbox.webp",
+            "alt": "A project's inbox: each item a ticket, tinted by its status",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/item.webp",
+            "alt": "One bug report in dark mode, with its status, page and browser",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/board.webp",
+            "alt": "The public board, grouped by status, with votes",
+            "width": 780,
+            "height": 1688
+          }
+        ]
+      },
+      "prompt": "Build an embeddable feedback and issue tracker as a Holm app. Use\nhttps://holmhq.com/llm.txt as your only reference for Holm.\n\n- One script tag adds a feedback button to any website. It opens a small\n  form: bug, idea or question, a message, and an optional email. Send the\n  page's address along, without its query or fragment.\n- Signed-in people make a project per site, with its snippet, a choice of\n  button text, colour and position, and a live preview.\n- An inbox per project: statuses (new, planned, in progress, done, closed),\n  private notes, and where each item came from.\n- An optional public board per project showing only the items I choose, with\n  upvotes.\n- Keep spam out without a captcha. Make it look good on mobile and desktop,\n  light and dark.\n- Deploy it to feedback.<my-domain>."
+    },
+    {
       "name": "pastebin",
       "path": "pastebin",
       "version": "0.1.1",
