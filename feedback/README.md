@@ -58,7 +58,9 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
 - **Set up:** the one-line snippet with its copy button, or, for a site
   that is itself a Holm app, the three steps it needs. **Where it's live**
   lists the sites whose pages loaded the button lately, and updates by
-  itself. **Allowed sites** limits who can send through the button; a site
+  itself; pages on localhost or a private network, like a developer's copy,
+  get a line of their own, with no Allow, and never count as the project's
+  site. **Allowed sites** limits who can send through the button; a site
   that's live but not allowed has an Allow button. Deleting the project is
   here too.
 - **Inbox:** every item as a ticket, numbered per project and tinted by its
@@ -330,7 +332,8 @@ holm policy set auth.public_signup false --app <app-id>
   changed, so a project whose snippet attracts spam relies on the caps and
   Allowed sites.
 - "Where it's live" trusts the origin the button's script reports, and a
-  site that stops loading it drops off after 90 days.
+  site that stops loading it drops off after 90 days (a local page, after a
+  week; it keeps up to five of those).
 - The rating needs jsDelivr to be reachable; without it, plain stars stand
   in.
 - A shared feedback page previews as the app, not as its project: link

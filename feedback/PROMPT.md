@@ -116,6 +116,14 @@ tile Holm's sign-in page shows. Credit its creator in the README.
 - Assume hundreds of items arrive: give the inbox sane filters.
 ```
 
+## 10. Your own computer isn't a site
+
+```text
+"Where it's live" offers pages on localhost and 127.0.0.1 as sites to
+allow. They're a developer's copy: list them apart, and keep them out of a
+project's sites.
+```
+
 ## The original requests
 
 **Iteration 1** came from this message, typed as-is to a coding agent while
@@ -218,6 +226,10 @@ maintained by us".
 > - set some random icon (say lucide or so) for a project / or enable them to set an icon
 > - assume 100s of feedback happens, provide sane filters
 
+**Iteration 11** was a copy of a project's "Where it's live" list, pasted
+without a word: one real site, and three pages on `localhost` and
+`127.0.0.1`, each offered as a site to allow.
+
 Everything in the prompts beyond what's quoted came from the agent: the
 button in a shadow root and the form in an iframe, the carbon-copy tickets,
 the public board and votes, the spam guards, the shape of the API, the
@@ -231,4 +243,6 @@ the look as the page loads, "where it's live", and the rating's place in
 the inbox and Stats, and in iteration 10 a Feedback link in the footer rather
 than a floating button, the sites shown from allowed sites and where the
 button is live, the icon on the form and the page too, the sort orders and
-filters, fifty items at a time, and the filters folding away on a phone.
+filters, fifty items at a time, and the filters folding away on a phone,
+and in iteration 11 which addresses count as local, and keeping them a week
+with a cap of their own.

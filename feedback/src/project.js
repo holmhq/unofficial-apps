@@ -749,15 +749,26 @@ function setup(project) {
 
   const live = el('div', { class: 'live', 'aria-live': 'polite' })
   const allowed = origin => !project.origins.length || project.origins.includes(origin)
-  const paintLive = () => live.replaceChildren(seen.length
-    ? el('ul', { class: 'live-list' }, seen.map(entry => el('li', {},
-        el('span', { class: allowed(entry.origin) ? 'live-dot' : 'live-dot blocked', 'aria-hidden': 'true' }),
-        el('span', { class: 'live-site' },
-          el('strong', {}, entry.origin.replace(/^https?:\/\//, '')),
-          el('small', { class: 'muted' }, allowed(entry.origin) ? `Seen ${ago(entry.seenAt)}` : `Seen ${ago(entry.seenAt)}, but not an allowed site`)),
-        !allowed(entry.origin) && el('button', { type: 'button', class: 'button small', onclick: () => saveOrigins([...project.origins, entry.origin]) }, 'Allow'))))
-    : el('p', { class: 'waiting' }, el('span', { class: 'live-dot waiting', 'aria-hidden': 'true' }),
-        'Waiting for the button to load on a site. Once a page with the snippet opens, it shows up here.'))
+  const host = origin => origin.replace(/^https?:\/\//, '')
+  // Pages on localhost or a private network are someone's own copy: listed
+  // apart, with no Allow, since they aren't a site people visit.
+  const paintLive = () => {
+    const sites = seen.filter(entry => !entry.local)
+    const local = seen.filter(entry => entry.local)
+    live.replaceChildren(...[sites.length
+      ? el('ul', { class: 'live-list' }, sites.map(entry => el('li', {},
+          el('span', { class: allowed(entry.origin) ? 'live-dot' : 'live-dot blocked', 'aria-hidden': 'true' }),
+          el('span', { class: 'live-site' },
+            el('strong', {}, host(entry.origin)),
+            el('small', { class: 'muted' }, allowed(entry.origin) ? `Seen ${ago(entry.seenAt)}` : `Seen ${ago(entry.seenAt)}, but not an allowed site`)),
+          !allowed(entry.origin) && el('button', { type: 'button', class: 'button small', onclick: () => saveOrigins([...project.origins, entry.origin]) }, 'Allow'))))
+      : el('p', { class: 'waiting' }, el('span', { class: 'live-dot waiting', 'aria-hidden': 'true' }),
+          'Waiting for the button to load on a site. Once a page with the snippet opens, it shows up here.'),
+    local.length > 0 && el('p', { class: 'live-local' }, glyph('desktop', 'glyph line'),
+      el('span', {}, 'Also seen on people’s own computers, like a developer’s copy: ',
+        el('strong', {}, local.map(entry => host(entry.origin)).join(', ')), '. ',
+        project.origins.length ? 'They can send only if you add them to Allowed sites.' : 'They can send too, since any site can.'))].filter(Boolean))
+  }
   const poll = async () => {
     if (!live.isConnected) return
     try {

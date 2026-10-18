@@ -860,6 +860,9 @@ button.swatch:hover, label.swatch:hover { transform: scale(1.08); }
 .setup-side { display: grid; gap: 2.25rem; }
 .setup-side h2 { font-size: 1.15rem; }
 .live { margin-top: 0.75rem; }
+.live-local { display: flex; gap: 0.5rem; margin: 0.75rem 0 0; font-size: 0.85rem; color: var(--ink-3); overflow-wrap: anywhere; }
+.live-local .glyph { flex: none; width: 1rem; height: 1rem; margin-top: 0.15rem; }
+.live-local strong { font-weight: 600; color: var(--ink-2); }
 .live-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
 .live-list li { display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 0.9rem; border: 1px solid var(--rule); border-radius: 12px; background: var(--sheet); animation: settle 0.3s; }
 .live-site { flex: 1; min-width: 0; display: grid; line-height: 1.35; }

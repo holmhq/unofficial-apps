@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "0.7.1",
+      "date": "2026-10-19",
+      "title": "Your own computer isn't a site",
+      "changes": [
+        "Where it's live lists pages on localhost or a private network, like a developer's copy, on a line of their own, with no Allow button.",
+        "They no longer count as a project's website, and can't crowd real sites out of the list."
+      ]
+    },
+    {
       "version": "0.7.0",
       "date": "2026-10-19",
       "title": "Room for hundreds",

@@ -5,7 +5,7 @@ import { removeProject as removeFiles } from './files.js'
 import { removeProjectStats } from './stats.js'
 import { pictureURL, storePicture, removePicture } from './page.js'
 import { contactOf, fieldsOf, ratingOf, contactSetting, fieldsSetting, ratingSetting } from './form.js'
-import { removeInstalls, installs } from './installs.js'
+import { removeInstalls, installs, isLocal } from './installs.js'
 
 // Snippets and page links in API replies are absolute. The runtime doesn't
 // pass the request host to apps yet, so they use this. Set it to your host.
@@ -129,11 +129,11 @@ function settings(input, doc = {}) {
 
 // The projects list also says what is waiting (new items and comments to
 // approve) and which sites each is for: its allowed sites, then where its
-// button is live.
+// button is live. A page on someone's own machine isn't a site.
 export function listProjects(user) {
   return ds().find('projects', { ownerId: user.id }, { limit: MAX_PROJECTS, orderBy: 'createdAt', order: 'desc' }).map(doc => ({
     ...projectDTO(doc),
-    sites: [...new Set([...doc.origins, ...installs(doc.id).map(entry => entry.origin)])].slice(0, 5),
+    sites: [...new Set([...doc.origins, ...installs(doc.id).map(entry => entry.origin)])].filter(origin => !isLocal(origin)).slice(0, 5),
     waiting: { items: ds().count('items', { project: doc.id, status: 'new' }), comments: ds().count('comments', { project: doc.id, approved: false }) }
   }))
 }
