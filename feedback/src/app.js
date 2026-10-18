@@ -5,12 +5,13 @@ import { projectPage } from './project.js'
 import { boardPage } from './board.js'
 import { keysPage } from './keys.js'
 import { statsPage } from './stats.js'
+import { changelogPage } from './changelog.js'
 
 // First path segments the app itself uses; any other short name may be a
 // project's custom address (api/projects.js keeps the same list).
 const RESERVED = new Set(['api', 'auth', 'b', 'f', 'projects', 'keys', 'stats', 'assets', 'src', 'vendor',
   'embed', 'widget', 'new', 'settings', 'account', 'admin', 'login', 'logout', 'signin', 'signup', 'help', 'about',
-  'privacy', 'terms', 'docs', 'www', 'app', 'holm', 'index'])
+  'privacy', 'terms', 'docs', 'www', 'app', 'holm', 'index', 'changelog', 'preview'])
 
 const main = $('#main')
 // Optional sections pass false or undefined; leave them out of the page.
@@ -30,13 +31,24 @@ function landing() {
           el('div', { class: 'browser-bar' }, el('span'), el('span'), el('span')),
           el('div', { class: 'browser-page' },
             el('div', { class: 'fake-line wide' }), el('div', { class: 'fake-line' }), el('div', { class: 'fake-line short' }),
-            el('iframe', { src: '/widget.html?p=demo', title: 'A preview of the feedback form', loading: 'lazy' }))))),
+            demoForm())))),
     el('section', { class: 'steps' },
       el('h2', {}, 'How it works'),
       el('ol', {},
         el('li', {}, el('strong', {}, 'Make a project'), ' for a website, a shop, a restaurant or an event.'),
         el('li', {}, el('strong', {}, 'Paste its snippet'), ' into your pages, or print its QR code, or email its link.'),
         el('li', {}, el('strong', {}, 'Sort what arrives'), ': mark it planned, in progress or done, keep private notes, and choose what people can see, vote on and comment on.'))))
+}
+
+// The landing page's form, as tall as what's in it.
+function demoForm() {
+  const frame = el('iframe', { src: '/widget.html?p=demo', title: 'A preview of the feedback form', loading: 'lazy' })
+  const listen = event => {
+    if (!frame.isConnected) return removeEventListener('message', listen)
+    if (event.source === frame.contentWindow && event.data?.source === 'holm-feedback' && event.data.type === 'size') frame.style.height = event.data.height + 'px'
+  }
+  addEventListener('message', listen)
+  return frame
 }
 
 async function projectsPage() {
@@ -81,7 +93,8 @@ function route() {
   if ((match = /^\/b\/([a-z0-9-]{3,40})(?:\/(\d+))?$/.exec(path))) return boardPage(match[1], match[2] && Number(match[2]))
   if (path === '/keys') return viewer().me ? keysPage() : landing()
   if (path === '/stats') return viewer().me ? statsPage() : landing()
-  if ((match = /^\/projects\/([a-z0-9]{8})(?:\/(setup|form|share|settings|stats|items\/(\d+)))?$/.exec(path))) {
+  if (path === '/changelog') return changelogPage()
+  if ((match = /^\/projects\/([a-z0-9]{8})(?:\/(setup|design|form|share|settings|stats|items\/(\d+)))?$/.exec(path))) {
     if (!viewer().me) return landing()
     return projectPage(match[1], match[3] ? Number(match[3]) : match[2] || 'inbox')
   }

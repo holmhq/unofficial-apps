@@ -103,7 +103,7 @@ export async function poster(text, { name, color, logo, kinds = [] }, scan = tex
   c.fillText('Scan to send feedback', 600, 1330)
   c.fillStyle = '#57536b'
   c.font = '500 34px Bricolage, system-ui, sans-serif'
-  c.fillText(kinds.includes('praise') ? 'Praise, problems and ideas, with a photo if you like.' : 'Bugs, ideas and questions are all welcome.', 600, 1395)
+  c.fillText(kinds.includes('praise') ? 'Praise, problems and ideas, with a photo if you like.' : 'Issues, ideas and questions are all welcome.', 600, 1395)
   c.fillStyle = '#8a869a'
   fit(c, text.replace(/^https?:\/\//, ''), 400, '"Fragment Mono", ui-monospace, monospace', 34, 1040)
   c.fillText(text.replace(/^https?:\/\//, ''), 600, 1500)

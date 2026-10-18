@@ -5,6 +5,7 @@ import { submit, submitToWidget, listItems, updateItem, deleteItem, itemFile, li
 import { approvedComments, postComment, listComments, reply, approve, deleteComment } from './comments.js'
 import { count, accountStats, projectStats } from './stats.js'
 import { owner, listKeys, createKey, deleteKey } from './keys.js'
+import { seen, installs } from './installs.js'
 
 async function route(request, method, parts) {
   const [, area, id, sub, subId, action] = parts
@@ -15,14 +16,21 @@ async function route(request, method, parts) {
     return ok({ authenticated: !!value, member: value ? { ...profile(value), email: value.email || '' } : null })
   }
 
-  // Public: what a site's widget needs, and where it sends to. The widget
-  // asks with ?open=1 when someone opens it, which counts as an open.
+  // Public: what a site's button and form need, and where they send to. The
+  // button's script asks from the site's page (with ?from=, its origin) and
+  // may keep the reply briefly; the form says when someone opens it.
   if (area === 'embed' && id) {
     if (parts.length === 3 && method === 'GET') {
       const project = findProject(id)
       if (!project) reject(404, 'not_found', 'This feedback form isn’t set up.')
+      if (query.from) seen(project.id, query.from)
+      // Forms from before 0.6 count their opens this way.
       if (query.open === '1') count(project.id, 'opens')
-      return ok({ project: publicConfig(project) })
+      return ok({ project: publicConfig(project) }, 200, query.from ? { 'Cache-Control': 'max-age=20' } : {})
+    }
+    if (sub === 'open' && parts.length === 4 && method === 'POST') {
+      if (findProject(id)) count(id, 'opens')
+      return ok()
     }
     if (sub === 'items' && parts.length === 4 && method === 'POST') return ok(submitToWidget(id, body(request), request), 201)
   }
@@ -63,6 +71,7 @@ async function route(request, method, parts) {
     if (parts.length === 3 && method === 'DELETE') { deleteProject(user, id); return ok() }
     if (sub === 'items' && parts.length === 4 && method === 'GET') return ok({ items: listItems(user, id, query.status) })
     if (sub === 'stats' && parts.length === 4 && method === 'GET') return ok(projectStats(ownProject(user, id), query.days))
+    if (sub === 'installs' && parts.length === 4 && method === 'GET') return ok({ installs: installs(ownProject(user, id).id) })
     if (isPicture(sub) && parts.length === 4 && method === 'POST') return ok({ project: setPicture(user, id, sub, request) })
     if (isPicture(sub) && parts.length === 4 && method === 'DELETE') return ok({ project: clearPicture(user, id, sub) })
   }
@@ -90,9 +99,7 @@ async function route(request, method, parts) {
   reject(404, 'not_found', 'Route not found.')
 }
 
-export default async function handler(request) {
-  const method = String(request.method || 'GET').toUpperCase()
-  const parts = String(request.path || '/').replace(/\/+$/, '').split('/').filter(Boolean)
+async function answer(request, method, parts) {
   try {
     if (parts[0] !== 'api') reject(404, 'not_found', 'Route not found.')
     return await route(request, method, parts)
@@ -101,4 +108,14 @@ export default async function handler(request) {
     console.error(String((error && error.stack) || error))
     return fail(500, 'internal_error', 'The request could not be completed.')
   }
+}
+
+export default async function handler(request) {
+  const method = String(request.method || 'GET').toUpperCase()
+  const parts = String(request.path || '/').replace(/\/+$/, '').split('/').filter(Boolean)
+  const response = await answer(request, method, parts)
+  // The button's script reads its project's look from any site, so that
+  // reply (and its errors) may be read across origins. It carries no cookies.
+  if (parts[1] === 'embed' && parts.length === 3 && method === 'GET') response.headers['Access-Control-Allow-Origin'] = '*'
+  return response
 }

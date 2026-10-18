@@ -1,7 +1,7 @@
 // Stats: how many people saw a form and how many sent something, per day,
 // for one project or every project an owner has. Counts are of events, not
 // people; api/stats.js keeps them.
-import { el, api, store, KIND } from './lib.js'
+import { el, api, store, glyph, KIND } from './lib.js'
 import { show } from './app.js'
 
 const RANGES = [[7, '7 days'], [30, '30 days'], [90, '90 days']]
@@ -68,7 +68,8 @@ function render(data, project) {
   if (project) {
     parts.push(el('div', { class: 'breakdowns' },
       bars('Where it came from', data.pages.map(entry => [entry.page, entry.count]), 'Nothing sent in this range.'),
-      bars('What kind', Object.entries(data.kinds).map(([kind, n]) => [KIND[kind], n]), 'Nothing sent in this range.')))
+      bars('What kind', Object.entries(data.kinds).map(([kind, n]) => [KIND[kind], n]), 'Nothing sent in this range.')),
+      ratings(data.ratings || []))
   } else if (data.projects.length) {
     parts.push(el('section', { class: 'by-project' },
       el('h2', {}, 'By project'),
@@ -79,6 +80,21 @@ function render(data, project) {
           [entry.totals.visits + entry.totals.opens, entry.totals.sent, entry.totals.votes, entry.totals.comments].map(n => el('td', { class: 'num' }, number(n)))))))))
   }
   return parts
+}
+
+// The stars people gave: their average, and how many gave each.
+function ratings(counts) {
+  const total = counts.reduce((sum, n) => sum + n, 0)
+  if (!total) return null
+  const average = counts.reduce((sum, n, i) => sum + n * (i + 1), 0) / total
+  return el('section', { class: 'ratings' },
+    el('div', { class: 'rating-average' },
+      el('span', { class: 'tile-label' }, 'Average rating'),
+      el('strong', {}, average.toFixed(1)),
+      el('span', { class: 'stars-row', role: 'img', 'aria-label': `${average.toFixed(1)} out of 5` },
+        [1, 2, 3, 4, 5].map(n => glyph('star', n <= Math.round(average) ? 'glyph lit' : 'glyph'))),
+      el('span', { class: 'tile-note' }, `From ${number(total)} ${total === 1 ? 'rating' : 'ratings'}`)),
+    bars('Stars given', [5, 4, 3, 2, 1].map(n => [`${n} ${n === 1 ? 'star' : 'stars'}`, counts[n - 1]]), ''))
 }
 
 // A single-series bar list: label, a thin bar, the count.

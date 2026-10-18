@@ -1,0 +1,95 @@
+{
+  "releases": [
+    {
+      "version": "0.6.0",
+      "date": "2026-10-18",
+      "title": "A button people want on their site",
+      "changes": [
+        "The form on your site wears your cover, logo, title and words, in light, dark or your visitors' own theme.",
+        "The button eases in, lifts on hover and turns into a close cross; the panel springs open and grows with what's in it. On a phone it's a sheet from the bottom.",
+        "An optional star rating, with faces that cheer up as the stars go up. The inbox filters by it and Stats show the average.",
+        "A Design tab for the look, with a preview that runs the real button on a stand-in page, at a computer's width or a phone's.",
+        "Set up shows where the button is live, with sites to allow in a tap. The snippet is one short line, and changes need no new one.",
+        "Dropdowns, switches and segmented controls drawn to match the app, and a copy button joined to every snippet.",
+        "\"Bug\" is now \"Issue\", which suits more kinds of trouble.",
+        "This changelog."
+      ]
+    },
+    {
+      "version": "0.5.0",
+      "date": "2026-10-18",
+      "title": "A form of your own",
+      "changes": [
+        "Ask for an email or a phone number, optional or required.",
+        "Add up to eight questions: a short answer, a dropdown, one choice or checkboxes.",
+        "Filter the inbox by kind, by any answer, by photos or by words.",
+        "Each item is a thread for your team: notes and every change, in order."
+      ]
+    },
+    {
+      "version": "0.4.0",
+      "date": "2026-10-18",
+      "title": "For places and events",
+      "changes": [
+        "A project can be for a restaurant, a shop or an event: Praise, Problem and Idea.",
+        "On a phone, one tap opens the camera, and a photo alone is enough to send.",
+        "Your feedback page gets a title, description, logo and cover.",
+        "Stats count QR scans and email visits on their own; Share can email the link."
+      ]
+    },
+    {
+      "version": "0.3.2",
+      "date": "2026-10-18",
+      "title": "Link previews of its own",
+      "changes": [
+        "A shared link shows feedback's title, words and picture."
+      ]
+    },
+    {
+      "version": "0.3.1",
+      "date": "2026-10-18",
+      "title": "Quicker tabs",
+      "changes": [
+        "The button carries the app's smiling-bubble mark.",
+        "Switching a project's tabs changes only what's below them."
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "date": "2026-10-18",
+      "title": "A page of its own",
+      "changes": [
+        "A feedback page at your own address, with votes and comments you approve.",
+        "Files on feedback: pictures, videos, PDFs and text.",
+        "A QR code and a poster to print.",
+        "Stats per project and for your account; light, dark or system theme."
+      ]
+    },
+    {
+      "version": "0.2.1",
+      "date": "2026-10-18",
+      "title": "A face for the app",
+      "changes": [
+        "A smiling speech bubble for the icon, the favicon and the sign-in page."
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "date": "2026-10-18",
+      "title": "Keys for agents",
+      "changes": [
+        "API keys, so a script or a coding agent can set up a project and sort its inbox."
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2026-10-18",
+      "title": "A feedback button for any website",
+      "changes": [
+        "One script tag adds a button and a small form to any site.",
+        "An inbox per project, tinted by status, with private notes.",
+        "A public board of the items you choose, with votes."
+      ]
+    }
+  ]
+}

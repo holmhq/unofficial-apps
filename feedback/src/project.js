@@ -1,18 +1,24 @@
-// A project: its inbox, one item at a time, its stats, how to share and set
-// it up, and its settings.
-import { el, api, ago, glyph, copyButton, store, size, inkOn, lighten, STATUS, KIND, KIND_SETS } from './lib.js'
+// A project: its inbox, one item at a time, its stats, its look, its form,
+// how to share it and how to set it up.
+import { el, api, ago, glyph, store, size, inkOn, lighten, picker, segmented, codeBox, STATUS, KIND, KIND_SETS } from './lib.js'
 import { show, go } from './app.js'
 import { statsView } from './stats.js'
 import { qrSVG, qrColor, poster } from './qr.js'
+import { ratingLabel } from './compose.js'
 
 const OPEN = ['new', 'planned', 'progress']
 const FILTERS = [['open', 'Open'], ['new', 'New'], ['planned', 'Planned'], ['progress', 'In progress'], ['done', 'Done'], ['closed', 'Closed'], ['all', 'All']]
-const COLORS = ['#c2410c', '#b42318', '#7c3aed', '#1d4ed8', '#0e7c66', '#26233a']
-const TABS = [['inbox', 'Inbox', ''], ['stats', 'Stats', '/stats'], ['form', 'Form', '/form'], ['share', 'Share', '/share'], ['setup', 'Set up', '/setup'], ['settings', 'Settings', '/settings']]
-const QUESTION_TYPES = [['text', 'Short answer'], ['select', 'Dropdown'], ['radio', 'One choice'], ['checkbox', 'Checkboxes']]
-const ASK = [['off', 'Off'], ['optional', 'Optional'], ['required', 'Required']]
-// The button on a site, as embed.js draws it.
-const LAUNCHER = 'M12 0C5.38 0 0 5.38 0 12C0 13.95 0.48 15.89 1.41 17.62L0.03 22.74C-0.06 23.09 0.04 23.45 0.29 23.71C0.55 23.96 0.91 24.06 1.26 23.97L6.38 22.59C8.11 23.51 10.05 24 12 24C15.31 24 18.31 22.65 20.48 20.48C22.65 18.31 24 15.31 24 12C24 5.38 18.62 0 12 0ZM12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22ZM8.5 10C8.5 10.55 8.05 11 7.5 11C6.95 11 6.5 10.55 6.5 10C6.5 9.45 6.95 9 7.5 9C8.05 9 8.5 9.45 8.5 10ZM14.61 13.2C15.05 13.54 15.13 14.17 14.8 14.61C14.12 15.49 13.1 16 12 16C10.9 16 9.88 15.49 9.2 14.61C8.87 14.17 8.96 13.54 9.4 13.2C9.83 12.87 10.46 12.96 10.8 13.4C11.38 14.16 12.62 14.16 13.21 13.4C13.54 12.96 14.16 12.87 14.61 13.2ZM17.5 10C17.5 10.55 17.05 11 16.5 11C15.95 11 15.5 10.55 15.5 10C15.5 9.45 15.95 9 16.5 9C17.05 9 17.5 9.45 17.5 10Z'
+const COLORS = ['#c2410c', '#b42318', '#be185d', '#7c3aed', '#1d4ed8', '#0e7c66', '#26233a']
+const TABS = [['inbox', 'Inbox', ''], ['stats', 'Stats', '/stats'], ['design', 'Design', '/design'], ['form', 'Form', '/form'], ['share', 'Share', '/share'], ['setup', 'Set up', '/setup']]
+const QUESTION_TYPES = [
+  { value: 'text', label: 'Short answer', icon: 'short', hint: 'A line of text' },
+  { value: 'select', label: 'Dropdown', icon: 'dropdown', hint: 'One from a list' },
+  { value: 'radio', label: 'One choice', icon: 'radio', hint: 'Buttons; pick one' },
+  { value: 'checkbox', label: 'Checkboxes', icon: 'boxes', hint: 'Pick any, or one box to tick' }]
+const ASK = [{ value: 'off', label: 'Off' }, { value: 'optional', label: 'Optional' }, { value: 'required', label: 'Required' }]
+const BUTTON_STYLES = [{ value: 'pill', label: 'Text', icon: 'button-pill' }, { value: 'icon', label: 'Icon', icon: 'button-icon' }, { value: 'none', label: 'Your link', icon: 'link' }]
+const SIDES = [{ value: 'left', label: 'Left', icon: 'side-left' }, { value: 'right', label: 'Right', icon: 'side-right' }]
+const THEMES = [{ value: 'light', label: 'Light', icon: 'sun', line: false }, { value: 'dark', label: 'Dark', icon: 'moon', line: false }, { value: 'auto', label: 'Auto', icon: 'system', line: false }]
 
 const pageURL = project => `${location.origin}/${project.slug || 'b/' + project.id}`
 
@@ -64,14 +70,14 @@ export async function projectPage(id, view) {
     show(shell.root)
   }
   const ticket = ++shell.ticket
-  const tab = typeof view === 'number' ? 'inbox' : view
+  const tab = typeof view === 'number' ? 'inbox' : view === 'settings' ? 'setup' : view
   shell.nav.querySelectorAll('a').forEach(link => link.dataset.tab === tab ? link.setAttribute('aria-current', 'page') : link.removeAttribute('aria-current'))
   const { project } = shell
   document.title = `${project.name} – feedback`
-  if (view === 'setup') return setup(project)
+  if (view === 'setup' || view === 'settings') return setup(project)
+  if (view === 'design') return design(project)
   if (view === 'form') return formTab(project)
   if (view === 'share') return share(project)
-  if (view === 'settings') return settings(project)
   if (view === 'stats') return put(statsView({ project }))
 
   // The inbox and its items: draw what's known at once, then again only if
@@ -100,12 +106,13 @@ const choiceFields = project => project.fields.filter(field => field.type !== 't
 function inbox(project, items) {
   let filter = store.get('filter', 'open')
   // Filters beyond status last while you move between tabs.
-  const more = shell.filters?.project === project.id ? shell.filters : (shell.filters = { project: project.id, kind: '', photos: false, text: '', answers: {} })
+  const more = shell.filters?.project === project.id ? shell.filters : (shell.filters = { project: project.id, kind: '', rating: '', photos: false, text: '', answers: {} })
   const list = el('ul', { class: 'tickets' })
   const chips = el('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by status' })
   const matchesStatus = (item, key) => key === 'all' || (key === 'open' ? OPEN.includes(item.status) : item.status === key)
   const matchesMore = item => {
     if (more.kind && item.kind !== more.kind) return false
+    if (more.rating && String(item.rating) !== more.rating) return false
     if (more.photos && !item.files.some(file => file.kind === 'image')) return false
     for (const [id, wanted] of Object.entries(more.answers)) {
       if (!wanted) continue
@@ -120,12 +127,18 @@ function inbox(project, items) {
   }
   const waiting = items.reduce((total, item) => total + item.pending, 0)
   const kinds = [...new Set([...project.kinds, ...items.map(item => item.kind)])]
-  const select = (label, value, options, onchange) => el('select', { 'aria-label': label, onchange: event => { onchange(event.target.value); paint() } },
-    el('option', { value: '' }, label), options.map(([key, text]) => el('option', { value: key, selected: value === key }, text)))
+  // Each filter is a dropdown that reads as a chip, dark once it's set.
+  const dropdown = (label, value, options, onchange) => picker({
+    label, value, className: 'filter',
+    options: [{ value: '', label }, ...options],
+    onchange: next => { onchange(next); paint() }
+  })
+  const rated = project.rating.ask !== 'off' || items.some(item => item.rating)
   const bar = el('div', { class: 'filters' },
     el('input', { type: 'search', placeholder: 'Search', value: more.text, 'aria-label': 'Search the inbox', oninput: event => { more.text = event.target.value.trim(); paint() } }),
-    select('Any kind', more.kind, kinds.map(kind => [kind, KIND[kind]]), value => { more.kind = value }),
-    choiceFields(project).map(field => select(field.label, more.answers[field.id] || '', field.options.map(option => [option, option]), value => { more.answers[field.id] = value })),
+    dropdown('Any kind', more.kind, kinds.map(kind => ({ value: kind, label: KIND[kind], icon: kind, line: false })), value => { more.kind = value }),
+    rated && dropdown('Any rating', more.rating, [5, 4, 3, 2, 1].map(n => ({ value: String(n), label: `${n} ${n === 1 ? 'star' : 'stars'}`, icon: 'star', line: false })), value => { more.rating = value }),
+    choiceFields(project).map(field => dropdown(field.label, more.answers[field.id] || '', field.options.map(option => ({ value: option, label: option })), value => { more.answers[field.id] = value })),
     el('button', { type: 'button', class: 'chip-toggle', 'aria-pressed': String(more.photos), onclick: event => { more.photos = !more.photos; event.currentTarget.setAttribute('aria-pressed', String(more.photos)); paint() } }, glyph('camera', 'glyph line'), 'With photos'))
 
   const paint = () => {
@@ -139,7 +152,7 @@ function inbox(project, items) {
       el('a', { class: 'ticket', href: `/projects/${project.id}/items/${item.number}`, 'data-link': true },
         stub(item),
         el('span', { class: 'ticket-body' },
-          el('span', { class: 'ticket-title' }, item.title),
+          el('span', { class: 'ticket-title' }, item.rating && el('span', { class: 'ticket-rating', 'aria-label': `${item.rating} out of 5` }, glyph('star'), item.rating), item.title),
           item.answers.length > 0 && el('span', { class: 'ticket-answers' }, item.answers.map(answer => answer.type === 'text' ? `${answer.label}: ${answerText(answer)}` : answerText(answer)).join(' · ')),
           el('span', { class: 'ticket-meta' },
             KIND[item.kind], ' from ', item.source === 'page' ? 'your feedback page' : item.page ? item.page.replace(/^https?:\/\//, '') : 'an unknown page', ', ', ago(item.createdAt),
@@ -233,9 +246,12 @@ function itemPage(project, item) {
       type: 'button', role: 'radio', class: `status-${key}`, 'data-status': key,
       onclick: () => item.status !== key && save({ status: key })
     }, label)))
-  const kind = el('select', { 'aria-label': 'Kind', onchange: event => save({ kind: event.target.value }) },
-    [...new Set([...project.kinds, item.kind])].map(key => el('option', { value: key }, KIND[key])))
-  const shown = el('input', { type: 'checkbox', onchange: event => save({ public: event.target.checked }) })
+  const kind = picker({
+    label: 'Kind', value: item.kind, className: 'inline',
+    options: [...new Set([...project.kinds, item.kind])].map(key => ({ value: key, label: KIND[key], icon: key, line: false })),
+    onchange: value => save({ kind: value })
+  })
+  const shown = el('input', { type: 'checkbox', class: 'switch', onchange: event => save({ public: event.target.checked }) })
   const paint = (before = {}) => {
     const next = stub(item)
     ticketStub.replaceWith(next)
@@ -285,6 +301,8 @@ function itemPage(project, item) {
     attachments(item),
     el('dl', { class: 'facts' },
       fact('Kind', kind),
+      fact('Rating', item.rating && el('span', { class: 'stars-row', role: 'img', 'aria-label': `${item.rating} out of 5` },
+        [1, 2, 3, 4, 5].map(n => glyph('star', n <= item.rating ? 'glyph lit' : 'glyph')), el('span', { class: 'muted' }, `${item.rating} of 5`))),
       fact('Sent', new Date(item.createdAt).toLocaleString()),
       fact('From', item.source === 'page'
         ? el('a', { href: pageURL(project), target: '_blank', rel: 'noopener' }, 'Your feedback page')
@@ -310,179 +328,216 @@ function itemPage(project, item) {
       el('p', { class: 'muted section-note' }, 'Your team’s notes and every change, in order. Only you see this.'), notes, addNote)))
 }
 
-function setup(project) {
-  const draft = { ...project }
-  const origin = location.origin
-  const snippet = () => [
-    `<script src="${origin}/embed.js" data-project="${project.id}"`,
-    draft.label !== 'Feedback' ? ` data-label="${draft.label.replace(/"/g, '&quot;')}"` : '',
-    draft.color !== '#c2410c' ? ` data-color="${draft.color}"` : '',
-    draft.position === 'left' ? ' data-position="left"' : '',
-    ' async></script>'
-  ].join('')
-  const code = el('code', {}, snippet())
-  const preview = el('iframe', { class: 'preview', title: 'A preview of your feedback form', src: `/widget.html?p=${project.id}&preview=1` })
-  const launcherText = el('span', {}, draft.label)
-  const ns = 'http://www.w3.org/2000/svg'
-  const launcherIcon = document.createElementNS(ns, 'svg')
-  launcherIcon.setAttribute('viewBox', '0 0 24 24')
-  launcherIcon.setAttribute('aria-hidden', 'true')
-  launcherIcon.innerHTML = `<path d="${LAUNCHER}"/>`
-  const launcher = el('span', { class: 'launcher', 'aria-hidden': 'true' }, launcherIcon, launcherText)
-  const stage = el('div', { class: 'stage' }, preview, launcher)
 
-  // Every change shows at once: in the snippet, the button and the form.
-  const sync = () => {
-    code.textContent = snippet()
-    launcherText.textContent = draft.label
-    launcher.style.setProperty('--color', draft.color)
-    stage.dataset.side = draft.position
-    preview.contentWindow?.postMessage({ source: 'feedback-setup', config: { name: project.name, label: draft.label, color: draft.color } }, location.origin)
+// A live preview: the stand-in site (preview.html) running the real
+// embed.js, sent the unsaved settings as they change. The button opens and
+// closes it as on a site; it shows at a computer's width or a phone's.
+function previewPane(project, config) {
+  const frame = el('iframe', { class: 'preview-frame', title: 'A preview of the button and the form on a site', src: `/preview.html?p=${project.id}` })
+  const send = () => frame.contentWindow?.postMessage({ source: 'feedback-setup', config: config() }, location.origin)
+  const listen = event => {
+    if (!frame.isConnected) return removeEventListener('message', listen)
+    if (event.source === frame.contentWindow && event.data?.source === 'holm-feedback' && event.data.type === 'preview-ready') send()
   }
-  preview.addEventListener('load', sync)
-
-  const status = el('p', { class: 'muted', role: 'status' })
-  const label = el('input', { value: draft.label, maxlength: '24', oninput: event => { draft.label = event.target.value || 'Feedback'; sync() } })
-  const swatches = el('div', { class: 'swatches', role: 'group', 'aria-label': 'Button colour' })
-  const custom = el('input', { type: 'color', value: draft.color, 'aria-label': 'Custom colour', oninput: event => { draft.color = event.target.value; paintSwatches(); sync() } })
-  const paintSwatches = () => {
-    swatches.querySelectorAll('.swatch').forEach(button => button.setAttribute('aria-pressed', String(draft.color === button.dataset.color)))
-    custom.value = draft.color
+  addEventListener('message', listen)
+  const stage = el('div', { class: 'preview-stage', 'data-device': store.get('device', 'desktop') }, frame)
+  const device = segmented({
+    label: 'Preview size', value: stage.dataset.device, className: 'small',
+    options: [{ value: 'desktop', label: '', title: 'Computer', icon: 'desktop' }, { value: 'phone', label: '', title: 'Phone', icon: 'phone' }],
+    onchange: value => { store.set('device', value); stage.dataset.device = value }
+  })
+  return {
+    node: el('section', { class: 'preview-pane', 'aria-label': 'Preview' },
+      el('div', { class: 'preview-head' }, el('h2', {}, 'Preview'), device),
+      stage,
+      el('p', { class: 'muted section-note' }, 'Click the button to open and close it, as on a site. Changes show as you make them.')),
+    send
   }
-  swatches.append(...COLORS.map(color => el('button', {
-    type: 'button', class: 'swatch', 'data-color': color, style: `--color: ${color}`, 'aria-label': color,
-    onclick: () => { draft.color = color; paintSwatches(); sync() }
-  })), custom)
-  paintSwatches()
-  const side = el('select', { onchange: event => { draft.position = event.target.value; sync() } },
-    el('option', { value: 'right', selected: draft.position === 'right' }, 'Bottom right'),
-    el('option', { value: 'left', selected: draft.position === 'left' }, 'Bottom left'))
-  const sites = el('textarea', { rows: '3', placeholder: 'https://example.com', spellcheck: 'false' })
-  sites.value = draft.origins.join('\n')
-
-  const saveButton = el('button', { type: 'submit', class: 'button primary' }, 'Save')
-  const form = el('form', { class: 'setup', onsubmit: async event => {
-    event.preventDefault()
-    saveButton.disabled = true
-    try {
-      const origins = sites.value.split(/[\s,]+/).filter(Boolean)
-      project = (await api('PATCH', '/api/projects/' + project.id, { label: draft.label, color: draft.color, position: draft.position, origins })).project
-      Object.assign(draft, project)
-      shell.project = project
-      status.textContent = 'Saved. Sites with the snippet pick it up on their next page load.'
-      sync()
-    } catch (problem) { status.textContent = problem.message }
-    saveButton.disabled = false
-  } },
-    el('label', { class: 'field' }, el('span', {}, 'Button text'), label),
-    el('div', { class: 'field' }, el('span', {}, 'Colour'), swatches),
-    el('label', { class: 'field' }, el('span', {}, 'Position'), side),
-    el('label', { class: 'field' }, el('span', {}, 'Allowed sites, one per line'), sites,
-      el('small', {}, 'Leave empty to accept feedback from any site. Your own feedback page is always allowed.')),
-    el('div', { class: 'form-actions' }, status, saveButton))
-
-  put(
-    el('section', { class: 'snippet' },
-      el('h2', {}, 'Add it to your site'),
-      el('p', { class: 'muted' }, 'Paste this before the closing ', el('code', {}, '</body>'), ' of every page that should have the button.'),
-      el('pre', {}, code),
-      copyButton(() => code.textContent, 'Copy snippet'),
-      el('p', { class: 'muted' }, 'To open the form from your own link or button instead, add ', el('code', {}, 'data-button="none"'),
-        ' and call ', el('code', {}, 'HolmFeedback.open()'), '.')),
-    el('div', { class: 'setup-grid' },
-      el('section', {}, el('h2', {}, 'Look and rules'), form),
-      el('section', {}, el('h2', {}, 'Preview'), el('p', { class: 'muted section-note' }, 'Changes show here as you make them.'), stage)))
-  sync()
 }
 
-// The form: what it's for (its kinds), which contact details to ask for,
-// files, and up to eight questions of the owner's own, with a preview that
-// follows every change.
+// A titled group of settings.
+const group = (title, ...children) => el('fieldset', { class: 'group' }, el('legend', {}, title), ...children)
+
+// A form's save bar: it lights up once something changed.
+function saveBar(saved) {
+  const status = el('p', { class: 'muted', role: 'status' }, saved)
+  const button = el('button', { type: 'submit', class: 'button primary', disabled: true }, 'Save')
+  return {
+    node: el('div', { class: 'form-actions save-bar' }, status, button),
+    changed: () => { button.disabled = false; status.textContent = 'Not saved yet.' },
+    busy: () => { button.disabled = true; status.textContent = 'Saving…' },
+    failed: message => { button.disabled = false; status.textContent = message }
+  }
+}
+
+// The look: name, colour, logo and cover, the words at the top of the panel
+// and the page, the button, and the panel's theme. The logo and cover upload
+// as they're picked; the rest waits for Save.
+function design(project, saved = '') {
+  const draft = { name: project.name, color: project.color, title: project.title, intro: project.intro, label: project.label, position: project.position, button: project.button, theme: project.theme }
+  let base = project
+  const pane = previewPane(project, () => ({ ...base, ...draft }))
+  const bar = saveBar(saved)
+  const changed = () => { bar.changed(); pane.send() }
+  const input = (key, attrs, fallback = '') => el('input', { ...attrs, value: draft[key], oninput: event => { draft[key] = event.target.value || fallback; changed() } })
+
+  const custom = el('input', { type: 'color', value: draft.color, 'aria-label': 'Any colour', oninput: event => { draft.color = event.target.value; paintSwatches(); changed() } })
+  const customSwatch = el('label', { class: 'swatch custom', title: 'Any colour' }, custom)
+  const swatches = el('div', { class: 'swatches', role: 'group', 'aria-label': 'Colour' },
+    COLORS.map(color => el('button', {
+      type: 'button', class: 'swatch', 'data-color': color, style: `--color: ${color}`, 'aria-label': color,
+      onclick: () => { draft.color = color; paintSwatches(); changed() }
+    })), customSwatch)
+  const paintSwatches = () => {
+    swatches.querySelectorAll('button.swatch').forEach(button => button.setAttribute('aria-pressed', String(draft.color === button.dataset.color)))
+    custom.value = draft.color
+    customSwatch.classList.toggle('chosen', !COLORS.includes(draft.color))
+    customSwatch.style.setProperty('--color', draft.color)
+  }
+  paintSwatches()
+
+  const place = project.kinds.includes('praise')
+  const intro = el('textarea', { rows: '3', maxlength: '280', placeholder: place
+    ? 'Loved something? Something not right? Tell us, with a photo if you like. It goes straight to the team.'
+    : 'Report an issue, suggest an idea or ask a question. It goes straight to the team.',
+  oninput: event => { draft.intro = event.target.value; changed() } })
+  intro.value = draft.intro
+
+  const labelField = el('label', { class: 'field', hidden: draft.button !== 'pill' }, el('span', {}, 'Button text'), input('label', { maxlength: '24', placeholder: 'Feedback' }, 'Feedback'))
+  const ownLink = el('p', { class: 'hint', hidden: draft.button !== 'none' }, 'No button on your pages: open the form from a link or button of your own. ',
+    el('a', { href: `/projects/${project.id}/setup`, 'data-link': true, 'data-tab': 'setup' }, 'Set up'), ' shows the line to add.')
+
+  const form = el('form', { class: 'setup', onsubmit: async event => {
+    event.preventDefault()
+    bar.busy()
+    try {
+      const next = (await api('PATCH', '/api/projects/' + project.id, draft)).project
+      renamed(next)
+      design(next, 'Saved. Your sites show it on their next page load, with the same snippet.')
+    } catch (problem) { bar.failed(problem.message) }
+  } },
+    group('Brand',
+      el('label', { class: 'field' }, el('span', {}, 'Name'), input('name', { maxlength: '60', required: true })),
+      el('div', { class: 'field' }, el('span', {}, 'Colour'), swatches),
+      pictures(project, next => { base = { ...base, logo: next.logo, cover: next.cover }; pane.send() })),
+    group('Words',
+      el('label', { class: 'field' }, el('span', {}, 'Title'), input('title', { maxlength: '80', placeholder: `Tell ${project.name} what you think` })),
+      el('label', { class: 'field' }, el('span', {}, 'Description'), intro),
+      el('p', { class: 'hint' }, 'At the top of the form on your site, and of your feedback page.')),
+    group('Button',
+      el('div', { class: 'field' }, el('span', {}, 'Style'), segmented({
+        label: 'Button style', value: draft.button, options: BUTTON_STYLES,
+        onchange: value => { draft.button = value; labelField.hidden = value !== 'pill'; ownLink.hidden = value !== 'none'; changed() }
+      })),
+      labelField,
+      el('div', { class: 'field' }, el('span', {}, 'Corner'), segmented({ label: 'Corner', value: draft.position, options: SIDES, onchange: value => { draft.position = value; changed() } })),
+      ownLink),
+    group('Panel',
+      el('div', { class: 'field' }, el('span', {}, 'Theme'), segmented({ label: 'Panel theme', value: draft.theme, options: THEMES, onchange: value => { draft.theme = value; changed() } })),
+      el('p', { class: 'hint' }, 'Auto follows each visitor’s own light or dark setting.')),
+    bar.node)
+
+  put(el('div', { class: 'design-grid' }, form, pane.node))
+}
+
+// The form: what it's for (its kinds), a star rating, which contact details
+// to ask for, files, and up to eight questions of the owner's own.
 function formTab(project, saved = '') {
   const draft = {
-    for: project.for, attachments: project.attachments, contact: { ...project.contact },
+    for: project.for, attachments: project.attachments, contact: { ...project.contact }, rating: { ...project.rating },
     fields: project.fields.map(field => ({ ...field, options: [...field.options] }))
   }
-  const preview = el('iframe', { class: 'preview', title: 'A preview of your feedback form', src: `/widget.html?p=${project.id}&preview=1` })
-  const sync = () => preview.contentWindow?.postMessage({ source: 'feedback-setup', config: {
-    name: project.name, color: project.color, attachments: draft.attachments, kinds: KIND_SETS[draft.for], contact: draft.contact,
+  const pane = previewPane(project, () => ({
+    ...project, attachments: draft.attachments, kinds: KIND_SETS[draft.for], contact: draft.contact, rating: draft.rating,
     // A question still being written shows once it has a label (and two choices).
     fields: draft.fields.filter(field => field.label.trim() && (field.type === 'text' || field.type === 'checkbox' || field.options.filter(Boolean).length >= 2))
       .map(field => ({ ...field, options: field.options.filter(Boolean) }))
-  } }, location.origin)
-  preview.addEventListener('load', sync)
+  }))
+  const bar = saveBar(saved)
+  const changed = () => { bar.changed(); pane.send() }
 
-  const madeFor = el('select', { onchange: event => { draft.for = event.target.value; sync() } },
-    el('option', { value: 'site', selected: draft.for === 'site' }, 'A website or app: Bug, Idea, Question'),
-    el('option', { value: 'place', selected: draft.for === 'place' }, 'A place or event: Praise, Problem, Idea'))
-  const segmented = key => {
-    const group = el('div', { class: 'chips segmented', role: 'group', 'aria-label': `Ask for ${key}` })
-    const paint = () => group.replaceChildren(...ASK.map(([value, label]) => el('button', {
-      type: 'button', 'aria-pressed': String(draft.contact[key] === value),
-      onclick: () => { draft.contact[key] = value; paint(); sync() }
-    }, label)))
-    paint()
-    return group
+  const ratingWords = el('input', { value: draft.rating.label, maxlength: '60', oninput: event => { draft.rating.label = event.target.value; changed() } })
+  const madeFor = el('div', { class: 'choice-cards', role: 'radiogroup', 'aria-label': 'Made for' })
+  const paintFor = () => {
+    ratingWords.placeholder = ratingLabel({ label: '' }, draft.for === 'place')
+    madeFor.replaceChildren(...[['site', 'globe', 'A website or app', 'Issue, Idea, Question'], ['place', 'pin', 'A place or event', 'Praise, Problem, Idea']]
+      .map(([value, icon, title, kinds]) => el('button', {
+        type: 'button', role: 'radio', 'aria-checked': String(draft.for === value),
+        onclick: () => { if (draft.for !== value) { draft.for = value; paintFor(); changed() } }
+      }, glyph(icon, 'glyph line'), el('strong', {}, title), el('small', {}, kinds))))
   }
-  const files = el('input', { type: 'checkbox', checked: draft.attachments, onchange: event => { draft.attachments = event.target.checked; sync() } })
+  paintFor()
+  const ratingWordsField = el('label', { class: 'field', hidden: draft.rating.ask === 'off' }, el('span', {}, 'Words above the stars'), ratingWords)
+  const ask = key => segmented({ label: `Ask for ${key}`, value: draft.contact[key], options: ASK, onchange: value => { draft.contact[key] = value; changed() } })
 
   const list = el('ol', { class: 'questions' })
   const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), byte => 'abcdefghijkmnpqrstuvwxyz23456789'[byte % 32]).join('')
+  const add = picker({
+    label: 'Add a question', menu: true, className: 'add-question', options: QUESTION_TYPES,
+    onchange: type => {
+      draft.fields.push({ id: newId(), type, label: '', required: false, options: type === 'text' ? [] : ['', ''] })
+      paintList()
+      changed()
+      list.lastElementChild.querySelector('input').focus()
+    }
+  })
   const paintList = () => {
     list.replaceChildren(...draft.fields.map((field, index) => {
-      const options = el('textarea', { rows: '3', placeholder: 'One choice per line', 'aria-label': 'Choices', oninput: event => { field.options = event.target.value.split('\n').map(line => line.trim()); sync() } })
+      const options = el('textarea', { rows: '3', placeholder: 'One choice per line', 'aria-label': 'Choices', oninput: event => { field.options = event.target.value.split('\n').map(line => line.trim()); changed() } })
       options.value = field.options.join('\n')
-      const move = step => { draft.fields.splice(index + step, 0, draft.fields.splice(index, 1)[0]); paintList(); sync() }
+      const move = step => { draft.fields.splice(index + step, 0, draft.fields.splice(index, 1)[0]); paintList(); changed() }
       return el('li', { class: 'question' },
         el('div', { class: 'question-row' },
-          el('select', { 'aria-label': 'Kind of question', onchange: event => { field.type = event.target.value; paintList(); sync() } },
-            QUESTION_TYPES.map(([value, label]) => el('option', { value, selected: field.type === value }, label))),
-          el('input', { value: field.label, maxlength: '80', placeholder: 'The question, like “Table number”', 'aria-label': 'Question', oninput: event => { field.label = event.target.value; sync() } })),
+          picker({
+            label: 'Kind of question', value: field.type, options: QUESTION_TYPES, className: 'question-type',
+            onchange: value => {
+              field.type = value
+              if (value !== 'text' && field.options.filter(Boolean).length < 2) field.options = [...field.options.filter(Boolean), '', ''].slice(0, 2)
+              paintList()
+              changed()
+            }
+          }),
+          el('input', { value: field.label, maxlength: '80', placeholder: 'The question, like “Table number”', 'aria-label': 'Question', oninput: event => { field.label = event.target.value; changed() } })),
         field.type !== 'text' && options,
         field.type === 'checkbox' && el('small', { class: 'muted' }, 'Leave the choices empty for a single box to tick.'),
         el('div', { class: 'question-row end' },
-          el('label', { class: 'toggle' }, el('input', { type: 'checkbox', checked: field.required, onchange: event => { field.required = event.target.checked; sync() } }), 'Required'),
+          el('label', { class: 'toggle' }, el('input', { type: 'checkbox', class: 'switch', checked: field.required, onchange: event => { field.required = event.target.checked; changed() } }), 'Required'),
           el('span', { class: 'question-tools' },
-            el('button', { type: 'button', class: 'button', disabled: index === 0, 'aria-label': 'Move up', onclick: () => move(-1) }, '↑'),
-            el('button', { type: 'button', class: 'button', disabled: index === draft.fields.length - 1, 'aria-label': 'Move down', onclick: () => move(1) }, '↓'),
-            el('button', { type: 'button', class: 'button danger', onclick: () => { draft.fields.splice(index, 1); paintList(); sync() } }, 'Remove'))))
-    }), ...(draft.fields.length ? [] : [el('li', { class: 'muted empty-questions' }, 'No questions of your own yet. People write a message and pick a kind.')]))
-    add.disabled = draft.fields.length >= 8
+            el('button', { type: 'button', class: 'icon-button', disabled: index === 0, 'aria-label': 'Move up', title: 'Move up', onclick: () => move(-1) }, glyph('down', 'glyph line up')),
+            el('button', { type: 'button', class: 'icon-button', disabled: index === draft.fields.length - 1, 'aria-label': 'Move down', title: 'Move down', onclick: () => move(1) }, glyph('down', 'glyph line')),
+            el('button', { type: 'button', class: 'icon-button danger', 'aria-label': 'Remove the question', title: 'Remove', onclick: () => { draft.fields.splice(index, 1); paintList(); changed() } }, glyph('x', 'glyph line')))))
+    }), ...(draft.fields.length ? [] : [el('li', { class: 'muted empty-questions' }, 'No questions of your own yet. People pick a kind and write a message.')]))
+    add.querySelector('button').disabled = draft.fields.length >= 8
   }
-  const add = el('select', { class: 'button add-question', 'aria-label': 'Add a question', onchange: event => {
-    if (!event.target.value) return
-    draft.fields.push({ id: newId(), type: event.target.value, label: '', required: false, options: event.target.value === 'text' ? [] : ['', ''] })
-    event.target.value = ''
-    paintList()
-    list.lastElementChild.querySelector('input').focus()
-  } }, el('option', { value: '' }, '+ Add a question'), QUESTION_TYPES.map(([value, label]) => el('option', { value }, label)))
   paintList()
 
-  const status = el('p', { class: 'muted', role: 'status' }, saved)
-  const saveButton = el('button', { type: 'submit', class: 'button primary' }, 'Save')
   const form = el('form', { class: 'setup', onsubmit: async event => {
     event.preventDefault()
-    saveButton.disabled = true
+    bar.busy()
     try {
       const fields = draft.fields.map(field => ({ ...field, options: field.options.filter(Boolean) }))
-      const next = (await api('PATCH', '/api/projects/' + project.id, { for: draft.for, attachments: draft.attachments, contact: draft.contact, fields })).project
+      const next = (await api('PATCH', '/api/projects/' + project.id, { for: draft.for, attachments: draft.attachments, contact: draft.contact, rating: draft.rating, fields })).project
       shell.project = next
-      formTab(next, 'Saved. The form on your site and page shows it now.')
-    } catch (problem) { status.textContent = problem.message; saveButton.disabled = false }
+      formTab(next, 'Saved. The form on your sites and your page asks this now.')
+    } catch (problem) { bar.failed(problem.message) }
   } },
-    el('label', { class: 'field' }, el('span', {}, 'Made for'), madeFor,
-      el('small', {}, 'A shop, restaurant, venue or event gets kinds that suit people there.')),
-    el('div', { class: 'field' }, el('span', {}, 'Ask for an email'), segmented('email')),
-    el('div', { class: 'field' }, el('span', {}, 'Ask for a phone number'), segmented('phone')),
-    el('label', { class: 'toggle' }, files, 'People can attach photos, videos and PDFs'),
-    el('div', { class: 'field' }, el('span', {}, 'Your questions'),
-      el('small', {}, 'Up to eight: a table number, which meal, how they heard of you. Answers show on each item, and the inbox can filter by them.'),
+    group('Made for', madeFor, el('p', { class: 'hint' }, 'A shop, restaurant, venue or event gets kinds that suit people there.')),
+    group('Rating',
+      el('div', { class: 'field' }, el('span', {}, 'Ask for one to five stars'), segmented({
+        label: 'Ask for a rating', value: draft.rating.ask, options: ASK,
+        onchange: value => { draft.rating.ask = value; ratingWordsField.hidden = value === 'off'; changed() }
+      })),
+      ratingWordsField),
+    group('Contact',
+      el('div', { class: 'field' }, el('span', {}, 'Email'), ask('email')),
+      el('div', { class: 'field' }, el('span', {}, 'Phone number'), ask('phone')),
+      el('label', { class: 'toggle' }, el('input', { type: 'checkbox', class: 'switch', checked: draft.attachments, onchange: event => { draft.attachments = event.target.checked; changed() } }), 'People can attach photos, videos and PDFs')),
+    group('Your questions',
+      el('p', { class: 'hint' }, 'Up to eight: a table number, which meal, how they heard of you. Answers show on each item, and the inbox filters by them.'),
       list, add),
-    el('div', { class: 'form-actions' }, status, saveButton))
+    bar.node)
 
-  put(el('div', { class: 'setup-grid' },
-    el('section', {}, el('h2', {}, 'What the form asks'), form),
-    el('section', {}, el('h2', {}, 'Preview'), el('p', { class: 'muted section-note' }, 'Changes show here as you make them.'), el('div', { class: 'stage' }, preview))))
+  put(el('div', { class: 'design-grid' }, form, pane.node))
 }
 
 function download(blob, name) {
@@ -503,75 +558,194 @@ async function upload(path, file) {
   return body
 }
 
-// The page's logo and cover, each with a preview, a picker and a way back
-// to the default.
-function pictures(project, status) {
-  const pick = (which, label, hint, preview) => {
+// The logo and cover, each with a thumbnail, a picker and a way back to the
+// default. They upload as soon as they're picked; onChange hears the result.
+function pictures(project, onChange) {
+  const status = el('p', { class: 'muted picture-status', role: 'status' })
+  const block = el('div', { class: 'pictures-pick' })
+  const tint = () => `--accent: ${project.color}; --accent-ink: ${inkOn(project.color)}; --project-soft: ${lighten(project.color, 0.55)}`
+  const done = (next, message) => { project = next; shell.project = next; onChange(next); paint(); status.textContent = message }
+  const pick = (which, label, hint) => {
     const input = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp,image/gif', hidden: true, onchange: async () => {
       const file = input.files[0]
       if (!file) return
       status.textContent = `Uploading the ${which}…`
-      try {
-        const { project: next } = await upload(`/api/projects/${project.id}/${which}`, file)
-        shell.project = next
-        share(next, `The ${which} is up.`)
-      } catch (problem) { status.textContent = problem.message }
+      try { done((await upload(`/api/projects/${project.id}/${which}`, file)).project, `The ${which} is up.`) } catch (problem) { status.textContent = problem.message }
     } })
+    const thumb = which === 'logo'
+      ? project.logo
+        ? el('span', { class: 'board-mark has-logo' }, el('img', { src: project.logo, alt: '' }))
+        : el('span', { class: 'board-mark', style: tint(), 'aria-hidden': 'true' }, project.name.trim().charAt(0).toUpperCase() || '?')
+      : el('span', { class: project.cover ? 'board-cover' : 'board-cover pattern', style: project.cover ? `background-image: url("${project.cover}")` : tint() })
     return el('div', { class: `picture ${which}-pick` },
-      preview,
+      thumb,
       el('div', { class: 'picture-text' },
         el('strong', {}, label),
         el('small', { class: 'muted' }, hint),
         el('span', { class: 'picture-actions' },
-          el('button', { type: 'button', class: 'button', onclick: () => input.click() }, project[which] ? 'Change' : 'Upload'),
-          project[which] && el('button', { type: 'button', class: 'button danger', onclick: async () => {
-            try {
-              const { project: next } = await api('DELETE', `/api/projects/${project.id}/${which}`)
-              shell.project = next
-              share(next, `Back to the default ${which}.`)
-            } catch (problem) { status.textContent = problem.message }
+          el('button', { type: 'button', class: 'button small', onclick: () => input.click() }, project[which] ? 'Change' : 'Upload'),
+          project[which] && el('button', { type: 'button', class: 'button small danger', onclick: async () => {
+            try { done((await api('DELETE', `/api/projects/${project.id}/${which}`)).project, `Back to the default ${which}.`) } catch (problem) { status.textContent = problem.message }
           } }, 'Remove'),
           input)))
   }
-  const tint = `--accent: ${project.color}; --accent-ink: ${inkOn(project.color)}; --project-soft: ${lighten(project.color, 0.55)}`
-  return el('section', { class: 'page-look' },
-    el('h2', {}, 'Logo and cover'),
-    el('p', { class: 'muted section-note' }, 'Without them the page uses your initial and a pattern in your colour.'),
-    pick('logo', 'Logo', 'Square or wide. A PNG with a clear background looks best.',
-      project.logo ? el('span', { class: 'board-mark has-logo' }, el('img', { src: project.logo, alt: '' }))
-        : el('span', { class: 'board-mark', style: tint, 'aria-hidden': 'true' }, project.name.trim().charAt(0).toUpperCase() || '?')),
-    pick('cover', 'Cover', 'A wide picture across the top, about 1800 × 640.',
-      el('span', { class: project.cover ? 'board-cover' : 'board-cover pattern', style: project.cover ? `background-image: url("${project.cover}")` : tint })))
+  const paint = () => block.replaceChildren(
+    pick('logo', 'Logo', 'Square or wide. A PNG with a clear background looks best.'),
+    pick('cover', 'Cover', 'A wide picture, about 1800 × 640. Without one, a pattern in your colour.'),
+    status)
+  paint()
+  return block
 }
 
-function share(project, saved = '') {
-  const origin = location.origin.replace(/^https?:\/\//, '')
-  const place = project.kinds.includes('praise')
-  const on = el('input', { type: 'checkbox', checked: project.public })
-  const slug = el('input', { value: project.slug || '', maxlength: '40', placeholder: project.name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'my-site', spellcheck: 'false', autocapitalize: 'none', 'aria-label': 'Custom address' })
-  const title = el('input', { value: project.title, maxlength: '80', placeholder: `Tell ${project.name} what you think` })
-  const intro = el('textarea', { rows: '3', maxlength: '280', placeholder: place
-    ? 'Loved something? Something not right? Tell us, with a photo if you like. It goes straight to the team.'
-    : 'Report a bug, suggest an idea or ask a question. It goes straight to the team.' })
-  intro.value = project.intro
-  const status = el('p', { class: 'muted', role: 'status' }, saved)
-  const saveButton = el('button', { type: 'submit', class: 'button primary' }, 'Save')
-  const form = el('form', { class: 'setup', onsubmit: async event => {
-    event.preventDefault()
-    saveButton.disabled = true
+// The snippet for a site. A Holm site runs only its own scripts and can't
+// ask this app for the look, so it gets a copy of embed.js and the look
+// written into its tag.
+const quote = value => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+function snippetFor(project, where) {
+  if (where !== 'holm') return `<script src="${location.origin}/embed.js" data-project="${project.id}" async></script>`
+  const look = [
+    project.label !== 'Feedback' && ` data-label="${quote(project.label)}"`,
+    project.color !== '#c2410c' && ` data-color="${project.color}"`,
+    project.position === 'left' && ' data-position="left"',
+    project.button !== 'pill' && ` data-button="${project.button}"`,
+    project.theme !== 'light' && ` data-theme="${project.theme}"`
+  ].filter(Boolean).join('')
+  return `<script src="/embed.js" data-project="${project.id}" data-origin="${location.origin}"${look} async></script>`
+}
+
+// Set up: the snippet for the kind of site it goes on, where the button is
+// live (it updates by itself), which sites may send feedback, and deleting
+// the project.
+function setup(project) {
+  let where = store.get('install', 'site')
+  let seen = []
+  const steps = el('div', { class: 'install-steps' })
+  const paintSteps = () => {
+    const own = project.button === 'none' && el('div', { class: 'step' },
+      el('p', {}, 'Your button is set to “Your link”, so add this wherever the form should open from:'),
+      codeBox(`<button type="button" onclick="HolmFeedback.open()">${quote(project.label)}</button>`))
+    steps.replaceChildren(...(where === 'holm' ? [
+      el('div', { class: 'step' },
+        el('p', {}, el('strong', {}, '1. '), 'Put a copy of embed.js at the root of your app.'),
+        el('a', { class: 'button small', href: '/embed.js', download: 'embed.js' }, glyph('download', 'glyph line'), 'Download embed.js')),
+      el('div', { class: 'step' },
+        el('p', {}, el('strong', {}, '2. '), 'Paste this before the closing ', el('code', {}, '</body>'), ' of each page.'),
+        codeBox(snippetFor(project, 'holm'))),
+      el('div', { class: 'step' },
+        el('p', {}, el('strong', {}, '3. '), 'Let its pages show the form. The node’s operator runs this once:'),
+        codeBox(`holm policy set security.csp.frame_src "${location.origin}" --app <your-app-id>`)),
+      own,
+      el('p', { class: 'hint' }, 'The look is written into this tag; copy it again after you change it in Design.')
+    ] : [
+      el('div', { class: 'step' },
+        el('p', {}, 'Paste this before the closing ', el('code', {}, '</body>'), ' of every page that should have the button.'),
+        codeBox(snippetFor(project, 'site'))),
+      own,
+      el('p', { class: 'hint' }, 'Change the look in Design whenever you like: your pages pick it up on their next load, with this same snippet. An older snippet with data-label, data-color or data-position keeps those.')
+    ]).filter(Boolean))
+  }
+  paintSteps()
+
+  const live = el('div', { class: 'live', 'aria-live': 'polite' })
+  const allowed = origin => !project.origins.length || project.origins.includes(origin)
+  const paintLive = () => live.replaceChildren(seen.length
+    ? el('ul', { class: 'live-list' }, seen.map(entry => el('li', {},
+        el('span', { class: allowed(entry.origin) ? 'live-dot' : 'live-dot blocked', 'aria-hidden': 'true' }),
+        el('span', { class: 'live-site' },
+          el('strong', {}, entry.origin.replace(/^https?:\/\//, '')),
+          el('small', { class: 'muted' }, allowed(entry.origin) ? `Seen ${ago(entry.seenAt)}` : `Seen ${ago(entry.seenAt)}, but not an allowed site`)),
+        !allowed(entry.origin) && el('button', { type: 'button', class: 'button small', onclick: () => saveOrigins([...project.origins, entry.origin]) }, 'Allow'))))
+    : el('p', { class: 'waiting' }, el('span', { class: 'live-dot waiting', 'aria-hidden': 'true' }),
+        'Waiting for the button to load on a site. Once a page with the snippet opens, it shows up here.'))
+  const poll = async () => {
+    if (!live.isConnected) return
     try {
-      project = (await api('PATCH', '/api/projects/' + project.id, { public: on.checked, slug: slug.value.trim(), title: title.value, intro: intro.value })).project
+      seen = (await api('GET', `/api/projects/${project.id}/installs`)).installs
+      paintLive()
+    } catch {}
+    setTimeout(poll, 8000)
+  }
+
+  const chips = el('ul', { class: 'site-chips' })
+  const sitesStatus = el('p', { class: 'muted', role: 'status' })
+  const saveOrigins = async origins => {
+    sitesStatus.textContent = 'Saving…'
+    try {
+      project = (await api('PATCH', '/api/projects/' + project.id, { origins })).project
       shell.project = project
-      share(project, 'Saved.')
-    } catch (problem) { status.textContent = problem.message; saveButton.disabled = false }
+      paintSites()
+      paintLive()
+      sitesStatus.textContent = project.origins.length ? 'Saved. Only these sites can send feedback now.' : 'Saved. Any site can send feedback.'
+    } catch (problem) { sitesStatus.textContent = problem.message }
+  }
+  const paintSites = () => chips.replaceChildren(...(project.origins.length
+    ? project.origins.map(origin => el('li', {}, origin.replace(/^https?:\/\//, ''),
+        el('button', { type: 'button', 'aria-label': `Stop allowing ${origin}`, onclick: () => saveOrigins(project.origins.filter(entry => entry !== origin)) }, glyph('x', 'glyph line'))))
+    : [el('li', { class: 'any' }, 'Any site')]))
+  paintSites()
+  const site = el('input', { placeholder: 'example.com', spellcheck: 'false', autocapitalize: 'none', autocomplete: 'off', 'aria-label': 'A site to allow' })
+  const addSite = el('form', { class: 'joined', onsubmit: event => {
+    event.preventDefault()
+    const value = site.value.trim()
+    if (!value) return
+    let origin
+    try { origin = new URL(/^https?:\/\//i.test(value) ? value : 'https://' + value).origin } catch { sitesStatus.textContent = `“${value}” isn’t a site address.`; return }
+    site.value = ''
+    saveOrigins([...new Set([...project.origins, origin])])
+  } }, site, el('button', { type: 'submit' }, 'Allow'))
+
+  put(
+    el('div', { class: 'setup-columns' },
+      el('section', { class: 'install' },
+        el('div', { class: 'section-head' }, el('h2', {}, 'Add it to your site'),
+          segmented({
+            label: 'Kind of site', value: where, className: 'small',
+            options: [{ value: 'site', label: 'Any website', icon: 'globe' }, { value: 'holm', label: 'A Holm app', icon: 'apps' }],
+            onchange: value => { where = value; store.set('install', value); paintSteps() }
+          })),
+        steps),
+      el('div', { class: 'setup-side' },
+        el('section', { class: 'live-section' }, el('h2', {}, 'Where it’s live'), live),
+        el('section', { class: 'sites' },
+          el('h2', {}, 'Allowed sites'),
+          el('p', { class: 'muted section-note' }, 'Only these sites can send feedback through the button. With none, any site can. Your feedback page always can.'),
+          chips, addSite, sitesStatus))),
+    el('section', { class: 'danger-zone' },
+      el('h2', {}, 'Delete project'),
+      el('p', { class: 'muted' }, 'Deletes the project with every item, file, comment, note and stat in it. The snippet and the public page stop working.'),
+      el('button', { type: 'button', class: 'button danger', onclick: async () => {
+        if (!confirm(`Delete ${project.name} and all its feedback for good?`)) return
+        try { await api('DELETE', '/api/projects/' + project.id); shell = null; go('/') } catch (problem) { alert(problem.message) }
+      } }, 'Delete project')))
+  paintLive()
+  poll()
+}
+
+// Share: the project's own page, on or off, at its address; its link to
+// copy or email, and its QR code and poster.
+function share(project, saved = '') {
+  const host = location.origin.replace(/^https?:\/\//, '')
+  const place = project.kinds.includes('praise')
+  const status = el('p', { class: 'muted', role: 'status' }, saved)
+  const on = el('input', { type: 'checkbox', class: 'switch', checked: project.public, onchange: async () => {
+    try {
+      const next = (await api('PATCH', '/api/projects/' + project.id, { public: on.checked })).project
+      shell.project = next
+      share(next, next.public ? 'Your page is on.' : 'Your page is off.')
+    } catch (problem) { on.checked = !on.checked; status.textContent = problem.message }
+  } })
+  const slug = el('input', { value: project.slug || '', maxlength: '40', placeholder: project.name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'my-site', spellcheck: 'false', autocapitalize: 'none', 'aria-label': 'Custom address' })
+  const address = el('form', { class: 'field', onsubmit: async event => {
+    event.preventDefault()
+    try {
+      const next = (await api('PATCH', '/api/projects/' + project.id, { slug: slug.value.trim() })).project
+      shell.project = next
+      share(next, 'The address is saved.')
+    } catch (problem) { status.textContent = problem.message }
   } },
-    el('label', { class: 'toggle' }, on, 'Turn on the public page'),
-    el('label', { class: 'field' }, el('span', {}, 'Custom address'),
-      el('span', { class: 'prefixed' }, el('span', { class: 'prefix' }, origin + '/'), slug),
-      el('small', {}, 'Letters, digits and hyphens. Changing it breaks links and QR codes you’ve already shared; ', el('code', {}, `/b/${project.id}`), ' always works.')),
-    el('label', { class: 'field' }, el('span', {}, 'Title'), title),
-    el('label', { class: 'field' }, el('span', {}, 'Description'), intro),
-    el('div', { class: 'form-actions' }, status, saveButton))
+    el('label', { for: 'page-slug' }, 'Address'),
+    el('span', { class: 'prefixed joined' }, el('span', { class: 'prefix' }, host + '/'), Object.assign(slug, { id: 'page-slug' }), el('button', { type: 'submit' }, 'Save')),
+    el('small', {}, 'Letters, digits and hyphens. Changing it breaks links and QR codes you’ve already shared; ', el('code', {}, `/b/${project.id}`), ' always works.'))
 
   // The QR code and emails tag their links, so Stats can tell scans and
   // email visits apart from the rest.
@@ -582,13 +756,12 @@ function share(project, saved = '') {
   code.innerHTML = qrSVG(scanURL, color)
   const mail = `mailto:?subject=${encodeURIComponent(project.title || `Tell ${project.name} what you think`)}` +
     `&body=${encodeURIComponent(`We'd love to hear from you. It takes a minute:\n\n${url}?via=email\n`)}`
-  const handout = project.public && el('section', { class: 'handout' },
+  const handout = project.public ? el('section', { class: 'handout' },
     el('h2', {}, 'Link and QR code'),
-    el('div', { class: 'link-row' },
-      el('code', {}, url),
-      copyButton(url, 'Copy link'),
-      el('a', { class: 'button', href: mail }, 'Email it'),
-      el('a', { class: 'button', href: url, target: '_blank', rel: 'noopener' }, 'Open', glyph('out', 'glyph line'))),
+    codeBox(url, 'Copy link'),
+    el('div', { class: 'link-actions' },
+      el('a', { class: 'button small', href: mail }, 'Email it'),
+      el('a', { class: 'button small', href: url, target: '_blank', rel: 'noopener' }, 'Open', glyph('out', 'glyph line'))),
     el('div', { class: 'qr-row' },
       code,
       el('div', { class: 'qr-actions' },
@@ -597,40 +770,16 @@ function share(project, saved = '') {
           : 'Print it on a receipt, a card or a slide. People who scan it land on the page and can send feedback straight away. Stats count the scans.'),
         el('button', { type: 'button', class: 'button primary', onclick: async () => download(await poster(url, project, scanURL), `${project.slug || project.id}-poster.png`) }, glyph('download', 'glyph line'), 'Poster (PNG)'),
         el('button', { type: 'button', class: 'button', onclick: () => download(new Blob([qrSVG(scanURL, color)], { type: 'image/svg+xml' }), `${project.slug || project.id}-qr.svg`) }, glyph('download', 'glyph line'), 'QR code (SVG)'))))
+    : el('section', { class: 'handout off' }, el('h2', {}, 'Link and QR code'), el('p', { class: 'muted' }, 'Turn the page on to get its link and QR code.'))
 
-  put(
-    el('div', { class: 'share-grid' },
-      el('section', {},
+  put(el('div', { class: 'share-grid' },
+    el('section', { class: 'setup' },
+      el('div', {},
         el('h2', {}, 'Your feedback page'),
-        el('p', { class: 'muted section-note' }, 'A page of its own where anyone can send feedback, see the items you make public, vote and comment. Comments wait for your approval.'),
-        form,
-        pictures(project, status)),
-      handout || el('section', { class: 'handout off' }, el('h2', {}, 'Link and QR code'), el('p', { class: 'muted' }, 'Turn the page on to get its link and QR code.'))))
-}
-
-function settings(project, saved = '') {
-  const name = el('input', { value: project.name, maxlength: '60', required: true })
-  const status = el('p', { class: 'muted', role: 'status' }, saved)
-  const saveButton = el('button', { type: 'submit', class: 'button primary' }, 'Save')
-  const form = el('form', { class: 'setup', onsubmit: async event => {
-    event.preventDefault()
-    saveButton.disabled = true
-    try {
-      project = (await api('PATCH', '/api/projects/' + project.id, { name: name.value })).project
-      renamed(project)
-      settings(project, 'Saved.')
-    } catch (problem) { status.textContent = problem.message; saveButton.disabled = false }
-  } },
-    el('label', { class: 'field' }, el('span', {}, 'Project name'), name,
-      el('small', {}, 'Shown on the form, your public page and its poster.')),
-    el('div', { class: 'form-actions' }, status, saveButton))
-  put(
-    el('section', { class: 'settings' }, el('h2', {}, 'Project'), form),
-    el('section', { class: 'danger-zone' },
-      el('h2', {}, 'Delete project'),
-      el('p', { class: 'muted' }, 'Deletes the project with every item, file, comment, note and stat in it. The snippet and the public page stop working.'),
-      el('button', { type: 'button', class: 'button danger', onclick: async () => {
-        if (!confirm(`Delete ${project.name} and all its feedback for good?`)) return
-        try { await api('DELETE', '/api/projects/' + project.id); shell = null; go('/') } catch (problem) { alert(problem.message) }
-      } }, 'Delete project')))
+        el('p', { class: 'muted section-note' }, 'A page of its own where anyone can send feedback, see the items you make public, vote and comment. Comments wait for your approval.')),
+      el('label', { class: 'toggle big' }, on, project.public ? 'The page is on' : 'The page is off'),
+      address,
+      el('p', { class: 'hint' }, 'Its title, words, logo, cover and colour are in ', el('a', { href: `/projects/${project.id}/design`, 'data-link': true, 'data-tab': 'design' }, 'Design'), '.'),
+      status),
+    handout))
 }

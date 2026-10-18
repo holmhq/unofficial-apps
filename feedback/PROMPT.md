@@ -90,6 +90,20 @@ tile Holm's sign-in page shows. Credit its creator in the README.
 - Make each item a thread for my team: notes and every change, in order.
 ```
 
+## 8. A button people want on their site
+
+```text
+- Make the button and form refined enough that people want them on their
+  site: smooth transitions, and let me set the form's title, description,
+  logo, colour and cover.
+- Add an optional star rating with feed-stars, Holm's own component, from
+  https://cdn.jsdelivr.net/gh/holmhq/cdn.
+- Give the app a /changelog.
+- Make the set-up screen smarter, join the copy button to the snippet's
+  edge, and design the dropdowns properly.
+- Say "Issue" instead of "Bug".
+```
+
 ## The original requests
 
 **Iteration 1** came from this message, typed as-is to a coding agent while
@@ -158,11 +172,35 @@ chose a thread for the team only, and no email for now:
 > - if possible we can even think of a super simple form?
 > - field, dropdown, radio, checkbox etc only?
 
+**Iteration 9**, with the path to the component on the owner's machine
+removed. Asked how to credit the vendored component, the owner chose loading
+it from jsDelivr, then added: "jsdelvr is our own one; that project is
+maintained by us".
+
+> Refinements to feedback
+> - any chance you can make the feedback component more refined visually?
+> - so that the component looks and behaves elegantly in a page?
+> - take a look at this component we have: [the feed-stars component]
+> - make sure the cdn works before using it or vendor it if its difficult
+> - perhaps nice transitions, and refined ability to customise the widget?
+> - say: set title, description, logo, color, cover?
+> - make it super elegant that people want to use it their website
+> - can we have a "/changelog" in our site?
+> - will using the same id for project & embed have any security implications?
+> - can we make the setup screen smarter?
+> - make the copy snippet as a segment button at the right edge of the snippet?
+> - saving space
+> - all the drop downs is too lame, design it well
+> - instead of Bug, say issue? that may be more generic?
+
 Everything in the prompts beyond what's quoted came from the agent: the
 button in a shadow root and the form in an iframe, the carbon-copy tickets,
 the public board and votes, the spam guards, the shape of the API, the
 icon's credit, in iteration 4 the page's layout, the file limits, the poster
 and what the stats count, in iteration 5 changing an item's status in
 place too, in iteration 7 the kinds for places, the scan tags and the
-default cover, and in iteration 8 the question types' details and the
-inbox's filters.
+default cover, in iteration 8 the question types' details and the
+inbox's filters, and in iteration 9 the Design tab and its preview running
+the real button, the panel's theme and button styles, a snippet that reads
+the look as the page loads, "where it's live", and the rating's place in
+the inbox and Stats.

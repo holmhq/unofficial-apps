@@ -1,21 +1,21 @@
 // Feedback items: sent by anyone through a project's widget, triaged by the
 // project's owner, and shown on the public board only when the owner says so.
-import { ds, kv, now, iso, text, reject, random } from './lib.js'
+import { ds, kv, now, iso, text, reject, random, kindOf } from './lib.js'
 import { findProject, findBoard, ownProject, kindsOf } from './projects.js'
 import { uploads, store, remove, fileDTO, serve } from './files.js'
 import { count } from './stats.js'
 import { pictureURL } from './page.js'
-import { contactOf, fieldsOf, answersFor, contactFor } from './form.js'
+import { contactOf, fieldsOf, ratingOf, answersFor, contactFor, ratingFor } from './form.js'
 
 // Every kind there is; each project offers one set of three (KIND_SETS).
-export const KINDS = ['bug', 'idea', 'question', 'praise', 'problem']
+export const KINDS = ['issue', 'idea', 'question', 'praise', 'problem']
 export const STATUSES = ['new', 'planned', 'progress', 'done', 'closed']
 const HOURLY_LIMIT = 120
 
 function itemDTO(doc) {
   return {
-    id: doc.id, number: doc.number, kind: doc.kind, status: doc.status, public: !!doc.public,
-    title: doc.title, body: doc.body, email: doc.email || '', phone: doc.phone || '', answers: doc.answers || [],
+    id: doc.id, number: doc.number, kind: kindOf(doc.kind), status: doc.status, public: !!doc.public,
+    title: doc.title, body: doc.body, rating: doc.rating || null, email: doc.email || '', phone: doc.phone || '', answers: doc.answers || [],
     page: doc.page || '', pageTitle: doc.pageTitle || '',
     browser: doc.browser || '', viewport: doc.viewport || '', votes: doc.votes || 0, source: doc.source || 'widget',
     files: (doc.files || []).map(fileDTO), comments: doc.comments || 0, pending: doc.pending || 0, notes: doc.notes || 0,
@@ -24,7 +24,7 @@ function itemDTO(doc) {
 }
 
 // What the public board shows: never the email, page, browser or files.
-const boardDTO = doc => ({ id: doc.id, number: doc.number, kind: doc.kind, status: doc.status, title: doc.title, body: doc.body, votes: doc.votes || 0, comments: doc.comments || 0, createdAt: iso(doc.createdAt) })
+const boardDTO = doc => ({ id: doc.id, number: doc.number, kind: kindOf(doc.kind), status: doc.status, title: doc.title, body: doc.body, votes: doc.votes || 0, comments: doc.comments || 0, createdAt: iso(doc.createdAt) })
 
 // The page an item came from, without its query or fragment, which can carry
 // tokens the sender never meant to share.
@@ -49,11 +49,12 @@ export function submit(project, input, request, source = 'widget') {
   const words = text(input.body, 4000, true)
   const answers = answersFor(project, input)
   const { email, phone } = contactFor(project, input)
+  const rating = ratingFor(project, input)
   const checked = uploads(request, project)
-  // A photo on its own is enough, for someone at a table in a hurry.
-  if (words.length < 3 && !checked.length) reject(400, 'invalid_body', 'Write a few words or add a photo.')
+  // A photo or a rating on its own is enough, for someone at a table in a hurry.
+  if (words.length < 3 && !checked.length && !rating) reject(400, 'invalid_body', 'Write a few words, add a photo or pick a rating.')
   const pictures = checked.every(entry => entry.mime.startsWith('image/'))
-  const untitled = `${checked.length} ${pictures ? 'photo' : 'file'}${checked.length === 1 ? '' : 's'}`
+  const untitled = checked.length ? `${checked.length} ${pictures ? 'photo' : 'file'}${checked.length === 1 ? '' : 's'}` : `Rated ${rating} out of 5`
   const kinds = kindsOf(project)
   const agent = (request.headers && (request.headers['User-Agent'] || request.headers['user-agent'])) || ''
   const id = random(24)
@@ -62,10 +63,10 @@ export function submit(project, input, request, source = 'widget') {
     id,
     project: project.id,
     number: kv().increment('seq:' + project.id, 1),
-    kind: kinds.includes(input.kind) ? input.kind : 'idea',
+    kind: kinds.includes(kindOf(input.kind)) ? kindOf(input.kind) : 'idea',
     status: 'new', public: false, votes: 0, comments: 0, pending: 0, source,
     title: words.split('\n')[0].slice(0, 90) || untitled,
-    body: words, email, phone, answers, files,
+    body: words, rating, email, phone, answers, files,
     page: from, pageTitle: source === 'page' ? '' : text(input.title, 200),
     browser: text(Array.isArray(agent) ? agent[0] : agent, 300),
     viewport: /^\d{2,5}x\d{2,5}$/.test(input.viewport || '') ? input.viewport : '',
@@ -101,13 +102,13 @@ export function updateItem(user, id, input) {
   const doc = ownItem(user, id)
   const changes = { updatedAt: now() }
   if ('status' in input) changes.status = STATUSES.includes(input.status) ? input.status : reject(400, 'invalid_status', 'Unknown status.')
-  if ('kind' in input) changes.kind = KINDS.includes(input.kind) ? input.kind : reject(400, 'invalid_kind', 'Unknown kind.')
+  if ('kind' in input) changes.kind = KINDS.includes(kindOf(input.kind)) ? kindOf(input.kind) : reject(400, 'invalid_kind', 'Unknown kind.')
   if ('public' in input) changes.public = input.public === true
   if ('title' in input) changes.title = text(input.title, 90) || doc.title
   // The item's thread keeps who changed what, beside the notes.
   const said = []
   if (changes.status && changes.status !== doc.status) said.push(`marked it ${STATUS_NAMES[changes.status]}`)
-  if (changes.kind && changes.kind !== doc.kind) said.push(`made it ${KIND_NAMES[changes.kind]}`)
+  if (changes.kind && changes.kind !== kindOf(doc.kind)) said.push(`made it ${KIND_NAMES[changes.kind]}`)
   if ('public' in changes && changes.public !== !!doc.public) said.push(changes.public ? 'showed it on the public page' : 'took it off the public page')
   ds().transaction(tx => {
     tx.update('items', { id: doc.id }, { $set: changes })
@@ -117,7 +118,7 @@ export function updateItem(user, id, input) {
 }
 
 const STATUS_NAMES = { new: 'new', planned: 'planned', progress: 'in progress', done: 'done', closed: 'closed' }
-const KIND_NAMES = { bug: 'a bug', idea: 'an idea', question: 'a question', praise: 'praise', problem: 'a problem' }
+const KIND_NAMES = { issue: 'an issue', idea: 'an idea', question: 'a question', praise: 'praise', problem: 'a problem' }
 
 export function deleteItem(user, id) {
   const doc = ownItem(user, id)
@@ -174,7 +175,7 @@ export function board(key, query = {}) {
     project: {
       id: project.id, name: project.name, color: project.color, slug: project.slug || null, title: project.title || '', intro: project.intro || '',
       logo: pictureURL(project, 'logo'), cover: pictureURL(project, 'cover'), attachments: project.attachments !== false, kinds: kindsOf(project),
-      contact: contactOf(project), fields: fieldsOf(project)
+      contact: contactOf(project), rating: ratingOf(project), fields: fieldsOf(project)
     },
     items: items.map(boardDTO)
   }

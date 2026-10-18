@@ -4,7 +4,7 @@
 // not the app's.
 import { el, api, glyph, store, ago, inkOn, lighten, STATUS, KIND, KIND_SETS } from './lib.js'
 import { show } from './app.js'
-import { composer } from './compose.js'
+import { composer, sentMark } from './compose.js'
 
 const SECTIONS = ['progress', 'planned', 'new', 'done']
 const TITLES = { progress: 'In progress', planned: 'Planned', new: 'Under review', done: 'Done' }
@@ -37,7 +37,7 @@ const defaults = project => ({
   title: `Tell ${project.name} what you think`,
   intro: project.kinds.includes('praise')
     ? 'Loved something? Something not right? Tell us, with a photo if you like. It goes straight to the team.'
-    : 'Report a bug, suggest an idea or ask a question. It goes straight to the team.'
+    : 'Report an issue, suggest an idea or ask a question. It goes straight to the team.'
 })
 
 export async function boardPage(key, number) {
@@ -110,7 +110,7 @@ function voteButton(project, item, voted, large) {
 
 function thanks(project, number, again) {
   return el('div', { class: 'board-thanks', role: 'status' },
-    el('span', { class: 'tick' }, glyph('check', 'glyph line')),
+    sentMark(),
     el('h2', {}, 'Thanks, it’s sent'),
     el('p', {}, number ? `It’s #${number} in ${project.name}’s inbox.` : `It’s in ${project.name}’s inbox.`,
       ' If they add it to this page, it will show up below.'),
@@ -132,6 +132,7 @@ function listView(data, base) {
       kinds: project.kinds || KIND_SETS.site,
       fields: project.fields || [],
       contact: project.contact,
+      rating: project.rating,
       attachments: project.attachments,
       onSent: number => { card.replaceChildren(thanks(project, number, fresh)); card.scrollIntoView({ block: 'nearest' }) },
       fine: project.contact && project.contact.email === 'off' && project.contact.phone === 'off' ? null : 'Your contact details are only shown to the team.'

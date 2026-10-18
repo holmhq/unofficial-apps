@@ -1,6 +1,6 @@
 // Light analytics: a counter per project, day and event in shared KV. No
 // cookies and no visitor identifiers, so it counts events, not people.
-import { ds, kv, now, reject } from './lib.js'
+import { ds, kv, now, reject, kindOf } from './lib.js'
 
 // Scans and emails are the page visits that came from a QR code or an email.
 export const METRICS = ['visits', 'scans', 'emails', 'opens', 'sent', 'votes', 'comments']
@@ -64,12 +64,15 @@ export function projectStats(project, input) {
   const since = Date.parse(days[0])
   const items = ds().find('items', { project: project.id, createdAt: { $gte: since } }, { limit: 1000 })
   const pages = new Map()
-  const kinds = { bug: 0, idea: 0, question: 0, praise: 0, problem: 0 }
+  const kinds = { issue: 0, idea: 0, question: 0, praise: 0, problem: 0 }
+  // How many people gave one star, two, and so on.
+  const ratings = [0, 0, 0, 0, 0]
   for (const item of items) {
     const page = item.source === 'page' ? 'Feedback page' : (item.page || '').replace(/^https?:\/\//, '') || 'Unknown page'
     pages.set(page, (pages.get(page) || 0) + 1)
-    if (item.kind in kinds) kinds[item.kind] += 1
+    if (kindOf(item.kind) in kinds) kinds[kindOf(item.kind)] += 1
+    if (item.rating >= 1 && item.rating <= 5) ratings[item.rating - 1] += 1
   }
   const top = [...pages].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([page, count]) => ({ page, count }))
-  return { days, daily, totals: totalsOf(daily), pages: top, kinds }
+  return { days, daily, totals: totalsOf(daily), pages: top, kinds, ratings }
 }

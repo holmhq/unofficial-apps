@@ -20,8 +20,9 @@ or opens a pull request.
 - The folder is a deployable Holm app at its root, with no build step unless
   its README says otherwise.
 - `PROMPT.md` is a short, plain-language request that builds the app from
-  scratch. It may cite only public sources: <https://holmhq.com> and
-  <https://holmhq.com/llm.txt>. Keep it short; its job is to show how simple
+  scratch. It may cite only public sources: <https://holmhq.com>,
+  <https://holmhq.com/llm.txt>, and Holm's own libraries in
+  <https://github.com/holmhq/cdn>. Keep it short; its job is to show how simple
   a prompt can be. Quote the original request if there was one.
 - `README.md` covers what the app does, how it's built (naming the Holm
   primitives it uses), how to deploy your own copy, its known limits, and the
@@ -50,7 +51,9 @@ or opens a pull request.
 ## Work
 
 - No third-party runtime CDN. Vendor libraries into the app and keep their
-  licenses next to them.
+  licenses next to them. Holm's own libraries in `holmhq/cdn` are the
+  exception: load them from jsDelivr, pinned to a commit and a `v-X.Y.Z/`
+  folder, with an integrity hash, and say so in the README.
 - Verify in a real browser on mobile and desktop, in light and dark, before
   deploying.
 - Deploy: `holm @<peer> app deploy <app> --host <host> --spa --no-build`.

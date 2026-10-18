@@ -1,28 +1,36 @@
 {
   "subtitle": "Feedback for websites, shops and events",
   "category": "Developer tools",
-  "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap.\n\nMake the form your own: ask for an email or a phone number, and add a few questions like a table number or which meal. Each project gets a page with your title, logo and cover, a custom address and a poster to print.\n\nEverything arrives in one inbox per project. Filter by status, kind or any answer, keep a thread of notes for your team, and see how many people scanned, visited and sent something.",
-  "whatsNew": "A form of your own: ask for an email or phone, and add short answers, dropdowns, one-choice and checkbox questions. The inbox filters by kind, answer, photos or words, and each item keeps a thread of your team's notes and changes.",
+  "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project. Filter by status, kind, rating or any answer, keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
+  "whatsNew": "A button people want on their site: your cover, logo, title and words on the form, smooth transitions, light or dark, and an optional star rating with faces. A new Design tab with a live preview, a smarter Set up that shows where the button is live, designed dropdowns, \"Issue\" instead of \"Bug\", and a changelog.",
   "screenshots": [
     {
-      "file": "page.webp",
-      "alt": "A restaurant's feedback page on a phone: Praise, Problem or Idea, and a button to take a photo"
+      "file": "widget.webp",
+      "alt": "The feedback form open on a shop's checkout page on a phone, with its cover, a star rating and a message"
     },
     {
-      "file": "widget.webp",
-      "alt": "The feedback form open on a shop's checkout page, with room for files"
+      "file": "page.webp",
+      "alt": "A restaurant's feedback page on a phone: Praise, Problem or Idea, and how the visit was in stars"
+    },
+    {
+      "file": "design.webp",
+      "alt": "The Design tab: the panel's theme and a live preview of the button and form on a stand-in page"
     },
     {
       "file": "form.webp",
-      "alt": "The Form tab: contact details to ask for and a restaurant's own questions"
+      "alt": "The Form tab: made for a place or event, with a star rating to ask for"
+    },
+    {
+      "file": "setup.webp",
+      "alt": "Set up: a one-line snippet with its copy button, and the sites where the button is live"
     },
     {
       "file": "inbox.webp",
-      "alt": "A project's inbox with search and filters, each item a ticket tinted by its status"
+      "alt": "A restaurant's inbox with filters for kind, rating and its own questions, each item a ticket"
     },
     {
       "file": "item.webp",
-      "alt": "A bug report in dark mode, with its screenshot, status, page and browser"
+      "alt": "An issue in dark mode, with its screenshot, status and kind"
     },
     {
       "file": "stats.webp",
@@ -30,7 +38,7 @@
     },
     {
       "file": "share.webp",
-      "alt": "Sharing the feedback page: its link, its QR code and a poster to print"
+      "alt": "Sharing the feedback page: its address, its link and a QR code to print"
     }
   ]
 }

@@ -4,7 +4,8 @@ import { ds, now, iso, text, reject, random } from './lib.js'
 import { removeProject as removeFiles } from './files.js'
 import { removeProjectStats } from './stats.js'
 import { pictureURL, storePicture, removePicture } from './page.js'
-import { contactOf, fieldsOf, contactSetting, fieldsSetting } from './form.js'
+import { contactOf, fieldsOf, ratingOf, contactSetting, fieldsSetting, ratingSetting } from './form.js'
+import { removeInstalls } from './installs.js'
 
 // Snippets and page links in API replies are absolute. The runtime doesn't
 // pass the request host to apps yet, so they use this. Set it to your host.
@@ -12,44 +13,43 @@ export const ORIGIN = 'https://feedback.zyt.app'
 
 const COLOR = /^#[0-9a-fA-F]{6}$/
 // What a project is for picks the three kinds its form offers.
-export const KIND_SETS = { site: ['bug', 'idea', 'question'], place: ['praise', 'problem', 'idea'] }
+export const KIND_SETS = { site: ['issue', 'idea', 'question'], place: ['praise', 'problem', 'idea'] }
 export const kindsOf = doc => KIND_SETS[doc.for] || KIND_SETS.site
+// The button on a site: a pill with its text, a round icon, or none (the
+// site opens the form from its own link). The panel is light, dark, or
+// follows the visitor's system.
+const BUTTONS = ['pill', 'icon', 'none']
+const THEMES = ['light', 'dark', 'auto']
 const MAX_PROJECTS = 20
 // A custom address: 3 to 40 lowercase letters, digits and inner hyphens.
 const SLUG = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/
 // First path segments the app itself uses (src/app.js keeps the same list).
 export const RESERVED = new Set(['api', 'auth', 'b', 'f', 'projects', 'keys', 'stats', 'assets', 'src', 'vendor',
   'embed', 'widget', 'new', 'settings', 'account', 'admin', 'login', 'logout', 'signin', 'signup', 'help', 'about',
-  'privacy', 'terms', 'docs', 'www', 'app', 'holm', 'index'])
+  'privacy', 'terms', 'docs', 'www', 'app', 'holm', 'index', 'changelog', 'preview'])
 
-// The script tag for a site, with the project's look written in.
-export function snippet(doc, origin = ORIGIN) {
-  return [
-    `<script src="${origin}/embed.js" data-project="${doc.id}"`,
-    doc.label !== 'Feedback' ? ` data-label="${doc.label.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}"` : '',
-    doc.color !== '#c2410c' ? ` data-color="${doc.color}"` : '',
-    doc.position === 'left' ? ' data-position="left"' : '',
-    ' async></script>'
-  ].join('')
-}
+// The script tag for a site. The button reads the project's look when the
+// page loads, so a change here needs no new snippet.
+export const snippet = (doc, origin = ORIGIN) => `<script src="${origin}/embed.js" data-project="${doc.id}" async></script>`
 
 export const pageURL = (doc, origin = ORIGIN) => `${origin}/${doc.slug || 'b/' + doc.id}`
 
 export function projectDTO(doc) {
   return {
-    id: doc.id, name: doc.name, label: doc.label, color: doc.color, position: doc.position,
-    origins: doc.origins, public: doc.public, slug: doc.slug || null, title: doc.title || '', intro: doc.intro || '',
-    logo: pictureURL(doc, 'logo'), cover: pictureURL(doc, 'cover'),
-    attachments: doc.attachments !== false, for: KIND_SETS[doc.for] ? doc.for : 'site', kinds: kindsOf(doc),
-    contact: contactOf(doc), fields: fieldsOf(doc), createdAt: iso(doc.createdAt),
+    ...publicConfig(doc),
+    origins: doc.origins, public: doc.public, slug: doc.slug || null, createdAt: iso(doc.createdAt),
     snippet: snippet(doc), board: doc.public ? pageURL(doc) : null
   }
 }
 
-// The parts a visitor's browser may see: no owner, no allowed sites.
+// The parts a visitor's browser may see: the button's and the form's look
+// and questions, never the owner or the allowed sites.
 export const publicConfig = doc => ({
   id: doc.id, name: doc.name, label: doc.label, color: doc.color, position: doc.position,
-  attachments: doc.attachments !== false, kinds: kindsOf(doc), contact: contactOf(doc), fields: fieldsOf(doc)
+  button: BUTTONS.includes(doc.button) ? doc.button : 'pill', theme: THEMES.includes(doc.theme) ? doc.theme : 'light',
+  title: doc.title || '', intro: doc.intro || '', logo: pictureURL(doc, 'logo'), cover: pictureURL(doc, 'cover'),
+  attachments: doc.attachments !== false, for: KIND_SETS[doc.for] ? doc.for : 'site', kinds: kindsOf(doc),
+  contact: contactOf(doc), rating: ratingOf(doc), fields: fieldsOf(doc)
 })
 
 export function findProject(id) {
@@ -100,6 +100,8 @@ function settings(input, doc = {}) {
   if ('label' in input) out.label = text(input.label, 24) || 'Feedback'
   if ('color' in input) out.color = COLOR.test(input.color || '') ? input.color.toLowerCase() : reject(400, 'invalid_color', 'A colour is like #c2410c.')
   if ('position' in input) out.position = input.position === 'left' ? 'left' : 'right'
+  if ('button' in input) out.button = BUTTONS.includes(input.button) ? input.button : reject(400, 'invalid_button', 'The button is "pill", "icon" or "none".')
+  if ('theme' in input) out.theme = THEMES.includes(input.theme) ? input.theme : reject(400, 'invalid_theme', 'The panel is "light", "dark" or "auto".')
   if ('origins' in input) out.origins = origins(input.origins)
   if ('public' in input) out.public = input.public === true
   if ('slug' in input) out.slug = slug(input.slug, doc.id)
@@ -108,6 +110,7 @@ function settings(input, doc = {}) {
   if ('attachments' in input) out.attachments = input.attachments !== false
   if ('for' in input) out.for = KIND_SETS[input.for] ? input.for : reject(400, 'invalid_for', 'A project is for a "site" or a "place".')
   if ('contact' in input) out.contact = contactSetting(input.contact)
+  if ('rating' in input) out.rating = ratingSetting(input.rating)
   if ('fields' in input) out.fields = fieldsSetting(input.fields)
   return out
 }
@@ -124,7 +127,7 @@ export function createProject(user, input) {
   if (ds().count('projects', { ownerId: user.id }) >= MAX_PROJECTS) reject(409, 'too_many', `You can have up to ${MAX_PROJECTS} projects.`)
   let id = random(8)
   while (findProject(id) || ds().findOne('projects', { slug: id })) id = random(8)
-  const doc = { label: 'Feedback', color: '#c2410c', position: 'right', origins: [], public: false, slug: null, intro: '', attachments: true, for: 'site', ...settings({ name: '', ...input }, { id }) }
+  const doc = { label: 'Feedback', color: '#c2410c', position: 'right', button: 'pill', theme: 'light', origins: [], public: false, slug: null, intro: '', attachments: true, for: 'site', ...settings({ name: '', ...input }, { id }) }
   ds().insert('projects', { ...doc, id, ownerId: user.id, createdAt: now() })
   return projectDTO(findProject(id))
 }
@@ -153,6 +156,7 @@ export function deleteProject(user, id) {
   const doc = ownProject(user, id)
   removeFiles(doc.id)
   removeProjectStats(doc.id)
+  removeInstalls(doc.id)
   ds().delete('comments', { project: doc.id })
   ds().delete('notes', { project: doc.id })
   ds().delete('items', { project: doc.id })

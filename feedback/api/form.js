@@ -1,5 +1,5 @@
-// A project's form: which contact details to ask for, and up to eight
-// questions of its own (a short answer, a dropdown, one choice, or
+// A project's form: which contact details to ask for, a star rating, and up
+// to eight questions of its own (a short answer, a dropdown, one choice, or
 // checkboxes), checked when they're set and again when someone answers.
 import { text, reject, random } from './lib.js'
 
@@ -12,6 +12,7 @@ const PHONE = /^\+?[\d\s().-]{6,24}$/
 
 export const contactOf = doc => ({ email: 'optional', phone: 'off', ...(doc.contact || {}) })
 export const fieldsOf = doc => doc.fields || []
+export const ratingOf = doc => ({ ask: 'off', label: '', ...(doc.rating || {}) })
 
 export function contactSetting(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) reject(400, 'invalid_contact', 'Contact is { email, phone }.')
@@ -20,6 +21,14 @@ export function contactSetting(value) {
     out[key] = ASK.includes(value[key]) ? value[key] : reject(400, 'invalid_contact', `Asking for ${key} is off, optional or required.`)
   }
   return out
+}
+
+// Whether to ask for one to five stars, and the words above them (empty
+// means the form's own, which suits a site or a place).
+export function ratingSetting(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) reject(400, 'invalid_rating', 'Rating is { ask, label }.')
+  const ask = ASK.includes(value.ask) ? value.ask : reject(400, 'invalid_rating', 'Asking for a rating is off, optional or required.')
+  return { ask, label: text(value.label, 60) }
 }
 
 export function fieldsSetting(value) {
@@ -70,4 +79,14 @@ export function contactFor(project, input) {
   if (phone && (!PHONE.test(phone) || phone.replace(/\D/g, '').length < 6)) reject(400, 'invalid_phone', 'That phone number doesn’t look right.')
   if (ask.phone === 'required' && !phone) reject(400, 'missing_phone', 'Please leave your phone number.')
   return { email, phone }
+}
+
+// One to five stars, or none when the form doesn't ask.
+export function ratingFor(project, input) {
+  const { ask } = ratingOf(project)
+  if (ask === 'off') return null
+  const n = Number(input.rating)
+  const value = Number.isInteger(n) && n >= 1 && n <= 5 ? n : null
+  if (!value && ask === 'required') reject(400, 'missing_rating', 'Please pick a rating.')
+  return value
 }

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Preview</title>
+  <style>
+    /* A stand-in website for the Design and Form tabs' previews: the real
+       button and panel (embed.js) over shapes that suggest a page. */
+    :root { --bg: #f7f6f4; --block: #e7e4df; --soft: #efece8; --card: #ffffff; color-scheme: light; }
+    :root[data-site="dark"] { --bg: #15141b; --block: #2b2935; --soft: #211f29; --card: #1d1b24; color-scheme: dark; }
+    @media (prefers-color-scheme: dark) {
+      :root[data-site="auto"] { --bg: #15141b; --block: #2b2935; --soft: #211f29; --card: #1d1b24; color-scheme: dark; }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; transition: background 0.3s; }
+    .site { padding: 18px 22px; }
+    .nav { display: flex; align-items: center; gap: 12px; margin-bottom: 34px; }
+    .nav b { width: 26px; height: 26px; border-radius: 8px; background: var(--block); }
+    .nav i { width: 46px; height: 9px; border-radius: 9px; background: var(--block); }
+    .nav i:first-of-type { margin-left: auto; }
+    .line { height: 12px; margin-bottom: 12px; border-radius: 12px; background: var(--block); }
+    .title { width: 62%; height: 26px; margin-bottom: 16px; }
+    .w80 { width: 80%; } .w70 { width: 70%; } .w50 { width: 50%; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; margin-top: 30px; }
+    .cards div { height: 120px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px var(--soft); }
+    .line, .nav b, .nav i, .cards div { transition: background 0.3s, box-shadow 0.3s; }
+  </style>
+</head>
+<body>
+  <div class="site" aria-hidden="true">
+    <div class="nav"><b></b><i></i><i></i><i></i></div>
+    <div class="line title"></div>
+    <div class="line w80"></div>
+    <div class="line w70"></div>
+    <div class="line w50"></div>
+    <div class="cards"><div></div><div></div><div></div><div></div></div>
+  </div>
+  <script src="/src/preview.js"></script>
+</body>
+</html>

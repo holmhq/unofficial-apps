@@ -2,7 +2,7 @@
 export function json(status, body, headers = {}) {
   return { status, body, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers } }
 }
-export const ok = (body = {}, status = 200) => json(status, { ok: true, ...body })
+export const ok = (body = {}, status = 200, headers = {}) => json(status, { ok: true, ...body }, headers)
 export const fail = (status, code, message) => json(status, { ok: false, error: { code, message } })
 export function reject(status, code, message) {
   throw Object.assign(new Error(message), { status, code, public: true })
@@ -12,6 +12,8 @@ export const ds = () => holm.app.ds
 export const kv = () => holm.app.kv
 export const now = () => Date.now()
 export const iso = value => value == null ? null : new Date(value).toISOString()
+// "Issue" was "bug" until 0.6; old items and old clients still say so.
+export const kindOf = kind => kind === 'bug' ? 'issue' : kind
 
 // Text from a request: control characters become spaces (newlines survive
 // where asked), trimmed and capped.

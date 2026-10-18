@@ -1,0 +1,209 @@
+/* The feedback form and its dropdown, shared by the panel on sites
+   (widget.html) and the app's own pages (index.html). Colours come from the
+   page: --accent and --accent-ink, --ink, --ink-2 and --ink-3, --rule,
+   --sheet (what the form sits on), --paper (a quieter wash), --raised
+   (thumbs and lists), --field (inputs), --danger, and the stars' --star-on,
+   --star-face and --star-off. */
+
+.compose { display: grid; gap: 14px; }
+.glyph.line { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.compose .field { display: grid; gap: 6px; font-size: 0.875rem; font-weight: 550; color: var(--ink-2); }
+.compose .required { color: var(--accent); }
+.trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+/* Kinds: a segmented control whose thumb slides to the choice */
+
+.kinds {
+  position: relative; isolation: isolate;
+  display: grid; grid-template-columns: repeat(var(--count, 3), minmax(0, 1fr));
+  padding: 4px; border-radius: 14px; background: var(--paper);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--rule) 75%, transparent);
+}
+.kinds-thumb {
+  position: absolute; z-index: -1; top: 4px; bottom: 4px; left: 4px;
+  width: calc((100% - 8px) / var(--count, 3)); border-radius: 10px;
+  background: var(--raised, var(--sheet));
+  box-shadow: 0 1px 2px rgba(20, 16, 30, 0.1), 0 4px 12px -6px rgba(20, 16, 30, 0.25), 0 0 0 1px color-mix(in oklab, var(--ink) 7%, transparent);
+  transform: translateX(calc(var(--index, 0) * 100%));
+  transition: transform 0.4s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+.kinds button {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 9px 4px 8px; border: 0; border-radius: 10px; background: none;
+  color: var(--ink-3); font: inherit; font-size: 0.8125rem; font-weight: 600; line-height: 1.2;
+  cursor: pointer; transition: color 0.2s; -webkit-tap-highlight-color: transparent;
+}
+.kinds button:hover { color: var(--ink-2); }
+.kinds button[aria-checked="true"] { color: var(--ink); }
+.kinds .glyph { width: 20px; height: 20px; fill: currentColor; transition: transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1), fill 0.2s; }
+.kinds button[aria-checked="true"] .glyph { fill: var(--accent); transform: scale(1.12); }
+.kinds button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Stars: feed-stars, themed here, or plain ones if it can't load */
+
+.rating-row { display: flex; align-items: center; gap: 14px; min-height: 40px; }
+.rating-stars { display: flex; align-items: center; min-height: 34px; }
+feed-stars {
+  --feed-stars-active: var(--star-on);
+  --feed-stars-active-pale: color-mix(in srgb, var(--star-on) 40%, transparent);
+  --feed-stars-inactive: var(--star-off);
+  --feed-stars-face-active: var(--star-face);
+  --feed-stars-face-inactive: var(--sheet);
+  --feed-stars-gap: 10px;
+  animation: settle 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.rating-word { font-size: 0.8125rem; font-weight: 650; color: var(--ink-2); }
+.plain-stars { display: flex; gap: 6px; }
+.plain-stars button { width: 36px; height: 36px; padding: 2px; border: 0; background: none; color: var(--star-off); cursor: pointer; transition: transform 0.2s, color 0.2s; }
+.plain-stars button.lit { color: var(--star-on); }
+.plain-stars button:hover { transform: scale(1.1); }
+.plain-stars .glyph { width: 100%; height: 100%; fill: currentColor; }
+
+/* The message, with its toolbar for files */
+
+.message {
+  display: grid; border: 1px solid var(--rule); border-radius: 14px;
+  background: var(--field, var(--sheet)); transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.message:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent); }
+.compose .message textarea, .compose .message textarea:focus-visible {
+  display: block; width: 100%; min-height: 96px; max-height: 260px; margin: 0;
+  padding: 12px 14px 8px; border: 0; border-radius: 14px; outline: none; box-shadow: none;
+  background: none; color: var(--ink); font: inherit; font-size: 16px; line-height: 1.45; resize: none;
+}
+.message textarea::placeholder { color: var(--ink-3); }
+.message-tools { display: flex; align-items: center; gap: 6px; padding: 0 8px 8px; min-width: 0; }
+.tool {
+  display: inline-flex; align-items: center; gap: 6px; flex: none; height: 30px; padding: 0 11px 0 9px;
+  border: 0; border-radius: 999px; background: var(--paper); color: var(--ink-2);
+  font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.tool:hover { color: var(--ink); background: color-mix(in oklab, var(--ink) 9%, var(--paper)); }
+.tool .glyph { width: 16px; height: 16px; }
+.tool.camera { background: var(--accent); color: var(--accent-ink); }
+.tool.camera:hover { background: var(--accent); color: var(--accent-ink); filter: brightness(1.07); }
+.attach-hint { margin-left: auto; padding-right: 4px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; color: var(--ink-3); }
+.compose.dropping .message { border-style: dashed; border-color: var(--accent); background: color-mix(in oklab, var(--accent) 6%, var(--sheet)); }
+
+.compose .files { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.compose .files li { position: relative; animation: pop 0.3s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.compose .files li.shot { width: 64px; height: 64px; border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 1px var(--rule); }
+.compose .files li.shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.compose .files li.doc {
+  display: flex; align-items: center; gap: 8px; max-width: 100%; height: 40px; padding: 0 6px 0 10px;
+  border-radius: 12px; background: var(--paper); font-size: 0.8125rem;
+}
+.compose .files li.doc > .glyph { width: 18px; height: 18px; flex: none; color: var(--ink-3); }
+.compose .file-name { min-width: 0; max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.compose .file-size { flex: none; color: var(--ink-3); font-size: 0.75rem; }
+.compose .files .remove {
+  display: grid; place-items: center; flex: none; width: 24px; height: 24px; padding: 0;
+  border: 0; border-radius: 50%; background: none; color: var(--ink-3); cursor: pointer;
+}
+.compose .files .remove:hover { color: var(--ink); background: var(--sheet); }
+.compose .files li.shot .remove { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(15, 12, 20, 0.6); color: #fff; backdrop-filter: blur(4px); }
+.compose .files .remove .glyph { width: 12px; height: 12px; stroke-width: 2.6; }
+
+/* Questions and contact details */
+
+.compose input:not([type="checkbox"]):not([type="radio"]) {
+  width: 100%; height: 44px; margin: 0; padding: 0 12px;
+  border: 1px solid var(--rule); border-radius: 12px; background: var(--field, var(--sheet));
+  color: var(--ink); font: inherit; font-size: 16px; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.compose input::placeholder { color: var(--ink-3); }
+.compose input:not([type="checkbox"]):not([type="radio"]):focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent); }
+.contacts { display: grid; gap: 14px; }
+.compose fieldset.field { margin: 0; padding: 0; border: 0; min-width: 0; }
+.compose legend { padding: 0; margin-bottom: 6px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pills label { position: relative; }
+.pills input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.pills span {
+  display: inline-block; padding: 7px 13px; border: 1px solid var(--rule); border-radius: 999px;
+  background: var(--field, var(--sheet)); color: var(--ink-2); font-size: 0.875rem; font-weight: 550;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.15s;
+}
+.pills label:hover span { border-color: color-mix(in oklab, var(--ink) 30%, var(--rule)); }
+.pills input:checked + span { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 11%, var(--sheet)); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent); }
+.pills input:active + span { transform: scale(0.97); }
+.pills input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.check-one { display: flex; align-items: center; gap: 10px; font-size: 0.9375rem; color: var(--ink-2); cursor: pointer; }
+.check-one input { width: 18px; height: 18px; flex: none; margin: 0; accent-color: var(--accent); }
+
+.compose .error {
+  margin: 0; padding: 9px 12px; border-radius: 10px;
+  background: color-mix(in oklab, var(--danger) 10%, var(--sheet)); color: var(--danger);
+  font-size: 0.875rem; animation: nudge 0.35s;
+}
+
+.compose .send {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 16px;
+  border: 0; border-radius: 14px; background: var(--accent); color: var(--accent-ink);
+  font: inherit; font-size: 1rem; font-weight: 650; cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: transform 0.15s, filter 0.15s, box-shadow 0.25s;
+}
+.compose .send:hover { filter: brightness(1.06); box-shadow: 0 8px 20px -10px color-mix(in oklab, var(--accent) 80%, black), inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+.compose .send:active { transform: scale(0.985); }
+.compose .send .glyph { width: 18px; height: 18px; transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.compose .send:hover .glyph { transform: translateX(3px); }
+.compose .send .spinner { display: none; width: 16px; height: 16px; border: 2px solid color-mix(in oklab, var(--accent-ink) 35%, transparent); border-top-color: var(--accent-ink); border-radius: 50%; animation: spin 0.7s linear infinite; }
+.compose .send.busy .spinner { display: block; }
+.compose .send.busy .glyph { display: none; }
+.compose .send:disabled { cursor: default; filter: none; }
+.compose .fine { margin: 0; font-size: 0.75rem; line-height: 1.4; color: var(--ink-3); text-align: center; }
+
+/* "It's sent": a tick that draws itself */
+
+.sent-mark { width: 64px; height: 64px; fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.sent-mark circle { fill: color-mix(in oklab, var(--accent) 10%, transparent); stroke-dasharray: 151; stroke-dashoffset: 151; animation: draw 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+.sent-mark path { stroke-dasharray: 34; stroke-dashoffset: 34; animation: draw 0.35s cubic-bezier(0.65, 0, 0.45, 1) 0.45s forwards; }
+
+/* The dropdown: a button with the choice, and a list under or over it */
+
+.picker { position: relative; display: inline-block; max-width: 100%; }
+.compose .picker, .field .picker { display: block; }
+.picker-button {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin: 0; padding: 0 12px 0 14px;
+  border: 1px solid var(--rule); border-radius: 12px; background: var(--field, var(--sheet));
+  color: var(--ink); font: inherit; font-size: 1rem; font-weight: 450; text-align: left; cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s, color 0.15s;
+}
+.picker-button:hover { border-color: color-mix(in oklab, var(--ink) 30%, var(--rule)); }
+.picker-button:focus-visible, .picker.open .picker-button { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent); }
+.picker-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker-caret { width: 16px; height: 16px; flex: none; color: var(--ink-3); transition: transform 0.3s cubic-bezier(0.3, 1.3, 0.5, 1); }
+.picker.open .picker-caret { transform: rotate(180deg); }
+.picker.menu.open .picker-caret { transform: rotate(45deg); }
+.picker-list {
+  position: absolute; z-index: 30; top: calc(100% + 6px); left: 0;
+  min-width: max(100%, 13.5rem); max-width: min(22rem, calc(100vw - 2rem)); max-height: 18rem; overflow-y: auto;
+  margin: 0; padding: 5px; list-style: none; outline: none; overscroll-behavior: contain;
+  border-radius: 14px; background: var(--raised, var(--sheet));
+  box-shadow: 0 0 0 1px var(--rule), 0 14px 34px -10px rgba(20, 16, 30, 0.3), 0 2px 6px rgba(20, 16, 30, 0.08);
+  opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.98); transform-origin: top left;
+  transition: opacity 0.14s, transform 0.16s, visibility 0s 0.16s;
+}
+.picker.up .picker-list { top: auto; bottom: calc(100% + 6px); transform: translateY(6px) scale(0.98); transform-origin: bottom left; }
+.picker.open .picker-list { opacity: 1; visibility: visible; transform: none; transition: opacity 0.14s, transform 0.24s cubic-bezier(0.2, 1.2, 0.4, 1), visibility 0s; }
+.picker-list li { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; color: var(--ink); font-size: 0.9375rem; line-height: 1.3; cursor: pointer; }
+.picker-list li.active { background: color-mix(in oklab, var(--accent) 12%, transparent); }
+.picker-list li > .glyph:first-child { width: 18px; height: 18px; flex: none; color: var(--ink-2); }
+.picker-list li > .glyph:first-child:not(.line) { fill: currentColor; }
+.picker-label { flex: 1; display: grid; gap: 1px; min-width: 0; white-space: nowrap; }
+.picker-label small { font-size: 0.78rem; color: var(--ink-3); white-space: normal; }
+.picker-check { width: 16px; height: 16px; flex: none; color: var(--accent); opacity: 0; transform: scale(0.6); transition: opacity 0.15s, transform 0.2s; }
+.picker-list li[aria-selected="true"] { font-weight: 600; }
+.picker-list li[aria-selected="true"] .picker-check { opacity: 1; transform: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes pop { from { opacity: 0; transform: scale(0.85); } }
+@keyframes settle { from { opacity: 0; transform: translateY(4px); } }
+@keyframes nudge { 0%, 100% { transform: none; } 30% { transform: translateX(-4px); } 60% { transform: translateX(3px); } }
+@media (prefers-reduced-motion: reduce) {
+  .kinds-thumb, .kinds .glyph, .picker-list, .picker-caret, .picker-check { transition: none; }
+  .compose .files li, .compose .error, feed-stars { animation: none; }
+  .sent-mark circle, .sent-mark path { animation: none; stroke-dashoffset: 0; }
+}
