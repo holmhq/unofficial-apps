@@ -126,6 +126,14 @@ app; the listing was the agent's part of it:
 > i want something that resembles Apple AppStore
 > - so that each app gets its own page
 
+Between iterations 4 and 5, this message changed only the README, which now
+shows the node settings that give Holm's sign-in page pastebin's name, icon
+and accent:
+
+> Question:
+> - the signin dialog is not showing the logo of the site but the logo of the node / holm
+> - i believe there was a tinting too, that also seems to be not being applied
+
 **Iteration 5**, after the feedback app had an API and an agent skill:
 
 > I just set the env variable; can you add a feedback widget to pastebin?
