@@ -620,3 +620,50 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .comment-form .fine { text-align: left; }
 .comment-sent { display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 1rem; border-radius: 12px; background: color-mix(in oklab, var(--done-bg) 60%, var(--sheet)); color: var(--ink); }
 .comment-sent .glyph { width: 1.15rem; height: 1.15rem; flex: none; color: var(--done-ink); }
+
+/* The public page's top: a cover (or a pattern in the project's colour),
+   with the logo over its edge */
+
+.board-hero { position: relative; margin-top: 1rem; }
+.board-cover { display: block; height: clamp(8.5rem, 24vw, 13rem); border-radius: 22px; background: center / cover no-repeat var(--accent); }
+.board-cover.pattern {
+  background:
+    radial-gradient(circle at 10% 125%, var(--project-soft) 0 24%, transparent 24.3%),
+    radial-gradient(circle at 92% -40%, color-mix(in oklab, var(--accent) 72%, black) 0 34%, transparent 34.3%),
+    radial-gradient(circle at 66% 118%, color-mix(in oklab, var(--project-soft) 55%, transparent) 0 13%, transparent 13.3%),
+    repeating-linear-gradient(135deg, transparent 0 18px, rgba(255, 255, 255, 0.07) 18px 20px),
+    var(--accent);
+}
+.board-id { position: relative; display: flex; align-items: flex-start; gap: 0.9rem; margin: -2.75rem 0 0 1.25rem; }
+.board-hero .board-mark { width: 5.25rem; height: 5.25rem; border-radius: 22px; font-size: 2.3rem; box-shadow: 0 0 0 4px var(--paper); }
+.board-mark.has-logo { background: #fff; padding: 0.45rem; box-shadow: 0 0 0 1px var(--rule); }
+.board-hero .board-mark.has-logo { box-shadow: 0 0 0 4px var(--paper), 0 0 0 5px var(--rule); }
+.board-mark.has-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.board-name { display: grid; line-height: 1.2; }
+/* Under the cover's edge, beside the logo that overlaps it. */
+.board-id .board-name { padding-top: 3.15rem; }
+.board-name strong { font-size: 1.15rem; }
+.board-name .muted { font-size: 0.85rem; }
+.board-hero + .board-page { margin-top: 1.75rem; }
+@media (max-width: 30rem) {
+  .board-hero .board-mark { width: 4.5rem; height: 4.5rem; font-size: 2rem; border-radius: 18px; }
+  .board-id { margin-left: 1rem; }
+}
+
+/* Camera first on a phone */
+
+.compose .attach.camera { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.compose .attach.camera:hover { filter: brightness(1.07); color: var(--accent-ink); }
+
+/* Share: the logo and cover pickers */
+
+.page-look { margin-top: 2.25rem; }
+.picture { display: flex; gap: 1rem; align-items: center; padding: 0.9rem 0; border-top: 1px solid var(--rule); }
+.picture:first-of-type { margin-top: 0.75rem; }
+.picture .board-mark { width: 4rem; height: 4rem; font-size: 1.7rem; border-radius: 16px; flex: none; }
+.picture .board-cover { width: 8.5rem; height: 3.6rem; border-radius: 12px; flex: none; }
+.picture-text { display: grid; gap: 0.15rem; min-width: 0; }
+.picture-text small { font-size: 0.82rem; }
+.picture-actions { display: flex; gap: 0.4rem; margin-top: 0.35rem; }
+.picture-actions .button { padding: 0.3rem 0.8rem; font-size: 0.85rem; }
+.chart-table { overflow-x: auto; }

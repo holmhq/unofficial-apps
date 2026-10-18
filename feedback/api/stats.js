@@ -2,7 +2,8 @@
 // cookies and no visitor identifiers, so it counts events, not people.
 import { ds, kv, now, reject } from './lib.js'
 
-export const METRICS = ['visits', 'opens', 'sent', 'votes', 'comments']
+// Scans and emails are the page visits that came from a QR code or an email.
+export const METRICS = ['visits', 'scans', 'emails', 'opens', 'sent', 'votes', 'comments']
 const RANGES = [7, 30, 90]
 const KEEP_DAYS = 400
 const DAY = 86400000
@@ -63,7 +64,7 @@ export function projectStats(project, input) {
   const since = Date.parse(days[0])
   const items = ds().find('items', { project: project.id, createdAt: { $gte: since } }, { limit: 1000 })
   const pages = new Map()
-  const kinds = { bug: 0, idea: 0, question: 0 }
+  const kinds = { bug: 0, idea: 0, question: 0, praise: 0, problem: 0 }
   for (const item of items) {
     const page = item.source === 'page' ? 'Feedback page' : (item.page || '').replace(/^https?:\/\//, '') || 'Unknown page'
     pages.set(page, (pages.get(page) || 0) + 1)

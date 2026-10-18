@@ -2,7 +2,7 @@
 // a feedback form anyone can use, then the items the owner chose to show, by
 // status, with votes and comments. It wears the project's name and colour,
 // not the app's.
-import { el, api, glyph, store, ago, inkOn, lighten, STATUS, KIND } from './lib.js'
+import { el, api, glyph, store, ago, inkOn, lighten, STATUS, KIND, KIND_SETS } from './lib.js'
 import { show } from './app.js'
 import { composer } from './compose.js'
 
@@ -29,14 +29,25 @@ function paint(project) {
   style.setProperty('--project-ink', inkOn(project.color))
   style.setProperty('--project-d', dark)
   style.setProperty('--project-d-ink', inkOn(dark))
+  style.setProperty('--project-soft', lighten(project.color, 0.55))
 }
+
+// What the top of the page says when the owner hasn't written it.
+const defaults = project => ({
+  title: `Tell ${project.name} what you think`,
+  intro: project.kinds.includes('praise')
+    ? 'Loved something? Something not right? Tell us, with a photo if you like. It goes straight to the team.'
+    : 'Report a bug, suggest an idea or ask a question. It goes straight to the team.'
+})
 
 export async function boardPage(key, number) {
   let data = cache.get(key)
   if (!data) {
     show(el('p', { class: 'muted page-loading' }, 'Loading…'))
+    // QR codes and emails tag their links, so scans count on their own.
+    const via = new URLSearchParams(location.search).get('via')
     try {
-      data = await api('GET', `/api/boards/${encodeURIComponent(key)}?visit=1`)
+      data = await api('GET', `/api/boards/${encodeURIComponent(key)}?visit=1${/^(qr|email)$/.test(via || '') ? '&via=' + via : ''}`)
     } catch (problem) {
       document.title = 'Not found – feedback'
       return show(el('section', { class: 'page-head' }, el('h1', {}, 'No feedback page here'), el('p', { class: 'lede' }, problem.message)))
@@ -47,17 +58,26 @@ export async function boardPage(key, number) {
   // The custom address is the one to share; old /b/<id> links move to it.
   const base = project.slug ? `/${project.slug}` : `/b/${project.id}`
   const want = base + (number ? `/${number}` : '')
-  if (location.pathname !== want) history.replaceState(null, '', want)
+  if (location.pathname + location.search !== want) history.replaceState(null, '', want)
   document.body.classList.add('on-board')
   paint(project)
   const item = number && data.items.find(entry => entry.number === number)
   return item ? itemView(data, item, base) : listView(data, base)
 }
 
-function brand(project) {
-  return el('header', { class: 'board-brand' },
-    el('span', { class: 'board-mark', 'aria-hidden': 'true' }, project.name.trim().charAt(0).toUpperCase() || '?'),
-    el('span', {}, el('strong', {}, project.name), el('span', { class: 'muted' }, 'Feedback')))
+// The project's logo, or its initial on its colour.
+const mark = project => project.logo
+  ? el('span', { class: 'board-mark has-logo' }, el('img', { src: project.logo, alt: '' }))
+  : el('span', { class: 'board-mark', 'aria-hidden': 'true' }, project.name.trim().charAt(0).toUpperCase() || '?')
+
+// The page's top: its cover (or a pattern in its colour), logo and name. An
+// item's page has the name row only.
+function brand(project, cover = true) {
+  const name = el('span', { class: 'board-name' }, el('strong', {}, project.name), el('span', { class: 'muted' }, 'Feedback'))
+  if (!cover) return el('header', { class: 'board-brand' }, mark(project), name)
+  return el('header', { class: 'board-hero' },
+    el('div', { class: project.cover ? 'board-cover' : 'board-cover pattern', style: project.cover ? `background-image: url("${project.cover}")` : null }),
+    el('div', { class: 'board-id' }, mark(project), name))
 }
 
 // The body without its first line when that line is the title.
@@ -105,10 +125,11 @@ function listView(data, base) {
 
   const card = el('section', { class: 'compose-card', 'aria-labelledby': 'send-title' })
   const fresh = () => card.replaceChildren(
-    el('h1', { id: 'send-title' }, `Tell ${project.name} what you think`),
-    el('p', { class: 'lede' }, project.intro || 'Report a bug, suggest an idea or ask a question. It goes straight to the team.'),
+    el('h1', { id: 'send-title' }, project.title || defaults(project).title),
+    el('p', { class: 'lede' }, project.intro || defaults(project).intro),
     composer({
       endpoint: `/api/boards/${project.id}/items`,
+      kinds: project.kinds || KIND_SETS.site,
       attachments: project.attachments,
       onSent: number => { card.replaceChildren(thanks(project, number, fresh)); card.scrollIntoView({ block: 'nearest' }) },
       fine: 'Your email is only shown to the team.'
@@ -182,7 +203,7 @@ function itemView(data, item, base) {
     el('p', { class: 'muted fine' }, `Comments appear once ${project.name} approves them.`))
 
   show(
-    brand(project),
+    brand(project, false),
     el('article', { class: 'board-item' },
       el('a', { class: 'back', href: base, 'data-link': true }, glyph('chevron'), 'All feedback'),
       el('div', { class: 'board-item-head' },

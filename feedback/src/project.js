@@ -1,6 +1,6 @@
 // A project: its inbox, one item at a time, its stats, how to share and set
 // it up, and its settings.
-import { el, api, ago, glyph, copyButton, store, size, STATUS, KIND } from './lib.js'
+import { el, api, ago, glyph, copyButton, store, size, inkOn, lighten, STATUS, KIND, KIND_SETS } from './lib.js'
 import { show, go } from './app.js'
 import { statsView } from './stats.js'
 import { qrSVG, qrColor, poster } from './qr.js'
@@ -189,7 +189,7 @@ function itemPage(project, item) {
       onclick: () => item.status !== key && save({ status: key })
     }, label)))
   const kind = el('select', { 'aria-label': 'Kind', onchange: event => save({ kind: event.target.value }) },
-    Object.entries(KIND).map(([key, label]) => el('option', { value: key }, label)))
+    [...new Set([...project.kinds, item.kind])].map(key => el('option', { value: key }, KIND[key])))
   const shown = el('input', { type: 'checkbox', onchange: event => save({ public: event.target.checked }) })
   const paint = (before = {}) => {
     const next = stub(item)
@@ -288,7 +288,7 @@ function setup(project) {
     launcherText.textContent = draft.label
     launcher.style.setProperty('--color', draft.color)
     stage.dataset.side = draft.position
-    preview.contentWindow?.postMessage({ source: 'feedback-setup', config: { name: project.name, label: draft.label, color: draft.color, attachments: draft.attachments } }, location.origin)
+    preview.contentWindow?.postMessage({ source: 'feedback-setup', config: { name: project.name, label: draft.label, color: draft.color, attachments: draft.attachments, kinds: KIND_SETS[draft.for] } }, location.origin)
   }
   preview.addEventListener('load', sync)
 
@@ -309,6 +309,9 @@ function setup(project) {
     el('option', { value: 'right', selected: draft.position === 'right' }, 'Bottom right'),
     el('option', { value: 'left', selected: draft.position === 'left' }, 'Bottom left'))
   const files = el('input', { type: 'checkbox', checked: draft.attachments, onchange: event => { draft.attachments = event.target.checked; sync() } })
+  const madeFor = el('select', { onchange: event => { draft.for = event.target.value; sync() } },
+    el('option', { value: 'site', selected: draft.for === 'site' }, 'A website or app: Bug, Idea, Question'),
+    el('option', { value: 'place', selected: draft.for === 'place' }, 'A place or event: Praise, Problem, Idea'))
   const sites = el('textarea', { rows: '3', placeholder: 'https://example.com', spellcheck: 'false' })
   sites.value = draft.origins.join('\n')
 
@@ -318,7 +321,7 @@ function setup(project) {
     saveButton.disabled = true
     try {
       const origins = sites.value.split(/[\s,]+/).filter(Boolean)
-      project = (await api('PATCH', '/api/projects/' + project.id, { label: draft.label, color: draft.color, position: draft.position, attachments: draft.attachments, origins })).project
+      project = (await api('PATCH', '/api/projects/' + project.id, { for: draft.for, label: draft.label, color: draft.color, position: draft.position, attachments: draft.attachments, origins })).project
       Object.assign(draft, project)
       shell.project = project
       status.textContent = 'Saved. Sites with the snippet pick it up on their next page load.'
@@ -326,6 +329,8 @@ function setup(project) {
     } catch (problem) { status.textContent = problem.message }
     saveButton.disabled = false
   } },
+    el('label', { class: 'field' }, el('span', {}, 'Made for'), madeFor,
+      el('small', {}, 'A shop, restaurant, venue or event gets kinds that suit people there.')),
     el('label', { class: 'field' }, el('span', {}, 'Button text'), label),
     el('div', { class: 'field' }, el('span', {}, 'Colour'), swatches),
     el('label', { class: 'field' }, el('span', {}, 'Position'), side),
@@ -356,11 +361,66 @@ function download(blob, name) {
   setTimeout(() => URL.revokeObjectURL(link.href), 1000)
 }
 
+// Sends one picture as multipart; replies like the JSON routes.
+async function upload(path, file) {
+  const data = new FormData()
+  data.append('file', file, file.name)
+  const response = await fetch(path, { method: 'POST', body: data })
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok || body.ok === false) throw new Error(body.error?.message || 'That didn’t upload. Try again.')
+  return body
+}
+
+// The page's logo and cover, each with a preview, a picker and a way back
+// to the default.
+function pictures(project, status) {
+  const pick = (which, label, hint, preview) => {
+    const input = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp,image/gif', hidden: true, onchange: async () => {
+      const file = input.files[0]
+      if (!file) return
+      status.textContent = `Uploading the ${which}…`
+      try {
+        const { project: next } = await upload(`/api/projects/${project.id}/${which}`, file)
+        shell.project = next
+        share(next, `The ${which} is up.`)
+      } catch (problem) { status.textContent = problem.message }
+    } })
+    return el('div', { class: `picture ${which}-pick` },
+      preview,
+      el('div', { class: 'picture-text' },
+        el('strong', {}, label),
+        el('small', { class: 'muted' }, hint),
+        el('span', { class: 'picture-actions' },
+          el('button', { type: 'button', class: 'button', onclick: () => input.click() }, project[which] ? 'Change' : 'Upload'),
+          project[which] && el('button', { type: 'button', class: 'button danger', onclick: async () => {
+            try {
+              const { project: next } = await api('DELETE', `/api/projects/${project.id}/${which}`)
+              shell.project = next
+              share(next, `Back to the default ${which}.`)
+            } catch (problem) { status.textContent = problem.message }
+          } }, 'Remove'),
+          input)))
+  }
+  const tint = `--accent: ${project.color}; --accent-ink: ${inkOn(project.color)}; --project-soft: ${lighten(project.color, 0.55)}`
+  return el('section', { class: 'page-look' },
+    el('h2', {}, 'Logo and cover'),
+    el('p', { class: 'muted section-note' }, 'Without them the page uses your initial and a pattern in your colour.'),
+    pick('logo', 'Logo', 'Square or wide. A PNG with a clear background looks best.',
+      project.logo ? el('span', { class: 'board-mark has-logo' }, el('img', { src: project.logo, alt: '' }))
+        : el('span', { class: 'board-mark', style: tint, 'aria-hidden': 'true' }, project.name.trim().charAt(0).toUpperCase() || '?')),
+    pick('cover', 'Cover', 'A wide picture across the top, about 1800 × 640.',
+      el('span', { class: project.cover ? 'board-cover' : 'board-cover pattern', style: project.cover ? `background-image: url("${project.cover}")` : tint })))
+}
+
 function share(project, saved = '') {
   const origin = location.origin.replace(/^https?:\/\//, '')
+  const place = project.kinds.includes('praise')
   const on = el('input', { type: 'checkbox', checked: project.public })
   const slug = el('input', { value: project.slug || '', maxlength: '40', placeholder: project.name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'my-site', spellcheck: 'false', autocapitalize: 'none', 'aria-label': 'Custom address' })
-  const intro = el('textarea', { rows: '3', maxlength: '280', placeholder: 'Report a bug, suggest an idea or ask a question. It goes straight to the team.' })
+  const title = el('input', { value: project.title, maxlength: '80', placeholder: `Tell ${project.name} what you think` })
+  const intro = el('textarea', { rows: '3', maxlength: '280', placeholder: place
+    ? 'Loved something? Something not right? Tell us, with a photo if you like. It goes straight to the team.'
+    : 'Report a bug, suggest an idea or ask a question. It goes straight to the team.' })
   intro.value = project.intro
   const status = el('p', { class: 'muted', role: 'status' }, saved)
   const saveButton = el('button', { type: 'submit', class: 'button primary' }, 'Save')
@@ -368,7 +428,7 @@ function share(project, saved = '') {
     event.preventDefault()
     saveButton.disabled = true
     try {
-      project = (await api('PATCH', '/api/projects/' + project.id, { public: on.checked, slug: slug.value.trim(), intro: intro.value })).project
+      project = (await api('PATCH', '/api/projects/' + project.id, { public: on.checked, slug: slug.value.trim(), title: title.value, intro: intro.value })).project
       shell.project = project
       share(project, 'Saved.')
     } catch (problem) { status.textContent = problem.message; saveButton.disabled = false }
@@ -377,32 +437,42 @@ function share(project, saved = '') {
     el('label', { class: 'field' }, el('span', {}, 'Custom address'),
       el('span', { class: 'prefixed' }, el('span', { class: 'prefix' }, origin + '/'), slug),
       el('small', {}, 'Letters, digits and hyphens. Changing it breaks links and QR codes you’ve already shared; ', el('code', {}, `/b/${project.id}`), ' always works.')),
-    el('label', { class: 'field' }, el('span', {}, 'A line at the top of the page'), intro),
+    el('label', { class: 'field' }, el('span', {}, 'Title'), title),
+    el('label', { class: 'field' }, el('span', {}, 'Description'), intro),
     el('div', { class: 'form-actions' }, status, saveButton))
 
+  // The QR code and emails tag their links, so Stats can tell scans and
+  // email visits apart from the rest.
   const url = pageURL(project)
+  const scanURL = url + '?via=qr'
   const color = qrColor(project.color)
   const code = el('div', { class: 'qr', role: 'img', 'aria-label': `QR code for ${url}` })
-  code.innerHTML = qrSVG(url, color)
+  code.innerHTML = qrSVG(scanURL, color)
+  const mail = `mailto:?subject=${encodeURIComponent(project.title || `Tell ${project.name} what you think`)}` +
+    `&body=${encodeURIComponent(`We'd love to hear from you. It takes a minute:\n\n${url}?via=email\n`)}`
   const handout = project.public && el('section', { class: 'handout' },
     el('h2', {}, 'Link and QR code'),
     el('div', { class: 'link-row' },
       el('code', {}, url),
       copyButton(url, 'Copy link'),
+      el('a', { class: 'button', href: mail }, 'Email it'),
       el('a', { class: 'button', href: url, target: '_blank', rel: 'noopener' }, 'Open', glyph('out', 'glyph line'))),
     el('div', { class: 'qr-row' },
       code,
       el('div', { class: 'qr-actions' },
-        el('p', { class: 'muted' }, 'Print it on a receipt, a table card or a slide. People who scan it land on the page and can send feedback straight away.'),
-        el('button', { type: 'button', class: 'button primary', onclick: async () => download(await poster(url, project), `${project.slug || project.id}-poster.png`) }, glyph('download', 'glyph line'), 'Poster (PNG)'),
-        el('button', { type: 'button', class: 'button', onclick: () => download(new Blob([qrSVG(url, color)], { type: 'image/svg+xml' }), `${project.slug || project.id}-qr.svg`) }, glyph('download', 'glyph line'), 'QR code (SVG)'))))
+        el('p', { class: 'muted' }, place
+          ? 'Put it on tables, the counter, a menu or an event badge. People who scan it can send feedback, with a photo, straight away. Stats count the scans.'
+          : 'Print it on a receipt, a card or a slide. People who scan it land on the page and can send feedback straight away. Stats count the scans.'),
+        el('button', { type: 'button', class: 'button primary', onclick: async () => download(await poster(url, project, scanURL), `${project.slug || project.id}-poster.png`) }, glyph('download', 'glyph line'), 'Poster (PNG)'),
+        el('button', { type: 'button', class: 'button', onclick: () => download(new Blob([qrSVG(scanURL, color)], { type: 'image/svg+xml' }), `${project.slug || project.id}-qr.svg`) }, glyph('download', 'glyph line'), 'QR code (SVG)'))))
 
   put(
     el('div', { class: 'share-grid' },
       el('section', {},
         el('h2', {}, 'Your feedback page'),
         el('p', { class: 'muted section-note' }, 'A page of its own where anyone can send feedback, see the items you make public, vote and comment. Comments wait for your approval.'),
-        form),
+        form,
+        pictures(project, status)),
       handout || el('section', { class: 'handout off' }, el('h2', {}, 'Link and QR code'), el('p', { class: 'muted' }, 'Turn the page on to get its link and QR code.'))))
 }
 

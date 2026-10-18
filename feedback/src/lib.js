@@ -45,12 +45,16 @@ export function ago(value) {
 export const STATUS = {
   new: 'New', planned: 'Planned', progress: 'In progress', done: 'Done', closed: 'Closed'
 }
-export const KIND = { bug: 'Bug', idea: 'Idea', question: 'Question' }
+export const KIND = { bug: 'Bug', idea: 'Idea', question: 'Question', praise: 'Praise', problem: 'Problem' }
+// What a project is for picks the three kinds its form offers.
+export const KIND_SETS = { site: ['bug', 'idea', 'question'], place: ['praise', 'problem', 'idea'] }
 
 const PATHS = {
   bug: 'M12 3a4 4 0 0 1 4 4v1h1.5l1.8-1.8 1.4 1.4L19 9.3V11h2v2h-2v1a7 7 0 0 1-.4 2.3l2.1 2.1-1.4 1.4-1.7-1.7A7 7 0 0 1 12 21a7 7 0 0 1-5.6-2.9l-1.7 1.7-1.4-1.4 2.1-2.1A7 7 0 0 1 5 14v-1H3v-2h2V9.3L3.3 7.6l1.4-1.4L6.5 8H8V7a4 4 0 0 1 4-4Zm-1 7v9.9a5 5 0 0 0 2 0V10h-2Z',
   idea: 'M12 2a7 7 0 0 1 4 12.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3A7 7 0 0 1 12 2Zm-3 18h6v2H9v-2Z',
   question: 'M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm-1 14v2h2v-2h-2Zm1-10a4 4 0 0 0-4 4h2a2 2 0 1 1 3 1.7c-1.2.7-2 1.6-2 3.3h2c0-.9.4-1.3 1-1.7A4 4 0 0 0 12 6Z',
+  praise: 'M12 20.5C6 16.3 2.5 12.9 2.5 8.9 2.5 6 4.7 3.8 7.4 3.8c1.9 0 3.6 1 4.6 2.6 1-1.6 2.7-2.6 4.6-2.6 2.7 0 4.9 2.2 4.9 5.1 0 4-3.5 7.4-9.5 11.6Z',
+  problem: 'M12 2.5 22.5 20.5h-21L12 2.5Zm-1 6.5v6h2V9h-2Zm0 7.5v2h2v-2h-2Z',
   person: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0Z',
   chevron: 'M15 5 8 12l7 7',
   up: 'M12 5 5 13h4v6h6v-6h4Z',
@@ -59,6 +63,7 @@ const PATHS = {
   moon: 'M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1Z',
   system: 'M3 4h18a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-8v2h4v2H7v-2h4v-2H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm1 2v9h16V6H4Z',
   // Line icons: drawn with a stroke (give them the "line" class).
+  camera: 'M4 7.5h3l1.6-2.5h6.8L17 7.5h3a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1ZM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z',
   clip: 'M20 11.5 12 19.5a5 5 0 0 1-7-7l8.5-8.5a3.5 3.5 0 0 1 5 5L10 17.5a2 2 0 0 1-3-3l7.5-7.5',
   file: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Zm0 0v5h5',
   out: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',

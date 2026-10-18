@@ -1,8 +1,8 @@
 {
   "name": "feedback",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "title": "feedback",
-  "description": "A feedback button for any website, or a page of its own with a QR code: visitors send bugs and ideas, you sort them in one inbox.",
+  "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
   "themeColor": "#c2410c",
   "spa": true,
   "publish": { "exclude": ["/listing/"] },

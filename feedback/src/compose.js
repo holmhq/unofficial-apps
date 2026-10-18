@@ -1,12 +1,14 @@
 // The feedback form, shared by the panel on a site (widget.js) and a
 // project's own page (board.js): kind, message, files and an email.
-import { el, glyph, size } from './lib.js'
+import { el, glyph, size, KIND, KIND_SETS } from './lib.js'
 
-export const KINDS = [
-  { id: 'bug', label: 'Bug', prompt: 'What went wrong? What did you expect to happen?' },
-  { id: 'idea', label: 'Idea', prompt: 'What would make this better?' },
-  { id: 'question', label: 'Question', prompt: 'What would you like to know?' }
-]
+const PROMPTS = {
+  bug: 'What went wrong? What did you expect to happen?',
+  idea: 'What would make this better?',
+  question: 'What would you like to know?',
+  praise: 'What did you love?',
+  problem: 'What went wrong? Where, and when?'
+}
 const MAX_FILES = 4
 const MAX_TOTAL = 8 * 1024 * 1024
 const ACCEPT = 'image/*,video/mp4,video/webm,video/quicktime,application/pdf,text/plain,text/csv,application/json,.txt,.log,.csv,.json,.heic,.mov'
@@ -29,10 +31,15 @@ async function shrink(file) {
   }
 }
 
-// Options: endpoint to POST to, whether files are allowed, preview (sends
-// nothing), extra context fields, and onSent(number) once it's in.
-export function composer({ endpoint, attachments = true, preview = false, context = {}, onSent, fine }) {
-  let kind = 'idea'
+// On a phone, a camera button: one tap to a photo.
+const touch = () => matchMedia('(pointer: coarse)').matches
+
+// Options: endpoint to POST to, the project's kinds, whether files are
+// allowed, preview (sends nothing), extra context fields, and onSent(number)
+// once it's in.
+export function composer({ endpoint, kinds = KIND_SETS.site, attachments = true, preview = false, context = {}, onSent, fine }) {
+  // A place starts on praise; a site on an idea.
+  let kind = kinds.includes('praise') ? 'praise' : 'idea'
   const files = []
   const message = el('textarea', { name: 'body', required: true, maxlength: '4000', rows: '5' })
   const email = el('input', { name: 'email', type: 'email', autocomplete: 'email', maxlength: '200', placeholder: 'you@example.com' })
@@ -41,15 +48,14 @@ export function composer({ endpoint, attachments = true, preview = false, contex
   const send = el('button', { type: 'submit', class: 'send' }, 'Send')
   const showError = text => { error.textContent = text; error.hidden = false }
 
-  const kinds = el('div', { class: 'kinds', role: 'radiogroup', 'aria-label': 'Kind of feedback' })
+  const choices = el('div', { class: 'kinds', role: 'radiogroup', 'aria-label': 'Kind of feedback' })
   const paintKinds = () => {
-    const current = KINDS.find(k => k.id === kind)
-    message.placeholder = current.prompt
-    message.setAttribute('aria-label', current.prompt)
-    kinds.replaceChildren(...KINDS.map(k => el('button', {
-      type: 'button', role: 'radio', 'aria-checked': String(k.id === kind),
-      onclick: () => { kind = k.id; paintKinds() }
-    }, glyph(k.id), k.label)))
+    message.placeholder = PROMPTS[kind]
+    message.setAttribute('aria-label', PROMPTS[kind])
+    choices.replaceChildren(...kinds.map(id => el('button', {
+      type: 'button', role: 'radio', 'aria-checked': String(id === kind),
+      onclick: () => { kind = id; paintKinds() }
+    }, glyph(id), KIND[id])))
   }
   paintKinds()
 
@@ -76,15 +82,17 @@ export function composer({ endpoint, attachments = true, preview = false, contex
     paintFiles()
   }
   const picker = el('input', { type: 'file', multiple: true, accept: ACCEPT, hidden: true, onchange: () => { add([...picker.files]); picker.value = '' } })
+  const camera = el('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true, onchange: () => { add([...camera.files]); camera.value = '' } })
   const attachRow = attachments && el('div', { class: 'attach-row' },
+    touch() && el('button', { type: 'button', class: 'attach camera', onclick: () => camera.click() }, glyph('camera', 'glyph line'), 'Take a photo'),
     el('button', { type: 'button', class: 'attach', onclick: () => picker.click() }, glyph('clip', 'glyph line'), 'Add files'),
     el('span', { class: 'attach-hint' }, 'Pictures, videos or PDFs, 8 MB'),
-    picker)
+    picker, camera)
 
   const onSubmit = async event => {
     event.preventDefault()
     error.hidden = true
-    if (message.value.trim().length < 3) { showError('Write a few words first.'); message.focus(); return }
+    if (message.value.trim().length < 3 && !files.length) { showError(attachments ? 'Write a few words or add a photo.' : 'Write a few words first.'); message.focus(); return }
     if (preview) return onSent(null)
     send.disabled = true
     send.textContent = files.length ? 'Uploading…' : 'Sending…'
@@ -110,7 +118,7 @@ export function composer({ endpoint, attachments = true, preview = false, contex
   }
 
   const form = el('form', { class: 'compose', onsubmit: onSubmit, novalidate: true },
-    kinds,
+    choices,
     message,
     attachRow,
     list,

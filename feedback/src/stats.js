@@ -58,7 +58,9 @@ function render(data, project) {
     el('div', { class: 'tiles' },
       tile('Sent', totals.sent, sawTotal ? `${Math.round(totals.sent / sawTotal * 100)}% of those who saw a form` : 'Nobody has seen a form yet', true),
       tile('Opened the form', totals.opens, 'On your sites'),
-      tile('Page visits', totals.visits, 'Your feedback page'),
+      tile('Page visits', totals.visits, totals.scans || totals.emails
+        ? `${number(totals.scans)} scanned a QR code, ${number(totals.emails)} came from email`
+        : 'Your feedback page'),
       tile('Votes', totals.votes),
       tile('Comments', totals.comments)),
     chart(data)
@@ -114,10 +116,10 @@ function chart(data) {
     el('details', { class: 'chart-table' },
       el('summary', {}, 'Show as a table'),
       el('table', {},
-        el('thead', {}, el('tr', {}, ['Day', 'Visits', 'Opens', 'Sent', 'Votes', 'Comments'].map((label, i) => el('th', { scope: 'col', class: i ? 'num' : null }, label)))),
+        el('thead', {}, el('tr', {}, ['Day', 'Visits', 'Scans', 'Email', 'Opens', 'Sent', 'Votes', 'Comments'].map((label, i) => el('th', { scope: 'col', class: i ? 'num' : null }, label)))),
         el('tbody', {}, days.map((day, i) => el('tr', {},
           el('th', { scope: 'row' }, dayLabel(day, true)),
-          ['visits', 'opens', 'sent', 'votes', 'comments'].map(metric => el('td', { class: 'num' }, daily[metric][i]))))))))
+          ['visits', 'scans', 'emails', 'opens', 'sent', 'votes', 'comments'].map(metric => el('td', { class: 'num' }, daily[metric][i]))))))))
 
   let index = null
   const draw = () => {
@@ -164,7 +166,7 @@ function chart(data) {
         el('span', { class: 'tip-day' }, dayLabel(days[i], true)),
         el('span', { class: 'tip-row sent' }, el('strong', {}, sent[i]), ' sent'),
         el('span', { class: 'tip-row saw' }, el('strong', {}, saw[i]), ' saw a form'),
-        el('span', { class: 'tip-more' }, `${daily.visits[i]} page ${daily.visits[i] === 1 ? 'visit' : 'visits'}, ${daily.opens[i]} ${daily.opens[i] === 1 ? 'open' : 'opens'}, ${daily.votes[i]} ${daily.votes[i] === 1 ? 'vote' : 'votes'}`))
+        el('span', { class: 'tip-more' }, `${daily.visits[i]} page ${daily.visits[i] === 1 ? 'visit' : 'visits'} (${daily.scans[i]} by QR), ${daily.opens[i]} ${daily.opens[i] === 1 ? 'open' : 'opens'}, ${daily.votes[i]} ${daily.votes[i] === 1 ? 'vote' : 'votes'}`))
       tip.hidden = false
       const left = x(i), flip = left > width - 170
       tip.style.left = flip ? '' : `${left + 12}px`

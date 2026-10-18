@@ -67,6 +67,19 @@ tile Holm's sign-in page shows. Credit its creator in the README.
   preview image, not Holm's.
 ```
 
+## 6. In person: places and events
+
+```text
+- Make the link preview short and peppy, and say it works on a website or
+  in a physical place.
+- Let a project be for a place or an event, like a restaurant: kinds that
+  suit people there, and a one-tap photo from a phone's camera. A photo on
+  its own is enough to send.
+- Give the public page a title, description, logo and cover, with defaults.
+- Let me email the page's link, and have Stats count QR scans and email
+  visits on their own.
+```
+
 ## The original requests
 
 **Iteration 1** came from this message, typed as-is to a coding agent while
@@ -112,9 +125,24 @@ documentation removed:
 > - and metadata of holm
 > - can we change it to feedback's?
 
+**Iteration 7**, three messages sent while the agent worked:
+
+> I feel we should make the meta info shorter & peppy
+> - realise that it can be used in a website or for a physical store easily
+
+> think about a restaurant using this for their feedback system
+> - someone can quickly take a photo & upload
+
+> an event can also use it
+> - or any place where people can scan
+> - its actually a powerful way to also measure engagement
+> - you can send it via email
+> - may be a title, description, logo & cover (provide default if none) will make it much nicer?
+
 Everything in the prompts beyond what's quoted came from the agent: the
 button in a shadow root and the form in an iframe, the carbon-copy tickets,
 the public board and votes, the spam guards, the shape of the API, the
 icon's credit, in iteration 4 the page's layout, the file limits, the poster
-and what the stats count, and in iteration 5 changing an item's status in
-place too.
+and what the stats count, in iteration 5 changing an item's status in
+place too, and in iteration 7 the kinds for places, the scan tags and the
+default cover.

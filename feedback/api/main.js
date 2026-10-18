@@ -1,5 +1,6 @@
 import { ok, fail, reject, body, member, profile } from './lib.js'
-import { findProject, publicConfig, listProjects, createProject, updateProject, deleteProject, ownProject, projectDTO } from './projects.js'
+import { findProject, publicConfig, listProjects, createProject, updateProject, deleteProject, ownProject, projectDTO, setPicture, clearPicture } from './projects.js'
+import { isPicture, servePicture } from './page.js'
 import { submit, submitToWidget, listItems, updateItem, deleteItem, itemFile, listNotes, addNote, board, publicProject, publicItem, vote } from './items.js'
 import { approvedComments, postComment, listComments, reply, approve, deleteComment } from './comments.js'
 import { count, accountStats, projectStats } from './stats.js'
@@ -40,6 +41,9 @@ async function route(request, method, parts) {
     }
   }
 
+  // Public: a page's logo and cover.
+  if (area === 'pictures' && id && isPicture(sub) && parts.length === 4 && method === 'GET') return servePicture(findProject(id), sub)
+
   // API keys: only the signed-in person manages them.
   if (area === 'keys') {
     if (parts.length === 2 && method === 'GET') return ok({ keys: listKeys() })
@@ -59,6 +63,8 @@ async function route(request, method, parts) {
     if (parts.length === 3 && method === 'DELETE') { deleteProject(user, id); return ok() }
     if (sub === 'items' && parts.length === 4 && method === 'GET') return ok({ items: listItems(user, id, query.status) })
     if (sub === 'stats' && parts.length === 4 && method === 'GET') return ok(projectStats(ownProject(user, id), query.days))
+    if (isPicture(sub) && parts.length === 4 && method === 'POST') return ok({ project: setPicture(user, id, sub, request) })
+    if (isPicture(sub) && parts.length === 4 && method === 'DELETE') return ok({ project: clearPicture(user, id, sub) })
   }
 
   if (area === 'items' && id) {

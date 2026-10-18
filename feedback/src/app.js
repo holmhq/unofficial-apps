@@ -22,8 +22,8 @@ function landing() {
   show(
     el('section', { class: 'hero' },
       el('div', { class: 'hero-text' },
-        el('h1', {}, 'A feedback button for any website.'),
-        el('p', { class: 'lede' }, 'Add one line to your site, or share a page of its own with a QR code. Visitors send bugs, ideas and questions, with screenshots if they like, and you sort them in one inbox.'),
+        el('h1', {}, 'Hear what people think.'),
+        el('p', { class: 'lede' }, 'A button on your website. A QR code on your tables, counter or event. People send ideas, problems and photos in seconds; you read them in one inbox and count every scan.'),
         el('p', {}, el('button', { type: 'button', class: 'button primary large', onclick: () => signIn().catch(() => {}) }, 'Sign in to start'))),
       el('div', { class: 'hero-demo', 'aria-label': 'The form your visitors see' },
         el('div', { class: 'browser' },
@@ -34,8 +34,8 @@ function landing() {
     el('section', { class: 'steps' },
       el('h2', {}, 'How it works'),
       el('ol', {},
-        el('li', {}, el('strong', {}, 'Make a project'), ' for each site or product.'),
-        el('li', {}, el('strong', {}, 'Paste its snippet'), ' into your pages, or share its own page and QR code.'),
+        el('li', {}, el('strong', {}, 'Make a project'), ' for a website, a shop, a restaurant or an event.'),
+        el('li', {}, el('strong', {}, 'Paste its snippet'), ' into your pages, or print its QR code, or email its link.'),
         el('li', {}, el('strong', {}, 'Sort what arrives'), ': mark it planned, in progress or done, keep private notes, and choose what people can see, vote on and comment on.'))))
 }
 

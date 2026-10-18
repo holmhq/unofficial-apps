@@ -1,11 +1,13 @@
 // Feedback items: sent by anyone through a project's widget, triaged by the
 // project's owner, and shown on the public board only when the owner says so.
 import { ds, kv, now, iso, text, reject, random } from './lib.js'
-import { findProject, findBoard, ownProject } from './projects.js'
+import { findProject, findBoard, ownProject, kindsOf } from './projects.js'
 import { uploads, store, remove, fileDTO, serve } from './files.js'
 import { count } from './stats.js'
+import { pictureURL } from './page.js'
 
-export const KINDS = ['bug', 'idea', 'question']
+// Every kind there is; each project offers one set of three (KIND_SETS).
+export const KINDS = ['bug', 'idea', 'question', 'praise', 'problem']
 export const STATUSES = ['new', 'planned', 'progress', 'done', 'closed']
 const HOURLY_LIMIT = 120
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/
@@ -44,10 +46,14 @@ export function submit(project, input, request, source = 'widget') {
   const hour = new Date(now()).toISOString().slice(0, 13)
   if (kv().increment(`rate:${project.id}:${hour}`, 1) > HOURLY_LIMIT) reject(429, 'busy', 'Too much feedback this hour. Try again later.')
   const words = text(input.body, 4000, true)
-  if (words.length < 3) reject(400, 'invalid_body', 'Write a few words first.')
   const email = text(input.email, 200)
   if (email && !EMAIL.test(email)) reject(400, 'invalid_email', 'That email address doesn’t look right.')
   const checked = uploads(request, project)
+  // A photo on its own is enough, for someone at a table in a hurry.
+  if (words.length < 3 && !checked.length) reject(400, 'invalid_body', 'Write a few words or add a photo.')
+  const pictures = checked.every(entry => entry.mime.startsWith('image/'))
+  const untitled = `${checked.length} ${pictures ? 'photo' : 'file'}${checked.length === 1 ? '' : 's'}`
+  const kinds = kindsOf(project)
   const agent = (request.headers && (request.headers['User-Agent'] || request.headers['user-agent'])) || ''
   const id = random(24)
   const files = store(checked, project.id, id)
@@ -55,9 +61,9 @@ export function submit(project, input, request, source = 'widget') {
     id,
     project: project.id,
     number: kv().increment('seq:' + project.id, 1),
-    kind: KINDS.includes(input.kind) ? input.kind : 'idea',
+    kind: kinds.includes(input.kind) ? input.kind : 'idea',
     status: 'new', public: false, votes: 0, comments: 0, pending: 0, source,
-    title: words.split('\n')[0].slice(0, 90),
+    title: words.split('\n')[0].slice(0, 90) || untitled,
     body: words, email, files,
     page: from, pageTitle: source === 'page' ? '' : text(input.title, 200),
     browser: text(Array.isArray(agent) ? agent[0] : agent, 300),
@@ -142,9 +148,18 @@ export function publicProject(key) {
 export function board(key, query = {}) {
   const project = publicProject(key)
   const items = ds().find('items', { project: project.id, public: true }, { limit: 300, orderBy: 'createdAt', order: 'desc' })
-  if (query.visit === '1') count(project.id, 'visits')
+  // Links in QR codes and emails say so (?via=qr, ?via=email), so scans and
+  // email visits count on their own as well.
+  if (query.visit === '1') {
+    count(project.id, 'visits')
+    if (query.via === 'qr') count(project.id, 'scans')
+    if (query.via === 'email') count(project.id, 'emails')
+  }
   return {
-    project: { id: project.id, name: project.name, color: project.color, slug: project.slug || null, intro: project.intro || '', attachments: project.attachments !== false },
+    project: {
+      id: project.id, name: project.name, color: project.color, slug: project.slug || null, title: project.title || '', intro: project.intro || '',
+      logo: pictureURL(project, 'logo'), cover: pictureURL(project, 'cover'), attachments: project.attachments !== false, kinds: kindsOf(project)
+    },
     items: items.map(boardDTO)
   }
 }

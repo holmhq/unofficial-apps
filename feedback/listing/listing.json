@@ -1,12 +1,12 @@
 {
-  "subtitle": "A feedback button and page for any site",
+  "subtitle": "Feedback for websites, shops and events",
   "category": "Developer tools",
-  "description": "Add one script tag to your website and a feedback button appears. Visitors send a bug, an idea or a question from the page they're on, with screenshots if they like, and an email if they'd like a reply.\n\nOr share a page of its own: pick its address, print its QR code, and anyone who scans it can send feedback, vote for what others asked and comment. Comments wait for your approval.\n\nEverything arrives in one inbox per project. Mark items planned, in progress, done or closed, keep private notes, choose what goes on the page, and see how many people saw a form and how many sent something.",
-  "whatsNew": "Shared links now preview as feedback, with its own picture and description, not Holm's. Since 0.3: a feedback page with a custom address and a QR code poster, files, public comments you approve, light stats, and the app's mark on the button.",
+  "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and an email if they'd like a reply.\n\nEach project gets a page of its own with your title, logo and cover, a custom address and a poster to print. Anyone can vote for what others asked and comment; comments wait for your approval.\n\nEverything arrives in one inbox per project. Sort it by status, keep private notes, and see how many people scanned, visited and sent something.",
+  "whatsNew": "Made for places and events: Praise, Problem and Idea, a one-tap camera button, and a page with your title, logo and cover. Stats count QR scans and email visits, and Share can email the link.",
   "screenshots": [
     {
       "file": "page.webp",
-      "alt": "A project's own feedback page, as someone arriving from a QR code sees it"
+      "alt": "A restaurant's feedback page on a phone: Praise, Problem or Idea, and a button to take a photo"
     },
     {
       "file": "widget.webp",

@@ -46,9 +46,20 @@ function fit(context, text, weight, family, size, width) {
   return size
 }
 
-// A 3:4 card: the project's name on its colour, the code, and the address.
-export async function poster(text, { name, color }) {
+function picture(src) {
+  return new Promise(resolve => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => resolve(null)
+    image.src = src
+  })
+}
+
+// A 3:4 card: the project's logo and name on its colour, the code (of `scan`,
+// which tags the address so scans count), and the plain address.
+export async function poster(text, { name, color, logo, kinds = [] }, scan = text) {
   try { await Promise.all([document.fonts.load('700 80px Bricolage'), document.fonts.load('400 32px "Fragment Mono"')]) } catch {}
+  const mark = logo && await picture(logo)
   const canvas = document.createElement('canvas')
   canvas.width = 1200
   canvas.height = 1600
@@ -60,14 +71,28 @@ export async function poster(text, { name, color }) {
   c.fillStyle = inkOn(color)
   c.textAlign = 'center'
   c.textBaseline = 'alphabetic'
-  c.font = '600 40px Bricolage, system-ui, sans-serif'
-  c.globalAlpha = 0.82
-  c.fillText('Feedback for', 600, 140)
-  c.globalAlpha = 1
-  fit(c, name, 750, 'Bricolage, system-ui, sans-serif', 96, 1060)
-  c.fillText(name, 600, 250)
+  if (mark) {
+    // The logo on a white tile, so any logo reads on any colour.
+    const scale = Math.min(300 / mark.width, 120 / mark.height)
+    const w = mark.width * scale, h = mark.height * scale
+    c.fillStyle = '#ffffff'
+    c.beginPath()
+    c.roundRect(600 - w / 2 - 22, 40, w + 44, h + 32, 22)
+    c.fill()
+    c.drawImage(mark, 600 - w / 2, 56, w, h)
+    c.fillStyle = inkOn(color)
+    fit(c, name, 750, 'Bricolage, system-ui, sans-serif', 72, 1060)
+    c.fillText(name, 600, 290)
+  } else {
+    c.font = '600 40px Bricolage, system-ui, sans-serif'
+    c.globalAlpha = 0.82
+    c.fillText('Feedback for', 600, 140)
+    c.globalAlpha = 1
+    fit(c, name, 750, 'Bricolage, system-ui, sans-serif', 96, 1060)
+    c.fillText(name, 600, 250)
+  }
 
-  const { count, dark } = matrix(text)
+  const { count, dark } = matrix(scan)
   const box = 760, cell = Math.floor(box / count), side = cell * count
   const left = Math.round((1200 - side) / 2), top = 420 + Math.round((box - side) / 2)
   c.fillStyle = qrColor(color)
@@ -78,7 +103,7 @@ export async function poster(text, { name, color }) {
   c.fillText('Scan to send feedback', 600, 1330)
   c.fillStyle = '#57536b'
   c.font = '500 34px Bricolage, system-ui, sans-serif'
-  c.fillText('Bugs, ideas and questions are all welcome.', 600, 1395)
+  c.fillText(kinds.includes('praise') ? 'Praise, problems and ideas, with a photo if you like.' : 'Bugs, ideas and questions are all welcome.', 600, 1395)
   c.fillStyle = '#8a869a'
   fit(c, text.replace(/^https?:\/\//, ''), 400, '"Fragment Mono", ui-monospace, monospace', 34, 1040)
   c.fillText(text.replace(/^https?:\/\//, ''), 600, 1500)

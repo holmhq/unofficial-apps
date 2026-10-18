@@ -82,3 +82,5 @@ textarea:focus-visible, input:focus-visible { outline-offset: 0; border-color: v
 .remove:hover { background: var(--paper); color: var(--ink); }
 .remove svg { width: 14px; height: 14px; }
 form.dropping textarea { border-color: var(--color); border-style: dashed; }
+.attach.camera { background: var(--color); border-color: transparent; color: var(--on-color); }
+.attach.camera:hover { color: var(--on-color); filter: brightness(1.07); }

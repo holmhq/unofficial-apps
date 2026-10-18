@@ -1,10 +1,10 @@
 # feedback
 
-A feedback button for any website, as a [Holm](https://holmhq.com) app. One
-script tag adds the button; visitors send a bug, an idea or a question from
-the page they're on, with screenshots if they like, and it lands in your
-inbox. Each project can also have a page of its own, with a custom address
-and a QR code, where anyone can send feedback, vote and comment.
+Hear what people think, online or in person, as a [Holm](https://holmhq.com)
+app. One script tag puts a feedback button on a website. A QR code on a
+restaurant's tables, a shop's counter or an event's badges opens a page of
+its own, where people send praise, problems and ideas with a photo in a tap.
+Everything lands in one inbox, and Stats count every scan.
 
 Live at <https://feedback.zyt.app>. It was built from the request quoted in
 [`PROMPT.md`](PROMPT.md).
@@ -12,16 +12,20 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
 ## What it does
 
 - **The button,** on your site: a pill in the corner (left or right) in your
-  colour, with your label and the app's smiling-bubble mark. It opens a small form: Bug, Idea or Question, a
-  message, up to four files (pictures, videos, PDFs or text, 8 MB in all;
-  big photos shrink in the browser first; paste or drop them too), and an
-  email if the sender wants a reply. On a phone the form is a bottom sheet.
-  Escape or the close button dismisses it.
-- **Projects:** sign in and make one per site or product. Tabs: Inbox, Stats,
-  Share, Set up and Settings; switching tabs changes only what's below them.
-  Set up shows the snippet with your choices
-  filled in and a preview of the button and form that follows every change as
-  you make it. Settings renames or deletes the project.
+  colour, with your label and the app's smiling-bubble mark. It opens a
+  small form: three kinds, a message, up to four files (pictures, videos,
+  PDFs or text, 8 MB in all; big photos shrink in the browser first; paste or
+  drop them too), and an email if the sender wants a reply. On a phone the
+  form is a bottom sheet with a **Take a photo** button that opens the
+  camera, and a photo alone is enough to send. Escape or the close button
+  dismisses it.
+- **Projects:** sign in and make one per site, shop, restaurant or event.
+  What it's made for picks the kinds: a website or app gets Bug, Idea and
+  Question; a place or event gets Praise, Problem and Idea. Tabs: Inbox,
+  Stats, Share, Set up and Settings; switching tabs changes only what's below
+  them. Set up shows the snippet with your choices filled in and a preview of
+  the button and form that follows every change as you make it. Settings
+  renames or deletes the project.
 - **Inbox:** every item as a ticket, numbered per project and tinted by its
   status like a carbon-copy form: white for new, canary for planned, pink for
   in progress, mint for done, grey for closed. Filter by status. Each item
@@ -31,15 +35,19 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
   files.
 - **The feedback page,** off by default, at `/<custom-address>` (or
   `/b/<project>`, which always works): made for someone who arrives from a
-  link or a QR code, so it stands alone in the project's name and colour. The
-  form comes first; below it are the items you mark public, by status and
-  votes. Anyone can vote, once per browser, and open an item to comment.
+  link or a QR code, so it stands alone in the project's name and colour,
+  under its cover and logo (a pattern in its colour and its initial until you
+  upload them), with your title and description. The form comes first; below
+  it are the items you mark public, by status and votes. Anyone can vote, once per browser, and open an item to comment.
   Visitors' comments wait until you approve them; your replies show at once
   under the project's name. It never shows emails, pages, browsers or files.
-- **Share:** turn the page on, pick its address and a line for the top, copy
-  the link, and download its QR code as an SVG or a poster to print.
-- **Stats,** per project and for your account (the avatar menu): page visits,
-  form opens, items sent, votes and comments per day over 7, 30 or 90 days,
+- **Share:** turn the page on; pick its address, title and description;
+  upload a logo and a cover; copy the link or email it; and download its QR
+  code as an SVG or a poster with your logo to print. The QR code's link and
+  the emailed one carry `?via=qr` and `?via=email`, so Stats can count them.
+- **Stats,** per project and for your account (the avatar menu): page visits
+  (and how many were QR scans or came from email), form opens, items sent,
+  votes and comments per day over 7, 30 or 90 days,
   with what share of people who saw a form sent something, where feedback
   came from and what kind it was. They count events, not people: no cookies,
   no visitor ids.
@@ -106,6 +114,7 @@ api/main.js         routes (below)
 api/projects.js     projects, their settings and custom addresses
 api/items.js        sending, triage, notes, the page and votes
 api/files.js        attachments: checks, storage, previews, serving
+api/page.js         a page's logo and cover: resizing and serving
 api/comments.js     public comments and their approval
 api/stats.js        daily counters and the stats replies
 api/keys.js         API keys and who an owner request is from
@@ -128,7 +137,8 @@ The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
   `increment`ed counter per project, day and event.
 - **Blob storage, `holm.app.s3`:** attachments, put straight from the
   multipart upload handles in `request.files`, served back only to the owner
-  with a sandboxing CSP. **`holm.image.thumbnail`** makes the previews.
+  with a sandboxing CSP. **`holm.image.thumbnail`** makes the previews, and
+  **`holm.image.resize`** fits a page's logo and cover as they're uploaded.
 - **Framing:** Holm serves app pages with `frame-ancestors *`, so any site can
   show the form.
 - **Head metadata:** Holm fills in link-preview tags a page leaves out, with
@@ -140,7 +150,8 @@ The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
 | `GET /api/me` | anyone | who is signed in |
 | `GET /api/embed/<project>[?open=1]` | anyone | the form's settings; `open=1` counts an open |
 | `POST /api/embed/<project>/items` | anyone | send feedback, JSON or multipart with `file0`… |
-| `GET /api/boards/<page>[?visit=1]` | anyone | a feedback page, by address or id |
+| `GET /api/boards/<page>[?visit=1&via=]` | anyone | a feedback page, by address or id; `via` is `qr` or `email` |
+| `GET /api/pictures/<project>/logo`, `…/cover` | anyone | a page's logo and cover |
 | `POST /api/boards/<page>/items` | anyone | send feedback from the page |
 | `POST /api/boards/<page>/items/<id>/vote` | anyone | vote, once per browser |
 | `GET`, `POST /api/boards/<page>/items/<id>/comments` | anyone | approved comments; add one |
@@ -148,6 +159,7 @@ The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
 | `GET`, `PATCH`, `DELETE /api/projects/<id>` | owner | one project |
 | `GET /api/projects/<id>/items[?status=]` | owner | its inbox: `open`, `new`, `planned`, `progress`, `done`, `closed` |
 | `GET /api/projects/<id>/stats?days=` | owner | its stats over 7, 30 or 90 days |
+| `POST`, `DELETE /api/projects/<id>/logo`, `…/cover` | owner | upload one (multipart), or go back to the default |
 | `GET /api/stats?days=` | owner | stats for all your projects |
 | `PATCH`, `DELETE /api/items/<id>` | owner | status, kind, public; delete |
 | `GET /api/items/<id>/files/<n>` | owner | a file; `?preview=1`, `?download=1` |
@@ -171,9 +183,10 @@ curl https://feedback.example.com/api/projects \
 The reply's `project.snippet` is the script tag to paste before `</body>`.
 A project takes `name`, `label` (the button's text), `color`, `position`
 (`right` or `left`), `origins` (allowed sites; empty means any),
-`attachments` (whether visitors can add files), `public` (the feedback page),
-`slug` (its custom address, 3 to 40 lowercase letters, digits and hyphens)
-and `intro` (a line at the top of the page). `PATCH` takes the same fields.
+`attachments` (whether visitors can add files), `for` (`site` or `place`,
+which picks the kinds), `public` (the feedback page), `slug` (its custom
+address, 3 to 40 lowercase letters, digits and hyphens), and the page's
+`title` and `intro`. `PATCH` takes the same fields.
 
 To read and sort what arrived:
 

@@ -3,12 +3,16 @@
 import { ds, now, iso, text, reject, random } from './lib.js'
 import { removeProject as removeFiles } from './files.js'
 import { removeProjectStats } from './stats.js'
+import { pictureURL, storePicture, removePicture } from './page.js'
 
 // Snippets and page links in API replies are absolute. The runtime doesn't
 // pass the request host to apps yet, so they use this. Set it to your host.
 export const ORIGIN = 'https://feedback.zyt.app'
 
 const COLOR = /^#[0-9a-fA-F]{6}$/
+// What a project is for picks the three kinds its form offers.
+export const KIND_SETS = { site: ['bug', 'idea', 'question'], place: ['praise', 'problem', 'idea'] }
+export const kindsOf = doc => KIND_SETS[doc.for] || KIND_SETS.site
 const MAX_PROJECTS = 20
 // A custom address: 3 to 40 lowercase letters, digits and inner hyphens.
 const SLUG = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/
@@ -33,14 +37,15 @@ export const pageURL = (doc, origin = ORIGIN) => `${origin}/${doc.slug || 'b/' +
 export function projectDTO(doc) {
   return {
     id: doc.id, name: doc.name, label: doc.label, color: doc.color, position: doc.position,
-    origins: doc.origins, public: doc.public, slug: doc.slug || null, intro: doc.intro || '',
-    attachments: doc.attachments !== false, createdAt: iso(doc.createdAt),
+    origins: doc.origins, public: doc.public, slug: doc.slug || null, title: doc.title || '', intro: doc.intro || '',
+    logo: pictureURL(doc, 'logo'), cover: pictureURL(doc, 'cover'),
+    attachments: doc.attachments !== false, for: KIND_SETS[doc.for] ? doc.for : 'site', kinds: kindsOf(doc), createdAt: iso(doc.createdAt),
     snippet: snippet(doc), board: doc.public ? pageURL(doc) : null
   }
 }
 
 // The parts a visitor's browser may see: no owner, no allowed sites.
-export const publicConfig = doc => ({ id: doc.id, name: doc.name, label: doc.label, color: doc.color, position: doc.position, attachments: doc.attachments !== false })
+export const publicConfig = doc => ({ id: doc.id, name: doc.name, label: doc.label, color: doc.color, position: doc.position, attachments: doc.attachments !== false, kinds: kindsOf(doc) })
 
 export function findProject(id) {
   return /^[a-z0-9]{8}$/.test(id || '') ? ds().findOne('projects', { id }) : null
@@ -93,8 +98,10 @@ function settings(input, doc = {}) {
   if ('origins' in input) out.origins = origins(input.origins)
   if ('public' in input) out.public = input.public === true
   if ('slug' in input) out.slug = slug(input.slug, doc.id)
+  if ('title' in input) out.title = text(input.title, 80)
   if ('intro' in input) out.intro = text(input.intro, 280, true)
   if ('attachments' in input) out.attachments = input.attachments !== false
+  if ('for' in input) out.for = KIND_SETS[input.for] ? input.for : reject(400, 'invalid_for', 'A project is for a "site" or a "place".')
   return out
 }
 
@@ -110,7 +117,7 @@ export function createProject(user, input) {
   if (ds().count('projects', { ownerId: user.id }) >= MAX_PROJECTS) reject(409, 'too_many', `You can have up to ${MAX_PROJECTS} projects.`)
   let id = random(8)
   while (findProject(id) || ds().findOne('projects', { slug: id })) id = random(8)
-  const doc = { label: 'Feedback', color: '#c2410c', position: 'right', origins: [], public: false, slug: null, intro: '', attachments: true, ...settings({ name: '', ...input }, { id }) }
+  const doc = { label: 'Feedback', color: '#c2410c', position: 'right', origins: [], public: false, slug: null, intro: '', attachments: true, for: 'site', ...settings({ name: '', ...input }, { id }) }
   ds().insert('projects', { ...doc, id, ownerId: user.id, createdAt: now() })
   return projectDTO(findProject(id))
 }
@@ -118,6 +125,20 @@ export function createProject(user, input) {
 export function updateProject(user, id, input) {
   const doc = ownProject(user, id)
   ds().update('projects', { id: doc.id }, { $set: settings(input, doc) })
+  return projectDTO(findProject(doc.id))
+}
+
+// The public page's logo or cover: upload one, or go back to the default.
+export function setPicture(user, id, which, request) {
+  const doc = ownProject(user, id)
+  ds().update('projects', { id: doc.id }, { $set: { [which]: storePicture(doc.id, which, request) } })
+  return projectDTO(findProject(doc.id))
+}
+
+export function clearPicture(user, id, which) {
+  const doc = ownProject(user, id)
+  removePicture(doc.id, which)
+  ds().update('projects', { id: doc.id }, { $set: { [which]: null } })
   return projectDTO(findProject(doc.id))
 }
 
