@@ -1,70 +1,50 @@
 # Prompt
 
-Give these to a coding agent on a machine that has the `holm` CLI and a node
-to deploy to. Its only source of Holm knowledge is the public reference at
-<https://holmhq.com/llm.txt>. Send them in order, one message each.
+The public reference at <https://holmhq.com/llm.txt> teaches Holm App Spec
+v1. Give the build request below to a coding agent with the `holm` CLI and a
+node you control. The quoted messages later are history, not additional
+instructions or sources.
 
-## 1. Build it
-
-```text
-Build a pastebin as a Holm app. Use https://holmhq.com/llm.txt as your only
-reference for Holm, and read its app-building sections before you write code.
-
-- Make it really aesthetic, with light, dark and system themes.
-- The UX should be excellent on mobile and desktop.
-- Highlight syntax.
-- A paste can hold text and media: images, video, audio or any file.
-- Every link can expire, open only once, or be revoked by me.
-- Hide my name on shared links by default; let me choose to show my name and avatar.
-- After I sign in, let me create API keys, so scripts and agents can create
-  pastes over HTTP. Include a small CLI.
-- Deploy it to pastebin.<my-domain>.
-```
-
-## 2. Make it minimal
+## Build from scratch
 
 ```text
-Make the UI minimal.
+Build a private-first pastebin using only https://holmhq.com/llm.txt for
+Holm. Read its v1 sections 9–12 first. Make holm.json, public web/ files and
+api/main.js exporting default { async fetch(request, env) }. Set web.spa
+true, use env.holm for storage/auth, return standard Responses and fall
+back to env.holm.web.fetch(request). No build step or third-party runtime CDN;
+vendor the Markdown parser, sanitizer, highlighter and fonts with licenses.
 
-- Put API keys and the theme switch in the avatar menu.
-- Make the create button one split button that reads as a sentence:
-  "Create [one-time] link [with] my name for [1h] ▾". Clicking an italic
-  word crosses it out to turn it off, so the layout never shifts. The right
-  segment opens a menu to pick the expiry.
-- Make attaching files a single icon at the top right of the editor.
-- Centre the create button.
-- Add a small footer with the Holm mark ("A Holm app") and a GitHub mark
-  linking to the source.
-```
+- Make a minimal cyanotype design, light/dark/system themes, excellent on
+  phones and desktop. The page stays still; only the editor scrolls.
+- Paste text/code with syntax highlighting and safe GitHub-flavoured
+  Markdown (Preview/Source), plus images, video, audio or any file. Put the
+  attachment icon at the editor's top right; support drop and paste.
+- Signed-in owners create expiring, one-time or revocable links. Hide their
+  name/avatar by default. A sealed link needs a click to open, so unfurlers
+  cannot burn it; the owner's preview must not burn it. Use a documented DS
+  transaction to claim once; check expiry on access and delete expired blobs
+  then. The guide does not document ifRevision or blob TTL options: do not
+  promise automatic idle cleanup or claim race safety without testing it.
+- Centre a split create button reading “Create [one-time] link [with] my
+  name for [1h] ▾”; crossing out those words toggles them without layout shift.
+- Put pastes, theme and API keys in the avatar menu. Show keys once, store
+  SHA-256 hashes, check ownership on every owner route. Add JSON/multipart
+  HTTP creation and a small POSIX sh CLI using curl/jq. Read form files via
+  request.formData() and arrayBuffer(); do not expose private files directly.
+- Add safe file downloads, no-referrer/noindex, a Holm/source footer, and an
+  optional footer feedback link only if I supply a feedback project.
+- For this repository's store, use holm.json version, holm.symbol.svg (one
+  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,
+  category, description, whatsNew and sample screenshots. These are repo
+  conventions, not a catalog format promised by the Holm guide.
 
-## 3. Render Markdown, keep the page still
-
-```text
-Render Markdown pastes as GitHub-flavoured Markdown, styled like Tailwind's
-Typography ("prose") plugin, with a Preview / Source switch. Sanitize the
-rendered HTML.
-
-Make the composer an app screen: the page never scrolls, only the editor
-panel does, however much is pasted.
-```
-
-## 4. Give it a store listing
-
-```text
-Give the app a store listing for this repository's app store.
-
-- An icon as holm.symbol.svg: one black path, no strokes, in a 0 0 24 24
-  viewBox, fitted tight and centred. Set themeColor to the app's own colour.
-- A listing/ folder, kept out of the deploy, with listing.json (subtitle,
-  category, description, what's new) and phone screenshots of the app with
-  sample data, in light and dark.
-```
-
-## 5. Add a feedback link
-
-```text
-Add a "Send feedback" link to the footer that opens the feedback form from
-my feedback app (feedback.<my-domain>), for a project made for this site.
+Run holm app validate --spec-v1 pastebin. With my approval, deploy with
+holm @<peer> app deploy pastebin --spec-v1 --host pastebin.<my-domain>.
+Never replace an occupied host or move an older-format app without asking.
+Validation does not run the app: test uploads, expiry, revocation and two
+simultaneous one-time opens, plus mobile/desktop in light/dark. Report gaps
+honestly. Inspect the target settings schema before setting sign-in branding.
 ```
 
 ## The original requests
@@ -141,9 +121,7 @@ and accent:
 The agent chose a footer link over the floating button, which would have
 covered the create button on phones.
 
-The prompts above are those messages with the machine-specific parts removed
-and one line added: use only holmhq.com. Everything else came from the agent:
-the visual design, the data model, how burn after reading works, the security
-headers, the CLI, and bugs it found in its own live testing. The other
-messages in that conversation were about the API key, documentation and
-publishing, not the app.
+The build request uses the current public v1 reference and spells out the
+repository's listing conventions. It does not require private docs or a
+pre-existing app. The quoted messages explain the requested design; the
+implementation details and original live testing were the agent's work.

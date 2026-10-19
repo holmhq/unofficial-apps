@@ -143,11 +143,11 @@
     {
       "name": "pastebin",
       "path": "pastebin",
-      "version": "0.3.0",
-      "tag": "pastebin/v0.3.0",
-      "h1": "h1:gcDY5oW4D58xjvPPszVqh9/r2AVea2uJo2j2kyGbzZ4=",
+      "version": "0.3.1",
+      "tag": "pastebin/v0.3.1",
+      "h1": "h1:uZb+XJ3FihBJQbjFrYAXIbR+SUOzdj8nqL81Vsp1qK4=",
       "files": 42,
-      "size": 595305,
+      "size": 597605,
       "title": "pastebin",
       "description": "Private-first text, code and media pastes with expiring links and burn-after-read sharing.",
       "themeColor": "#173a72",
@@ -157,7 +157,7 @@
         "subtitle": "Links that expire or burn",
         "category": "Utilities",
         "description": "Paste text, code or files and share them behind a link that expires, opens only once, or can be revoked at any time.\n\nCode is highlighted as you type. Markdown renders like GitHub's, and images, video and audio play in place. Your name stays off the paste unless you choose to show it.\n\nAPI keys and a small command-line tool let scripts and agents file pastes for you.",
-        "whatsNew": "The same app in the Holm App Spec v1 layout: holm.json, web/ and api/main.js. Deploy it with --spec-v1 on Holm 0.242 or newer.",
+        "whatsNew": "The README and from-scratch prompt now teach Holm App Spec v1 and its public Fetch API guide, with honest notes about expiry, validation and the migrated handlers.",
         "featured": true,
         "screenshots": [
           {
@@ -186,7 +186,7 @@
           }
         ]
       },
-      "prompt": "Build a pastebin as a Holm app. Use https://holmhq.com/llm.txt as your only\nreference for Holm, and read its app-building sections before you write code.\n\n- Make it really aesthetic, with light, dark and system themes.\n- The UX should be excellent on mobile and desktop.\n- Highlight syntax.\n- A paste can hold text and media: images, video, audio or any file.\n- Every link can expire, open only once, or be revoked by me.\n- Hide my name on shared links by default; let me choose to show my name and avatar.\n- After I sign in, let me create API keys, so scripts and agents can create\n  pastes over HTTP. Include a small CLI.\n- Deploy it to pastebin.<my-domain>."
+      "prompt": "Build a private-first pastebin using only https://holmhq.com/llm.txt for\nHolm. Read its v1 sections 9–12 first. Make holm.json, public web/ files and\napi/main.js exporting default { async fetch(request, env) }. Set web.spa\ntrue, use env.holm for storage/auth, return standard Responses and fall\nback to env.holm.web.fetch(request). No build step or third-party runtime CDN;\nvendor the Markdown parser, sanitizer, highlighter and fonts with licenses.\n\n- Make a minimal cyanotype design, light/dark/system themes, excellent on\n  phones and desktop. The page stays still; only the editor scrolls.\n- Paste text/code with syntax highlighting and safe GitHub-flavoured\n  Markdown (Preview/Source), plus images, video, audio or any file. Put the\n  attachment icon at the editor's top right; support drop and paste.\n- Signed-in owners create expiring, one-time or revocable links. Hide their\n  name/avatar by default. A sealed link needs a click to open, so unfurlers\n  cannot burn it; the owner's preview must not burn it. Use a documented DS\n  transaction to claim once; check expiry on access and delete expired blobs\n  then. The guide does not document ifRevision or blob TTL options: do not\n  promise automatic idle cleanup or claim race safety without testing it.\n- Centre a split create button reading “Create [one-time] link [with] my\n  name for [1h] ▾”; crossing out those words toggles them without layout shift.\n- Put pastes, theme and API keys in the avatar menu. Show keys once, store\n  SHA-256 hashes, check ownership on every owner route. Add JSON/multipart\n  HTTP creation and a small POSIX sh CLI using curl/jq. Read form files via\n  request.formData() and arrayBuffer(); do not expose private files directly.\n- Add safe file downloads, no-referrer/noindex, a Holm/source footer, and an\n  optional footer feedback link only if I supply a feedback project.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 pastebin. With my approval, deploy with\nholm @<peer> app deploy pastebin --spec-v1 --host pastebin.<my-domain>.\nNever replace an occupied host or move an older-format app without asking.\nValidation does not run the app: test uploads, expiry, revocation and two\nsimultaneous one-time opens, plus mobile/desktop in light/dark. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in branding."
     }
   ]
 }

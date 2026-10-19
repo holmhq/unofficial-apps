@@ -9,12 +9,17 @@ quoted in [`PROMPT.md`](PROMPT.md), which also has reusable versions of them.
 
 ## Holm App Spec v1
 
-pastebin uses the Holm App Spec v1 layout: `holm.json` for its name, version
-and web settings, `web/` for the public files, and `api/main.js` for the
-server code. Deploy it with
-`holm @<peer> app deploy pastebin --spec-v1 --host <host>` on Holm 0.242 or
-newer. Add `--move` once, for the first deploy over a copy that runs in Holm's
-original format; it moves that app in place and keeps its data.
+pastebin follows [Holm App Spec v1](https://holmhq.com/llm.txt), sections
+9–12: `holm.json` holds identity and web settings, `web/` holds public files,
+and `api/main.js` exports `default { fetch(request, env) }`. The handler
+returns standard `Response` objects and uses `env.holm` for storage and
+sign-in. Set `web.spa: true` in `holm.json`; the node runs no build.
+
+Use a current signed Holm release; the public app guide targets 0.243.2,
+and multipart `request.formData()` needs node 0.242.0 or newer. Every deploy
+needs `--spec-v1`. Only `web/` is served as files: `api/` and `holm.json` are
+not public URLs, and README, PROMPT and listing files stay out of this app's
+deploy. They are still public source in this repository.
 
 ## What it does
 
@@ -55,9 +60,12 @@ original format; it moves that app in place and keeps its data.
 
 ## How it is built
 
-A Holm app is a folder. The files in `web/` are served as-is, and
-`api/main.js` handles `/api/*` (plus `/raw/*`, listed in its `API_PREFIXES`).
-There is no build step and no dependency to install.
+A Holm app is a folder. `web/` is served as-is. This app's
+`api/main.js` routes `/api/*` and `/raw/*`, reads JSON with `request.text()`
+and multipart bodies with `request.formData()`, and converts its answers to
+standard `Response` objects. Other paths go to `env.holm.web.fetch(request)`
+for static files and SPA fallback. There is no build step or dependency to
+install.
 
 ```text
 holm.json               name, version, colour, SPA routing, store metadata
@@ -81,55 +89,77 @@ holm.symbol.svg         app icon: one black path that stores paint on the theme 
 listing/                store listing and screenshots (not deployed)
 ```
 
-The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
+The existing entry delegates to `api/_legacy_main.js`; `api/_holm.js` binds
+`env.holm` for those imported modules on each request. These private modules
+are this app's migration scaffolding, not the v1 authoring contract. For a
+fresh build, write routes directly in `fetch(request, env)` as the public
+guide shows; do not start with global `holm`, `request` or `respond`.
 
-- **Document store, `holm.app.ds`:** pastes, API keys and profiles. Burn after
-  reading is a single compare-and-set update (`{ ifRevision }`), so two people
-  racing for one link can't both win.
-- **Blob store, `holm.app.s3`:** uploads, written with `ttlMs` so expired files
-  disappear even if nobody visits again.
-- **`holm.image.thumbnail`:** gallery previews.
-- **`holm.auth`:** the signed-in owner. API keys are app-owned bearer tokens,
-  stored as SHA-256 hashes made with `crypto.subtle`.
+The v1 primitives described in <https://holmhq.com/llm.txt> are:
+
+- **Document store, `env.holm.app.ds`:** pastes, API keys and profiles.
+  Storage calls are synchronous; use a documented DS transaction when a
+  group of changes must commit together.
+- **Blob store, `env.holm.app.s3`:** uploads and previews. The guide shows
+  `s3.put(path, arrayBuffer, mime)` and explicit deletion; files are served
+  by the handler, never directly from storage.
+- **`env.holm.image.thumbnail`:** gallery previews.
+- **`env.holm.auth`:** the signed-in owner. API keys are app-owned bearer
+  tokens, stored as SHA-256 hashes made with `crypto.subtle`.
+
+The inherited handlers also use DS `{ ifRevision }` updates and blob
+`ttlMs` options. The public v1 guide does not document those options; local
+validation cannot prove their concurrency or idle-cleanup behavior. The
+from-scratch prompt instead asks for documented transactions and request-time
+expiry checks, without promising background deletion.
 
 ## Deploy your own
 
+Run these from the repository root, with the peer and an unused host you
+have chosen:
+
 ```sh
-holm @<peer> app deploy . --spec-v1 --host pastebin.example.com
+holm app validate --spec-v1 pastebin
+holm @<peer> app deploy pastebin --spec-v1 --host pastebin.example.com
 ```
 
-Add `--move` the first time if that host already runs pastebin in Holm's
-original format.
+Validation is local: it checks the folder, not execution or deployment.
+Check the peer's health and host availability first. For an update to your
+own deployed copy, repeat the deploy with `--force`. Use `--move` only when
+you explicitly approve moving an existing older-format app; it is one-way
+and preserves its id, domains, members and stored data.
 
-Set `DEFAULT_ORIGIN` in `api/lib.js` to your host first. Links in API replies
-use it, because the runtime doesn't pass the request host to apps yet. The
-web UI builds its links from the page's own origin and needs no setting.
+Set `DEFAULT_ORIGIN` in `pastebin/api/lib.js` to your public origin first.
+This adapter's link helper falls back to it when no `Host` header is
+available. That is an app implementation detail, not a v1 limitation:
+`request.url` is available to a fresh fetch handler. The browser UI builds
+links from its own origin.
 
-Holm's sign-in page takes the app's name, icon and colour from node settings,
-so give it pastebin's own:
+Holm's sign-in presentation has separate node settings. Inspect the target's
+`settings schema --json` (the guide's operator chapters retain an older
+baseline), then use the app id printed by deploy:
 
 ```sh
-holm settings set settings.apps.<app-id>.brand.name pastebin
-holm settings set settings.apps.<app-id>.brand.icon_url /assets/icon-192-v1.png
-holm settings set settings.apps.<app-id>.theme.accent '#173a72'
+holm @<peer> settings set settings.apps.<app-id>.brand.name pastebin
+holm @<peer> settings set settings.apps.<app-id>.brand.icon_url /assets/icon-192-v1.png
+holm @<peer> settings set settings.apps.<app-id>.theme.accent '#173a72'
 ```
 
-The footer's Send feedback opens the form of the owner's
-[feedback](../feedback/) project. Holm pages run only their own scripts, so
-`web/vendor/feedback/embed.js` is a copy of that app's script, and the page must be
-allowed to frame the feedback app. In your copy, change `data-project` and
-`data-origin` in `web/index.html` to your own project (or delete that script tag
-and the footer button), then:
+The footer's Send feedback uses a local copy at
+`pastebin/web/vendor/feedback/embed.js` and frames the
+[feedback](../feedback/) app. Set `data-project` and `data-origin` in
+`pastebin/web/index.html` to your own project, or remove that script and
+button. The site operator must allow the feedback origin:
 
 ```sh
-holm policy set security.csp.frame_src "https://feedback.example.com" --app <app-id>
+holm @<peer> policy set security.csp.frame_src "https://feedback.example.com" --app <app-id>
 ```
 
-Anyone can sign up by default. To keep the app to yourself, close signup once
-your account exists:
+Sign-up depends on the node's authentication methods and policy. To keep
+the app to yourself, close public signup once your account exists:
 
 ```sh
-holm policy set auth.public_signup false --app <app-id>
+holm @<peer> policy set auth.public_signup false --app <app-id>
 ```
 
 ## API and CLI
@@ -162,8 +192,8 @@ The routes:
 | `POST /api/p/<slug>/open` | Open a one-time paste, which uses it up |
 | `GET /raw/<slug>` | Plain text |
 
-`pb` wraps the same API. It reads the key from `PB_KEY`, then from
-`~/.config/pastebin/key`, and the host from `PB_URL`:
+`pb`, served from `web/cli/pb`, wraps the same API. It reads the key from
+`PB_KEY` or the key saved by `pb login`, and the host from `PB_URL`:
 
 ```sh
 pb login pb_...                   # save a key
@@ -188,24 +218,21 @@ pb revoke <slug>                  # kill the link now
 
 ## Known limits
 
-- iOS Safari won't play served video, because the runtime doesn't answer
-  HTTP Range requests yet. Desktop and Android play it, and every file has a
-  Download link.
-- The API takes JSON or multipart bodies; a raw `text/plain` body isn't
-  readable by apps yet.
+- The file-serving code returns whole files, not HTTP Range responses;
+  playback can vary by browser. Every file has a Download link.
+- This app's adapter decodes JSON and multipart, not raw `text/plain`.
+  V1 itself supports `request.text()`; a fresh handler can read plain text.
+- The inherited revision and blob-expiry options above need runtime checks,
+  especially two simultaneous opens and cleanup after a link expires.
 
 ## Testing
 
-`scripts/smoke.sh` runs 26 JSON assertions against `api/main.js` with
-`holm test run` and a temporary database. Uploads were checked by hand on a
-running node. `holm test run` runs only Holm's original app format, so the
-script stops at its first request against the v1 entry until it learns v1;
-until then, deploy to a local node to test. A fresh test database needs your explicit acceptance of the
-Holm Usage License, so review it with `holm license show`, then run:
-
-```sh
-HOLM_ACCEPT_LICENSE=<id>@<digest> scripts/smoke.sh
-```
+Run `holm app validate --spec-v1 pastebin` from the repository root. It
+checks confined ingestion only: it does not execute the API or its imports.
+`scripts/smoke.sh` still calls the older `holm test run` interface and is not
+v1 runtime proof. On a disposable node, exercise creation, uploads, owner
+access, two simultaneous burn claims, expiry and revocation, then check the
+UI on mobile and desktop in light and dark before deploying publicly.
 
 ## Licenses
 
