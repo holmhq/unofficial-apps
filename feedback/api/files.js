@@ -64,7 +64,7 @@ export function store(checked, projectId, itemId) {
   try {
     checked.forEach(({ file, name, mime }, index) => {
       const path = `files/${projectId}/${itemId}/${index}-${cleanName(name)}`
-      holm.app.s3.put(path, file, mime)
+      holm.app.s3.put(path, file.data, mime)
       const meta = { name, mime, size: file.size || 0, kind: kindOf(mime), path, previewPath: null }
       out.push(meta)
       if (meta.kind === 'image') {

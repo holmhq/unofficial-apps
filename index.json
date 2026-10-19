@@ -59,11 +59,11 @@
     {
       "name": "feedback",
       "path": "feedback",
-      "version": "0.8.1",
-      "tag": "feedback/v0.8.1",
-      "h1": "h1:RkMBeDk9gUgU/bKR5Bd4CpwaTOQv/vjmM+Xe/iCiMm4=",
+      "version": "0.8.2",
+      "tag": "feedback/v0.8.2",
+      "h1": "h1:yHdRNRNccH5oPU/tlsG6yyfbYGf7RMYC8YzWrjpSR5o=",
       "files": 49,
-      "size": 722158,
+      "size": 722163,
       "title": "feedback",
       "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
       "themeColor": "#c2410c",
@@ -73,7 +73,7 @@
         "subtitle": "Feedback for websites, shops and events",
         "category": "Developer tools",
         "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-        "whatsNew": "The README and from-scratch prompt now teach Holm App Spec v1, standard multipart uploads, and explicit framing and validation checks against the public guide.",
+        "whatsNew": "Files and photos upload again: the v1 move had broken attachments on new items.",
         "featured": false,
         "screenshots": [
           {
