@@ -1,3 +1,4 @@
+import { holm } from "./_holm.js";
 // Reads the repository's index.json at a ref, the way a node reading a trusted
 // repository would, and keeps the last good copy in KV. Screenshots named in
 // the index are fetched the same way and cached in blob storage.

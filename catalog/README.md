@@ -7,6 +7,15 @@ manage the store from `/admin`.
 
 It was built from the requests quoted in [`PROMPT.md`](PROMPT.md).
 
+## Holm App Spec v1
+
+catalog uses the Holm App Spec v1 layout: `holm.json` for its name, version
+and web settings, `web/` for the public files, and `api/main.js` for the
+server code. Deploy it with
+`holm @<peer> app deploy catalog --spec-v1 --host <host>` on Holm 0.242 or
+newer. Add `--move` once, for the first deploy over a copy that runs in Holm's
+original format; it moves that app in place and keeps its data.
+
 ## What it does
 
 - **Front page:** a featured app on its own colour, then every app as a row
@@ -50,20 +59,24 @@ It was built from the requests quoted in [`PROMPT.md`](PROMPT.md).
 
 ## How it is built
 
-A Holm app is a folder: static files are served as-is, and `api/main.js`
-handles `/api/*`. There is no build step.
+A Holm app is a folder: the files in `web/` are served as-is, and
+`api/main.js` handles `/api/*`. There is no build step.
 
 ```text
-index.html          page shell and the install <dialog>
-src/app.js          router, front page and app pages
-src/install.js      the install sheet and its commands
-src/account.js      avatar, menu, sign-in overlay
-src/reviews.js      ratings, reviews and the review form
-src/admin.js        /admin
-src/lib.js          DOM and API helpers, the app icon, counting
-src/styles.css      the whole design, light and dark
-assets/             icon, favicon and fonts (SIL OFL 1.1)
-api/main.js         routes (below)
+holm.json           name, version, colour, SPA routing, store metadata
+web/                public files, served as-is:
+  index.html        page shell and the install <dialog>
+  src/app.js        router, front page and app pages
+  src/install.js    the install sheet and its commands
+  src/account.js    avatar, menu, sign-in overlay
+  src/reviews.js    ratings, reviews and the review form
+  src/admin.js      /admin
+  src/lib.js        DOM and API helpers, the app icon, counting
+  src/styles.css    the whole design, light and dark
+  assets/           icon, favicon and fonts (SIL OFL 1.1)
+api/main.js         v1 entry: hands /api requests to the routes
+api/_holm.js        gives the routes `holm` and `respond` for each request
+api/_legacy_main.js routes (below), written in Holm's original app format
 api/index.js        reads index.json and screenshots from GitHub, cached
 api/store.js        settings, counters and reviews
 api/lib.js          responses, request checks, who is asking
@@ -73,8 +86,8 @@ listing/            this app's store listing (not deployed)
 
 Everything the store shows comes from the repository's
 [`index.json`](../index.json), which `scripts/index.mjs` builds from each
-app's manifest, its `holm.symbol.svg` and its `listing/` folder; see the root
-README. The Holm primitives it uses, all described in
+app's `holm.json`, its `holm.symbol.svg` and its `listing/` folder; see the
+root README. The Holm primitives it uses, all described in
 <https://holmhq.com/llm.txt>:
 
 - **`holm.net.fetch`:** reads `index.json` and screenshots from
@@ -101,13 +114,16 @@ App icons are drawn, not downloaded: the index carries each app's
 
 ## Deploy your own
 
-For a fork, point `SOURCE` in `api/index.js` and `REPO` in `src/lib.js` at
-your repository, then:
+For a fork, point `SOURCE` in `api/index.js` and `REPO` in `web/src/lib.js`
+at your repository, then:
 
 ```sh
-holm app deploy catalog --host apps.example.com --spa --no-build
-holm net allow raw.githubusercontent.com --app <app-id>
+holm @<peer> app deploy catalog --spec-v1 --host apps.example.com
+holm @<peer> net allow raw.githubusercontent.com --app <app-id>
 ```
+
+Add `--move` to the deploy the first time if that host already runs catalog in
+Holm's original format.
 
 Holm's sign-in page takes the app's name, icon and colour from node settings,
 so give it the store's own (the tint chosen in `/admin` stays inside the
@@ -151,4 +167,4 @@ The API:
 ## Licenses
 
 The app is MIT-licensed (see the repository `LICENSE`). Bricolage Grotesque
-and Fragment Mono are under the SIL OFL 1.1, in `assets/fonts/`.
+and Fragment Mono are under the SIL OFL 1.1, in `web/assets/fonts/`.

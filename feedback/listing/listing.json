@@ -2,7 +2,7 @@
   "subtitle": "Feedback for websites, shops and events",
   "category": "Developer tools",
   "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-  "whatsNew": "Room for hundreds: your projects in a calm panel with each one's site and icon (pick from 48, or keep the random one), and an inbox that sorts by newest, votes or rating and filters by when, where and who can get a reply. Fifty at a time, with a count, a Clear, and / to search.",
+  "whatsNew": "The same app in the Holm App Spec v1 layout: holm.json, web/ and api/main.js. Deploy it with --spec-v1 on Holm 0.242 or newer.",
   "screenshots": [
     {
       "file": "widget.webp",

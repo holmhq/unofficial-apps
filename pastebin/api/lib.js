@@ -1,3 +1,4 @@
+import { holm } from "./_holm.js";
 // Shared helpers. App storage is shared; every owner lookup is explicitly scoped.
 export const ds = () => holm.app.ds
 export const now = () => Date.now()

@@ -1,0 +1,23 @@
+{
+  "name": "feedback",
+  "version": "0.8.0",
+  "title": "feedback",
+  "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
+  "themeColor": "#c2410c",
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    }
+  },
+  "publish": {
+    "exclude": [
+      "/listing/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://feedback.zyt.app"
+    }
+  }
+}

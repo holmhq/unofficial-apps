@@ -1,91 +1,95 @@
-import { readIndex, readScreenshot, REF } from './index.js'
-import { ok, fail, reject, body, member, isAdmin, requireMember, requireAdmin, profile } from './lib.js'
-import { settings, saveSettings, KINDS, count, stats, ratings, reviewsFor, saveReview, deleteOwnReview, allReviews, moderate, removeReview } from './store.js'
+// Holm App Spec v1 entry for server code written in Holm's original app format, which is kept
+// unchanged in ./_legacy_main.js. API paths go to that handler; everything else is web/.
+import { bind, takeResponded } from "./_holm.js";
+import handler from "./_legacy_main.js";
 
-const APP = /^[a-z0-9][a-z0-9-]{0,63}$/
+const API_PREFIXES = ["/api"];
+const JSON_TYPE = /^application\/(?:[\w.-]+\+)?json\s*(?:;|$)/i;
 
-// The repository's apps as this viewer may see them: hidden ones only for
-// admins, and each with its approved rating.
-function visibleIndex(ref, admin) {
-  const result = readIndex(ref)
-  const hidden = settings().hidden
-  const scores = ratings()
-  const apps = result.index.apps
-    .filter(app => admin || !hidden.includes(app.path))
-    .map(app => ({ ...app, hidden: hidden.includes(app.path), rating: scores[app.path] || null }))
-  return { ...result, index: { ...result.index, apps } }
-}
-
-function knownApp(path, admin) {
-  const listed = APP.test(path || '') && readIndex('main').index.apps.some(app => app.path === path)
-  if (!listed || (!admin && settings().hidden.includes(path))) reject(404, 'not_found', 'No such app in this store.')
-  return path
-}
-
-function route(request, method, parts) {
-  const query = request.query || {}
-  const admin = isAdmin()
-
-  if (parts[1] === 'me' && parts.length === 2 && method === 'GET') {
-    const value = member()
-    return ok({ authenticated: !!value, member: value ? { ...profile(value), email: value.email || '' } : null, admin })
-  }
-
-  if (parts[1] === 'index' && parts.length === 2 && method === 'GET') {
-    const ref = String(query.ref || 'main')
-    if (!REF.test(ref)) reject(400, 'invalid_ref', 'A ref is a branch, tag or commit made of letters, digits, ".", "_", "-" and "/".')
-    return ok({ ...visibleIndex(ref, admin), settings: { tint: settings().tint } }, 200, 'private, max-age=30')
-  }
-
-  if (parts[1] === 'file' && parts.length === 2 && method === 'GET') {
-    const ref = String(query.ref || 'main')
-    if (!REF.test(ref)) reject(400, 'invalid_ref', 'Unknown ref.')
-    const app = String(query.app || '')
-    if (!admin && settings().hidden.includes(app)) reject(404, 'not_found', 'No such screenshot in the index.')
-    const shot = readScreenshot(ref, app, String(query.path || ''))
-    return { status: 200, body: shot.data, headers: { 'Content-Type': shot.type, 'Cache-Control': 'public, max-age=3600', 'X-Content-Type-Options': 'nosniff' } }
-  }
-
-  if (parts[1] === 'events' && parts.length === 2 && method === 'POST') {
-    const input = body(request)
-    if (!KINDS.includes(input.kind)) reject(400, 'invalid_kind', 'Kind is view, get or copy.')
-    const app = knownApp(input.app, admin)
-    // An admin trying their own store shouldn't inflate its numbers.
-    if (!admin) count(app, input.kind)
-    return ok({}, 202)
-  }
-
-  if (parts[1] === 'reviews' && parts.length === 3) {
-    const app = knownApp(parts[2], admin)
-    if (method === 'GET') return ok(reviewsFor(app, member()))
-    if (method === 'PUT') return ok({ mine: saveReview(app, requireMember(), body(request)) })
-    if (method === 'DELETE') { deleteOwnReview(app, requireMember()); return ok({ mine: null }) }
-  }
-
-  if (parts[1] === 'admin') {
-    requireAdmin()
-    if (parts.length === 2 && method === 'GET') {
-      return ok({ apps: visibleIndex('main', true).index.apps, stats: stats(), reviews: allReviews(), settings: settings() })
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (!API_PREFIXES.some((p) => url.pathname === p || url.pathname.startsWith(p + "/"))) {
+      return env.holm.web.fetch(request);
     }
-    if (parts[2] === 'settings' && parts.length === 3 && method === 'PUT') return ok({ settings: saveSettings(body(request)) })
-    if (parts[2] === 'reviews' && parts.length === 4) {
-      if (method === 'POST') return ok({ review: moderate(parts[3], body(request).status) })
-      if (method === 'DELETE') { removeReview(parts[3]); return ok({}) }
-    }
-  }
+    bind(env.holm);
+    const req = await originalRequest(request, url);
+    if (req instanceof Response) return req;
+    const result = await handler(req);
+    return toResponse(result === undefined ? takeResponded() : result);
+  },
+};
 
-  reject(404, 'not_found', 'Route not found.')
+// The request object of the original format: first value per query key and header,
+// canonical header names, parsed JSON bodies, multipart fields and files.
+async function originalRequest(request, url) {
+  const query = {};
+  for (const [k, v] of url.searchParams) if (!(k in query)) query[k] = v;
+  const headers = {};
+  for (const [k, v] of request.headers) {
+    const name = k.replace(/(^|-)([a-z])/g, (_, d, c) => d + c.toUpperCase());
+    if (!(name in headers)) headers[name] = v;
+  }
+  const out = { method: request.method, path: url.pathname, query, headers };
+  if (request.method === "GET" || request.method === "HEAD") return out;
+  const type = request.headers.get("content-type") || "";
+  if (JSON_TYPE.test(type)) {
+    const text = await request.text();
+    try {
+      out.body = text.trim() === "" ? undefined : JSON.parse(text);
+    } catch {
+      return Response.json({ error: "invalid JSON body" }, { status: 400 });
+    }
+  } else if (/multipart\/form-data/i.test(type) && typeof request.formData === "function") {
+    const form = await request.formData();
+    const fields = {};
+    const files = {};
+    for (const [k, v] of form) {
+      if (typeof v === "string") {
+        if (!(k in fields)) fields[k] = v;
+      } else if (!(k in files)) {
+        files[k] = { name: v.name, type: v.type, size: v.size, data: await v.arrayBuffer() };
+      }
+    }
+    if (Object.keys(fields).length) out.body = fields;
+    out.files = files;
+  }
+  return out;
 }
 
-export default async function handler(request) {
-  const method = String(request.method || 'GET').toUpperCase()
-  const parts = String(request.path || '/').replace(/\/+$/, '').split('/').filter(Boolean)
+// The original format's answers: a Response, a { status, headers, body } object, or a bare body.
+function toResponse(value) {
+  if (value instanceof Response) return value;
+  let status = 200;
+  let headers = {};
+  let body = value;
+  if (value !== null && typeof value === "object" && !Array.isArray(value) &&
+      !(value instanceof ArrayBuffer) && !ArrayBuffer.isView(value)) {
+    status = typeof value.status === "number" ? Math.trunc(value.status) : 200;
+    headers = value.headers && typeof value.headers === "object" ? value.headers : {};
+    body = value.body;
+  }
+  const h = new Headers();
+  for (const [k, v] of Object.entries(headers)) h.set(k, String(v));
+  if (!h.has("content-type")) h.set("content-type", "application/json");
+  const json = /application\/json/i.test(h.get("content-type"));
+  if (body === undefined || body === null) return new Response(null, { status, headers: h });
+  if (typeof body === "string") {
+    return new Response(json ? body : base64OrText(body), { status, headers: h });
+  }
+  if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) return new Response(body, { status, headers: h });
+  return new Response(JSON.stringify(body) + "\n", { status, headers: h });
+}
+
+// The original format decoded a non-JSON string body when it was valid standard base64.
+function base64OrText(s) {
+  if (s.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(s)) return s;
   try {
-    if (parts[0] !== 'api') reject(404, 'not_found', 'Route not found.')
-    return route(request, method, parts)
-  } catch (error) {
-    if (error.public) return fail(error.status || 502, error.code || 'unavailable', String(error.message).replace(/\.?$/, '.'))
-    if (/^NET_/.test(error.code || '')) return fail(502, 'unavailable', `The repository could not be read (${error.code}).`)
-    return fail(500, 'internal_error', 'The request could not be completed.')
+    const bin = atob(s);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  } catch {
+    return s;
   }
 }

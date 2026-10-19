@@ -1,3 +1,4 @@
+import { holm } from "./_holm.js";
 // The store's own state: settings, light counters and reviews.
 import { reject, text, profile } from './lib.js'
 

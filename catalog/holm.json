@@ -1,0 +1,23 @@
+{
+  "name": "catalog",
+  "version": "0.4.0",
+  "title": "catalog",
+  "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
+  "themeColor": "#0e7c66",
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    }
+  },
+  "publish": {
+    "exclude": [
+      "/listing/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://unofficial.zyt.app"
+    }
+  }
+}

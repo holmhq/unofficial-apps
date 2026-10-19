@@ -1,3 +1,4 @@
+import { holm } from "./_holm.js";
 import {
   ds, now, iso, ok, reject, random, body, boolean, text, expiry, state, member, origin, absolute,
   MAX_CONTENT, MAX_FILE, MAX_TOTAL, GRANT_MS, getPaste, requireLive, grantLive, purge, paths,

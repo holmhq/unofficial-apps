@@ -1,3 +1,4 @@
+import { holm } from "./_holm.js";
 // A public page's look: its logo and cover picture. They're resized as
 // they're uploaded, kept beside the project's files (so deleting the project
 // deletes them), and served to anyone, since the page they dress is public.

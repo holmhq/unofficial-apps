@@ -10,6 +10,15 @@ each version is at [`/changelog`](https://feedback.zyt.app/changelog).
 Live at <https://feedback.zyt.app>. It was built from the request quoted in
 [`PROMPT.md`](PROMPT.md).
 
+## Holm App Spec v1
+
+feedback uses the Holm App Spec v1 layout: `holm.json` for its name, version
+and web settings, `web/` for the public files, and `api/main.js` for the
+server code. Deploy it with
+`holm @<peer> app deploy feedback --spec-v1 --host <host>` on Holm 0.242 or
+newer. Add `--move` once, for the first deploy over a copy that runs in Holm's
+original format; it moves that app in place and keeps its data.
+
 ## What it does
 
 - **The button,** on your site: a pill with your text, or a round icon, in
@@ -147,35 +156,39 @@ holm policy set security.csp.frame_src "https://feedback.zyt.app" --app <site-ap
 
 ## How it is built
 
-A Holm app is a folder: static files are served as-is, and `api/main.js`
-handles `/api/*`. There is no build step.
+A Holm app is a folder: the files in `web/` are served as-is, and
+`api/main.js` handles `/api/*`. There is no build step.
 
 ```text
-index.html          the app: landing, projects, inbox, stats, feedback pages
-embed.js            the script sites add: button and panel in a shadow root
-widget.html         the form inside the panel
-preview.html        a stand-in site running embed.js, for the previews
-changelog.json      what changed in each version, for /changelog
-src/app.js          router, landing and projects
-src/project.js      inbox, item page, design, form, share and set up
-src/board.js        a project's feedback page
-src/compose.js      the form, shared by the panel and the feedback page
-src/compose.css     the form's and the dropdown's look, for both
-src/stats.js        the stats views and their chart
-src/changelog.js    the changelog page
-src/preview.js      starts embed.js on the stand-in site
-src/qr.js           QR codes and the poster
-src/icons.js        a project's mark: its logo, icon or initial
-src/account.js      avatar, menu, theme and Holm's sign-in page in an overlay
-src/keys.js         the API keys page
-src/widget.js       the panel's logic
-src/lib.js          DOM, API and formatting helpers, icons, dropdown,
+holm.json           name, version, colour, SPA routing, store metadata
+web/                public files, served as-is:
+  index.html        the app: landing, projects, inbox, stats, feedback pages
+  embed.js          the script sites add: button and panel in a shadow root
+  widget.html       the form inside the panel
+  preview.html      a stand-in site running embed.js, for the previews
+  changelog.json    what changed in each version, for /changelog
+  src/app.js        router, landing and projects
+  src/project.js    inbox, item page, design, form, share and set up
+  src/board.js      a project's feedback page
+  src/compose.js    the form, shared by the panel and the feedback page
+  src/compose.css   the form's and the dropdown's look, for both
+  src/stats.js      the stats views and their chart
+  src/changelog.js  the changelog page
+  src/preview.js    starts embed.js on the stand-in site
+  src/qr.js         QR codes and the poster
+  src/icons.js      a project's mark: its logo, icon or initial
+  src/account.js    avatar, menu, theme and Holm's sign-in page in an overlay
+  src/keys.js       the API keys page
+  src/widget.js     the panel's logic
+  src/lib.js        DOM, API and formatting helpers, icons, dropdown,
                     segmented choice and code box
-src/styles.css      the app's design;  src/widget.css  the panel's
-assets/             icon, favicon, link preview and fonts (SIL OFL 1.1)
-vendor/qrcode/      qrcode-generator 2.0.4 (MIT)
-vendor/lucide/      48 Lucide icons (ISC; MIT for those from Feather)
-api/main.js         routes (below)
+  src/styles.css    the app's design;  src/widget.css  the panel's
+  assets/           icon, favicon, link preview and fonts (SIL OFL 1.1)
+  vendor/qrcode/    qrcode-generator 2.0.4 (MIT)
+  vendor/lucide/    48 Lucide icons (ISC; MIT for those from Feather)
+api/main.js         v1 entry: hands /api requests to the routes
+api/_holm.js        gives the routes `holm` and `respond` for each request
+api/_legacy_main.js routes (below), written in Holm's original app format
 api/projects.js     projects, their settings and custom addresses
 api/items.js        sending, triage, notes, the page and votes
 api/files.js        attachments: checks, storage, previews, serving
@@ -213,8 +226,9 @@ The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
   jsDelivr, where Holm's own `holmhq/cdn` repository is served; the rating
   loads from there, pinned to one commit and checked by its SHA-384 hash.
 - **Head metadata:** Holm fills in link-preview tags a page leaves out, with
-  its own text and picture. `index.html` writes every one except `og:url`,
-  so a shared link shows feedback's title, description and `assets/og.png`.
+  its own text and picture. `web/index.html` writes every one except
+  `og:url`, so a shared link shows feedback's title, description and
+  `assets/og.png`.
 
 | Route | Who | Purpose |
 | --- | --- | --- |
@@ -286,14 +300,17 @@ the runtime doesn't pass the request host to apps yet. Set it to your host.
 ## Deploy your own
 
 ```sh
-holm app deploy feedback --host feedback.example.com --spa --no-build
+holm @<peer> app deploy feedback --spec-v1 --host feedback.example.com
 ```
+
+Add `--move` the first time if that host already runs feedback in Holm's
+original format.
 
 Set `ORIGIN` in `api/projects.js` to your host first (see API). The footer's
 Feedback link goes to a project on feedback.zyt.app; on your copy it stays
-hidden, or make a project for your own and put its id in `index.html`. Holm's
-sign-in page takes the app's name, icon and colour from node settings, so give
-it feedback's own:
+hidden, or make a project for your own and put its id in `web/index.html`.
+Holm's sign-in page takes the app's name, icon and colour from node settings,
+so give it feedback's own:
 
 ```sh
 holm settings set settings.apps.<app-id>.brand.name feedback
@@ -343,18 +360,18 @@ holm policy set auth.public_signup false --app <app-id>
 ## Licenses
 
 The app is MIT-licensed (see the repository `LICENSE`). Bricolage Grotesque
-and Fragment Mono are under the SIL OFL 1.1, in `assets/fonts/`.
+and Fragment Mono are under the SIL OFL 1.1, in `web/assets/fonts/`.
 feed-stars 0.0.3, the star rating, is MIT-licensed and loaded from Holm's
 own [`holmhq/cdn`](https://github.com/holmhq/cdn) through jsDelivr; its
 animation is adapted from Aaron Iker's "Stars rating animation" on CodePen.
 The project icons are from Lucide (lucide-static 1.52.0), ISC-licensed, with
 those derived from Feather under the MIT licence; both are in
-`vendor/lucide/LICENSE`. qrcode-generator 2.0.4 by Kazuhiko Arase is
-MIT-licensed, in `vendor/qrcode/` with its `LICENSE`. "QR Code" is a
+`web/vendor/lucide/LICENSE`. qrcode-generator 2.0.4 by Kazuhiko Arase is
+MIT-licensed, in `web/vendor/qrcode/` with its `LICENSE`. "QR Code" is a
 registered trademark of DENSO WAVE INCORPORATED.
 
 The icon, a smiling speech bubble, is by Side Project from
 [Noun Project](https://thenounproject.com) and is used under
 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). It was rescaled
 into Holm's 24 × 24 symbol frame for `holm.symbol.svg`, and appears in
-`assets/icon.svg`, `assets/favicon.svg` and the page header.
+`web/assets/icon.svg`, `web/assets/favicon.svg` and the page header.

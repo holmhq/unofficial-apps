@@ -7,6 +7,15 @@ name stays hidden unless they choose to show it.
 Live at <https://pastebin.zyt.app>. It was built from the three short requests
 quoted in [`PROMPT.md`](PROMPT.md), which also has reusable versions of them.
 
+## Holm App Spec v1
+
+pastebin uses the Holm App Spec v1 layout: `holm.json` for its name, version
+and web settings, `web/` for the public files, and `api/main.js` for the
+server code. Deploy it with
+`holm @<peer> app deploy pastebin --spec-v1 --host <host>` on Holm 0.242 or
+newer. Add `--move` once, for the first deploy over a copy that runs in Holm's
+original format; it moves that app in place and keeps its data.
+
 ## What it does
 
 - **Write:** a composer with live syntax highlighting and language
@@ -46,24 +55,28 @@ quoted in [`PROMPT.md`](PROMPT.md), which also has reusable versions of them.
 
 ## How it is built
 
-A Holm app is a folder. Static files are served as-is, and `api/main.js`
-handles `/api/*` (plus `/raw/*`, declared in `manifest.json`). There is no
-build step and no dependency to install.
+A Holm app is a folder. The files in `web/` are served as-is, and
+`api/main.js` handles `/api/*` (plus `/raw/*`, listed in its `API_PREFIXES`).
+There is no build step and no dependency to install.
 
 ```text
-index.html              shell; applies the saved theme before first paint
-src/                    browser app: router, composer, viewer, lists, Markdown (ES modules)
-vendor/highlight/       highlight.js 11.11.1 (BSD-3-Clause)
-vendor/marked/          marked 18.0.14, GFM parser (MIT), loaded only for Markdown
-vendor/dompurify/       DOMPurify 3.4.16, HTML sanitizer (Apache-2.0 or MPL-2.0)
-vendor/feedback/        embed.js from this repository's feedback app (MIT)
-assets/                 icons, social card, fonts (SIL OFL 1.1)
-api/main.js             router
+holm.json               name, version, colour, SPA routing, store metadata
+web/                    public files, served as-is:
+  index.html            shell; applies the saved theme before first paint
+  src/                  browser app: router, composer, viewer, lists, Markdown (ES modules)
+  vendor/highlight/     highlight.js 11.11.1 (BSD-3-Clause)
+  vendor/marked/        marked 18.0.14, GFM parser (MIT), loaded only for Markdown
+  vendor/dompurify/     DOMPurify 3.4.16, HTML sanitizer (Apache-2.0 or MPL-2.0)
+  vendor/feedback/      embed.js from this repository's feedback app (MIT)
+  assets/               icons, social card, fonts (SIL OFL 1.1)
+  cli/pb                POSIX sh CLI (curl + jq)
+api/main.js             v1 entry: hands /api and /raw requests to the router
+api/_holm.js            gives the router its `holm` and `respond` for each request
+api/_legacy_main.js     router, written in Holm's original app format
 api/pastes.js           create, list, owner actions, public read, burn claim, files
 api/keys.js             API keys and /api/me
 api/lib.js              validation, expiry state, purge, safe file responses
-cli/pb                  POSIX sh CLI (curl + jq)
-scripts/smoke.sh        runtime smoke through `holm test run`
+scripts/smoke.sh        runtime smoke through `holm test run` (not deployed)
 holm.symbol.svg         app icon: one black path that stores paint on the theme colour
 listing/                store listing and screenshots (not deployed)
 ```
@@ -82,8 +95,11 @@ The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
 ## Deploy your own
 
 ```sh
-holm app deploy . --host pastebin.example.com --spa --no-build
+holm @<peer> app deploy . --spec-v1 --host pastebin.example.com
 ```
+
+Add `--move` the first time if that host already runs pastebin in Holm's
+original format.
 
 Set `DEFAULT_ORIGIN` in `api/lib.js` to your host first. Links in API replies
 use it, because the runtime doesn't pass the request host to apps yet. The
@@ -100,9 +116,9 @@ holm settings set settings.apps.<app-id>.theme.accent '#173a72'
 
 The footer's Send feedback opens the form of the owner's
 [feedback](../feedback/) project. Holm pages run only their own scripts, so
-`vendor/feedback/embed.js` is a copy of that app's script, and the page must be
+`web/vendor/feedback/embed.js` is a copy of that app's script, and the page must be
 allowed to frame the feedback app. In your copy, change `data-project` and
-`data-origin` in `index.html` to your own project (or delete that script tag
+`data-origin` in `web/index.html` to your own project (or delete that script tag
 and the footer button), then:
 
 ```sh
@@ -182,7 +198,9 @@ pb revoke <slug>                  # kill the link now
 
 `scripts/smoke.sh` runs 26 JSON assertions against `api/main.js` with
 `holm test run` and a temporary database. Uploads were checked by hand on a
-running node. A fresh test database needs your explicit acceptance of the
+running node. `holm test run` runs only Holm's original app format, so the
+script stops at its first request against the v1 entry until it learns v1;
+until then, deploy to a local node to test. A fresh test database needs your explicit acceptance of the
 Holm Usage License, so review it with `holm license show`, then run:
 
 ```sh
@@ -194,8 +212,8 @@ HOLM_ACCEPT_LICENSE=<id>@<digest> scripts/smoke.sh
 The app is MIT-licensed (see the repository `LICENSE`). Vendored parts keep
 their own licenses:
 
-- highlight.js: BSD-3-Clause, `vendor/highlight/LICENSE`.
-- marked: MIT, `vendor/marked/LICENSE`.
-- DOMPurify: Apache-2.0 or MPL-2.0, `vendor/dompurify/LICENSE`.
+- highlight.js: BSD-3-Clause, `web/vendor/highlight/LICENSE`.
+- marked: MIT, `web/vendor/marked/LICENSE`.
+- DOMPurify: Apache-2.0 or MPL-2.0, `web/vendor/dompurify/LICENSE`.
 - feedback's `embed.js`: MIT, part of this repository.
-- Bricolage Grotesque and Fragment Mono: SIL OFL 1.1, `assets/fonts/`.
+- Bricolage Grotesque and Fragment Mono: SIL OFL 1.1, `web/assets/fonts/`.

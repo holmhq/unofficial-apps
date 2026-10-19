@@ -5,11 +5,11 @@
     {
       "name": "catalog",
       "path": "catalog",
-      "version": "0.3.2",
-      "tag": "catalog/v0.3.2",
-      "h1": "h1:vWUeGwECRO3cxVQLEusdZqBYIrJQnPQ3Qmj/UP/BdGI=",
-      "files": 22,
-      "size": 206062,
+      "version": "0.4.0",
+      "tag": "catalog/v0.4.0",
+      "h1": "h1:mHFst4Oc4/ZX3T9/cE7lsP19pvwWkXmHjMjs1NN/TUE=",
+      "files": 24,
+      "size": 212305,
       "title": "catalog",
       "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
       "themeColor": "#0e7c66",
@@ -19,7 +19,7 @@
         "subtitle": "A store for app repositories",
         "category": "Developer tools",
         "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
-        "whatsNew": "PROMPT.md records the request that branded Holm's sign-in page.",
+        "whatsNew": "The same app in the Holm App Spec v1 layout: holm.json, web/ and api/main.js. Deploy it with --spec-v1 on Holm 0.242 or newer.",
         "featured": false,
         "screenshots": [
           {
@@ -59,11 +59,11 @@
     {
       "name": "feedback",
       "path": "feedback",
-      "version": "0.7.1",
-      "tag": "feedback/v0.7.1",
-      "h1": "h1:nAet2DWMv5H0IGmlpxNS8HolXoJrS8dNLd7+JtKuFLo=",
-      "files": 47,
-      "size": 715581,
+      "version": "0.8.0",
+      "tag": "feedback/v0.8.0",
+      "h1": "h1:tSljEU2PFTg5P9jyWS/2GHffRE/xENZCrTHmi59xx+I=",
+      "files": 49,
+      "size": 721833,
       "title": "feedback",
       "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
       "themeColor": "#c2410c",
@@ -73,7 +73,7 @@
         "subtitle": "Feedback for websites, shops and events",
         "category": "Developer tools",
         "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-        "whatsNew": "Room for hundreds: your projects in a calm panel with each one's site and icon (pick from 48, or keep the random one), and an inbox that sorts by newest, votes or rating and filters by when, where and who can get a reply. Fifty at a time, with a count, a Clear, and / to search.",
+        "whatsNew": "The same app in the Holm App Spec v1 layout: holm.json, web/ and api/main.js. Deploy it with --spec-v1 on Holm 0.242 or newer.",
         "featured": false,
         "screenshots": [
           {
@@ -143,11 +143,11 @@
     {
       "name": "pastebin",
       "path": "pastebin",
-      "version": "0.2.1",
-      "tag": "pastebin/v0.2.1",
-      "h1": "h1:koDwavDiIKD1tPevPND6GRBBJXDJ4C7xinc3p2r4Qeo=",
-      "files": 40,
-      "size": 588894,
+      "version": "0.3.0",
+      "tag": "pastebin/v0.3.0",
+      "h1": "h1:gcDY5oW4D58xjvPPszVqh9/r2AVea2uJo2j2kyGbzZ4=",
+      "files": 42,
+      "size": 595305,
       "title": "pastebin",
       "description": "Private-first text, code and media pastes with expiring links and burn-after-read sharing.",
       "themeColor": "#173a72",
@@ -157,7 +157,7 @@
         "subtitle": "Links that expire or burn",
         "category": "Utilities",
         "description": "Paste text, code or files and share them behind a link that expires, opens only once, or can be revoked at any time.\n\nCode is highlighted as you type. Markdown renders like GitHub's, and images, video and audio play in place. Your name stays off the paste unless you choose to show it.\n\nAPI keys and a small command-line tool let scripts and agents file pastes for you.",
-        "whatsNew": "PROMPT.md records the request behind the sign-in branding notes.",
+        "whatsNew": "The same app in the Holm App Spec v1 layout: holm.json, web/ and api/main.js. Deploy it with --spec-v1 on Holm 0.242 or newer.",
         "featured": true,
         "screenshots": [
           {
