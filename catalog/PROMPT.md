@@ -1,75 +1,60 @@
 # Prompt
 
-Give these to a coding agent in a clone of a repository of Holm apps, on a
-machine that has the `holm` CLI and a node to deploy to. Its only source of
-Holm knowledge is the public reference at <https://holmhq.com/llm.txt>. Send
-them in order, one message each.
+Give the build request below to a coding agent with the `holm` CLI and a
+node you control. Its only Holm reference is <https://holmhq.com/llm.txt>,
+which now teaches v1. The request defines the repository's store conventions
+itself; no private plan or existing catalog is needed.
 
-## 1. Build it
-
-```text
-Make this repository installable app by app, and build a catalog for it as a
-Holm app. Use https://holmhq.com/llm.txt as your only Holm reference.
-
-- Each top-level folder with a manifest.json is an app. Give each a version.
-- Write scripts/index.mjs (Node, no dependencies). It writes index.json at
-  the root: one entry per app with its name, path, version, a release tag
-  named <app>/v<version>, and h1, a fingerprint of the files Holm would
-  deploy, computed like Go's dirhash.Hash1 (as in go.sum). With --check it
-  fails if index.json is out of date or an app changed after its version was
-  tagged; with --tag it tags new versions.
-- Run the check in CI, and tag new versions on main.
-- In catalog/, build a page that reads index.json from GitHub on the server
-  and shows each app with every way to install it on my node: clone and
-  deploy, `holm app install` (not in Holm yet), and a prompt for a coding
-  agent. Trusting the repository is one command, `holm app repo add`. Let me
-  enter my peer and domain once, so every command fits my node.
-- Deploy it to unofficial.<my-domain>.
-```
-
-## 2. Make it an app store
+## Build from scratch
 
 ```text
-Make the catalog look and work like Apple's App Store.
+Build a catalog as a Holm App Spec v1 app using only
+https://holmhq.com/llm.txt for Holm; read sections 9–12 first. Use catalog/
+with holm.json (web.spa true), public web/ files, api/main.js exporting
+default { async fetch(request, env) }, standard Request/Response, env.holm
+storage/auth and env.holm.web.fetch(request) fallback. No build step or
+third-party runtime CDN; vendor fonts and any libraries with licenses.
 
-- A front page with a featured app and a list of every app: icon, name,
-  subtitle and a Get button.
-- A page for each app at /apps/<app>: icon, subtitle, version, size,
-  category, swipeable screenshots, description, what's new, the prompt that
-  built it, and an information section.
-- Get opens a sheet with the install commands written for my node.
-- Each app keeps its store listing in a listing/ folder (listing.json and
-  screenshots) that isn't deployed. Its icon is holm.symbol.svg: one black
-  path, no strokes, in a 0 0 24 24 viewBox, fitted tight and centred; the
-  store paints it white on the app's theme colour. Fold both into
-  index.json.
-- Don't show the h1 fingerprint to people; nodes use it, readers don't need
-  it.
-- Take real screenshots of each app with sample data.
-```
+- Define these repository conventions, not a claimed Holm store protocol:
+  each top-level app has holm.json version, holm.symbol.svg (one black path,
+  no strokes, 0 0 24 24) and listing/listing.json with subtitle, category,
+  description, whatsNew and sample screenshots. Write a dependency-free
+  Node scripts/index.mjs emitting root index.json: name/path/version,
+  <app>/v<version> tag, h1 SHA-256 file fingerprint, size/count, identity,
+  symbol path, listing and PROMPT text. Hash sorted app-relative paths and
+  file SHA-256 values, then hash those “<hex>  <path>\n” lines and prefix
+  the base64 digest with h1:. Exclude listing/ and hidden files; count README
+  and PROMPT too. --check detects stale indexes or changed release tags;
+  --tag creates missing tags. CI checks then tags versions on main.
+- An App Store-like front page with a featured app and rows, each app's own
+  /apps/<app> page: icon/colour, version, size, category, license, swipeable
+  screenshots, description, whatsNew, original prompt and source information.
+  Read the public repository index with synchronous env.holm.net.fetch,
+  not global fetch; cache it in KV and keep the last good index on failure.
+- Get opens a sheet remembering my peer/domain, with working clone-a-tag
+  instructions and holm @<peer> app deploy <app-dir> --spec-v1 --host <host>,
+  plus an agent prompt following the app README. The guide does not define
+  this repo's install-index schema, and app install is unavailable in its
+  operator baseline: any future-install tab must be clearly non-working.
+- Sign in through Holm. Signed-in people may rate/review once per app;
+  edits wait for approval too. /admin hides apps, moderates reviews, shows
+  rough daily views/Get/copy counts in KV and lets me change the tint.
+  Authorize each route with documented isAppOwner()/isAppAdmin() checks.
+  The guide does not document isNodeOwner()/isNodeAdmin(): do not assume
+  those methods or promise node-role access for a fresh build.
+- The guide does not document binary net.fetch responses: do not invent
+  responseType: 'file'. Keep screenshots as public static files in web/
+  until a documented, tested proxy/cache path is available; disclose that
+  gap. Make light/dark mobile/desktop layouts, no sideways scrolling, and
+  an avatar menu and small Holm/source footer.
 
-## 3. Accounts, reviews and an admin
-
-```text
-Add accounts, reviews and an admin to the store.
-
-- An avatar circle at the top right signs in with Holm's sign-in page. Its
-  menu shows Admin to the node's owner and admins (and the app's admins).
-- Signed-in people can rate and review an app. Reviews go public only once
-  an admin approves them.
-- /admin: show or hide apps; count page views, Get taps and copied commands
-  per app, lightly and without tracking who; approve reviews; and pick the
-  store's tint colour.
-- A footer like pastebin's, and make sure it fits iPhones without sideways
-  scrolling.
-```
-
-## 4. Brand Holm's sign-in page
-
-```text
-Holm's sign-in page shows Holm's logo and blue instead of the store's. Give
-the store an icon file, and set the node's per-app brand name, icon and
-accent for it (see llm.txt §6.3 settings).
+Run holm app validate --spec-v1 catalog. With my approval, deploy with
+holm @<peer> app deploy catalog --spec-v1 --host unofficial.<my-domain>.
+Check the peer/unused host and explicitly allow the repository's egress host;
+ask before replacing a host or moving an older-format app. Inspect target
+settings/command help before sign-in branding. Validation is not execution:
+test index fetch/failure, screenshots, ownership/admin denials, moderation,
+copied deploy commands, mobile/desktop and light/dark. Report all gaps.
 ```
 
 ## The original requests
@@ -86,9 +71,9 @@ agent.
 > - and also a JSON at the root with all details of the apps?
 > - so that holm cli can easily list the apps
 
-Asked where the page should get its list, they answered:
-
-> Take a look at how holm has planned the app store; let this one match it so that when the official ones lands, we would have tested these norms
+Asked about the list source, the reply referred to an unpublished plan.
+That private reference is omitted; the build request above defines the
+public repository conventions explicitly.
 
 **Iteration 2**
 
@@ -129,7 +114,8 @@ Holm's native analytics only see requests that reach the server, and the
 store changes pages in the browser, so the agent counted views, Gets and
 copies itself instead.
 
-The prompts above spell out the norms (per-app release tags, the `h1`
-fingerprint, a root `index.json`, the `holm.symbol.svg` icon form), so they
-need nothing beyond the public reference. The visual design, the install
-sheet and the screenshots came from the agent.
+The build request spells out the repository conventions without claiming
+they are a shipped Holm store protocol. It uses the public v1 guide for
+runtime and deploy behavior and states the node-role and binary-fetch gaps.
+The quoted history explains the requested experience; the detailed design,
+install sheet and screenshots were the agent's work.

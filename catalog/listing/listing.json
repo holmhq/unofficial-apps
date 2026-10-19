@@ -2,7 +2,7 @@
   "subtitle": "A store for app repositories",
   "category": "Developer tools",
   "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
-  "whatsNew": "The same app in the Holm App Spec v1 layout: holm.json, web/ and api/main.js. Deploy it with --spec-v1 on Holm 0.242 or newer.",
+  "whatsNew": "The README and from-scratch prompt now teach Holm App Spec v1, distinguish repo conventions from platform APIs, and flag the install sheet's stale commands and public-guide gaps.",
   "screenshots": [
     {
       "file": "store.webp",

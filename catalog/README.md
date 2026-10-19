@@ -1,20 +1,25 @@
 # catalog
 
 An app store for this repository, live at <https://unofficial.zyt.app>. Every
-app gets its own page with ratings and reviews, a Get button opens a sheet
-that installs it on your own Holm node, and the node's owner and admins
-manage the store from `/admin`.
+app gets its own page with ratings and reviews, a Get button opens an install
+sheet, and authorized admins manage the store from `/admin`. The sheet still
+prints older deploy flags: use the v1 command below, not its current copy
+buttons, to install these apps.
 
 It was built from the requests quoted in [`PROMPT.md`](PROMPT.md).
 
 ## Holm App Spec v1
 
-catalog uses the Holm App Spec v1 layout: `holm.json` for its name, version
-and web settings, `web/` for the public files, and `api/main.js` for the
-server code. Deploy it with
-`holm @<peer> app deploy catalog --spec-v1 --host <host>` on Holm 0.242 or
-newer. Add `--move` once, for the first deploy over a copy that runs in Holm's
-original format; it moves that app in place and keeps its data.
+catalog follows [Holm App Spec v1](https://holmhq.com/llm.txt), sections
+9–12: `holm.json` holds identity and web settings, `web/` holds public files,
+and `api/main.js` exports `default { fetch(request, env) }`. Use `env.holm`,
+return standard `Response` objects, and set `web.spa: true` in `holm.json`.
+There is no build step on the node or in this app.
+
+Use a current signed Holm release; the public app guide targets 0.243.2.
+Every deploy needs `--spec-v1`. Only `web/` is served as files: `api/` and
+`holm.json` are not public URLs, and README, PROMPT and listing files stay
+out of this app's deploy. They are still public source in this repository.
 
 ## What it does
 
@@ -30,12 +35,13 @@ original format; it moves that app in place and keeps its data.
 - **The install sheet:** type your peer and domain once and every command is
   written for your node, with your parts highlighted. Three ways, as tabs; the
   one you pick is remembered:
-  - **Terminal:** clone the release tag and `holm app deploy` the folder.
-    Works today.
-  - **Ask an agent:** a prompt for any coding agent to do the same and follow
-    the README.
-  - **`holm app install`:** trust the repository once, then install by name
-    and version. Not in Holm yet, so it's marked as coming.
+  - **Terminal:** clone a release tag and deploy the app folder. Its current
+    command omits `--spec-v1`; use the command in this README instead.
+  - **Ask an agent:** an install prompt; its current command has the same
+    stale flags. Tell the agent to follow the v1 README, not those flags.
+  - **`holm app install`:** a repository-install sketch marked as coming.
+    The guide's operator baseline and the installed CLI report this command
+    as unavailable; it is not a tested install path.
 - **Accounts:** an avatar circle at the top right signs people in through
   Holm's hosted sign-in page, shown in an overlay so nobody loses their
   place. Its menu has Admin for those allowed in, and Sign out.
@@ -59,8 +65,10 @@ original format; it moves that app in place and keeps its data.
 
 ## How it is built
 
-A Holm app is a folder: the files in `web/` are served as-is, and
-`api/main.js` handles `/api/*`. There is no build step.
+A Holm app is a folder. `web/` is served as-is. This app's
+`api/main.js` routes `/api/*`, decodes JSON and converts its answers to
+standard `Response` objects. Other paths go to
+`env.holm.web.fetch(request)` for static files and SPA fallback.
 
 ```text
 holm.json           name, version, colour, SPA routing, store metadata
@@ -84,55 +92,67 @@ holm.symbol.svg     this app's own icon
 listing/            this app's store listing (not deployed)
 ```
 
-Everything the store shows comes from the repository's
-[`index.json`](../index.json), which `scripts/index.mjs` builds from each
-app's `holm.json`, its `holm.symbol.svg` and its `listing/` folder; see the
-root README. The Holm primitives it uses, all described in
+The repository's [`index.json`](../index.json) is generated from each
+app's `holm.json`, `holm.symbol.svg`, `PROMPT.md` and `listing/` metadata;
+see the root README. That index, its version/fingerprint rules and symbol
+format are repository conventions, not a shipped Holm install protocol.
+
+The existing entry delegates to `api/_legacy_main.js`; `api/_holm.js` binds
+`env.holm` for those imported modules on each request. These are migration
+scaffolding, not the v1 authoring contract. For a fresh build, put routes in
+`fetch(request, env)`, using the following documented v1 primitives from
 <https://holmhq.com/llm.txt>:
 
-- **`holm.net.fetch`:** reads `index.json` and screenshots from
-  `raw.githubusercontent.com` at a ref, the same files a node would read from
-  a repository it trusts. Egress is deny-by-default, so the operator allows
-  that one host.
-- **Shared KV, `holm.app.kv`:** the last good index for each ref (refreshed
-  after five minutes) and the freshness marks for cached screenshots.
-- **`holm.auth`:** who is signed in, and whether they are the node's owner or
-  an admin (`isNodeOwner`, `isNodeAdmin`) or one of the app's own
-  (`isAppOwner`, `isAppAdmin`). Every admin route checks on the server.
-- **Document store, `holm.app.ds`:** reviews, one per person per app, with
-  their status.
-- **Shared KV, again:** the settings (tint, hidden apps) and the counters, one
-  key per app, day and kind, each expiring after 40 days. Counting keeps
-  nothing about who, and skips admins.
-- **Blob store, `holm.app.s3`:** cached screenshots. `/api/file` serves only
-  the screenshots the index lists, so the store can't be used to fetch
-  anything else from GitHub. If GitHub doesn't answer, the last good copy is
-  served.
+- **`env.holm.net.fetch`:** synchronous, policy-controlled reads of the
+  repository's public index. Global `fetch()` does not make outbound calls.
+- **`env.holm.app.kv`:** cached indexes, screenshot freshness, store tint,
+  hidden apps and daily counters. Storage calls are synchronous. The index
+  refreshes after five minutes; counters expire after 40 days and contain
+  no visitor identity.
+- **`env.holm.auth`:** sign-in and app-owner/app-admin checks. Every admin
+  route must authorize on the server, not just hide its button.
+- **`env.holm.app.ds`:** reviews, one per member per app, pending until
+  approved.
+- **`env.holm.app.s3`:** screenshot cache served by `/api/file`, restricted
+  to paths the index lists; an existing cached copy can survive a remote
+  fetch failure.
 
-App icons are drawn, not downloaded: the index carries each app's
-`holm.symbol.svg` path, painted in white on the app's theme colour.
+The inherited authorization also calls `isNodeOwner()` and `isNodeAdmin()`;
+its screenshot fetch uses `responseType: 'file'`. Those details are not
+documented in the public v1 guide. Do not infer them from namespace names or
+claim local validation proves them. The from-scratch prompt uses documented
+app-role checks and leaves binary-fetch gaps explicit.
+
+App icons are drawn from SVG path data in the index, painted white on each
+app's `themeColor`.
 
 ## Deploy your own
 
-For a fork, point `SOURCE` in `api/index.js` and `REPO` in `web/src/lib.js`
-at your repository, then:
+For a fork, point `SOURCE` in `catalog/api/index.js` and `REPO` in
+`catalog/web/src/lib.js` at your repository. Run from the repository root,
+with a peer and unused host you have chosen:
 
 ```sh
+holm app validate --spec-v1 catalog
 holm @<peer> app deploy catalog --spec-v1 --host apps.example.com
 holm @<peer> net allow raw.githubusercontent.com --app <app-id>
 ```
 
-Add `--move` to the deploy the first time if that host already runs catalog in
-Holm's original format.
+Use the app id printed by deploy for the egress allowlist. Check the peer's
+health, host availability and target command help first. Validation is local
+and does not execute the app or make remote fetches. Repeat the deploy with
+`--force` only for your own approved update. Use `--move` only when you
+explicitly approve a one-way move of an older-format app; it preserves the
+id, domains, members and stored data.
 
-Holm's sign-in page takes the app's name, icon and colour from node settings,
-so give it the store's own (the tint chosen in `/admin` stays inside the
-store; it can't change node settings):
+Inspect the target's `settings schema --json` before changing sign-in
+branding: the guide's operator chapters retain an older baseline. The tint
+chosen in `/admin` is app data and cannot change node settings:
 
 ```sh
-holm settings set settings.apps.<app-id>.brand.name 'Unofficial Holm apps'
-holm settings set settings.apps.<app-id>.brand.icon_url /assets/icon.svg
-holm settings set settings.apps.<app-id>.theme.accent '#0e7c66'
+holm @<peer> settings set settings.apps.<app-id>.brand.name 'Unofficial Holm apps'
+holm @<peer> settings set settings.apps.<app-id>.brand.icon_url /assets/icon.svg
+holm @<peer> settings set settings.apps.<app-id>.theme.accent '#0e7c66'
 ```
 
 `?ref=<branch>` on any page shows the store at another branch or tag, which is
@@ -154,15 +174,28 @@ The API:
 
 ## Known limits
 
-- Reviews need a way to sign in on the node: magic-link email or an OAuth
-  provider (see section 13 of llm.txt). Anyone who can sign up can review.
+- Reviews need a node sign-in method (see section 13 of
+  <https://holmhq.com/llm.txt>); signup is controlled by node policy.
 - The counters accept anonymous requests and aren't rate-limited, so a
   determined visitor could inflate them. They're a rough guide, not a
   measurement.
-- `holm app install` isn't in Holm yet; the sheet shows the command it is
-  expected to take.
+- The install sheet's Terminal and Ask an agent commands still use the
+  older flags. Replace them with `--spec-v1`; the folder is already v1.
+  The repository-install tab is a sketch, not a working `holm app install`
+  path in the installed CLI.
+- Node-role checks and binary screenshot fetching in the inherited handlers
+  are outside the documented v1 examples. Verify them on your target before
+  treating an admin session or cached image as working.
 - Pages are drawn in the browser, so link previews show the store's generic
   title and description rather than the app's.
+
+## Testing
+
+`holm app validate --spec-v1 catalog` checks confined ingestion only, not
+runtime imports, egress, authentication or copied install commands. On a
+disposable node, test index loading and cached failure, screenshots, hidden
+apps, review moderation and denied admin access. Check mobile/desktop in
+light/dark and the install instructions before deploying publicly.
 
 ## Licenses
 

@@ -5,11 +5,11 @@
     {
       "name": "catalog",
       "path": "catalog",
-      "version": "0.4.0",
-      "tag": "catalog/v0.4.0",
-      "h1": "h1:mHFst4Oc4/ZX3T9/cE7lsP19pvwWkXmHjMjs1NN/TUE=",
+      "version": "0.4.1",
+      "tag": "catalog/v0.4.1",
+      "h1": "h1:8aIEs0H2XSvbV2Ot3pE6CiLpOkQKwLZirtceskg4Wks=",
       "files": 24,
-      "size": 212305,
+      "size": 214982,
       "title": "catalog",
       "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
       "themeColor": "#0e7c66",
@@ -19,7 +19,7 @@
         "subtitle": "A store for app repositories",
         "category": "Developer tools",
         "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
-        "whatsNew": "The same app in the Holm App Spec v1 layout: holm.json, web/ and api/main.js. Deploy it with --spec-v1 on Holm 0.242 or newer.",
+        "whatsNew": "The README and from-scratch prompt now teach Holm App Spec v1, distinguish repo conventions from platform APIs, and flag the install sheet's stale commands and public-guide gaps.",
         "featured": false,
         "screenshots": [
           {
@@ -54,7 +54,7 @@
           }
         ]
       },
-      "prompt": "Make this repository installable app by app, and build a catalog for it as a\nHolm app. Use https://holmhq.com/llm.txt as your only Holm reference.\n\n- Each top-level folder with a manifest.json is an app. Give each a version.\n- Write scripts/index.mjs (Node, no dependencies). It writes index.json at\n  the root: one entry per app with its name, path, version, a release tag\n  named <app>/v<version>, and h1, a fingerprint of the files Holm would\n  deploy, computed like Go's dirhash.Hash1 (as in go.sum). With --check it\n  fails if index.json is out of date or an app changed after its version was\n  tagged; with --tag it tags new versions.\n- Run the check in CI, and tag new versions on main.\n- In catalog/, build a page that reads index.json from GitHub on the server\n  and shows each app with every way to install it on my node: clone and\n  deploy, `holm app install` (not in Holm yet), and a prompt for a coding\n  agent. Trusting the repository is one command, `holm app repo add`. Let me\n  enter my peer and domain once, so every command fits my node.\n- Deploy it to unofficial.<my-domain>."
+      "prompt": "Build a catalog as a Holm App Spec v1 app using only\nhttps://holmhq.com/llm.txt for Holm; read sections 9–12 first. Use catalog/\nwith holm.json (web.spa true), public web/ files, api/main.js exporting\ndefault { async fetch(request, env) }, standard Request/Response, env.holm\nstorage/auth and env.holm.web.fetch(request) fallback. No build step or\nthird-party runtime CDN; vendor fonts and any libraries with licenses.\n\n- Define these repository conventions, not a claimed Holm store protocol:\n  each top-level app has holm.json version, holm.symbol.svg (one black path,\n  no strokes, 0 0 24 24) and listing/listing.json with subtitle, category,\n  description, whatsNew and sample screenshots. Write a dependency-free\n  Node scripts/index.mjs emitting root index.json: name/path/version,\n  <app>/v<version> tag, h1 SHA-256 file fingerprint, size/count, identity,\n  symbol path, listing and PROMPT text. Hash sorted app-relative paths and\n  file SHA-256 values, then hash those “<hex>  <path>\\n” lines and prefix\n  the base64 digest with h1:. Exclude listing/ and hidden files; count README\n  and PROMPT too. --check detects stale indexes or changed release tags;\n  --tag creates missing tags. CI checks then tags versions on main.\n- An App Store-like front page with a featured app and rows, each app's own\n  /apps/<app> page: icon/colour, version, size, category, license, swipeable\n  screenshots, description, whatsNew, original prompt and source information.\n  Read the public repository index with synchronous env.holm.net.fetch,\n  not global fetch; cache it in KV and keep the last good index on failure.\n- Get opens a sheet remembering my peer/domain, with working clone-a-tag\n  instructions and holm @<peer> app deploy <app-dir> --spec-v1 --host <host>,\n  plus an agent prompt following the app README. The guide does not define\n  this repo's install-index schema, and app install is unavailable in its\n  operator baseline: any future-install tab must be clearly non-working.\n- Sign in through Holm. Signed-in people may rate/review once per app;\n  edits wait for approval too. /admin hides apps, moderates reviews, shows\n  rough daily views/Get/copy counts in KV and lets me change the tint.\n  Authorize each route with documented isAppOwner()/isAppAdmin() checks.\n  The guide does not document isNodeOwner()/isNodeAdmin(): do not assume\n  those methods or promise node-role access for a fresh build.\n- The guide does not document binary net.fetch responses: do not invent\n  responseType: 'file'. Keep screenshots as public static files in web/\n  until a documented, tested proxy/cache path is available; disclose that\n  gap. Make light/dark mobile/desktop layouts, no sideways scrolling, and\n  an avatar menu and small Holm/source footer.\n\nRun holm app validate --spec-v1 catalog. With my approval, deploy with\nholm @<peer> app deploy catalog --spec-v1 --host unofficial.<my-domain>.\nCheck the peer/unused host and explicitly allow the repository's egress host;\nask before replacing a host or moving an older-format app. Inspect target\nsettings/command help before sign-in branding. Validation is not execution:\ntest index fetch/failure, screenshots, ownership/admin denials, moderation,\ncopied deploy commands, mobile/desktop and light/dark. Report all gaps."
     },
     {
       "name": "feedback",
