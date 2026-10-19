@@ -12,12 +12,17 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
 
 ## Holm App Spec v1
 
-feedback uses the Holm App Spec v1 layout: `holm.json` for its name, version
-and web settings, `web/` for the public files, and `api/main.js` for the
-server code. Deploy it with
-`holm @<peer> app deploy feedback --spec-v1 --host <host>` on Holm 0.242 or
-newer. Add `--move` once, for the first deploy over a copy that runs in Holm's
-original format; it moves that app in place and keeps its data.
+feedback follows [Holm App Spec v1](https://holmhq.com/llm.txt), sections
+9–12: `holm.json` holds identity and web settings, `web/` holds public files,
+and `api/main.js` exports `default { fetch(request, env) }`. Use `env.holm`
+for storage and sign-in, return standard `Response` objects, and set
+`web.spa: true` in `holm.json`. The node runs no build.
+
+Use a current signed Holm release; the public app guide targets 0.243.2,
+and multipart `request.formData()` needs node 0.242.0 or newer. Every deploy
+needs `--spec-v1`. Only `web/` is served as files: `api/` and `holm.json` are
+not public URLs, and README, PROMPT and listing files stay out of this app's
+deploy. They are still public source in this repository.
 
 ## What it does
 
@@ -139,10 +144,11 @@ so sending is a same-origin request and needs no CORS; only the look is read
 across origins. The page address is sent without its query or fragment,
 which can carry tokens.
 
-**On a site that is itself a Holm app,** pages run only their own scripts and
-may not read other origins, so copy `embed.js` into that app, point at it,
-say where feedback lives, and write the look into the tag (Set up's "A Holm
-app" does this for you):
+**On a site that is itself a Holm app,** use a local copy of `embed.js` so
+loading the script does not depend on an external-script CSP allowance.
+Point the tag at it, say where feedback lives, and include the look in the
+tag when cross-origin settings fetches are blocked (Set up's "A Holm app"
+provides that snippet):
 
 ```html
 <script src="/embed.js" data-project="abcd2345" data-origin="https://feedback.zyt.app" data-color="#1d4ed8" async></script>
@@ -151,13 +157,16 @@ app" does this for you):
 The site's operator then lets its pages frame the feedback app:
 
 ```sh
-holm policy set security.csp.frame_src "https://feedback.zyt.app" --app <site-app-id>
+holm @<peer> policy set security.csp.frame_src "https://feedback.zyt.app" --app <site-app-id>
 ```
 
 ## How it is built
 
-A Holm app is a folder: the files in `web/` are served as-is, and
-`api/main.js` handles `/api/*`. There is no build step.
+A Holm app is a folder. `web/` is served as-is. This app's
+`api/main.js` routes `/api/*`, reads JSON with `request.text()` and uploads
+with `request.formData()`, and converts its answers to standard `Response`
+objects. Other paths go to `env.holm.web.fetch(request)` for static files
+and SPA fallback. There is no build step.
 
 ```text
 holm.json           name, version, colour, SPA routing, store metadata
@@ -203,32 +212,44 @@ holm.symbol.svg     the app's icon
 listing/            its store listing (not deployed)
 ```
 
-The Holm primitives it uses, all described in <https://holmhq.com/llm.txt>:
+The existing entry delegates to `api/_legacy_main.js`; `api/_holm.js` binds
+`env.holm` for those imported modules on each request. These are this app's
+migration scaffolding, not the v1 authoring contract. A fresh build should
+write routes directly in `fetch(request, env)`, not use global `holm`,
+`request` or `respond`.
 
-- **`holm.auth`:** who is signed in. Owner routes also accept an app API key
-  as a bearer token, and check that the project belongs to its owner,
-  answering "not found" otherwise. Hashes use `crypto.subtle`.
-- **Document store, `holm.app.ds`:** projects, items, notes and comments.
-  Votes are an `$inc` on the item; a comment and its item's counts change in
-  one `transaction`. Stats tally pages and kinds from `find`.
-- **Shared KV, `holm.app.kv`:** each project's item counter (for `#12`
-  numbers), hourly caps on items and comments per project, a daily cap on
-  file bytes, which browser tokens have voted, the stats (one `increment`ed
-  counter per project, day and event), and where each button is live (one
-  key per site, with a 90-day TTL, listed by prefix).
-- **Blob storage, `holm.app.s3`:** attachments, put straight from the
-  multipart upload handles in `request.files`, served back only to the owner
-  with a sandboxing CSP. **`holm.image.thumbnail`** makes the previews, and
-  **`holm.image.resize`** fits a page's logo and cover as they're uploaded.
-- **Framing:** Holm serves app pages with `frame-ancestors *`, so any site can
-  show the form.
-- **Content-Security-Policy:** Holm's baseline lets pages load scripts from
-  jsDelivr, where Holm's own `holmhq/cdn` repository is served; the rating
-  loads from there, pinned to one commit and checked by its SHA-384 hash.
-- **Head metadata:** Holm fills in link-preview tags a page leaves out, with
-  its own text and picture. `web/index.html` writes every one except
-  `og:url`, so a shared link shows feedback's title, description and
-  `assets/og.png`.
+The v1 primitives described in <https://holmhq.com/llm.txt> are:
+
+- **`env.holm.auth`:** who is signed in. Owner routes also accept an
+  app-owned bearer API key, check the project's owner, and answer "not
+  found" otherwise. Hashes use `crypto.subtle`.
+- **Document store, `env.holm.app.ds`:** projects, items, notes and comments.
+  Votes use `$inc`; comment and item counts change in a transaction. These
+  storage calls are synchronous; never await inside a DS transaction.
+- **Shared KV, `env.holm.app.kv`:** ticket numbers, spam caps, vote tokens,
+  daily stats and sites where the button loaded. KV supports a TTL and
+  prefix listing; these counters are application data, not node analytics.
+- **Blob storage, `env.holm.app.s3`:** attachments served through
+  owner-checked API routes with sandboxing headers. The entry turns
+  `request.formData()` files into byte buffers for the inherited modules;
+  their `request.files` is adapter data, not a standard v1 Request field.
+  A fresh handler uses `File.arrayBuffer()` and `s3.put(path, bytes, mime)`.
+  **`env.holm.image.thumbnail`** makes previews and **`image.resize`** fits
+  project logos and covers.
+- **Static headers and metadata:** the guide documents CSP and deliberate
+  `web.headers` rules. `web/index.html` authors the app's title, description
+  and social image; Holm fills only missing static head tags, not HTML
+  returned by the handler. It does not create per-project previews here.
+
+Embedding requires the feedback form's response to permit the site's frame
+ancestor, and the site's CSP to permit the feedback origin in `frame-src`.
+Do not assume every Holm page is frameable: inspect both headers and test the
+iframe. The public guide does not guarantee a `frame-ancestors *` default.
+
+The rating uses Holm's own feed-stars 0.0.3 from jsDelivr, pinned to commit
+`9a7a089cadc57f338f393ec56e1460cbd725b0ce`, in its `v-0.0.3/` folder, with a
+SHA-384 integrity hash in `web/src/compose.js`. Check the target's CSP; plain
+stars are the fallback if it cannot load.
 
 | Route | Who | Purpose |
 | --- | --- | --- |
@@ -294,36 +315,50 @@ curl -X PATCH https://feedback.example.com/api/items/<item-id> -H "Authorization
   -H 'Content-Type: application/json' -d '{"status":"planned","public":true}'
 ```
 
-Snippets and page links in replies use `ORIGIN` in `api/projects.js`, because
-the runtime doesn't pass the request host to apps yet. Set it to your host.
+Snippets and page links in replies use the app's `ORIGIN` constant in
+`api/projects.js`. Set it to your public origin; this is an app choice, not
+a v1 host limitation. A fresh handler can use the standard `request.url`.
 
 ## Deploy your own
 
+Run from the repository root, with a peer and an unused host you have chosen:
+
 ```sh
+holm app validate --spec-v1 feedback
 holm @<peer> app deploy feedback --spec-v1 --host feedback.example.com
 ```
 
-Add `--move` the first time if that host already runs feedback in Holm's
-original format.
+Validation is local and does not run or upload the app. Check the peer's
+health and host availability first. Repeat the deploy with `--force` only
+for your own approved update. Add `--move` only when you explicitly approve
+a one-way move of an older-format app; it preserves its id, domains, members
+and data.
 
-Set `ORIGIN` in `api/projects.js` to your host first (see API). The footer's
-Feedback link goes to a project on feedback.zyt.app; on your copy it stays
-hidden, or make a project for your own and put its id in `web/index.html`.
-Holm's sign-in page takes the app's name, icon and colour from node settings,
-so give it feedback's own:
+Set `ORIGIN` in `feedback/api/projects.js` first. The footer's Feedback link
+points to the maintainers' project; on your copy it stays hidden, or use a
+project of your own in `feedback/web/index.html`.
+
+Inspect the target's `settings schema --json` before setting sign-in branding:
+the guide's operator chapters retain an older baseline. Use the app id
+printed by deploy and your explicit peer:
 
 ```sh
-holm settings set settings.apps.<app-id>.brand.name feedback
-holm settings set settings.apps.<app-id>.brand.icon_url /assets/icon.svg
-holm settings set settings.apps.<app-id>.theme.accent '#c2410c'
+holm @<peer> settings set settings.apps.<app-id>.brand.name feedback
+holm @<peer> settings set settings.apps.<app-id>.brand.icon_url /assets/icon.svg
+holm @<peer> settings set settings.apps.<app-id>.theme.accent '#c2410c'
 ```
 
 Anyone who can sign in can make projects. To keep it to yourself, close
-signup once your account exists:
+public signup once your account exists:
 
 ```sh
-holm policy set auth.public_signup false --app <app-id>
+holm @<peer> policy set auth.public_signup false --app <app-id>
 ```
+
+Before deploying publicly, test on a disposable node: JSON and multipart
+submissions, owner-only files, notes and comment approval, votes and stats,
+plus the widget in a real cross-site iframe. Check mobile and desktop, light
+and dark, and browser CSP errors. Local validation is not runtime proof.
 
 ## Known limits
 
@@ -362,13 +397,14 @@ holm policy set auth.public_signup false --app <app-id>
 The app is MIT-licensed (see the repository `LICENSE`). Bricolage Grotesque
 and Fragment Mono are under the SIL OFL 1.1, in `web/assets/fonts/`.
 feed-stars 0.0.3, the star rating, is MIT-licensed and loaded from Holm's
-own [`holmhq/cdn`](https://github.com/holmhq/cdn) through jsDelivr; its
-animation is adapted from Aaron Iker's "Stars rating animation" on CodePen.
+own [`holmhq/cdn`](https://github.com/holmhq/cdn) through jsDelivr, pinned
+and integrity-checked as described above. Its animation derives from the
+upstream "Stars rating animation" on CodePen.
 The project icons are from Lucide (lucide-static 1.52.0), ISC-licensed, with
 those derived from Feather under the MIT licence; both are in
-`web/vendor/lucide/LICENSE`. qrcode-generator 2.0.4 by Kazuhiko Arase is
-MIT-licensed, in `web/vendor/qrcode/` with its `LICENSE`. "QR Code" is a
-registered trademark of DENSO WAVE INCORPORATED.
+`web/vendor/lucide/LICENSE`. qrcode-generator 2.0.4 is MIT-licensed, in
+`web/vendor/qrcode/` with its `LICENSE`. "QR Code" is a registered trademark
+of DENSO WAVE INCORPORATED.
 
 The icon, a smiling speech bubble, is by Side Project from
 [Noun Project](https://thenounproject.com) and is used under

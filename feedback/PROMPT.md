@@ -1,127 +1,59 @@
 # Prompt
 
-Give this to a coding agent on a machine that has the `holm` CLI and a node to
-deploy to. Its only source of Holm knowledge is the public reference at
-<https://holmhq.com/llm.txt>.
+The public reference at <https://holmhq.com/llm.txt> teaches Holm App Spec
+v1. Give the build request below to a coding agent with the `holm` CLI and a
+node you control. The quoted messages later are history, not extra sources.
 
-## 1. Build it
-
-```text
-Build an embeddable feedback and issue tracker as a Holm app. Use
-https://holmhq.com/llm.txt as your only reference for Holm.
-
-- One script tag adds a feedback button to any website. It opens a small
-  form: bug, idea or question, a message, and an optional email. Send the
-  page's address along, without its query or fragment.
-- Signed-in people make a project per site, with its snippet, a choice of
-  button text, colour and position, and a live preview.
-- An inbox per project: statuses (new, planned, in progress, done, closed),
-  private notes, and where each item came from.
-- An optional public board per project showing only the items I choose, with
-  upvotes.
-- Keep spam out without a captcha. Make it look good on mobile and desktop,
-  light and dark.
-- Deploy it to feedback.<my-domain>.
-```
-
-## 2. An API for agents
+## Build from scratch
 
 ```text
-Give the app an API, so I can hand a key to a coding agent and it can set up
-feedback on a new site by itself: API keys made in the app (shown once,
-stored hashed), accepted as bearer tokens on every owner route, and the
-project's snippet in the reply.
-```
+Build a feedback app using https://holmhq.com/llm.txt as the only Holm
+reference; Holm's own https://github.com/holmhq/cdn is allowed for feed-stars.
+Read the v1 sections 9–12 first. Use holm.json with web.spa true, public web/
+files and api/main.js exporting default { async fetch(request, env) }.
+Use env.holm auth/DS/KV/S3/image, standard Request/Response and same-origin
+browser API calls; fall back to env.holm.web.fetch(request). No build step.
+Use relative server imports, request.formData() and File.arrayBuffer() for
+uploads; no global holm/request/respond and no request.files API.
 
-## 3. Its icon
+- Signed-in people make one project per website, shop or event. Supply a
+  one-tag widget: a button in a shadow root opens an iframe form; also a
+  stand-alone feedback page at a custom address, with SVG QR code/poster.
+- Design/Form tabs customize title, words, colour, logo, cover, icon, button
+  label/corner/style and theme, with a live preview. Website kinds: Issue,
+  Idea, Question; places: Praise, Problem, Idea. Add optional/required stars,
+  contact email/phone and up to eight text/select/radio/checkbox questions.
+  Support four files, 8 MiB total, and a one-tap phone photo; photo or rating
+  alone can send. Strip query/fragment from the sending page's address.
+- One private inbox per project: ticket numbers, statuses, notes and a team
+  thread, sort/search/filter for hundreds of items. Only the owner sees
+  files/contact details. The optional public page shows selected items,
+  votes once per browser, and comments only after owner approval.
+- Keep spam out with a trap field, project caps and allowed sites, honestly
+  described as casual-misuse guards, not strong sender authentication.
+  Track daily visits, QR/email-link visits, opens, sends, votes and comments
+  in app KV; no visitor tracking. “Where it's live” separates local copies.
+- API keys: show once, hash SHA-256, accept bearer tokens on owner routes,
+  check project ownership, return the setup snippet; keys cannot mint keys.
+- Make it refined on phones/desktop, light/dark/system, a fixed footer and
+  scrolling projects panel, avatar menu for keys/theme/stats, /changelog,
+  and an optional footer Feedback link to a project I supply.
+- Vendor fonts, QR code code and icons with licenses. For feed-stars use
+  Holm's CDN pinned to a commit and v-X.Y.Z folder with integrity, plus plain
+  stars as fallback. Copy embed.js into other Holm sites when their CSP
+  requires it and allow the feedback origin in the site's frame-src.
+  The guide does not guarantee frame-ancestors defaults: set deliberate
+  web.headers for framing, inspect both responses and test the iframe.
+- Add authored social metadata in web/index.html. Make holm.symbol.svg and
+  listing/listing.json plus sample screenshots; these are repo conventions,
+  not a Holm store schema documented by the guide. Use holm.json version.
 
-```text
-Make this SVG, a smiling speech bubble from the Noun Project, the app's icon.
-Turn it into one black path filling a 24 × 24 frame for holm.symbol.svg,
-keeping its holes, and use the same shape in the header, the favicon and the
-tile Holm's sign-in page shows. Credit its creator in the README.
-```
-
-## 4. A page of its own, files and stats
-
-```text
-- Make the set-up preview follow colour, label and position as they change.
-- Give each project a public page that stands alone for someone arriving
-  from a link or a QR code: the form first, then the items I make public,
-  with votes and comments. Visitors' comments show only after I approve them.
-- Let the form take files: screenshots, videos and PDFs.
-- Let me pick a custom address for the page, and download its QR code.
-- Let me rename and delete projects.
-- Light, dark and system themes in the avatar menu.
-- Light stats for each account and project: how many people saw a form and
-  how many sent something, per day.
-```
-
-## 5. Polish
-
-```text
-- Give the button on sites the app's icon.
-- Switching a project's tabs should change only what's below them, not
-  redraw the page.
-- When the app's link is shared, show feedback's own title, description and
-  preview image, not Holm's.
-```
-
-## 6. In person: places and events
-
-```text
-- Make the link preview short and peppy, and say it works on a website or
-  in a physical place.
-- Let a project be for a place or an event, like a restaurant: kinds that
-  suit people there, and a one-tap photo from a phone's camera. A photo on
-  its own is enough to send.
-- Give the public page a title, description, logo and cover, with defaults.
-- Let me email the page's link, and have Stats count QR scans and email
-  visits on their own.
-```
-
-## 7. A form of my own
-
-```text
-- Let me ask for an email or a phone number, optional or required.
-- Let me add a few questions of my own: a short answer, a dropdown, one
-  choice or checkboxes. Show the answers on each item and filter the inbox by
-  them.
-- Make each item a thread for my team: notes and every change, in order.
-```
-
-## 8. A button people want on their site
-
-```text
-- Make the button and form refined enough that people want them on their
-  site: smooth transitions, and let me set the form's title, description,
-  logo, colour and cover.
-- Add an optional star rating with feed-stars, Holm's own component, from
-  https://cdn.jsdelivr.net/gh/holmhq/cdn.
-- Give the app a /changelog.
-- Make the set-up screen smarter, join the copy button to the snippet's
-  edge, and design the dropdowns properly.
-- Say "Issue" instead of "Bug".
-```
-
-## 9. Room for hundreds
-
-```text
-- Use the app's own feedback button in the app itself.
-- Make the projects page minimal: it never scrolls, the footer stays at the
-  bottom, and the projects sit in a panel, each with the website it's on.
-  No underline on hover.
-- Give each project an icon, an open-source one like Lucide's, at random,
-  and let me pick another.
-- Assume hundreds of items arrive: give the inbox sane filters.
-```
-
-## 10. Your own computer isn't a site
-
-```text
-"Where it's live" offers pages on localhost and 127.0.0.1 as sites to
-allow. They're a developer's copy: list them apart, and keep them out of a
-project's sites.
+Run holm app validate --spec-v1 feedback. With my approval, deploy with
+holm @<peer> app deploy feedback --spec-v1 --host feedback.<my-domain>.
+Ask before replacing a host or moving an older-format app. Validation does
+not run the app: test cross-site embedding, uploads, ownership, comments,
+votes/stats and mobile/desktop light/dark. Inspect the target settings schema
+before setting sign-in branding. Report any guide or runtime gaps honestly.
 ```
 
 ## The original requests
@@ -230,19 +162,8 @@ maintained by us".
 without a word: one real site, and three pages on `localhost` and
 `127.0.0.1`, each offered as a site to allow.
 
-Everything in the prompts beyond what's quoted came from the agent: the
-button in a shadow root and the form in an iframe, the carbon-copy tickets,
-the public board and votes, the spam guards, the shape of the API, the
-icon's credit, in iteration 4 the page's layout, the file limits, the poster
-and what the stats count, in iteration 5 changing an item's status in
-place too, in iteration 7 the kinds for places, the scan tags and the
-default cover, in iteration 8 the question types' details and the
-inbox's filters, in iteration 9 the Design tab and its preview running
-the real button, the panel's theme and button styles, a snippet that reads
-the look as the page loads, "where it's live", and the rating's place in
-the inbox and Stats, and in iteration 10 a Feedback link in the footer rather
-than a floating button, the sites shown from allowed sites and where the
-button is live, the icon on the form and the page too, the sort orders and
-filters, fifty items at a time, and the filters folding away on a phone,
-and in iteration 11 which addresses count as local, and keeping them a week
-with a cap of their own.
+The build request now uses the current public v1 guide, keeps stats inside
+app storage, and makes CSP and runtime checks explicit. It needs no private
+documentation, downloaded icon attachment or pre-existing feedback app.
+The quoted history records the requested experience; its detailed design
+and implementation were the agent's work.
