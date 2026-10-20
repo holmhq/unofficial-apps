@@ -45,7 +45,9 @@ uploads; no global holm/request/respond and no request.files API.
   requires it and allow the feedback origin in the site's frame-src.
   The guide does not guarantee frame-ancestors defaults: set deliberate
   web.headers for framing, inspect both responses and test the iframe.
-- Add authored social metadata in web/index.html. Make holm.symbol.svg and
+- Make holm.symbol.svg and run holm app identity generate for the icons,
+  manifest and social card; author og:image tags only to keep a hand-made
+  social preview. Add authored social metadata in web/index.html. Make
   listing/listing.json plus sample screenshots; these are repo conventions,
   not a Holm store schema documented by the guide. Use holm.json version.
 
@@ -188,6 +190,14 @@ owner's message (`llms-full.txt` is the full guide's name):
 and, to the agent's proposal of 2048 px at JPEG quality 0.82:
 
 > Yes do all of that
+
+
+**Iteration 15** made feedback the pilot for Holm's identity generator:
+
+> Perhaps feedback is a great place to test it
+> - we can remove the hand made assets and see if this works well
+> - one caveat: i sort of like its social preview images, may we can then replace that back on the generated assets as an over ride?
+> - we can use the current shape & generate it?
 
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private

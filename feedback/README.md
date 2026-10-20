@@ -344,7 +344,7 @@ printed by deploy and your explicit peer:
 
 ```sh
 holm @<peer> settings set settings.apps.<app-id>.brand.name feedback
-holm @<peer> settings set settings.apps.<app-id>.brand.icon_url /assets/icon.svg
+holm @<peer> settings set settings.apps.<app-id>.brand.icon_url /icon-512.png
 holm @<peer> settings set settings.apps.<app-id>.theme.accent '#c2410c'
 ```
 
@@ -409,5 +409,11 @@ of DENSO WAVE INCORPORATED.
 The icon, a smiling speech bubble, is by Side Project from
 [Noun Project](https://thenounproject.com) and is used under
 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). It was rescaled
-into Holm's 24 × 24 symbol frame for `holm.symbol.svg`, and appears in
-`web/assets/icon.svg`, `web/assets/favicon.svg` and the page header.
+into Holm's 24 × 24 symbol frame for `holm.symbol.svg`. The page header draws
+it, and `holm app identity generate feedback` draws every icon from it: the
+favicons, touch and install icons, `manifest.webmanifest` and a social card,
+recorded in `holm.generated.json` (needs Holm 0.245.0 or newer). Run it again
+after changing the symbol, `themeColor` or `title`. Holm links the generated
+files in each page; the hand-made social preview, `web/assets/og.png`, stays
+because `web/index.html` names it in its own `og:image` and `twitter:image`
+tags, and tags a page writes itself always win.
