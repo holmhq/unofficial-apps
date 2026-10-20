@@ -1,0 +1,23 @@
+{
+  "inputs": {
+    "symbolHash": "sha256:bb660a4b8118ede8a6b7fc5fa28be3a3a600286fd959b1eb74c01d74eeb7f582",
+    "themeColor": "#173a72",
+    "name": "pastebin",
+    "iconStyle": "glass"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.246.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/apple-touch-icon.png": "sha256:f6b519b537fdd6fe6df072027ffa77cfae3e3e5e8718e758aa3a9494f43bcbca",
+    "web/favicon.ico": "sha256:36d323f9c7c0e45fd9eca0321096a47c00fce4c428686e1d77f0b9be78b6d6a0",
+    "web/favicon.png": "sha256:9416e73ac5aa0ad54954a28ddd969ddef4305c5238900d88048c84241f46515e",
+    "web/favicon.svg": "sha256:22f3f0f00cd8270af5fe24eea8cb8c604e86e023ba5347842c2a6b8be135b95d",
+    "web/icon-192.png": "sha256:5ea550a525a50831b4464429859f018ad1976335bc743f163c7010827a8d4e35",
+    "web/icon-512.png": "sha256:76607f35c6d6216f104926a6e9908bf5c2f333274b4afaaffddf98d9fdd8d045",
+    "web/icon-maskable-512.png": "sha256:da874bfd586731a69847bf9aeeaf320ffd0a1f088f085842b831fa6407f1b941",
+    "web/social_preview.png": "sha256:1dd704189b3f9becbce400bc5d7d873d4f21de9dbc4cb1a1fd272b3bcd8c311c"
+  }
+}
