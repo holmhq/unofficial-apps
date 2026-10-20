@@ -24,7 +24,8 @@ uploads; no global holm/request/respond and no request.files API.
   Idea, Question; places: Praise, Problem, Idea. Add optional/required stars,
   contact email/phone and up to eight text/select/radio/checkbox questions.
   Support four files, 8 MiB total, and a one-tap phone photo; photo or rating
-  alone can send. Strip query/fragment from the sending page's address.
+  alone can send. Shrink big photos in the browser before upload (at most
+  2048 px, JPEG), and turn iPhone HEIC photos into JPEG. Strip query/fragment from the sending page's address.
 - One private inbox per project: ticket numbers, statuses, notes and a team
   thread, sort/search/filter for hundreds of items. Only the owner sees
   files/contact details. The optional public page shows selected items,
@@ -161,6 +162,15 @@ maintained by us".
 **Iteration 11** was a copy of a project's "Where it's live" list, pasted
 without a word: one real site, and three pages on `localhost` and
 `127.0.0.1`, each offered as a site to allow.
+
+**Iteration 12**, about this app and another one that uploads photos:
+
+> for feedback & relay, cant we optimise the images in frontend itself?
+
+and, after the agent found that iPhone HEIC photos skipped the existing
+shrink:
+
+> yes, fix both and start the recipes
 
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private

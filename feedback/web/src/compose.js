@@ -66,8 +66,12 @@ function ratingInput(onChange) {
 }
 
 // Big photos shrink before they're sent: at most 2048 pixels a side, as JPEG.
+// iPhone photos arrive as HEIC, which most browsers can't show, so they become
+// JPEG whatever their size. Safari decodes HEIC; where a browser can't, the
+// original is sent as it is.
 async function shrink(file) {
-  if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.5 * 1024 * 1024) return file
+  const heic = /^image\/hei[cf]$/.test(file.type) || /\.hei[cf]$/i.test(file.name)
+  if (!heic && (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.5 * 1024 * 1024)) return file
   try {
     const bitmap = await createImageBitmap(file)
     const scale = Math.min(1, 2048 / Math.max(bitmap.width, bitmap.height))
@@ -76,7 +80,7 @@ async function shrink(file) {
     canvas.height = Math.round(bitmap.height * scale)
     canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.86))
-    if (!blob || blob.size >= file.size) return file
+    if (!blob || (!heic && blob.size >= file.size)) return file
     return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' })
   } catch {
     return file
