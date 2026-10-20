@@ -1,0 +1,24 @@
+{
+  "inputs": {
+    "symbolHash": "sha256:01f21be8eb3ff71aa264047d98aa18f772b0ca736976a1f039ec9dc0ac551bc5",
+    "themeColor": "#0e8a78",
+    "name": "overlap",
+    "iconStyle": "glass"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.248.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/apple-touch-icon.png": "sha256:c274326da1e5e8ebb27c98e93e7741d0736d3b3208700b94324c0bae41f1c080",
+    "web/favicon.ico": "sha256:1b720d2644052ec13ca01e6d5d74ff893a68540f602350a2e66d05160f634960",
+    "web/favicon.png": "sha256:b92005d0f6e932194d60e0ba31ca1e2d94a4493b2113fe29334db1ee446d78ad",
+    "web/favicon.svg": "sha256:ab43dc4d0d8d0737b9f62bdfea40922c338ee527c4ee49c4a231363f8d24a943",
+    "web/icon-192.png": "sha256:0bc18fc7218f874bc81da4e02080c9e4cecece1281a01f507adcc5eebb4a5ace",
+    "web/icon-512.png": "sha256:944351166a9159280b0042a348434e18595c558a61024d1aa44f3a06b3f0a6ee",
+    "web/icon-maskable-512.png": "sha256:d59894edfd27bea740a43b17a237c4099f388549fc6f19b336f2ecf48c79fc6a",
+    "web/manifest.webmanifest": "sha256:fc103f0ec1c00b60af7043d3a2513c3a79f352d2bbe89a2aef9f3390aedcb8f1",
+    "web/social_preview.png": "sha256:9704d3a69a87cf7778195cc94fe1f30dbf412a7ffc9ff7f123e210cc5cf2cf14"
+  }
+}

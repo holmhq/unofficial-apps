@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>overlap</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f6f3ec" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121314" media="(prefers-color-scheme: dark)">
+  <link rel="preload" href="/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/app.css">
+  <script>
+    // Apply the saved theme before the first paint, so the page never flashes.
+    try { const t = localStorage.getItem('overlap:theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t } catch {}
+  </script>
+</head>
+<body>
+  <a class="skip" href="#view">Skip to content</a>
+  <header class="bar">
+    <a class="brand" href="/" aria-label="overlap, home">
+      <svg class="mark" viewBox="0 0 40 28" aria-hidden="true">
+        <circle class="mark-a" cx="14" cy="14" r="11"/>
+        <circle class="mark-b" cx="26" cy="14" r="11"/>
+        <path class="mark-c" d="M20 4.8a11 11 0 0 1 0 18.4a11 11 0 0 1 0-18.4z"/>
+      </svg>
+      <span class="wordmark">overlap</span>
+    </a>
+    <nav class="bar-tools" aria-label="Settings and account">
+      <button class="icon-button" id="sound" type="button" aria-pressed="true" title="Sound">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="on" d="M4 9.5h3.2L12 5.6v12.8l-4.8-3.9H4z M15.5 9a4.2 4.2 0 0 1 0 6 M18 6.6a7.6 7.6 0 0 1 0 10.8"/><path class="off" d="M4 9.5h3.2L12 5.6v12.8l-4.8-3.9H4z M15.5 9.5l5 5 M20.5 9.5l-5 5"/></svg>
+        <span class="visually-hidden">Sound</span>
+      </button>
+      <button class="icon-button" id="theme" type="button" title="Theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 0 0 0-17zm0 0v17" /><path class="half" d="M12 3.5a8.5 8.5 0 0 1 0 17z"/></svg>
+        <span class="visually-hidden">Theme</span>
+      </button>
+      <div id="account" class="account"></div>
+    </nav>
+  </header>
+  <main id="view" tabindex="-1"></main>
+  <footer class="foot">
+    <p>Made with <a href="https://holmhq.com">Holm</a> · <a href="https://github.com/holmhq/unofficial-apps/tree/main/overlap">Source</a></p>
+  </footer>
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

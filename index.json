@@ -141,6 +141,54 @@
       "prompt": "Build a feedback app using https://holmhq.com/llms-full.txt as the only Holm\nreference; Holm's own https://github.com/holmhq/cdn is allowed for feed-stars.\nRead the v1 sections 9–12 first. Use holm.json with web.spa true, public web/\nfiles and api/main.js exporting default { async fetch(request, env) }.\nUse env.holm auth/DS/KV/S3/image, standard Request/Response and same-origin\nbrowser API calls; fall back to env.holm.web.fetch(request). No build step.\nUse relative server imports, request.formData() and File.arrayBuffer() for\nuploads; no global holm/request/respond and no request.files API.\n\n- Signed-in people make one project per website, shop or event. Supply a\n  one-tag widget: a button in a shadow root opens an iframe form; also a\n  stand-alone feedback page at a custom address, with SVG QR code/poster.\n- Design/Form tabs customize title, words, colour, logo, cover, icon, button\n  label/corner/style and theme, with a live preview. Website kinds: Issue,\n  Idea, Question; places: Praise, Problem, Idea. Add optional/required stars,\n  contact email/phone and up to eight text/select/radio/checkbox questions.\n  Support four files, 8 MiB total, and a one-tap phone photo; photo or rating\n  alone can send. Shrink big photos in the browser before upload (at most\n  2048 px, JPEG quality 0.82), and turn iPhone HEIC photos into JPEG. Strip query/fragment from the sending page's address.\n- One private inbox per project: ticket numbers, statuses, notes and a team\n  thread, sort/search/filter for hundreds of items. Only the owner sees\n  files/contact details. The optional public page shows selected items,\n  votes once per browser, and comments only after owner approval.\n- Keep spam out with a trap field, project caps and allowed sites, honestly\n  described as casual-misuse guards, not strong sender authentication.\n  Track daily visits, QR/email-link visits, opens, sends, votes and comments\n  in app KV; no visitor tracking. “Where it's live” separates local copies.\n- API keys: show once, hash SHA-256, accept bearer tokens on owner routes,\n  check project ownership, return the setup snippet; keys cannot mint keys.\n- Make it refined on phones/desktop, light/dark/system, a fixed footer and\n  scrolling projects panel, avatar menu for keys/theme/stats, /changelog,\n  and an optional footer Feedback link to a project I supply.\n- Vendor fonts, QR code code and icons with licenses. For feed-stars use\n  Holm's CDN pinned to a commit and v-X.Y.Z folder with integrity, plus plain\n  stars as fallback. Copy embed.js into other Holm sites when their CSP\n  requires it and allow the feedback origin in the site's frame-src.\n  The guide does not guarantee frame-ancestors defaults: set deliberate\n  web.headers for framing, inspect both responses and test the iframe.\n- Make holm.symbol.svg and run holm app identity generate for the icons,\n  manifest and social card; author og:image tags only to keep a hand-made\n  social preview. Add authored social metadata in web/index.html. Make\n  listing/listing.json plus sample screenshots; these are repo conventions,\n  not a Holm store schema documented by the guide. Use holm.json version.\n\nRun holm app validate --spec-v1 feedback. With my approval, deploy with\nholm @<peer> app deploy feedback --spec-v1 --host feedback.<my-domain>.\nAsk before replacing a host or moving an older-format app. Validation does\nnot run the app: test cross-site embedding, uploads, ownership, comments,\nvotes/stats and mobile/desktop light/dark. Inspect the target settings schema\nbefore setting sign-in branding. Report any guide or runtime gaps honestly."
     },
     {
+      "name": "overlap",
+      "path": "overlap",
+      "version": "0.1.0",
+      "tag": "overlap/v0.1.0",
+      "h1": "h1:Smjg+8iFGuQzy1dCO0T9oLUpn0I9nz6d+fl0ap4GwfU=",
+      "files": 29,
+      "size": 469840,
+      "title": "overlap",
+      "description": "Find the time that works for everyone. Pick some dates, share one link, and watch everyone's free time overlap, live.",
+      "themeColor": "#0e8a78",
+      "symbol": "M 12 5.071797 L 12 5.071797 C 9.524792 6.50086 8.000001 9.141876 8.000001 12 C 8.000001 14.858124 9.524792 17.49914 12 18.928203 C 8.637787 20.869378 4.36717 20.116353 1.871644 17.142301 C -0.623881 14.168249 -0.623881 9.831751 1.871644 6.857699 C 4.36717 3.883647 8.637787 3.130622 12 5.071797 Z M 12 5.071797 C 15.362213 3.130622 19.63283 3.883647 22.128356 6.857699 C 24.623881 9.831751 24.623881 14.168249 22.128356 17.142301 C 19.63283 20.116353 15.362213 20.869378 12 18.928203 C 14.475208 17.49914 15.999999 14.858124 15.999999 12 C 15.999999 9.141876 14.475208 6.50086 12 5.071797 Z",
+      "demo": "https://overlap.zyt.app",
+      "listing": {
+        "subtitle": "Find a time that works for everyone",
+        "category": "Productivity",
+        "description": "Pick a few dates and the hours you could meet, then share one link. Everyone paints the times they're free, with just a name and no account, and the grid deepens in colour where people overlap, live, on every open screen.\n\nThe best times rise to the top as answers come in, with who can make each one. Pick a time and everyone sees it settle at once, with a calendar file and a Google Calendar link.\n\nPainting plays a soft note for each slot, and the page answers with small motions: it is built to be pleasant to use on a phone and a big screen, in light and dark.",
+        "whatsNew": "First release.",
+        "featured": true,
+        "screenshots": [
+          {
+            "path": "listing/home.webp",
+            "alt": "The home page: a headline, a sign-in button, and a small grid filling in as three people answer",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/everyone.webp",
+            "alt": "A book club plan: five evenings in a grid, deeper green where more of the six people are free",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/mine.webp",
+            "alt": "Painting your own free times in coral over a faint view of everyone else's",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/settled-dark.webp",
+            "alt": "In dark mode, the settled time in a gold banner with Add to calendar and Google Calendar buttons",
+            "width": 780,
+            "height": 1688
+          }
+        ]
+      },
+      "prompt": "Build \"overlap\", a group scheduling app, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 first.\nMake holm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in and realtime, return standard Responses and fall back to\nenv.holm.web.fetch(request). No build step or third-party runtime CDN; vendor\nany font with its licence.\n\n- A signed-in organiser creates a plan: a name, an optional note, up to 14\n  dates picked on a calendar by pressing and dragging across days, a daily\n  window, 15/30/60-minute slots and a time zone.\n- Anyone with the link answers with just a name (no sign-up) and paints the\n  times they are free: press and drag a rectangle that fills or clears. Keep\n  an edit key in the browser and store only its SHA-256 hash; signed-in\n  people edit from anywhere. Undo, keyboard painting, and touch that paints\n  instead of scrolling.\n- Two views: \"My times\" over a faint heatmap of everyone, and \"Everyone\" as a\n  heatmap. Tooltips name who is free and give the viewer's local time.\n  Ranked best times with who is missing; the organiser picks one and every\n  open page shows it settled, with a calendar file and a Google Calendar link.\n- Broadcast every change on a realtime channel per plan; flash other people's\n  changes in their colour, show who has the page open, reconnect and catch up.\n- Exceptional, warm design: an elegant serif for headings, light/dark/system\n  themes, excellent on phones and desktop. Soft Web Audio sounds (a\n  pentatonic note per painted slot, a chord when a time settles) with a mute\n  switch, small spring motions and confetti, all respecting reduced motion.\n- Give each plan page its own title and link preview, noindex. Never show the\n  organiser's email.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 overlap. With my approval, deploy with\nholm @<peer> app deploy overlap --spec-v1 --host overlap.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test an organiser and an anonymous person in two browsers, live\nupdates both ways, settling a time, and mobile/desktop in light/dark. Report\ngaps honestly. Inspect the target settings schema before setting sign-in\nbranding."
+    },
+    {
       "name": "pastebin",
       "path": "pastebin",
       "version": "0.3.3",

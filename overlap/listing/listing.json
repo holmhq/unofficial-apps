@@ -1,0 +1,25 @@
+{
+  "subtitle": "Find a time that works for everyone",
+  "category": "Productivity",
+  "featured": true,
+  "description": "Pick a few dates and the hours you could meet, then share one link. Everyone paints the times they're free, with just a name and no account, and the grid deepens in colour where people overlap, live, on every open screen.\n\nThe best times rise to the top as answers come in, with who can make each one. Pick a time and everyone sees it settle at once, with a calendar file and a Google Calendar link.\n\nPainting plays a soft note for each slot, and the page answers with small motions: it is built to be pleasant to use on a phone and a big screen, in light and dark.",
+  "whatsNew": "First release.",
+  "screenshots": [
+    {
+      "file": "home.webp",
+      "alt": "The home page: a headline, a sign-in button, and a small grid filling in as three people answer"
+    },
+    {
+      "file": "everyone.webp",
+      "alt": "A book club plan: five evenings in a grid, deeper green where more of the six people are free"
+    },
+    {
+      "file": "mine.webp",
+      "alt": "Painting your own free times in coral over a faint view of everyone else's"
+    },
+    {
+      "file": "settled-dark.webp",
+      "alt": "In dark mode, the settled time in a gold banner with Add to calendar and Google Calendar buttons"
+    }
+  ]
+}
