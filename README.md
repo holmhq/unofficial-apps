@@ -4,7 +4,7 @@ Small, real apps built on [Holm](https://holmhq.com) and published so you can
 see exactly how they're made. Each folder is a complete Holm app with its
 source, its README, and a `PROMPT.md`: a from-scratch request a coding agent
 can build the app from. The public reference at
-<https://holmhq.com/llm.txt> now teaches **Holm App Spec v1**; prompts use it
+<https://holmhq.com/llms-full.txt> now teaches **Holm App Spec v1**; prompts use it
 for Holm behavior and spell out this repository's own store conventions.
 
 The prompts are the point. They show how little you need to say to get a
@@ -35,7 +35,7 @@ It then pushes or offers to open a pull request.
 
 If your agent has no slash commands, ask it to follow
 `.claude/skills/open/SKILL.md` (or `close/SKILL.md`). To do it by hand instead, follow Holm's
-ten-minute local start in section 4 of <https://holmhq.com/llm.txt>.
+ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 
 ## Apps
 
@@ -48,7 +48,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llm.txt>.
 ## Layout of an app
 
 Every app here uses the Holm App Spec v1 layout documented in sections 9–12
-of <https://holmhq.com/llm.txt>:
+of <https://holmhq.com/llms-full.txt>:
 
 ```text
 <app>/

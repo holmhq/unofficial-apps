@@ -11,7 +11,7 @@ step at a time, and wait for their answer before anything that installs
 software, accepts a licence, or starts a server.
 
 Your only source on Holm is the public reference at
-<https://holmhq.com/llm.txt>. Fetch the section you need rather than guessing
+<https://holmhq.com/llms-full.txt>. Fetch the section you need rather than guessing
 commands or flags:
 
 - §4: Ten-minute local start (install, local node, first deploy).
@@ -53,7 +53,7 @@ Offer three choices, and recommend the first:
 2. **See how an app is built:** read its `README.md` and `PROMPT.md`,
    summarise which Holm features it uses, and point to the interesting files.
 3. **Build a new app from a prompt:** help them write a short `PROMPT.md` in
-   the same style, then build it with `llm.txt` as the only Holm reference.
+   the same style, then build it with `llms-full.txt` as the only Holm reference.
 
 ## 4. Run an app locally (pastebin as the example)
 

@@ -1,6 +1,6 @@
 # Prompt
 
-The public reference at <https://holmhq.com/llm.txt> teaches Holm App Spec
+The public reference at <https://holmhq.com/llms-full.txt> teaches Holm App Spec
 v1. Give the build request below to a coding agent with the `holm` CLI and a
 node you control. The quoted messages later are history, not additional
 instructions or sources.
@@ -8,7 +8,7 @@ instructions or sources.
 ## Build from scratch
 
 ```text
-Build a private-first pastebin using only https://holmhq.com/llm.txt for
+Build a private-first pastebin using only https://holmhq.com/llms-full.txt for
 Holm. Read its v1 sections 9–12 first. Make holm.json, public web/ files and
 api/main.js exporting default { async fetch(request, env) }. Set web.spa
 true, use env.holm for storage/auth, return standard Responses and fall
@@ -120,6 +120,12 @@ and accent:
 
 The agent chose a footer link over the floating button, which would have
 covered the create button on phones.
+
+
+**Iteration 6** moved the build request to the renamed public guide; the
+owner's message (`llms-full.txt` is the full guide's name):
+
+> I think we should move to llms.txt & llm-full.txt; and update all apps which points to old links
 
 The build request uses the current public v1 reference and spells out the
 repository's listing conventions. It does not require private docs or a

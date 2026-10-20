@@ -1,13 +1,13 @@
 # Prompt
 
-The public reference at <https://holmhq.com/llm.txt> teaches Holm App Spec
+The public reference at <https://holmhq.com/llms-full.txt> teaches Holm App Spec
 v1. Give the build request below to a coding agent with the `holm` CLI and a
 node you control. The quoted messages later are history, not extra sources.
 
 ## Build from scratch
 
 ```text
-Build a feedback app using https://holmhq.com/llm.txt as the only Holm
+Build a feedback app using https://holmhq.com/llms-full.txt as the only Holm
 reference; Holm's own https://github.com/holmhq/cdn is allowed for feed-stars.
 Read the v1 sections 9–12 first. Use holm.json with web.spa true, public web/
 files and api/main.js exporting default { async fetch(request, env) }.
@@ -171,6 +171,12 @@ and, after the agent found that iPhone HEIC photos skipped the existing
 shrink:
 
 > yes, fix both and start the recipes
+
+
+**Iteration 13** moved the build request to the renamed public guide; the
+owner's message (`llms-full.txt` is the full guide's name):
+
+> I think we should move to llms.txt & llm-full.txt; and update all apps which points to old links
 
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private

@@ -61,7 +61,7 @@ const WAYS = {
         'Install ', app.title, ' ', app.version, ' on my Holm node from ', REPO, ': clone the ',
         app.tag, ' tag and deploy its ', app.path, ' folder with `holm ', ...peer(), 'app deploy ', app.path,
         ' --host ', ...host(app), ' --spa --no-build`. Then follow its README.md for any setup. ',
-        'Use https://holmhq.com/llm.txt as your only Holm reference.'
+        'Use https://holmhq.com/llms-full.txt as your only Holm reference.'
       ]], 'agent prompt', 'Agent prompt'),
       el('p', {}, 'Paste it into Claude Code, Codex, pi or any coding agent on a machine with the ',
         el('code', {}, 'holm'), ' CLI.')

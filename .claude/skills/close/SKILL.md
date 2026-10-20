@@ -23,7 +23,7 @@ changed and any new ones. If nothing changed, say so and stop.
    - Under "The original requests", quote the person's own messages word for
      word. If you don't have a message verbatim, ask for it; never invent or
      polish one.
-   - Prompts may rely only on <https://holmhq.com/llm.txt>, never on private
+   - Prompts may rely only on <https://holmhq.com/llms-full.txt>, never on private
      knowledge.
 2. **The app's `README.md`:** update what it does, the file layout, known
    limits, and the licence of anything newly vendored.

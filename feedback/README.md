@@ -12,7 +12,7 @@ Live at <https://feedback.zyt.app>. It was built from the request quoted in
 
 ## Holm App Spec v1
 
-feedback follows [Holm App Spec v1](https://holmhq.com/llm.txt), sections
+feedback follows [Holm App Spec v1](https://holmhq.com/llms-full.txt), sections
 9–12: `holm.json` holds identity and web settings, `web/` holds public files,
 and `api/main.js` exports `default { fetch(request, env) }`. Use `env.holm`
 for storage and sign-in, return standard `Response` objects, and set
@@ -218,7 +218,7 @@ migration scaffolding, not the v1 authoring contract. A fresh build should
 write routes directly in `fetch(request, env)`, not use global `holm`,
 `request` or `respond`.
 
-The v1 primitives described in <https://holmhq.com/llm.txt> are:
+The v1 primitives described in <https://holmhq.com/llms-full.txt> are:
 
 - **`env.holm.auth`:** who is signed in. Owner routes also accept an
   app-owned bearer API key, check the project's owner, and answer "not

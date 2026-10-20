@@ -23,9 +23,9 @@ or opens a pull request.
   README says to build locally first; the node never runs a build.
 - `PROMPT.md` is a short, plain-language request that builds the app from
   scratch. It may cite only public sources: <https://holmhq.com>,
-  <https://holmhq.com/llm.txt>, and Holm's own libraries in
+  <https://holmhq.com/llms-full.txt>, and Holm's own libraries in
   <https://github.com/holmhq/cdn>. Read the v1 app-building sections of
-  `llm.txt` before writing code. Keep it short; its job is to show how simple
+  `llms-full.txt` before writing code. Keep it short; its job is to show how simple
   a prompt can be. Quote the original request if there was one; historical
   quotes must not send the builder to private sources.
 - `README.md` covers what the app does, how it's built (naming the Holm

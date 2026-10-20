@@ -1,6 +1,6 @@
 {
   "name": "feedback",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "title": "feedback",
   "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
   "themeColor": "#c2410c",

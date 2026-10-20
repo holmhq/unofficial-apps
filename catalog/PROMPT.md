@@ -1,7 +1,7 @@
 # Prompt
 
 Give the build request below to a coding agent with the `holm` CLI and a
-node you control. Its only Holm reference is <https://holmhq.com/llm.txt>,
+node you control. Its only Holm reference is <https://holmhq.com/llms-full.txt>,
 which now teaches v1. The request defines the repository's store conventions
 itself; no private plan or existing catalog is needed.
 
@@ -9,7 +9,7 @@ itself; no private plan or existing catalog is needed.
 
 ```text
 Build a catalog as a Holm App Spec v1 app using only
-https://holmhq.com/llm.txt for Holm; read sections 9–12 first. Use catalog/
+https://holmhq.com/llms-full.txt for Holm; read sections 9–12 first. Use catalog/
 with holm.json (web.spa true), public web/ files, api/main.js exporting
 default { async fetch(request, env) }, standard Request/Response, env.holm
 storage/auth and env.holm.web.fetch(request) fallback. No build step or
@@ -113,6 +113,12 @@ store's own `/admin` tint can't change node settings.
 Holm's native analytics only see requests that reach the server, and the
 store changes pages in the browser, so the agent counted views, Gets and
 copies itself instead.
+
+
+**Iteration 5** moved the build request to the renamed public guide; the
+owner's message (`llms-full.txt` is the full guide's name):
+
+> I think we should move to llms.txt & llm-full.txt; and update all apps which points to old links
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

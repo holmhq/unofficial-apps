@@ -1,6 +1,6 @@
 {
   "name": "pastebin",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "title": "pastebin",
   "description": "Private-first text, code and media pastes with expiring links and burn-after-read sharing.",
   "themeColor": "#173a72",

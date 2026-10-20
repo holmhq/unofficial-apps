@@ -9,7 +9,7 @@ quoted in [`PROMPT.md`](PROMPT.md), which also has reusable versions of them.
 
 ## Holm App Spec v1
 
-pastebin follows [Holm App Spec v1](https://holmhq.com/llm.txt), sections
+pastebin follows [Holm App Spec v1](https://holmhq.com/llms-full.txt), sections
 9–12: `holm.json` holds identity and web settings, `web/` holds public files,
 and `api/main.js` exports `default { fetch(request, env) }`. The handler
 returns standard `Response` objects and uses `env.holm` for storage and
@@ -95,7 +95,7 @@ are this app's migration scaffolding, not the v1 authoring contract. For a
 fresh build, write routes directly in `fetch(request, env)` as the public
 guide shows; do not start with global `holm`, `request` or `respond`.
 
-The v1 primitives described in <https://holmhq.com/llm.txt> are:
+The v1 primitives described in <https://holmhq.com/llms-full.txt> are:
 
 - **Document store, `env.holm.app.ds`:** pastes, API keys and profiles.
   Storage calls are synchronous; use a documented DS transaction when a

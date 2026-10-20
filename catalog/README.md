@@ -10,7 +10,7 @@ It was built from the requests quoted in [`PROMPT.md`](PROMPT.md).
 
 ## Holm App Spec v1
 
-catalog follows [Holm App Spec v1](https://holmhq.com/llm.txt), sections
+catalog follows [Holm App Spec v1](https://holmhq.com/llms-full.txt), sections
 9–12: `holm.json` holds identity and web settings, `web/` holds public files,
 and `api/main.js` exports `default { fetch(request, env) }`. Use `env.holm`,
 return standard `Response` objects, and set `web.spa: true` in `holm.json`.
@@ -101,7 +101,7 @@ The existing entry delegates to `api/_legacy_main.js`; `api/_holm.js` binds
 `env.holm` for those imported modules on each request. These are migration
 scaffolding, not the v1 authoring contract. For a fresh build, put routes in
 `fetch(request, env)`, using the following documented v1 primitives from
-<https://holmhq.com/llm.txt>:
+<https://holmhq.com/llms-full.txt>:
 
 - **`env.holm.net.fetch`:** synchronous, policy-controlled reads of the
   repository's public index. Global `fetch()` does not make outbound calls.
@@ -175,7 +175,7 @@ The API:
 ## Known limits
 
 - Reviews need a node sign-in method (see section 13 of
-  <https://holmhq.com/llm.txt>); signup is controlled by node policy.
+  <https://holmhq.com/llms-full.txt>); signup is controlled by node policy.
 - The counters accept anonymous requests and aren't rate-limited, so a
   determined visitor could inflate them. They're a rough guide, not a
   measurement.
