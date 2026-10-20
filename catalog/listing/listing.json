@@ -2,7 +2,7 @@
   "subtitle": "A store for app repositories",
   "category": "Developer tools",
   "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
-  "whatsNew": "The prompt and README point at Holm's renamed public guide, https://holmhq.com/llms-full.txt.",
+  "whatsNew": "Icons are generated from the app's symbol in Holm's Glass style.",
   "screenshots": [
     {
       "file": "store.webp",

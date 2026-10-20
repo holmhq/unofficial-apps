@@ -5,11 +5,11 @@
     {
       "name": "catalog",
       "path": "catalog",
-      "version": "0.4.2",
-      "tag": "catalog/v0.4.2",
-      "h1": "h1:E3RxgvOGeM1VzRs+dosZKsL7ByKO/x+8+2TKEawx2CU=",
-      "files": 24,
-      "size": 215253,
+      "version": "0.4.3",
+      "tag": "catalog/v0.4.3",
+      "h1": "h1:VdTu1YjjlKkIPggPw/SdWklbYXlTTZiW36BnaYtRgNM=",
+      "files": 34,
+      "size": 413068,
       "title": "catalog",
       "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
       "themeColor": "#0e7c66",
@@ -19,7 +19,7 @@
         "subtitle": "A store for app repositories",
         "category": "Developer tools",
         "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour.\n\nIt reads the repository's index.json, the same file a node reads from a repository it trusts. Point it at your own repository to give your apps a store of their own.",
-        "whatsNew": "The prompt and README point at Holm's renamed public guide, https://holmhq.com/llms-full.txt.",
+        "whatsNew": "Icons are generated from the app's symbol in Holm's Glass style.",
         "featured": false,
         "screenshots": [
           {
@@ -143,11 +143,11 @@
     {
       "name": "pastebin",
       "path": "pastebin",
-      "version": "0.3.2",
-      "tag": "pastebin/v0.3.2",
-      "h1": "h1:wkLRFAdMT2mkIHw0bKvPvN48xi87bqfK39nszfMGTuk=",
-      "files": 42,
-      "size": 597864,
+      "version": "0.3.3",
+      "tag": "pastebin/v0.3.3",
+      "h1": "h1:E4yjT0mCH2Q14EjpMstJ2YP2kwPB9tmzL0LB9HvElWw=",
+      "files": 51,
+      "size": 844466,
       "title": "pastebin",
       "description": "Private-first text, code and media pastes with expiring links and burn-after-read sharing.",
       "themeColor": "#173a72",
@@ -157,7 +157,7 @@
         "subtitle": "Links that expire or burn",
         "category": "Utilities",
         "description": "Paste text, code or files and share them behind a link that expires, opens only once, or can be revoked at any time.\n\nCode is highlighted as you type. Markdown renders like GitHub's, and images, video and audio play in place. Your name stays off the paste unless you choose to show it.\n\nAPI keys and a small command-line tool let scripts and agents file pastes for you.",
-        "whatsNew": "The prompt and README point at Holm's renamed public guide, https://holmhq.com/llms-full.txt.",
+        "whatsNew": "Icons are generated from the app's symbol in Holm's Glass style.",
         "featured": true,
         "screenshots": [
           {
