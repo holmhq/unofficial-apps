@@ -25,7 +25,7 @@ uploads; no global holm/request/respond and no request.files API.
   contact email/phone and up to eight text/select/radio/checkbox questions.
   Support four files, 8 MiB total, and a one-tap phone photo; photo or rating
   alone can send. Shrink big photos in the browser before upload (at most
-  2048 px, JPEG), and turn iPhone HEIC photos into JPEG. Strip query/fragment from the sending page's address.
+  2048 px, JPEG quality 0.82), and turn iPhone HEIC photos into JPEG. Strip query/fragment from the sending page's address.
 - One private inbox per project: ticket numbers, statuses, notes and a team
   thread, sort/search/filter for hundreds of items. Only the owner sees
   files/contact details. The optional public page shows selected items,
@@ -177,6 +177,17 @@ shrink:
 owner's message (`llms-full.txt` is the full guide's name):
 
 > I think we should move to llms.txt & llm-full.txt; and update all apps which points to old links
+
+
+**Iteration 14** lowered the photo quality after a 1 MB upload was measured:
+
+> i wonder 1MB is even needed?
+> - whats a saner size? that can be saved for web like needs?
+> - is that configurable so that agents building these systems will auto pick the size?
+
+and, to the agent's proposal of 2048 px at JPEG quality 0.82:
+
+> Yes do all of that
 
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private
