@@ -257,15 +257,30 @@ function attachments(item) {
   if (!item.files.length) return null
   const url = (file, extra = '') => `/api/items/${item.id}/files/${file.index}${extra}`
   const pictures = item.files.filter(file => file.preview)
-  const others = item.files.filter(file => !file.preview)
+  const videos = item.files.filter(file => !file.preview && file.kind === 'video')
+  const others = item.files.filter(file => !file.preview && file.kind !== 'video')
+  const row = file => el('li', {},
+    glyph('file', 'glyph line'),
+    el('a', { href: url(file), target: '_blank', rel: 'noopener' }, file.name),
+    el('span', { class: 'muted' }, size(file.size)),
+    el('a', { class: 'icon-link', href: url(file, '?download=1'), 'aria-label': `Download ${file.name}` }, glyph('download', 'glyph line')))
   return el('section', { class: 'attachments', 'aria-label': 'Files' },
     pictures.length > 0 && el('ul', { class: 'pictures' }, pictures.map(file => el('li', {},
       el('a', { href: url(file), target: '_blank', rel: 'noopener' }, el('img', { src: url(file, '?preview=1'), alt: file.name, loading: 'lazy' }))))),
-    others.length > 0 && el('ul', { class: 'file-list' }, others.map(file => el('li', {},
-      glyph('file', 'glyph line'),
-      el('a', { href: url(file), target: '_blank', rel: 'noopener' }, file.name),
-      el('span', { class: 'muted' }, size(file.size)),
-      el('a', { class: 'icon-link', href: url(file, '?download=1'), 'aria-label': `Download ${file.name}` }, glyph('download', 'glyph line'))))))
+    videos.length > 0 && el('ul', { class: 'videos' }, videos.map(file => el('li', {}, player(url(file), file.name), el('ul', { class: 'file-list' }, row(file))))),
+    others.length > 0 && el('ul', { class: 'file-list' }, others.map(row)))
+}
+
+// Plays a video in place. A codec the browser lacks (often HEVC from a phone)
+// fails, or loads sound with no picture; either way say so beside the download.
+function player(src, name) {
+  const note = el('p', { class: 'video-note', hidden: true }, 'This browser can’t play this video. Download it to watch.')
+  const cannot = () => { video.hidden = true; note.hidden = false }
+  const video = el('video', {
+    src, controls: true, preload: 'metadata', playsinline: true, 'aria-label': name,
+    onerror: cannot, onloadedmetadata: () => { if (!video.videoWidth) cannot() }
+  })
+  return [video, note]
 }
 
 function publicComments(project, item) {

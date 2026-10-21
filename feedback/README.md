@@ -89,7 +89,8 @@ deploy. They are still public source in this repository.
   filters. On a phone the filters fold behind one button. Each item shows
   the message, its rating and answers, the page and its title, the
   browser, the window size, the email and phone, and its files (pictures as
-  thumbnails). Its **thread**, for your team only, lists when it came in,
+  thumbnails, videos in a player that says so when the browser can't play
+  them). Its **thread**, for your team only, lists when it came in,
   every note and every change of status, kind or visibility, by whom. Only
   the owner can open the files.
 - **The feedback page,** off by default, at `/<custom-address>` (or

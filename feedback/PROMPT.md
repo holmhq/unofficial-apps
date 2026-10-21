@@ -199,6 +199,10 @@ and, to the agent's proposal of 2048 px at JPEG quality 0.82:
 > - one caveat: i sort of like its social preview images, may we can then replace that back on the generated assets as an over ride?
 > - we can use the current shape & generate it?
 
+**Iteration 16** played videos on the item page, after a phone video sent
+through the form would not play when its link was opened: the inbox now shows
+a player, and says plainly when the browser can't play the file.
+
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private
 documentation, downloaded icon attachment or pre-existing feedback app.

@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "0.10.0",
+      "date": "2026-10-21",
+      "title": "Videos play in place",
+      "changes": [
+        "A video someone sends plays right on the item, under its message, with its name, size and download link beneath it.",
+        "If your browser can’t play it (phone videos often use a format some browsers lack), the item says so beside the download link instead of showing a broken player."
+      ]
+    },
+    {
       "version": "0.7.1",
       "date": "2026-10-19",
       "title": "Your own computer isn't a site",
