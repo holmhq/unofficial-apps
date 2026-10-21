@@ -63,22 +63,25 @@ export const publicConfig = doc => ({
   contact: contactOf(doc), rating: ratingOf(doc), fields: fieldsOf(doc)
 })
 
-export function findProject(id) {
-  return /^[a-z0-9]{8}$/.test(id || '') ? ds().findOne('projects', { id }) : null
+// Request-local storage for both the raw routes and named operations.
+export function projectFactory(env) {
+  const findProject = id => /^[a-z0-9]{8}$/.test(id || '') ? env.holm.app.ds.findOne('projects', { id }) : null
+  const ownProject = (user, id) => {
+    const doc = findProject(id)
+    if (!doc || doc.ownerId !== user.id) reject(404, 'not_found', 'Project not found.')
+    return doc
+  }
+  return { findProject, ownProject }
 }
+
+export const findProject = id => projectFactory({ holm: { app: { ds: ds() } } }).findProject(id)
+export const ownProject = (user, id) => projectFactory({ holm: { app: { ds: ds() } } }).ownProject(user, id)
 
 // A public page's project, by its custom address or its id.
 export function findBoard(key) {
   const value = String(key || '').toLowerCase()
   if (!/^[a-z0-9-]{3,40}$/.test(value)) return null
   return ds().findOne('projects', { slug: value }) || findProject(value)
-}
-
-// A project the caller owns, or a 404 that doesn't reveal others.
-export function ownProject(user, id) {
-  const doc = findProject(id)
-  if (!doc || doc.ownerId !== user.id) reject(404, 'not_found', 'Project not found.')
-  return doc
 }
 
 function origins(value) {

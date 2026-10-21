@@ -1,9 +1,10 @@
 // Feedback items: sent by anyone through a project's widget, triaged by the
 // project's owner, and shown on the public board only when the owner says so.
 import { ds, kv, now, iso, text, reject, random, kindOf } from './lib.js'
-import { findProject, findBoard, ownProject, kindsOf, iconOf } from './projects.js'
-import { uploads, store, remove, fileDTO, serve } from './files.js'
-import { count } from './stats.js'
+import { holm } from './_holm.js'
+import { findBoard, kindsOf, iconOf, projectFactory } from './projects.js'
+import { fileFactory, remove, fileDTO, serve } from './files.js'
+import { count, statsFactory } from './stats.js'
 import { pictureURL } from './page.js'
 import { contactOf, fieldsOf, ratingOf, answersFor, contactFor, ratingFor } from './form.js'
 
@@ -39,7 +40,15 @@ function page(value) {
 
 // From a site's widget, or ("page") from the project's own public page,
 // which the allowed-sites rule doesn't cover.
-export function submit(project, input, request, source = 'widget') {
+export function itemFactory(env) {
+  const ds = () => env.holm.app.ds
+  const kv = () => env.holm.app.kv
+  const { findProject, ownProject } = projectFactory(env)
+  const { uploads, store, remove } = fileFactory(env)
+  const { count } = statsFactory(env)
+  return { submit, submitToWidget, listItems, ownItem, updateItem }
+
+function submit(project, input, request, source = 'widget') {
   // A filled-in hidden field means a bot; it is told the item was sent.
   if (input.website) return { sent: true }
   const from = source === 'page' ? '' : page(input.url)
@@ -79,13 +88,13 @@ export function submit(project, input, request, source = 'widget') {
   return { sent: true, number: doc.number }
 }
 
-export function submitToWidget(projectId, input, request) {
+function submitToWidget(projectId, input, request) {
   const project = findProject(projectId)
   if (!project) reject(404, 'not_found', 'This feedback form isn’t set up.')
   return submit(project, input, request)
 }
 
-export function listItems(user, projectId, status) {
+function listItems(user, projectId, status) {
   const project = ownProject(user, projectId)
   const query = { project: project.id }
   if (status === 'open') query.status = { $in: ['new', 'planned', 'progress'] }
@@ -100,7 +109,7 @@ function ownItem(user, id) {
   return doc
 }
 
-export function updateItem(user, id, input) {
+function updateItem(user, id, input) {
   const doc = ownItem(user, id)
   const changes = { updatedAt: now() }
   if ('status' in input) changes.status = STATUSES.includes(input.status) ? input.status : reject(400, 'invalid_status', 'Unknown status.')
@@ -118,6 +127,13 @@ export function updateItem(user, id, input) {
   })
   return itemDTO(ds().findOne('items', { id: doc.id }))
 }
+}
+
+export const submit = (...args) => itemFactory({ holm }).submit(...args)
+export const submitToWidget = (...args) => itemFactory({ holm }).submitToWidget(...args)
+export const listItems = (...args) => itemFactory({ holm }).listItems(...args)
+const ownItem = (...args) => itemFactory({ holm }).ownItem(...args)
+export const updateItem = (...args) => itemFactory({ holm }).updateItem(...args)
 
 const STATUS_NAMES = { new: 'new', planned: 'planned', progress: 'in progress', done: 'done', closed: 'closed' }
 const KIND_NAMES = { issue: 'an issue', idea: 'an idea', question: 'a question', praise: 'praise', problem: 'a problem' }

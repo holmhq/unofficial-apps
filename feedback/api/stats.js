@@ -11,11 +11,15 @@ const DAY = 86400000
 const dayOf = time => new Date(time).toISOString().slice(0, 10)
 
 // Counting must never break the request it rides on.
-export function count(projectId, metric) {
+export function statsFactory(env, { prune = true } = {}) {
+  const ds = () => env.holm.app.ds
+  const kv = () => env.holm.app.kv
+
+function count(projectId, metric) {
   try { kv().increment(`stat:${projectId}:${dayOf(now())}:${metric}`, 1) } catch (error) { console.warn('stat', String(error)) }
 }
 
-export function removeProjectStats(projectId) {
+function removeProjectStats(projectId) {
   for (const entry of kv().list(`stat:${projectId}:`) || []) kv().delete(entry.key)
 }
 
@@ -38,14 +42,14 @@ function series(projectId, days) {
   const cutoff = dayOf(now() - KEEP_DAYS * DAY)
   for (const entry of kv().list(`stat:${projectId}:`) || []) {
     const [, , day, metric] = entry.key.split(':')
-    if (day < cutoff) { kv().delete(entry.key); continue }
+    if (day < cutoff) { if (prune) kv().delete(entry.key); continue }
     if (index.has(day) && daily[metric]) daily[metric][index.get(day)] = Number(entry.value) || 0
   }
   return daily
 }
 
 // Every project the owner has, side by side.
-export function accountStats(user, input) {
+function accountStats(user, input) {
   const days = range(input)
   const projects = ds().find('projects', { ownerId: user.id }, { limit: 20, orderBy: 'createdAt', order: 'desc' }).map(doc => {
     const daily = series(doc.id, days)
@@ -58,7 +62,7 @@ export function accountStats(user, input) {
 
 // One project the caller owns, plus where its feedback came from and what
 // kind it was.
-export function projectStats(project, input) {
+function projectStats(project, input) {
   const days = range(input)
   const daily = series(project.id, days)
   const since = Date.parse(days[0])
@@ -76,3 +80,11 @@ export function projectStats(project, input) {
   const top = [...pages].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([page, count]) => ({ page, count }))
   return { days, daily, totals: totalsOf(daily), pages: top, kinds, ratings }
 }
+  return { count, removeProjectStats, accountStats, projectStats }
+}
+
+const legacyStats = () => statsFactory({ holm: { app: { ds: ds(), kv: kv() } } })
+export const count = (...args) => legacyStats().count(...args)
+export const removeProjectStats = (...args) => legacyStats().removeProjectStats(...args)
+export const accountStats = (...args) => legacyStats().accountStats(...args)
+export const projectStats = (...args) => legacyStats().projectStats(...args)

@@ -34,6 +34,7 @@ uploads; no global holm/request/respond and no request.files API.
   described as casual-misuse guards, not strong sender authentication.
   Track daily visits, QR/email-link visits, opens, sends, votes and comments
   in app KV; no visitor tracking. “Where it's live” separates local copies.
+- Add typed operations for public widget settings and JSON feedback with keyed retries, plus a signed-in owner's private inbox, mark-done action and dashboard counts; keep all existing routes and file flows.
 - API keys: show once, hash SHA-256, accept bearer tokens on owner routes,
   check project ownership, return the setup snippet; keys cannot mint keys.
 - Make it refined on phones/desktop, light/dark/system, a fixed footer and

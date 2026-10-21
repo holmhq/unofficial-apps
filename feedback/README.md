@@ -169,6 +169,26 @@ with `request.formData()`, and converts its answers to standard `Response`
 objects. Other paths go to `env.holm.web.fetch(request)` for static files
 and SPA fallback. There is no build step.
 
+Named typed operations are also exported in `contract.operations`, with
+native `(input, env, ctx)` handlers and shared request-local storage factories.
+Call them with JSON at `POST /api/<operation key>`: `projects.get` reads only
+public widget configuration; `feedback.submit` sends JSON without attachments;
+`items.list`, `items.done` and `stats.get` require a signed-in project
+owner. Inbox items and stats are sensitive and never public. Existing routes,
+bearer API keys, the dashboard, widget, QR codes and multipart uploads remain
+available; app-owned bearer keys do not authorize member operations.
+
+`feedback.submit` requires an `Idempotency-Key` header; `items.done`
+accepts one optionally. Matching completed calls replay for 24 hours under
+current authority. A missing required key returns 428; changed input or an
+in-progress/unknown outcome returns 409. Keys do not provide an exactly-once
+transaction, and can execute again after expiry. Read operations have no
+storage effects: typed stats skip the old-counter cleanup that raw routes
+still perform. See the public guide's “Named JSON operations and keyed
+retries” section and use a node supporting that runtime. Connected agents
+are disabled and the web renderer is off; this does not change static web
+serving or claim an available MCP consumer.
+
 ```text
 holm.json           name, version, colour, SPA routing, store metadata
 web/                public files, served as-is:

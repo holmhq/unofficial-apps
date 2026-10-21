@@ -2,7 +2,7 @@ import { holm } from "./_holm.js";
 // Attachments: pictures, videos, PDFs and text files a visitor adds to an
 // item. They live in the app's blob storage, and only the project's owner can
 // open them; the public board never shows them.
-import { kv, now, reject } from './lib.js'
+import { now, reject } from './lib.js'
 
 export const MAX_FILES = 4
 export const MAX_TOTAL = 8 * 1024 * 1024
@@ -35,7 +35,12 @@ const kindOf = mime => /^(image|video)\//.test(mime) ? mime.split('/')[0] : mime
 
 // The request's files in the order the form added them (file0, file1, ...),
 // checked against the project's rules before anything is stored.
-export function uploads(request, project) {
+export function fileFactory(env) {
+  const holm = env.holm
+  const kv = () => holm.app.kv
+  return { uploads, store, remove }
+
+function uploads(request, project) {
   const files = request.files || {}
   const order = field => Number((/(\d+)$/.exec(field) || [0, 0])[1])
   const list = Object.keys(files).sort((a, b) => order(a) - order(b)).map(key => files[key]).filter(Boolean)
@@ -59,7 +64,7 @@ export function uploads(request, project) {
 
 // Stores checked uploads under the item, with a small JPEG for each picture
 // Holm can read. Returns what the item keeps about them.
-export function store(checked, projectId, itemId) {
+function store(checked, projectId, itemId) {
   const out = []
   try {
     checked.forEach(({ file, name, mime }, index) => {
@@ -84,12 +89,17 @@ export function store(checked, projectId, itemId) {
   return out
 }
 
-export function remove(files) {
+function remove(files) {
   for (const meta of files || []) {
     holm.app.s3.delete(meta.path)
     if (meta.previewPath) holm.app.s3.delete(meta.previewPath)
   }
 }
+}
+
+export const uploads = (...args) => fileFactory({ holm }).uploads(...args)
+export const store = (...args) => fileFactory({ holm }).store(...args)
+export const remove = (...args) => fileFactory({ holm }).remove(...args)
 
 export function removeProject(projectId) {
   for (const entry of holm.app.s3.list(`files/${projectId}/`) || []) holm.app.s3.delete(entry.path || entry.key)
