@@ -59,11 +59,11 @@
     {
       "name": "feedback",
       "path": "feedback",
-      "version": "0.12.0",
-      "tag": "feedback/v0.12.0",
-      "h1": "h1:gKH9y73tFL4+vw7wMp7hxdTDoK3L/+OULXSOsmZo1+Y=",
+      "version": "0.12.1",
+      "tag": "feedback/v0.12.1",
+      "h1": "h1:Cru7xdJyQRdCmuf9iVkt8sTCqpJgcVN3agSvdUBCjP8=",
       "files": 57,
-      "size": 799932,
+      "size": 799866,
       "title": "feedback",
       "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
       "themeColor": "#c2410c",
@@ -73,7 +73,7 @@
         "subtitle": "Feedback for websites, shops and events",
         "category": "Developer tools",
         "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-        "whatsNew": "ChatGPT and Claude can now use feedback's public operations as tools at /_holm/mcp: read a project's widget settings and send feedback. Inbox and stats stay owner-only.",
+        "whatsNew": "The form no longer ends with a note about the page address; it still records the page it was sent from, without anything after a ? or #.",
         "featured": false,
         "screenshots": [
           {

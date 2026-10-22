@@ -65,7 +65,7 @@ function form() {
     preview,
     context: { url: params.get('url') || '', title: params.get('title') || '', viewport: params.get('viewport') || '' },
     onSent: thanks,
-    fine: preview ? 'Preview: nothing is sent.' : 'Sent with the address of this page, without anything after a ? or #.'
+    fine: preview ? 'Preview: nothing is sent.' : null
   })))
 }
 
