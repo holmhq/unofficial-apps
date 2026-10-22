@@ -2,7 +2,7 @@
   "subtitle": "Feedback for websites, shops and events",
   "category": "Developer tools",
   "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-  "whatsNew": "The form loads in the background while the page is idle, so it opens at once. Sites that open it from their own link can call HolmFeedback.preload().",
+  "whatsNew": "Agents can read how to add the button and use the owner API, logos included, at /llms.txt.",
   "screenshots": [
     {
       "file": "widget.webp",

@@ -1,0 +1,141 @@
+# Feedback
+
+> A feedback button for any website and an inbox for what visitors send: issues, ideas and
+> questions, with files, ratings and your own questions. Hosted at https://feedback.zyt.app.
+> It is an open-source Holm app: https://github.com/holmhq/unofficial-apps/tree/main/feedback
+
+Each site gets a **project**. The project's snippet adds the button; what visitors send lands in
+that project's inbox at `https://feedback.zyt.app/projects/<id>`.
+
+## Add the button to a site
+
+Paste the project's snippet before `</body>` in the site's shared layout (or on every page):
+
+```html
+<script src="https://feedback.zyt.app/embed.js" data-project="abcd2345" async></script>
+```
+
+The button reads the project's look (text, colour, side, style, panel theme) as the page loads,
+so later changes need no new snippet. Attributes on the tag win over the project's settings:
+
+- `data-label` — the button's text (default `Feedback`).
+- `data-color` — `#rrggbb`.
+- `data-position` — `right` or `left`.
+- `data-button` — `pill`, `icon`, or `none` to open the form from your own control.
+- `data-theme` — the panel's: `light`, `dark` or `auto`.
+- `data-preload="hover"` — load the form only when the pointer reaches the button. By default
+  the form loads in the background once the page is idle, so it opens at once (readers with
+  Save-Data on get hover loading too). Loading is not counted as an open.
+
+From your own link or button: `HolmFeedback.open()`, `.close()`, `.toggle()` and `.preload()`.
+`HolmFeedback.ready` is true, and a `holmfeedback:ready` event fires on `window`, once the
+button is set up, so a link of your own can wait to show. The page address is sent without its
+query or fragment.
+
+### On a site that is itself a Holm app
+
+Holm pages run only their own scripts. Copy `https://feedback.zyt.app/embed.js` into the site
+(re-copy it to pick up new versions), point the tag at the copy, say where feedback lives, and
+put the look on the tag:
+
+```html
+<script src="/embed.js" data-project="abcd2345" data-origin="https://feedback.zyt.app" data-color="#1d4ed8" async></script>
+```
+
+Then the site's operator lets its pages frame the form (ask them first; it changes the site's
+policy):
+
+```sh
+holm @<peer> policy set security.csp.frame_src "https://feedback.zyt.app" --app <site-app-id>
+```
+
+## Owner API
+
+Base URL `https://feedback.zyt.app`. Make a key in the app under the avatar menu → API keys.
+Send it as `Authorization: Bearer <key>` on every owner route. Replies are JSON: `ok: true`, or
+`ok: false` with `error.code` and `error.message`. The key acts as its owner on all their projects.
+
+### Projects
+
+- `GET /api/projects` — your projects.
+- `POST /api/projects` — make one (JSON, fields below). The reply's `project.snippet` is the tag
+  to paste; `project.id` names its inbox.
+- `GET /api/projects/<id>` — one project, with `snippet` and `board`.
+- `PATCH /api/projects/<id>` — change any field below.
+- `DELETE /api/projects/<id>` — delete it and everything in it.
+- `GET /api/projects/<id>/stats?days=30` — daily counts and totals, top pages, kinds and ratings;
+  `GET /api/stats?days=30` gives daily counts and totals across all projects.
+- `GET /api/projects/<id>/installs` — the sites the button was seen on.
+
+Fields: `name` (≤60), `label` (button text), `color` (`#rrggbb`), `position` (`right`, `left`),
+`button` (`pill`, `icon`, `none`), `theme` (`light`, `dark`, `auto`), `origins` (list of
+`https://host` the form may be sent from; empty accepts any site), `icon` (the mark shown when
+there is no logo: one of 48 named icons such as `flame`, `rocket`, `globe`, `code`, `terminal`,
+`bot`, `package`, `heart`, `star`, or `letter` for the name's initial), `attachments` (boolean),
+`for` (`site` for issue/idea/question, or `place` for praise/problem/idea), `contact`
+(`{"email": "optional", "phone": "off"}`, each `off`, `optional` or `required`), `rating`
+(`{"ask": "off", "label": ""}`), `fields` (up to eight questions, each `{"type": "text" | "select"
+| "radio" | "checkbox", "label", "required", "options"}`), `public` (the public board at
+`/b/<id>`), `slug` (a custom board address, 3–40 lowercase letters, digits, hyphens), `title` and
+`intro` (the form's and board's heading and text).
+
+```sh
+curl https://feedback.zyt.app/api/projects -H "Authorization: Bearer $KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"My blog","origins":["https://blog.example.com"],"color":"#1d4ed8"}'
+```
+
+### Logo and cover
+
+The logo leads the form and the board; without one the project shows its `icon`. The cover is
+the board's wide banner.
+
+- `POST /api/projects/<id>/logo` and `POST /api/projects/<id>/cover` — multipart upload of one
+  PNG, JPEG, WebP or GIF up to 10 MB. A logo is fitted inside 512 px as PNG (transparency kept);
+  a cover is cropped to 1800 × 640 JPEG.
+- `DELETE /api/projects/<id>/logo` (or `/cover`) — back to the default.
+
+```sh
+curl -X POST https://feedback.zyt.app/api/projects/<id>/logo \
+  -H "Authorization: Bearer $KEY" -F "file=@logo.png;type=image/png"
+```
+
+**Use the site's own icon.** Read the site's home page head and take the largest square image
+from, in order: `<link rel="apple-touch-icon">`, `<link rel="icon" type="image/png">` with the
+biggest `sizes`, the web app manifest's `icons`, then `/apple-touch-icon.png` or
+`/favicon.png`. Skip SVG and ICO (not accepted); prefer 180 px or larger. Download it and upload
+it as above. Match `color` to the site's brand colour (its `<meta name="theme-color">` or main
+accent).
+
+### Items (what visitors sent)
+
+- `GET /api/projects/<id>/items?status=<s>` — the inbox. `status` is `new`, `planned`,
+  `progress`, `done`, `closed`, or `open` for new + planned + progress; omit it for all.
+- `PATCH /api/items/<item-id>` — `status`, `kind` (`issue`, `idea`, `question`, `praise`,
+  `problem`), `public` (show on the board), `title`.
+- `DELETE /api/items/<item-id>`.
+- `GET` and `POST /api/items/<item-id>/notes` — private notes, `{"body": "..."}`.
+- `GET` and `POST /api/items/<item-id>/comments` — board comments; `POST` replies as the owner.
+  `PATCH /api/comments/<id>` with `{"approved": true}` publishes a visitor's comment;
+  `DELETE /api/comments/<id>` removes it.
+
+An item has `id`, `number` (the `#12` shown in the app), `kind`, `status`, `title`, `body`,
+`email` (may be empty), `page`, `pageTitle`, `browser`, `viewport`, `votes`, `public` and
+`createdAt`. Link one as `https://feedback.zyt.app/projects/<project-id>/items/<number>`.
+
+## For AI assistants (MCP)
+
+`https://feedback.zyt.app/_holm/mcp` is an MCP endpoint with two public tools: `projects_get`
+(a widget's public settings) and `feedback_submit` (send text or rated feedback; it requires an
+`idempotency_key`, reused only to retry the same input, so a retry is never sent twice). Owner tools (inbox, triage, settings) need sign-in, which is
+not available yet; use the owner API above.
+
+## Rules for agents
+
+- Reuse a site's existing project (`GET /api/projects`, match `origins`); don't make a second.
+- Set the new project's `color` and logo from the site itself (see "Use the site's own icon").
+- Keep the key where the owner keeps it; never print, log or commit it. On a 401, ask the owner
+  for a key instead of retrying.
+- Don't delete projects, items or comments, or turn a board public, unless asked to.
+- Feedback can hold visitors' emails: summarise it for the owner, never post it publicly.
+- After adding the button, load the page and check the button opens the form.

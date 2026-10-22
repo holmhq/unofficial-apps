@@ -311,7 +311,8 @@ stars are the fallback if it cannot load.
 
 ## API
 
-Make a key under API keys in the avatar menu. Then, to set up a new site:
+Agents can read the whole setup and owner API at `/llms.txt`
+(<https://feedback.zyt.app/llms.txt>). Make a key under API keys in the avatar menu. Then, to set up a new site:
 
 ```sh
 curl https://feedback.example.com/api/projects \
