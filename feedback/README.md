@@ -185,9 +185,15 @@ in-progress/unknown outcome returns 409. Keys do not provide an exactly-once
 transaction, and can execute again after expiry. Read operations have no
 storage effects: typed stats skip the old-counter cleanup that raw routes
 still perform. See the public guide's “Named JSON operations and keyed
-retries” section and use a node supporting that runtime. Connected agents
-are disabled and the web renderer is off; this does not change static web
-serving or claim an available MCP consumer.
+retries” section and use a node supporting that runtime. The web renderer is
+off; this does not change static web serving.
+
+AI assistants can use the public operations as tools: connect ChatGPT or
+Claude to `https://<your feedback domain>/_holm/mcp` (Holm serves it; the app
+writes no MCP route). `projects.get` and `feedback.submit` appear as
+`projects_get` and `feedback_submit`; owner-only operations stay private until
+Holm supports signed-in tools. Set `"connectedAgents": false` in `holm.json`
+to turn this off.
 
 ```text
 holm.json           name, version, colour, SPA routing, store metadata

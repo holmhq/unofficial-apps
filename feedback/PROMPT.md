@@ -204,6 +204,12 @@ and, to the agent's proposal of 2048 px at JPEG quality 0.82:
 through the form would not play when its link was opened: the inbox now shows
 a player, and says plainly when the browser can't play the file.
 
+**Iteration 17** turned on Holm's MCP endpoint for feedback's public operations,
+so ChatGPT and Claude can read a project's widget settings and send feedback,
+in reply to the agent's offer to turn it on after Holm's release:
+
+> yesm do whats needed autonomously
+
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private
 documentation, downloaded icon attachment or pre-existing feedback app.
