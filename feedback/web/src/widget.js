@@ -54,6 +54,10 @@ function header(words = true) {
     words && el('div', { class: 'titles' }, el('h1', {}, titleOf()), el('p', { class: 'intro' }, introOf())))
 }
 
+// The page the form was sent from. A host that loaded the form ahead of time
+// sends the page again as the panel opens (see the message handler below).
+const context = { url: params.get('url') || '', title: params.get('title') || '', viewport: params.get('viewport') || '' }
+
 function form() {
   root.replaceChildren(header(), el('div', { class: 'body' }, composer({
     endpoint: `/api/embed/${projectId}/items`,
@@ -63,7 +67,7 @@ function form() {
     rating: config.rating,
     attachments: config.attachments,
     preview,
-    context: { url: params.get('url') || '', title: params.get('title') || '', viewport: params.get('viewport') || '' },
+    context,
     onSent: thanks,
     fine: preview ? 'Preview: nothing is sent.' : null
   })))
@@ -95,6 +99,12 @@ if (params.get('host') !== '2') countOpen()
 addEventListener('message', event => {
   if (event.source !== parent || !event.data || event.data.source !== 'holm-feedback-host') return
   if (event.data.type !== 'open') return
+  const page = event.data.page
+  if (page && typeof page.url === 'string') {
+    context.url = page.url.slice(0, 2048)
+    context.title = String(page.title || '').slice(0, 200)
+    context.viewport = String(page.viewport || '').slice(0, 20)
+  }
   countOpen()
   if (!preview && matchMedia('(pointer: fine)').matches) root.querySelector('textarea')?.focus({ preventScroll: true })
 })

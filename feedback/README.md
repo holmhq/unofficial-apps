@@ -137,7 +137,11 @@ changes in Design need no new snippet. Attributes on the tag win over them:
 link with `HolmFeedback.open()`), and `data-theme` (`light`, `dark` or
 `auto`). `HolmFeedback.close()` and `HolmFeedback.toggle()` work too. Once
 the form is there, `HolmFeedback.ready` is true and a `holmfeedback:ready`
-event fires on `window`, so a link of your own can wait to show.
+event fires on `window`, so a link of your own can wait to show. The form
+then loads in the background while the page is idle, so it opens at once;
+`data-preload="hover"` waits until the pointer reaches the button (or your
+link calls `HolmFeedback.preload()`), and a reader with Save-Data on gets
+that too. Loading isn't counted as an open.
 
 The button and panel live in a closed shadow root, so your CSS and the
 widget's never touch. The form is an iframe on the feedback app's own origin,

@@ -10,7 +10,10 @@
  * data-button="pill" | "icon" | "none" (none: open the form from your own
  * control with window.HolmFeedback.open()), and data-theme="light" | "dark" |
  * "auto". A "holmfeedback:ready" event on window, and HolmFeedback.ready,
- * say the form is there.
+ * say the form is there. The form loads in the background once the page is
+ * idle, so it opens at once; data-preload="hover" waits for the pointer
+ * instead, and so does a reader who asked to save data.
+ * HolmFeedback.preload() starts it from a control of your own.
  * Use data-origin="https://feedback.example.com" when this file is
  * copied into the site itself (Holm-hosted sites must, since their pages
  * only run their own scripts).
@@ -164,8 +167,16 @@
     paint()
     if (window.HolmFeedback) window.HolmFeedback.ready = true
     try { window.dispatchEvent(new Event('holmfeedback:ready')) } catch (error) {}
+    if (data.preload === 'hover' || (navigator.connection && navigator.connection.saveData)) return
+    var idle = window.requestIdleCallback || function (fn) { return setTimeout(fn, 1500) }
+    idle(load, { timeout: 4000 })
   }
 
+  // The page as it is now, sent again when the panel opens: a form loaded
+  // ahead of time on a single-page site would otherwise report an old page.
+  function current() {
+    return { url: location.origin + location.pathname, title: document.title.slice(0, 200), viewport: innerWidth + 'x' + innerHeight }
+  }
   function page() {
     return origin + '/widget.html?p=' + project +
       '&url=' + encodeURIComponent(location.origin + location.pathname) +
@@ -185,7 +196,7 @@
     open = true
     paint()
     button.setAttribute('aria-expanded', 'true')
-    tell({ type: 'open' })
+    tell({ type: 'open', page: current() })
     frame.focus()
   }
   function hide() {
@@ -217,11 +228,11 @@
       loaded = true
       paint()
       if (override) frame.contentWindow.postMessage({ source: 'feedback-setup', config: override }, origin)
-      if (open) tell({ type: 'open' })
+      if (open) tell({ type: 'open', page: current() })
     }
   })
 
-  window.HolmFeedback = { open: show, close: hide, toggle: function () { open ? hide() : show() } }
+  window.HolmFeedback = { open: show, close: hide, toggle: function () { open ? hide() : show() }, preload: load }
   apply({})
   ;(document.body || document.documentElement).appendChild(host)
 
