@@ -6,9 +6,32 @@ import { projectFactory, publicConfig } from "./projects.js";
 import { itemFactory } from "./items.js";
 import { statsFactory } from "./stats.js";
 import { profile, reject } from "./lib.js";
+import { createAccount as makeAccount } from "./accounts.js";
 
 export const contract = {
   "operations": {
+    "accounts.create": {
+      "handler": "createAccount", "auth": { "invoke": { "public": true } }, "risk": "write", "sensitive": true,
+      "summary": "Make a feedback project with no sign-in, for an app you are building",
+      "description": "Solve the Holm challenge first (GET /_holm/challenge?operation=accounts.create, about 30 s in a browser, a few seconds in Python), then POST /api/accounts.create with Holm-Challenge and Holm-Challenge-Solution. Returns the project with its snippet and an API key shown once: store it with the app (a Holm outbound secret, or a gitignored .env), never print it. The key reaches only this project. Ten a minute from one address. Until someone keeps it, the project takes no files and 100 items a day, and it is deleted after 90 days unused.",
+      "limits": { "rate": { "requests": 10, "per": "1m" }, "challenge": { "work": "30s" } },
+      "input": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "maxLength": 60 },
+          "origins": { "type": "array", "items": { "type": "string" }, "maxItems": 10 },
+          "color": { "type": "string" }
+        },
+        "required": ["name"], "additionalProperties": false
+      },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_INVALID_NAME": { "status": 400, "public": true },
+        "APP_INVALID_ORIGINS": { "status": 400, "public": true },
+        "APP_INVALID_ORIGIN": { "status": 400, "public": true },
+        "APP_INVALID_COLOR": { "status": 400, "public": true }
+      }
+    },
     "projects.get": {
       "handler": "getProject", "auth": "public", "risk": "read",
       "summary": "Read a feedback widget's public configuration",
@@ -81,10 +104,25 @@ function operation(run) {
   }
 }
 
+// The same, for handlers that wait on hashing.
+async function operationAsync(run) {
+  try { return { ok: true, ...(await run()) }; }
+  catch (error) {
+    if (error.public) error.code = "APP_" + error.code.toUpperCase();
+    throw error;
+  }
+}
+
 function signedInOwner(env) {
   const member = env.holm.auth.getMember();
   if (!member?.id || env.holm.auth.isAnonymous()) reject(401, "unauthorized", "Sign in first.");
   return profile(member);
+}
+
+// The original-format helpers it reuses read `holm` bound per call.
+export function createAccount(input, env, ctx) {
+  bind(env.holm);
+  return operationAsync(() => makeAccount(input));
 }
 
 export function getProject(input, env, ctx) {

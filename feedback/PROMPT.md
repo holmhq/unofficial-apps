@@ -221,6 +221,32 @@ and, on how long a link should stay open:
 > - we can have a timer / bar that counts down when there is no activity, resets when interacting with page?
 > - when its done, it says inbox locked & removes info & says please reopen from app
 
+**Iteration 19** added accounts for agents, from the same request:
+
+> - assume a new user doesnt have an account in feedback.zyt.app
+> - can we do this feature: after a PoW spam blocker, an endpoint can request a new account
+> - this account will be created an API key to manage the account will be provided
+> - the agent then stores in some sane place like .env for that project or better: somewhere in the app's secret or so
+> - why: so that something like feedback app can be part of any app just be telling it
+
+on the agent's offer to let someone keep such a project later:
+
+> That optional "claim" system is great!
+> - it can only be done once
+
+and on the limits the agent proposed:
+
+> i think our PoW is just a deterrent against silly scripts
+> - but if someone dedicated comes with a GPU, let it be
+> - may be we can do a rate limit too, say 10/minute or so? is it hard to do?
+> - may be 30s is enough deterrent
+> - great defaukts for accounts
+> - i dont see why limit projects; projects is basically going to be only 1? a key is app scoped
+
+and, on anyone with the link being able to keep it:
+
+> I accept the risk; its okay
+
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private
 documentation, downloaded icon attachment or pre-existing feedback app.

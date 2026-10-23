@@ -7,6 +7,7 @@ import { fileFactory, remove, fileDTO, serve } from './files.js'
 import { count, statsFactory } from './stats.js'
 import { pictureURL } from './page.js'
 import { contactOf, fieldsOf, ratingOf, answersFor, contactFor, ratingFor } from './form.js'
+import { DAILY_LIMIT } from './accounts.js'
 
 // Every kind there is; each project offers one set of three (KIND_SETS).
 export const KINDS = ['issue', 'idea', 'question', 'praise', 'problem']
@@ -57,6 +58,8 @@ function submit(project, input, request, source = 'widget') {
   }
   const hour = new Date(now()).toISOString().slice(0, 13)
   if (kv().increment(`rate:${project.id}:${hour}`, 1) > HOURLY_LIMIT) reject(429, 'busy', 'Too much feedback this hour. Try again later.')
+  // An agent account's project, until someone keeps it, takes fewer a day.
+  if (project.account && kv().increment(`daily:${project.id}:${hour.slice(0, 10)}`, 1) > DAILY_LIMIT) reject(429, 'busy', 'Too much feedback today. Try again tomorrow.')
   const words = text(input.body, 4000, true)
   const answers = answersFor(project, input)
   const { email, phone } = contactFor(project, input)
@@ -192,7 +195,7 @@ export function board(key, query = {}) {
   return {
     project: {
       id: project.id, name: project.name, color: project.color, slug: project.slug || null, title: project.title || '', intro: project.intro || '',
-      icon: iconOf(project), logo: pictureURL(project, 'logo'), cover: pictureURL(project, 'cover'), attachments: project.attachments !== false, kinds: kindsOf(project),
+      icon: iconOf(project), logo: pictureURL(project, 'logo'), cover: pictureURL(project, 'cover'), attachments: project.attachments !== false && !project.account, kinds: kindsOf(project),
       contact: contactOf(project), rating: ratingOf(project), fields: fieldsOf(project)
     },
     items: items.map(boardDTO)

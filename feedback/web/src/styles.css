@@ -953,3 +953,7 @@ button.swatch:hover, label.swatch:hover { transform: scale(1.08); }
 .locked { padding-top: 14vh; text-align: center; }
 .locked > .glyph { width: 2.6rem; height: 2.6rem; color: var(--ink-3); }
 .locked .lede { margin-inline: auto; }
+.notice.claim { flex-wrap: wrap; }
+.notice.claim > span { flex: 1 1 16rem; }
+.notice.claim .button { margin-left: auto; }
+.notice .glyph.line { fill: none; stroke: var(--accent); }

@@ -45,7 +45,7 @@ function uploads(request, project) {
   const order = field => Number((/(\d+)$/.exec(field) || [0, 0])[1])
   const list = Object.keys(files).sort((a, b) => order(a) - order(b)).map(key => files[key]).filter(Boolean)
   if (!list.length) return []
-  if (project.attachments === false) reject(400, 'no_files', 'This project doesn’t take files.')
+  if (project.attachments === false || project.account) reject(400, 'no_files', 'This project doesn’t take files.')
   if (list.length > MAX_FILES) reject(400, 'too_many_files', `Attach up to ${MAX_FILES} files.`)
   let total = 0
   const checked = list.map(file => {

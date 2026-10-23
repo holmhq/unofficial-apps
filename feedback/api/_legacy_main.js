@@ -4,9 +4,10 @@ import { isPicture, servePicture } from './page.js'
 import { submit, submitToWidget, listItems, updateItem, deleteItem, itemFile, listNotes, addNote, board, publicProject, publicItem, vote } from './items.js'
 import { approvedComments, postComment, listComments, reply, approve, deleteComment } from './comments.js'
 import { count, accountStats, projectStats } from './stats.js'
-import { owner, header, listKeys, createKey, deleteKey } from './keys.js'
+import { owner, header, listKeys, createKey, deleteKey, rotateKey } from './keys.js'
 import { seen, installs } from './installs.js'
 import { IDLE_MS, mintLink, openLink, linkUser, linkState, closeLink } from './links.js'
+import { claim } from './accounts.js'
 
 // An inbox link's page marks its calls (a header, or ?link=1 on a file it
 // shows); they act for the project's owner, on that project's inbox only.
@@ -14,7 +15,7 @@ const linked = request => !!header(request, 'x-feedback-link') || request.query?
 const actor = request => linked(request) ? linkUser(request) : owner(request)
 // What only the owner may do, never through an inbox link.
 function whole(user) {
-  if (user.project) reject(403, 'link_scope', 'An inbox link can only read and sort this inbox.')
+  if (user.link) reject(403, 'link_scope', 'An inbox link can only read and sort this inbox.')
   return user
 }
 
@@ -37,6 +38,7 @@ async function route(request, method, parts) {
     }
     if (id === 'ping') return ok({ idleMs: IDLE_MS, endsInMs: (await linkUser(request)).endsInMs })
     if (id === 'close') return ok({}, 200, { 'Set-Cookie': await closeLink(request) })
+    if (id === 'claim') return ok(claim(await linkUser(request)))
   }
 
   // Public: what a site's button and form need, and where they send to. The
@@ -75,7 +77,9 @@ async function route(request, method, parts) {
   // Public: a page's logo and cover.
   if (area === 'pictures' && id && isPicture(sub) && parts.length === 4 && method === 'GET') return servePicture(findProject(id), sub)
 
-  // API keys: only the signed-in person manages them.
+  // API keys: only the signed-in person manages them, but a key may replace
+  // itself.
+  if (area === 'keys' && id === 'rotate' && parts.length === 3 && method === 'POST') return ok(await rotateKey(request), 201)
   if (area === 'keys') {
     if (parts.length === 2 && method === 'GET') return ok({ keys: listKeys() })
     if (parts.length === 2 && method === 'POST') return ok(await createKey(body(request)), 201)

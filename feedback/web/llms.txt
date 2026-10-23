@@ -7,6 +7,48 @@
 Each site gets a **project**. The project's snippet adds the button; what visitors send lands in
 that project's inbox at `https://feedback.zyt.app/projects/<id>`.
 
+## Start without an account
+
+Building an app for someone who has no feedback account? Make one for the app. It is one
+project, and its key reaches only that project.
+
+1. Get a challenge: `GET https://feedback.zyt.app/_holm/challenge?operation=accounts.create`
+   returns `{"challenge", "bits", "parts", "expiresAt"}`. For each part `i` from 0, find a
+   decimal nonce `n` where SHA-256 of `<challenge>:<i>:<n>` starts with `bits` zero bits. It
+   takes a few seconds in Python (Holm's guide, "Protect public operations from bots", has a
+   ten-line solver: https://holmhq.com/llms-full.txt). Send a `User-Agent` that names your tool
+   on every call; feedback.zyt.app's edge refuses some library defaults, such as Python's.
+2. `POST /api/accounts.create` with `Holm-Challenge: <challenge>` and
+   `Holm-Challenge-Solution: n0,n1,…`, and `{"name": "<Site name>", "origins":
+   ["https://<site-host>"], "color": "<brand hex>"}`. The reply has `account`, `project` (with
+   its `snippet`) and `key`, shown once. Ten a minute from one address.
+3. Store the key at once, without printing it:
+   - **The site is a Holm app:** let Holm send it for the app, so the app's code never sees it:
+     `holm @<peer> secret set FEEDBACK_KEY '<key>' --as bearer --domain feedback.zyt.app --app <app-id>`
+     and `holm @<peer> net allow feedback.zyt.app --app <app-id>`.
+   - **Anything else:** a gitignored `.env`, as `FEEDBACK_API_KEY`.
+4. Add the button (below), and give the app's admins a way into the inbox (next section).
+
+Until someone keeps the project in their own account, its form takes no files, it takes at most
+100 items a day, and it is deleted after 90 days in which nobody used its key or its inbox links.
+Whoever opens an inbox link can keep it, signed in, once. `POST /api/keys/rotate` replaces the
+key with a new one; the old one stops at once.
+
+### Reopen the inbox from the app
+
+In a Holm app's `fetch(request, env)`, an admin-only address that opens a fresh inbox link:
+
+```js
+if (url.pathname === "/admin/feedback") {
+  if (!env.holm.auth.isAppAdmin() && !env.holm.auth.isAppOwner()) return new Response("Not found", { status: 404 });
+  const reply = env.holm.net.fetch("https://feedback.zyt.app/api/projects/<id>/link", { method: "POST", auth: "FEEDBACK_KEY" });
+  return new Response(null, { status: 303, headers: { Location: reply.json().url, "Cache-Control": "no-store" } });
+}
+```
+
+Link to `/admin/feedback` from the app's own admin screen. Elsewhere, run the same `POST` with the
+`.env` key and hand the person the `url`.
+
 ## Add the button to a site
 
 Paste the project's snippet before `</body>` in the site's shared layout (or on every page):
@@ -53,7 +95,8 @@ holm @<peer> policy set security.csp.frame_src "https://feedback.zyt.app" --app 
 
 Base URL `https://feedback.zyt.app`. Make a key in the app under the avatar menu → API keys.
 Send it as `Authorization: Bearer <key>` on every owner route. Replies are JSON: `ok: true`, or
-`ok: false` with `error.code` and `error.message`. The key acts as its owner on all their projects.
+`ok: false` with `error.code` and `error.message`. A key from the app acts as its owner on all
+their projects; a key from `accounts.create` acts on its one project only.
 
 ### Projects
 
@@ -144,6 +187,7 @@ not available yet; use the owner API above.
 ## Rules for agents
 
 - Reuse a site's existing project (`GET /api/projects`, match `origins`); don't make a second.
+- No key and no owner account? Make one ("Start without an account"); one per app, not per run.
 - Set the new project's `color` and logo from the site itself (see "Use the site's own icon").
 - Keep the key where the owner keeps it; never print, log or commit it. On a 401, ask the owner
   for a key instead of retrying.

@@ -51,7 +51,8 @@ function series(projectId, days) {
 // Every project the owner has, side by side.
 function accountStats(user, input) {
   const days = range(input)
-  const projects = ds().find('projects', { ownerId: user.id }, { limit: 20, orderBy: 'createdAt', order: 'desc' }).map(doc => {
+  const query = user.project ? { id: user.project, ownerId: user.id } : { ownerId: user.id }
+  const projects = ds().find('projects', query, { limit: 20, orderBy: 'createdAt', order: 'desc' }).map(doc => {
     const daily = series(doc.id, days)
     return { id: doc.id, name: doc.name, color: doc.color, daily, totals: totalsOf(daily) }
   })

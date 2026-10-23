@@ -239,6 +239,7 @@ api/installs.js     where a project's button is live
 api/comments.js     public comments and their approval
 api/stats.js        daily counters and the stats replies
 api/keys.js         API keys and who an owner request is from
+api/accounts.js     agent accounts: making one, keeping one, the sweep
 api/links.js        inbox links and their idle-locked sessions
 api/lib.js          responses, request checks, ids, who is asking
 holm.symbol.svg     the app's icon
@@ -310,6 +311,9 @@ stars are the fallback if it cannot load.
 | `GET`, `POST /api/keys`, `DELETE /api/keys/<id>` | signed in | API keys |
 | `POST /api/projects/<id>/link` | owner | a link that opens the inbox without signing in |
 | `POST /api/link/open`, `…/ping`, `…/close` | the link's page | spend the link; stay unlocked; lock |
+| `POST /api/link/claim` | the link's page, signed in | keep an agent's project in your account, once |
+| `POST /api/accounts.create` | anyone, past Holm's challenge | an agent account: one project and its key |
+| `POST /api/keys/rotate` | a key | replace that key with a new one |
 
 "Owner" means signed in, or an API key sent as `Authorization: Bearer fb_…`.
 
@@ -320,6 +324,17 @@ The session reaches only that project's inbox, items, notes and comments, and
 cannot delete or change settings. It locks after 5 idle minutes (the server
 allows 30 s more, since the page says someone is there at most every 30 s) or
 after 8 hours. Only hashes of the link and the session are stored.
+
+An agent building a site for someone with no feedback account calls the
+`accounts.create` operation. Holm guards it before the handler runs: a
+proof-of-work challenge of about 30 s in a browser (`limits.challenge`, solved
+from `/_holm/challenge`) and 10 calls a minute per address (`limits.rate`). The
+account is one project; its key reaches only that project, even after someone
+keeps it, and can replace itself but make no other key. Until someone keeps
+it, the project takes no files and 100 items a day, and it is deleted after
+90 days in which nobody used its key or inbox links (swept a few at a time when
+an account is made). The inbox link's page offers to keep it; the first
+signed-in person to accept owns it.
 
 ## API
 

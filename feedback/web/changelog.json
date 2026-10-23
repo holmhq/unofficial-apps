@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "0.15.0",
+      "date": "2026-10-23",
+      "title": "Accounts for agents",
+      "changes": [
+        "An agent building a site for someone with no feedback account can make one for it: one project and a key that reaches only that project. Holm makes it solve a short puzzle first and allows ten a minute.",
+        "Until someone keeps it, the project's form takes no files and up to 100 items a day, and it is deleted after 90 days unused.",
+        "Its inbox link offers to keep it in your account. Signed in, it is one click, and only the first person to keep it can.",
+        "Any API key can replace itself with a new one."
+      ]
+    },
+    {
       "version": "0.14.0",
       "date": "2026-10-23",
       "title": "Inbox links",

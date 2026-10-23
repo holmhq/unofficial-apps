@@ -59,7 +59,8 @@ export const publicConfig = doc => ({
   id: doc.id, name: doc.name, label: doc.label, color: doc.color, position: doc.position,
   button: BUTTONS.includes(doc.button) ? doc.button : 'pill', theme: THEMES.includes(doc.theme) ? doc.theme : 'light',
   title: doc.title || '', intro: doc.intro || '', icon: iconOf(doc), logo: pictureURL(doc, 'logo'), cover: pictureURL(doc, 'cover'),
-  attachments: doc.attachments !== false, for: KIND_SETS[doc.for] ? doc.for : 'site', kinds: kindsOf(doc),
+  // An agent account's project takes no files until someone keeps it.
+  attachments: doc.attachments !== false && !doc.account, for: KIND_SETS[doc.for] ? doc.for : 'site', kinds: kindsOf(doc),
   contact: contactOf(doc), rating: ratingOf(doc), fields: fieldsOf(doc)
 })
 
@@ -135,7 +136,9 @@ function settings(input, doc = {}) {
 // approve) and which sites each is for: its allowed sites, then where its
 // button is live. A page on someone's own machine isn't a site.
 export function listProjects(user) {
-  return ds().find('projects', { ownerId: user.id }, { limit: MAX_PROJECTS, orderBy: 'createdAt', order: 'desc' }).map(doc => ({
+  // A key for one project sees only that one.
+  const query = user.project ? { id: user.project, ownerId: user.id } : { ownerId: user.id }
+  return ds().find('projects', query, { limit: MAX_PROJECTS, orderBy: 'createdAt', order: 'desc' }).map(doc => ({
     ...projectDTO(doc),
     sites: [...new Set([...doc.origins, ...installs(doc.id).map(entry => entry.origin)])].filter(origin => !isLocal(origin)).slice(0, 5),
     waiting: { items: ds().count('items', { project: doc.id, status: 'new' }), comments: ds().count('comments', { project: doc.id, approved: false }) }
@@ -143,6 +146,7 @@ export function listProjects(user) {
 }
 
 export function createProject(user, input) {
+  if (user.project) reject(403, 'one_project', 'This key belongs to one project; it can’t make another.')
   if (ds().count('projects', { ownerId: user.id }) >= MAX_PROJECTS) reject(409, 'too_many', `You can have up to ${MAX_PROJECTS} projects.`)
   let id = random(8)
   while (findProject(id) || ds().findOne('projects', { slug: id })) id = random(8)
@@ -180,4 +184,13 @@ export function deleteProject(user, id) {
   ds().delete('notes', { project: doc.id })
   ds().delete('items', { project: doc.id })
   ds().delete('projects', { id: doc.id })
+  // An agent account is its one project; without it, the account ends (and
+  // a kept one's record goes too).
+  if (doc.account) {
+    ds().delete('apikeys', { ownerId: doc.account })
+    ds().delete('links', { ownerId: doc.account })
+  }
+  ds().delete('accounts', { project: doc.id })
+  // Keys that reach only this project reach nothing now.
+  ds().delete('apikeys', { project: doc.id })
 }

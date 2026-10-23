@@ -102,6 +102,32 @@ export function lock() {
   location.replace('/v')
 }
 
+// While someone signs in (in Holm's sign-in, a frame whose touches this page
+// never sees), the inbox stays open for up to 15 minutes.
+export async function hold(promise) {
+  if (!link.project) return promise
+  const beat = setInterval(() => {
+    deadline = Date.now() + IDLE
+    api('POST', '/api/link/ping').catch(() => {})
+  }, BEAT)
+  const stop = setTimeout(() => clearInterval(beat), 15 * 60000)
+  try { return await promise } finally {
+    clearInterval(beat)
+    clearTimeout(stop)
+    deadline = Date.now() + IDLE
+  }
+}
+
+// Leaves the link for the app itself (after keeping the inbox): the session
+// ends and the page opens `path` signed in, as an owner.
+export function leave(path) {
+  locked = true
+  clearInterval(timer)
+  try { navigator.sendBeacon('/api/link/close') } catch {}
+  try { sessionStorage.removeItem(KEY) } catch {}
+  location.replace(path)
+}
+
 export function lockedPage(message) {
   document.title = 'Inbox locked – feedback'
   show(el('section', { class: 'page-head locked' },

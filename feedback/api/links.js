@@ -6,6 +6,7 @@
 import { ds, now, iso, reject, random } from './lib.js'
 import { sha256, header } from './keys.js'
 import { ownProject } from './projects.js'
+import { claimable } from './accounts.js'
 
 const OPEN_MS = 5 * 60000
 // The page locks after 5 idle minutes and tells the server at most every
@@ -15,6 +16,9 @@ const GRACE_MS = 30000
 const MAX_MS = 8 * 3600000
 const MAX_WAITING = 20
 const COOKIE = 'fb_link'
+
+// An agent account is in use while its inbox links are.
+const used = ownerId => { if (ownerId.startsWith('acct_')) ds().update('accounts', { id: ownerId }, { $set: { lastUsedAt: now() } }) }
 
 const cookie = (value, seconds) => `${COOKIE}=${value}; HttpOnly; Secure; SameSite=Strict; Path=/api; Max-Age=${seconds}`
 
@@ -30,6 +34,7 @@ export async function mintLink(user, projectId, origin) {
   if (ds().count('links', { project: project.id, spent: false }) >= MAX_WAITING) reject(429, 'too_many_links', 'Too many unopened links for this project. Try again in a few minutes.')
   const token = random(32)
   const at = now()
+  used(user.id)
   ds().insert('links', {
     id: random(16), project: project.id, ownerId: user.id, ownerName: user.name, ownerAvatar: user.avatar,
     token: await sha256(token), sid: '', spent: false, createdAt: at, lastSeenAt: at, endsAt: at + OPEN_MS
@@ -47,6 +52,7 @@ export async function openLink(input) {
   const session = random(32)
   const claim = ds().update('links', { id: doc.id }, { $set: { spent: true, sid: await sha256(session), lastSeenAt: at, endsAt: at + MAX_MS } }, { ifRevision: doc._rev })
   if (!claim.ok || !claim.count) gone()
+  used(doc.ownerId)
   return { project: doc.project, idleMs: IDLE_MS, endsInMs: MAX_MS, cookie: cookie(session, MAX_MS / 1000) }
 }
 
@@ -66,13 +72,13 @@ export async function linkUser(request) {
   const at = now()
   if (!live(doc, at)) reject(401, 'link_locked', 'This inbox is locked. Open it again from your app.')
   ds().update('links', { id: doc.id }, { $set: { lastSeenAt: at } })
-  return { id: doc.ownerId, name: doc.ownerName, avatar: doc.ownerAvatar, project: doc.project, endsInMs: doc.endsAt - at }
+  return { id: doc.ownerId, name: doc.ownerName, avatar: doc.ownerAvatar, project: doc.project, link: true, endsInMs: doc.endsAt - at }
 }
 
 export async function linkState(request) {
   try {
     const user = await linkUser(request)
-    return { project: user.project, idleMs: IDLE_MS, endsInMs: user.endsInMs }
+    return { project: user.project, idleMs: IDLE_MS, endsInMs: user.endsInMs, claimable: claimable(user.project) }
   } catch (error) {
     if (error.code === 'link_locked') return null
     throw error

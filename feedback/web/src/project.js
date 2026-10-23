@@ -2,6 +2,8 @@
 // how to share it and how to set it up.
 import { el, api, ago, glyph, store, size, inkOn, lighten, picker, segmented, codeBox, link, linkURL, STATUS, KIND, KIND_SETS } from './lib.js'
 import { show, go } from './app.js'
+import { viewer, signIn } from './account.js'
+import { leave, hold } from './link.js'
 import { statsView } from './stats.js'
 import { qrSVG, qrColor, poster } from './qr.js'
 import { ratingLabel } from './compose.js'
@@ -27,6 +29,29 @@ const pageURL = project => `${location.origin}/${project.slug || 'b/' + project.
 // below them. `shell.ticket` drops replies from a tab already left.
 let shell = null
 
+// An agent made this project and nobody keeps it yet: whoever opened the
+// link may keep it in their account, once.
+function claimOffer(project) {
+  if (!link.project || !viewer().link?.claimable) return null
+  const keep = el('button', { type: 'button', class: 'button primary', onclick: async () => {
+    try { if (!viewer().me) await hold(signIn()) } catch { return }
+    const { me } = viewer()
+    if (!me || !confirm(`Keep ${project.name} in your account${me.email ? ` (${me.email})` : ''}? Only one account can ever keep it.`)) return
+    keep.disabled = true
+    try {
+      await api('POST', '/api/link/claim')
+      offer.replaceChildren(glyph('check', 'glyph line'), el('span', {}, `${project.name} is in your projects now.`),
+        el('button', { type: 'button', class: 'button', onclick: () => leave(`/projects/${project.id}`) }, 'Open it there'))
+    } catch (problem) {
+      keep.disabled = false
+      alert(problem.message)
+    }
+  } }, 'Keep it')
+  const offer = el('p', { class: 'notice claim' }, glyph('person'),
+    el('span', {}, 'Nobody keeps this inbox yet. Keep it in your feedback account to see it any time, without a link.'), keep)
+  return offer
+}
+
 // Opened from an inbox link, a project is its inbox alone.
 function frame(project) {
   const title = el('h1', {}, project.name)
@@ -37,7 +62,7 @@ function frame(project) {
   const root = el('div', {},
     el('section', { class: 'page-head' },
       !link.project && el('a', { class: 'back', href: '/', 'data-link': true }, glyph('chevron'), 'Projects'),
-      title, nav),
+      title, claimOffer(project), nav),
     body)
   return { project, items: null, ticket: 0, root, title, nav, body }
 }
