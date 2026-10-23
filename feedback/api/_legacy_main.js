@@ -4,8 +4,19 @@ import { isPicture, servePicture } from './page.js'
 import { submit, submitToWidget, listItems, updateItem, deleteItem, itemFile, listNotes, addNote, board, publicProject, publicItem, vote } from './items.js'
 import { approvedComments, postComment, listComments, reply, approve, deleteComment } from './comments.js'
 import { count, accountStats, projectStats } from './stats.js'
-import { owner, listKeys, createKey, deleteKey } from './keys.js'
+import { owner, header, listKeys, createKey, deleteKey } from './keys.js'
 import { seen, installs } from './installs.js'
+import { IDLE_MS, mintLink, openLink, linkUser, linkState, closeLink } from './links.js'
+
+// An inbox link's page marks its calls (a header, or ?link=1 on a file it
+// shows); they act for the project's owner, on that project's inbox only.
+const linked = request => !!header(request, 'x-feedback-link') || request.query?.link === '1'
+const actor = request => linked(request) ? linkUser(request) : owner(request)
+// What only the owner may do, never through an inbox link.
+function whole(user) {
+  if (user.project) reject(403, 'link_scope', 'An inbox link can only read and sort this inbox.')
+  return user
+}
 
 async function route(request, method, parts) {
   const [, area, id, sub, subId, action] = parts
@@ -13,7 +24,19 @@ async function route(request, method, parts) {
 
   if (area === 'me' && parts.length === 2 && method === 'GET') {
     const value = member()
-    return ok({ authenticated: !!value, member: value ? { ...profile(value), email: value.email || '' } : null })
+    const me = { authenticated: !!value, member: value ? { ...profile(value), email: value.email || '' } : null }
+    return ok(linked(request) ? { ...me, link: await linkState(request) } : me)
+  }
+
+  // Inbox links: the page spends the link once, says someone is there while
+  // they are, and locks.
+  if (area === 'link' && parts.length === 3 && method === 'POST') {
+    if (id === 'open') {
+      const { cookie, ...opened } = await openLink(body(request))
+      return ok(opened, 200, { 'Set-Cookie': cookie })
+    }
+    if (id === 'ping') return ok({ idleMs: IDLE_MS, endsInMs: (await linkUser(request)).endsInMs })
+    if (id === 'close') return ok({}, 200, { 'Set-Cookie': await closeLink(request) })
   }
 
   // Public: what a site's button and form need, and where they send to. The
@@ -63,23 +86,24 @@ async function route(request, method, parts) {
   if (area === 'stats' && parts.length === 2 && method === 'GET') return ok(accountStats(await owner(request), query.days))
 
   if (area === 'projects') {
-    const user = await owner(request)
-    if (parts.length === 2 && method === 'GET') return ok({ projects: listProjects(user) })
-    if (parts.length === 2 && method === 'POST') return ok({ project: createProject(user, body(request)) }, 201)
+    const user = await actor(request)
+    if (parts.length === 2 && method === 'GET') return ok({ projects: listProjects(whole(user)) })
+    if (parts.length === 2 && method === 'POST') return ok({ project: createProject(whole(user), body(request)) }, 201)
     if (parts.length === 3 && method === 'GET') return ok({ project: projectDTO(ownProject(user, id)) })
-    if (parts.length === 3 && method === 'PATCH') return ok({ project: updateProject(user, id, body(request)) })
-    if (parts.length === 3 && method === 'DELETE') { deleteProject(user, id); return ok() }
+    if (parts.length === 3 && method === 'PATCH') return ok({ project: updateProject(whole(user), id, body(request)) })
+    if (parts.length === 3 && method === 'DELETE') { deleteProject(whole(user), id); return ok() }
     if (sub === 'items' && parts.length === 4 && method === 'GET') return ok({ items: listItems(user, id, query.status) })
-    if (sub === 'stats' && parts.length === 4 && method === 'GET') return ok(projectStats(ownProject(user, id), query.days))
-    if (sub === 'installs' && parts.length === 4 && method === 'GET') return ok({ installs: installs(ownProject(user, id).id) })
-    if (isPicture(sub) && parts.length === 4 && method === 'POST') return ok({ project: setPicture(user, id, sub, request) })
-    if (isPicture(sub) && parts.length === 4 && method === 'DELETE') return ok({ project: clearPicture(user, id, sub) })
+    if (sub === 'link' && parts.length === 4 && method === 'POST') return ok(await mintLink(whole(user), id, request.origin), 201)
+    if (sub === 'stats' && parts.length === 4 && method === 'GET') return ok(projectStats(ownProject(whole(user), id), query.days))
+    if (sub === 'installs' && parts.length === 4 && method === 'GET') return ok({ installs: installs(ownProject(whole(user), id).id) })
+    if (isPicture(sub) && parts.length === 4 && method === 'POST') return ok({ project: setPicture(whole(user), id, sub, request) })
+    if (isPicture(sub) && parts.length === 4 && method === 'DELETE') return ok({ project: clearPicture(whole(user), id, sub) })
   }
 
   if (area === 'items' && id) {
-    const user = await owner(request)
+    const user = await actor(request)
     if (parts.length === 3 && method === 'PATCH') return ok({ item: updateItem(user, id, body(request)) })
-    if (parts.length === 3 && method === 'DELETE') { deleteItem(user, id); return ok() }
+    if (parts.length === 3 && method === 'DELETE') { deleteItem(whole(user), id); return ok() }
     if (sub === 'files' && subId && parts.length === 5 && method === 'GET') return itemFile(user, id, subId, query)
     if (sub === 'notes' && parts.length === 4 && method === 'GET') return ok({ notes: listNotes(user, id) })
     if (sub === 'notes' && parts.length === 4 && method === 'POST') return ok({ notes: addNote(user, id, body(request)) }, 201)
@@ -88,12 +112,12 @@ async function route(request, method, parts) {
   }
 
   if (area === 'comments' && id && parts.length === 3) {
-    const user = await owner(request)
+    const user = await actor(request)
     if (method === 'PATCH') {
       if (body(request).approved !== true) reject(400, 'invalid_change', 'Comments can only be approved; delete one to remove it.')
       return ok({ comment: approve(user, id) })
     }
-    if (method === 'DELETE') { deleteComment(user, id); return ok() }
+    if (method === 'DELETE') { deleteComment(whole(user), id); return ok() }
   }
 
   reject(404, 'not_found', 'Route not found.')

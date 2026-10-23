@@ -936,3 +936,20 @@ button.swatch:hover, label.swatch:hover { transform: scale(1.08); }
 /* The sort menu sits at the right edge: its list opens leftward. */
 .picker.sort .picker-list { left: auto; right: 0; transform-origin: top right; }
 .picker.sort.up .picker-list { transform-origin: bottom right; }
+
+/* An inbox link's page: a bar along the top that empties while nobody is
+   there, and a clock with a Lock button beside the avatar. */
+.link-bar { position: fixed; inset: 0 0 auto; z-index: 40; height: 3px; background: color-mix(in oklab, var(--accent) 16%, transparent); pointer-events: none; }
+.link-bar span { display: block; height: 100%; background: var(--accent); transform-origin: left; transition: transform 1s linear, background-color 0.3s; }
+.link-soon .link-bar span { background: var(--danger); }
+.link-clock { display: inline-flex; align-items: center; gap: 0.45rem; margin-left: auto; padding: 0.2rem 0.2rem 0.2rem 0.65rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--sheet); color: var(--ink-2); font-size: 0.85rem; white-space: nowrap; }
+.link-clock .glyph { width: 0.95rem; height: 0.95rem; flex: none; }
+.link-clock time { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+.link-clock button { padding: 0.25rem 0.7rem; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font: inherit; font-weight: 600; cursor: pointer; }
+.link-soon .link-clock { border-color: color-mix(in oklab, var(--danger) 45%, var(--rule)); }
+.link-soon .link-clock time, .link-soon .link-clock .glyph { color: var(--danger); }
+@media (max-width: 420px) { .link-words { display: none; } }
+@media (prefers-reduced-motion: reduce) { .link-bar span { transition: none; } }
+.locked { padding-top: 14vh; text-align: center; }
+.locked > .glyph { width: 2.6rem; height: 2.6rem; color: var(--ink-3); }
+.locked .lede { margin-inline: auto; }

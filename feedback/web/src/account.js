@@ -1,6 +1,7 @@
 // Who is signed in: the avatar circle, its menu (with the theme), and Holm's
 // hosted sign-in page in an overlay, so the reader keeps their place.
-import { $, el, api, glyph, store } from './lib.js'
+import { $, el, api, glyph, store, link } from './lib.js'
+import { remembered, startLink, forget } from './link.js'
 
 // Light, dark or the system's choice. index.html applies the saved one
 // before the first paint.
@@ -31,18 +32,26 @@ function themeSwitch() {
 }
 
 let me = null
+let opened = null
 const listeners = []
 
-export const viewer = () => ({ me })
+// `link`: this tab was opened from an inbox link, and its session is live.
+export const viewer = () => ({ me, link: opened })
 export const onViewer = fn => listeners.push(fn)
 
 export async function loadViewer() {
+  const mine = remembered()
+  if (mine && mine !== 'locked') link.project = mine
   try {
     const body = await api('GET', '/api/me')
     me = body.member
+    opened = body.link || null
   } catch {
     me = null
+    opened = null
   }
+  if (opened) startLink(opened)
+  else if (link.project) forget()
   render()
   listeners.forEach(fn => fn())
 }
@@ -80,7 +89,7 @@ function toggleMenu(button) {
         theme,
         el('button', { type: 'button', role: 'menuitem', onclick: signOut }, 'Sign out'))
     : el('div', { class: 'menu', role: 'menu' },
-        el('button', { type: 'button', role: 'menuitem', onclick: () => signIn().catch(() => {}) }, 'Sign in'),
+        !opened && el('button', { type: 'button', role: 'menuitem', onclick: () => signIn().catch(() => {}) }, 'Sign in'),
         theme)
   $('#account').append(menu)
   button.setAttribute('aria-expanded', 'true')

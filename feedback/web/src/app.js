@@ -7,6 +7,7 @@ import { boardPage } from './board.js'
 import { keysPage } from './keys.js'
 import { statsPage } from './stats.js'
 import { changelogPage } from './changelog.js'
+import { openLink, lockedPage, remembered } from './link.js'
 
 // First path segments the app itself uses; any other short name may be a
 // project's custom address (api/projects.js keeps the same list).
@@ -102,10 +103,32 @@ async function projectsPage() {
   }
 }
 
+// An inbox link: spend it, then show its inbox (or say why not).
+async function openFromLink(token) {
+  show(el('p', { class: 'muted page-loading' }, 'Opening the inbox…'))
+  try {
+    await openLink(token)
+    await loadViewer()
+  } catch (problem) {
+    lockedPage(problem.message)
+  }
+}
+
 function route() {
   const path = location.pathname.replace(/\/+$/, '') || '/'
   document.body.classList.remove('on-board', 'fit')
   let match
+  if ((match = /^\/v\/([a-z0-9]{32})$/.exec(path))) return openFromLink(match[1])
+  if (path === '/v') return lockedPage()
+  // A tab opened from an inbox link shows that inbox and its items, nothing else.
+  const { link } = viewer()
+  if (link) {
+    match = /^\/projects\/([a-z0-9]{8})(?:\/items\/(\d+))?$/.exec(path)
+    if (match?.[1] === link.project) return projectPage(link.project, match[2] ? Number(match[2]) : 'inbox')
+    history.replaceState(null, '', `/projects/${link.project}`)
+    return projectPage(link.project, 'inbox')
+  }
+  if (remembered() === 'locked' && path.startsWith('/projects/') && !viewer().me) return lockedPage()
   if ((match = /^\/b\/([a-z0-9-]{3,40})(?:\/(\d+))?$/.exec(path))) return boardPage(match[1], match[2] && Number(match[2]))
   if (path === '/keys') return viewer().me ? keysPage() : landing()
   if (path === '/stats') return viewer().me ? statsPage() : landing()

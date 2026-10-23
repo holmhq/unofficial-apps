@@ -123,6 +123,17 @@ An item has `id`, `number` (the `#12` shown in the app), `kind`, `status`, `titl
 `email` (may be empty), `page`, `pageTitle`, `browser`, `viewport`, `votes`, `public` and
 `createdAt`. Link one as `https://feedback.zyt.app/projects/<project-id>/items/<number>`.
 
+### Open the inbox without signing in
+
+- `POST /api/projects/<id>/link` — returns `{"url": "https://feedback.zyt.app/v/<token>",
+  "expiresAt": "..."}`. Hand the `url` to the person; don't open it yourself.
+
+The link opens once, within 5 minutes; a second open, or a later one, shows "Inbox locked". The
+page shows that project's inbox and items, where they can sort, note and reply, but not delete
+or change settings. It locks after 5 minutes without activity (a bar counts down and fills
+again at any touch) or 8 hours whatever happens, and then clears itself. To see it again, ask
+for a new link.
+
 ## For AI assistants (MCP)
 
 `https://feedback.zyt.app/_holm/mcp` is an MCP endpoint with two public tools: `projects_get`

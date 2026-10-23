@@ -219,6 +219,7 @@ web/                public files, served as-is:
   src/icons.js      a project's mark: its logo, icon or initial
   src/account.js    avatar, menu, theme and Holm's sign-in page in an overlay
   src/keys.js       the API keys page
+  src/link.js       an inbox link's page: idle bar, clock and lock
   src/widget.js     the panel's logic
   src/lib.js        DOM, API and formatting helpers, icons, dropdown,
                     segmented choice and code box
@@ -238,6 +239,7 @@ api/installs.js     where a project's button is live
 api/comments.js     public comments and their approval
 api/stats.js        daily counters and the stats replies
 api/keys.js         API keys and who an owner request is from
+api/links.js        inbox links and their idle-locked sessions
 api/lib.js          responses, request checks, ids, who is asking
 holm.symbol.svg     the app's icon
 listing/            its store listing (not deployed)
@@ -306,8 +308,18 @@ stars are the fallback if it cannot load.
 | `GET`, `POST /api/items/<id>/comments` | owner | all comments; reply publicly |
 | `PATCH`, `DELETE /api/comments/<id>` | owner | approve (`{"approved":true}`); delete |
 | `GET`, `POST /api/keys`, `DELETE /api/keys/<id>` | signed in | API keys |
+| `POST /api/projects/<id>/link` | owner | a link that opens the inbox without signing in |
+| `POST /api/link/open`, `…/ping`, `…/close` | the link's page | spend the link; stay unlocked; lock |
 
 "Owner" means signed in, or an API key sent as `Authorization: Bearer fb_…`.
+
+An inbox link opens once, within 5 minutes, and becomes an `HttpOnly` session
+cookie scoped to `/api`. The page marks its calls with `X-Feedback-Link: 1`
+(or `?link=1` on a file it shows), so the owner's other tabs stay unaffected.
+The session reaches only that project's inbox, items, notes and comments, and
+cannot delete or change settings. It locks after 5 idle minutes (the server
+allows 30 s more, since the page says someone is there at most every 30 s) or
+after 8 hours. Only hashes of the link and the session are stored.
 
 ## API
 

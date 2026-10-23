@@ -20,13 +20,20 @@ export const store = {
 }
 
 // JSON in and out; failures throw with the API's own message.
+// An inbox link's page (link.js): its calls say so, each one tells the
+// server someone is there, and a locked session locks the page.
+export const link = { project: null, sentAt: 0, onLocked: null }
+export const linkURL = path => link.project ? path + (path.includes('?') ? '&' : '?') + 'link=1' : path
+
 export async function api(method, path, data) {
-  const response = await fetch(path, {
-    method,
-    headers: data === undefined ? {} : { 'Content-Type': 'application/json' },
-    body: data === undefined ? undefined : JSON.stringify(data)
-  })
+  const headers = data === undefined ? {} : { 'Content-Type': 'application/json' }
+  if (link.project) {
+    headers['X-Feedback-Link'] = '1'
+    link.sentAt = Date.now()
+  }
+  const response = await fetch(path, { method, headers, body: data === undefined ? undefined : JSON.stringify(data) })
   const body = await response.json().catch(() => ({}))
+  if (link.project && body.error?.code === 'link_locked') link.onLocked?.()
   if (!response.ok || body.ok === false) throw new Error(body.error?.message || 'That didn’t work. Try again.')
   return body
 }
@@ -88,6 +95,7 @@ const PATHS = {
   'side-right': 'M4 4.5h16a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1ZM13.5 16.5h4',
   'button-pill': 'M7.5 8.5h9a3.5 3.5 0 0 1 0 7h-9a3.5 3.5 0 0 1 0-7Z',
   'button-icon': 'M12 6.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z',
+  lock: 'M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Zm2 0V7a5 5 0 0 1 10 0v4',
   link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   apps: 'M5 4h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm9 0h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM5 13h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1Zm9 0h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1Z',
   desktop: 'M3.5 4.5h17a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1h-17a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1ZM8 20h8M12 16v4',

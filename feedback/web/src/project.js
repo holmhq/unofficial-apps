@@ -1,6 +1,6 @@
 // A project: its inbox, one item at a time, its stats, its look, its form,
 // how to share it and how to set it up.
-import { el, api, ago, glyph, store, size, inkOn, lighten, picker, segmented, codeBox, STATUS, KIND, KIND_SETS } from './lib.js'
+import { el, api, ago, glyph, store, size, inkOn, lighten, picker, segmented, codeBox, link, linkURL, STATUS, KIND, KIND_SETS } from './lib.js'
 import { show, go } from './app.js'
 import { statsView } from './stats.js'
 import { qrSVG, qrColor, poster } from './qr.js'
@@ -27,14 +27,16 @@ const pageURL = project => `${location.origin}/${project.slug || 'b/' + project.
 // below them. `shell.ticket` drops replies from a tab already left.
 let shell = null
 
+// Opened from an inbox link, a project is its inbox alone.
 function frame(project) {
   const title = el('h1', {}, project.name)
   const nav = el('nav', { class: 'tabs', 'aria-label': project.name },
-    TABS.map(([key, label, path]) => el('a', { href: `/projects/${project.id}${path}`, 'data-link': true, 'data-tab': key }, label)))
+    TABS.filter(([key]) => !link.project || key === 'inbox')
+      .map(([key, label, path]) => el('a', { href: `/projects/${project.id}${path}`, 'data-link': true, 'data-tab': key }, label)))
   const body = el('div', { class: 'project-body' })
   const root = el('div', {},
     el('section', { class: 'page-head' },
-      el('a', { class: 'back', href: '/', 'data-link': true }, glyph('chevron'), 'Projects'),
+      !link.project && el('a', { class: 'back', href: '/', 'data-link': true }, glyph('chevron'), 'Projects'),
       title, nav),
     body)
   return { project, items: null, ticket: 0, root, title, nav, body }
@@ -245,7 +247,7 @@ function inbox(project, items) {
         el('span', { class: `pill status-${item.status}` }, STATUS[item.status])))) :
       [el('li', { class: 'empty' }, items.length
         ? el('span', {}, 'Nothing matches. ', active() ? el('button', { type: 'button', class: 'link-button', onclick: () => clear.click() }, 'Clear the filters') : 'Try another status', '.')
-        : el('span', {}, 'No feedback yet. ', el('a', { href: `/projects/${project.id}/setup`, 'data-link': true }, 'Add the snippet to your site'),
+        : link.project ? el('span', {}, 'No feedback yet.') : el('span', {}, 'No feedback yet. ', el('a', { href: `/projects/${project.id}/setup`, 'data-link': true }, 'Add the snippet to your site'),
           ' or ', el('a', { href: `/projects/${project.id}/share`, 'data-link': true }, 'share your feedback page'), ', and it will arrive here.'))]))
   }
   paint()
@@ -255,7 +257,7 @@ function inbox(project, items) {
 
 function attachments(item) {
   if (!item.files.length) return null
-  const url = (file, extra = '') => `/api/items/${item.id}/files/${file.index}${extra}`
+  const url = (file, extra = '') => linkURL(`/api/items/${item.id}/files/${file.index}${extra}`)
   const pictures = item.files.filter(file => file.preview)
   const videos = item.files.filter(file => !file.preview && file.kind === 'video')
   const others = item.files.filter(file => !file.preview && file.kind !== 'video')
@@ -298,7 +300,7 @@ function publicComments(project, item) {
     el('p', {}, comment.body),
     el('div', { class: 'comment-actions' },
       !comment.approved && el('button', { type: 'button', class: 'button primary', onclick: () => act('PATCH', '/api/comments/' + comment.id, { approved: true }) }, 'Approve'),
-      el('button', { type: 'button', class: 'button danger', onclick: () => confirm('Delete this comment?') && act('DELETE', '/api/comments/' + comment.id) }, 'Delete')))) :
+      !link.project && el('button', { type: 'button', class: 'button danger', onclick: () => confirm('Delete this comment?') && act('DELETE', '/api/comments/' + comment.id) }, 'Delete')))) :
     [el('li', { class: 'muted empty-comments' }, 'No comments yet.')]))
   load()
 
@@ -412,7 +414,7 @@ function itemPage(project, item) {
     el('div', { class: 'item-actions' },
       el('label', { class: 'toggle' }, shown,
         project.public ? 'Show on your public page' : 'Show on your public page (the page is off)'),
-      el('button', { type: 'button', class: 'button danger', onclick: async () => {
+      !link.project && el('button', { type: 'button', class: 'button danger', onclick: async () => {
         if (!confirm(`Delete #${item.number} for good?`)) return
         try {
           await api('DELETE', '/api/items/' + item.id)

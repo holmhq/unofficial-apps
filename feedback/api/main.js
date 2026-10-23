@@ -143,7 +143,7 @@ async function originalRequest(request, url) {
     const name = k.replace(/(^|-)([a-z])/g, (_, d, c) => d + c.toUpperCase());
     if (!(name in headers)) headers[name] = v;
   }
-  const out = { method: request.method, path: url.pathname, query, headers };
+  const out = { method: request.method, path: url.pathname, origin: url.origin, query, headers };
   if (request.method === "GET" || request.method === "HEAD") return out;
   const type = request.headers.get("content-type") || "";
   if (JSON_TYPE.test(type)) {

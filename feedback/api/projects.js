@@ -68,7 +68,8 @@ export function projectFactory(env) {
   const findProject = id => /^[a-z0-9]{8}$/.test(id || '') ? env.holm.app.ds.findOne('projects', { id }) : null
   const ownProject = (user, id) => {
     const doc = findProject(id)
-    if (!doc || doc.ownerId !== user.id) reject(404, 'not_found', 'Project not found.')
+    // An inbox link's session reaches only its own project.
+    if (!doc || doc.ownerId !== user.id || (user.project && user.project !== doc.id)) reject(404, 'not_found', 'Project not found.')
     return doc
   }
   return { findProject, ownProject }

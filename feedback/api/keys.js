@@ -10,7 +10,7 @@ export async function sha256(value) {
   return Array.from(digest, byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
-function header(request, name) {
+export function header(request, name) {
   const headers = request.headers || {}
   for (const key in headers) {
     if (key.toLowerCase() === name) return String(Array.isArray(headers[key]) ? headers[key][0] : headers[key])

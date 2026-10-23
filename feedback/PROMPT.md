@@ -210,6 +210,17 @@ in reply to the agent's offer to turn it on after Holm's release:
 
 > yesm do whats needed autonomously
 
+**Iteration 18** added inbox links, from a request for agent-made accounts
+whose feedback can be read without one:
+
+> - and the feedback's API itself can provide a short lived url for accessing the feedbacak, again without any accounts
+
+and, on how long a link should stay open:
+
+> i think short lived url can be ~5 minutes from last activity?
+> - we can have a timer / bar that counts down when there is no activity, resets when interacting with page?
+> - when its done, it says inbox locked & removes info & says please reopen from app
+
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private
 documentation, downloaded icon attachment or pre-existing feedback app.
