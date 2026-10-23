@@ -4,6 +4,7 @@
 import { el, glyph, inkOn, lighten, KIND_SETS } from './lib.js'
 import { composer, sentMark, loadStars } from './compose.js'
 import { mark as markOf } from './icons.js'
+import { followStep } from './follow.js'
 
 const params = new URLSearchParams(location.search)
 const projectId = params.get('p') || ''
@@ -73,11 +74,12 @@ function form() {
   })))
 }
 
-function thanks(number) {
+function thanks(number, reply = {}) {
   root.replaceChildren(header(false), el('div', { class: 'thanks' },
     sentMark(),
     el('h2', {}, 'Thanks, it’s sent'),
     el('p', {}, number ? `It’s #${number} in ${config.name ? config.name + '’s' : 'their'} inbox.` : preview ? 'This is a preview, so nothing was sent.' : 'It’s in their inbox.'),
+    reply.follow && !preview && followStep(reply.follow),
     el('div', { class: 'actions' },
       el('button', { type: 'button', class: 'again', onclick: form }, 'Send another'),
       el('button', { type: 'button', class: 'quiet', onclick: close }, 'Close'))))

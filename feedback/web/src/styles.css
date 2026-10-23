@@ -957,3 +957,43 @@ button.swatch:hover, label.swatch:hover { transform: scale(1.08); }
 .notice.claim > span { flex: 1 1 16rem; }
 .notice.claim .button { margin-left: auto; }
 .notice .glyph.line { fill: none; stroke: var(--accent); }
+
+/* Your feedback (mine.js): one card per item, opening to its message. */
+.mine-project { margin-top: 1.75rem; }
+.mine-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+.mine-head h2 { font-size: 1.25rem; }
+.mine-head .muted { margin-left: auto; font-size: 0.9rem; }
+.mine-items { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.mine-items details { border: 1px solid var(--rule); border-radius: 14px; background: var(--sheet); }
+.mine-items summary { display: flex; align-items: center; gap: 0.85rem; padding: 0.75rem 1rem; list-style: none; cursor: pointer; }
+.mine-items summary::-webkit-details-marker { display: none; }
+.mine-kind { display: grid; justify-items: center; gap: 0.1rem; flex: none; width: 2.5rem; color: var(--ink-2); font-size: 0.8rem; font-weight: 650; }
+.mine-kind .glyph { width: 1.1rem; height: 1.1rem; fill: currentColor; }
+.mine-title { display: grid; gap: 0.15rem; flex: 1; min-width: 0; font-weight: 650; overflow-wrap: anywhere; }
+.mine-title .muted { font-size: 0.85rem; font-weight: 450; }
+.mine-open { display: grid; gap: 0.75rem; padding: 0 1rem 1rem 4.35rem; }
+.mine-body { margin: 0; color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.mine-talk { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.mine-talk:empty { display: none; }
+.mine-talk li { padding: 0.7rem 0.9rem; border: 1px solid var(--rule); border-radius: 12px; background: var(--paper); }
+.mine-talk li.from-team { border-color: color-mix(in oklab, var(--color) 35%, var(--rule)); background: color-mix(in oklab, var(--color) 7%, var(--sheet)); }
+.mine-talk p { margin: 0.35rem 0 0; white-space: pre-line; overflow-wrap: anywhere; }
+.mine-note { margin: 0; font-size: 0.88rem; }
+.verified { display: inline-flex; align-items: center; gap: 0.25rem; margin-left: 0.5rem; color: var(--done-ink); font-size: 0.85rem; font-weight: 650; }
+.verified .glyph { width: 0.95rem; height: 0.95rem; }
+@media (max-width: 520px) { .mine-open { padding-left: 1rem; } }
+
+/* The conversation with a sender in the team's thread, and the reply mode
+   of its box: a reply is tinted with the accent so it never passes for a note. */
+.notes li.to-sender { border-color: color-mix(in oklab, var(--accent) 40%, var(--rule)); background: color-mix(in oklab, var(--accent) 6%, var(--sheet)); }
+.notes li.from-sender { border-color: color-mix(in oklab, var(--done-ink) 35%, var(--rule)); background: color-mix(in oklab, var(--done-bg) 45%, var(--sheet)); }
+.note-by .to { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--accent); font-weight: 600; overflow-wrap: anywhere; }
+.note-by .to .glyph { width: 0.9rem; height: 0.9rem; flex: none; }
+.from-sender .note-by > .glyph { width: 1.1rem; height: 1.1rem; flex: none; fill: var(--done-ink); }
+.compose-mode { justify-self: start; display: inline-flex; gap: 0.2rem; padding: 0.2rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--sheet); }
+.compose-mode button { padding: 0.3rem 0.85rem; border: 0; border-radius: 999px; background: none; color: var(--ink-2); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+.compose-mode button[aria-checked="true"] { background: var(--ink); color: var(--paper); }
+.add-note.replying .compose-mode button[aria-checked="true"] { background: var(--accent); color: var(--accent-ink); }
+.add-note.replying textarea { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.add-note.replying .button { border-color: transparent; background: var(--accent); color: var(--accent-ink); }
+.reply-sent { margin: 0.5rem 0 0; font-size: 0.9rem; text-align: right; }

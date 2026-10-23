@@ -8,6 +8,7 @@ import { count, statsFactory } from './stats.js'
 import { pictureURL } from './page.js'
 import { contactOf, fieldsOf, ratingOf, answersFor, contactFor, ratingFor } from './form.js'
 import { DAILY_LIMIT } from './accounts.js'
+import { followToken, emailReply } from './follow.js'
 
 // Every kind there is; each project offers one set of three (KIND_SETS).
 export const KINDS = ['issue', 'idea', 'question', 'praise', 'problem']
@@ -19,7 +20,8 @@ const INBOX_LIMIT = 1000
 function itemDTO(doc) {
   return {
     id: doc.id, number: doc.number, kind: kindOf(doc.kind), status: doc.status, public: !!doc.public,
-    title: doc.title, body: doc.body, rating: doc.rating || null, email: doc.email || '', phone: doc.phone || '', answers: doc.answers || [],
+    title: doc.title, body: doc.body, rating: doc.rating || null, email: doc.email || '', emailVerified: !!doc.emailVerified, phone: doc.phone || '', answers: doc.answers || [],
+    replyWaiting: !!doc.replyWaiting, emails: !!doc.emailVerified && !doc.mute,
     page: doc.page || '', pageTitle: doc.pageTitle || '',
     browser: doc.browser || '', viewport: doc.viewport || '', votes: doc.votes || 0, source: doc.source || 'widget',
     files: (doc.files || []).map(fileDTO), comments: doc.comments || 0, pending: doc.pending || 0, notes: doc.notes || 0,
@@ -88,7 +90,9 @@ function submit(project, input, request, source = 'widget') {
   }
   try { ds().insert('items', doc) } catch (error) { remove(files); throw error }
   count(project.id, 'sent')
-  return { sent: true, number: doc.number }
+  // With an email, the form can ask for a code to follow it (follow.js).
+  const follow = followToken(kv(), doc)
+  return follow ? { sent: true, number: doc.number, follow: { token: follow, email } } : { sent: true, number: doc.number }
 }
 
 function submitToWidget(projectId, input, request) {
@@ -161,6 +165,19 @@ export function listNotes(user, itemId) {
   const doc = ownItem(user, itemId)
   return ds().find('notes', { item: doc.id }, { limit: 200, orderBy: 'createdAt', order: 'asc' })
     .map(note => ({ id: note.id, type: note.type || 'note', name: note.name, avatar: note.avatar, body: note.body, createdAt: iso(note.createdAt) }))
+}
+
+// A reply to the sender: kept in the thread, and emailed to them only at an
+// address they confirmed and only while they want emails (follow.js).
+export function replyToSender(user, itemId, input, origin) {
+  const doc = ownItem(user, itemId)
+  if (!doc.emailVerified) reject(409, 'not_followed', 'They didn’t confirm their email, so feedback can’t write to them.')
+  const words = text(input.body, 4000, true)
+  if (!words) reject(400, 'invalid_reply', 'Write a reply first.')
+  ds().insert('notes', { id: random(24), item: doc.id, project: doc.project, type: 'out', name: user.name, avatar: user.avatar, body: words, createdAt: now() })
+  ds().update('items', { id: doc.id }, { $inc: { notes: 1 } })
+  ds().update('items', { id: doc.id }, { $set: { replyWaiting: false, updatedAt: now() } })
+  return { emailed: doc.mute ? false : emailReply(doc, words, origin), notes: listNotes(user, itemId) }
 }
 
 export function addNote(user, itemId, input) {

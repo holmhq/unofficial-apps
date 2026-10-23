@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "0.16.0",
+      "date": "2026-10-23",
+      "title": "Follow what you sent",
+      "changes": [
+        "Leave your email and the form offers to confirm it with a 6-digit code, right after you send. Skip it and nothing changes.",
+        "Signed in with a confirmed email, Your feedback shows everything you sent, on every project, with where it stands.",
+        "Teams can reply to a confirmed sender: the reply joins the item's thread and arrives by email, with a link to stop emails. The sender writes back from Your feedback, and the inbox shows they replied.",
+        "Feedback never emails an address nobody confirmed. Private notes stay with the team."
+      ]
+    },
+    {
       "version": "0.15.0",
       "date": "2026-10-23",
       "title": "Accounts for agents",

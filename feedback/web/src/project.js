@@ -268,7 +268,8 @@ function inbox(project, items) {
             item.files.length ? `, ${item.files.length} ${item.files.length === 1 ? 'file' : 'files'}` : '',
             item.notes ? `, ${item.notes} ${item.notes === 1 ? 'note' : 'notes'}` : '',
             item.public ? `, on the page with ${item.votes} ${item.votes === 1 ? 'vote' : 'votes'}` : ''),
-          item.pending > 0 && el('span', { class: 'ticket-waiting' }, glyph('comment'), `${item.pending} ${item.pending === 1 ? 'comment' : 'comments'} to approve`)),
+          item.pending > 0 && el('span', { class: 'ticket-waiting' }, glyph('comment'), `${item.pending} ${item.pending === 1 ? 'comment' : 'comments'} to approve`),
+          item.replyWaiting && el('span', { class: 'ticket-waiting' }, glyph('reply', 'glyph line'), 'They replied')),
         el('span', { class: `pill status-${item.status}` }, STATUS[item.status])))) :
       [el('li', { class: 'empty' }, items.length
         ? el('span', {}, 'Nothing matches. ', active() ? el('button', { type: 'button', class: 'link-button', onclick: () => clear.click() }, 'Clear the filters') : 'Try another status', '.')
@@ -357,9 +358,16 @@ function itemPage(project, item) {
     ...list.map(note => note.type === 'event'
       ? el('li', { class: 'event' }, el('img', { src: note.avatar, alt: '', referrerpolicy: 'no-referrer' }),
           el('span', {}, el('strong', {}, note.name), ' ', note.body, el('span', { class: 'muted' }, ' · ', ago(note.createdAt))))
-      : el('li', {},
-          el('div', { class: 'note-by' }, el('img', { src: note.avatar, alt: '', referrerpolicy: 'no-referrer' }), el('strong', {}, note.name), el('span', { class: 'muted' }, ago(note.createdAt))),
-          el('p', {}, note.body))))
+      // The conversation with the sender stands apart from the team's notes.
+      : note.type === 'in'
+        ? el('li', { class: 'from-sender' },
+            el('div', { class: 'note-by' }, glyph('person'), el('strong', {}, 'From ', item.email), el('span', { class: 'muted' }, ago(note.createdAt))),
+            el('p', {}, note.body))
+        : el('li', { class: note.type === 'out' ? 'to-sender' : null },
+            el('div', { class: 'note-by' }, el('img', { src: note.avatar, alt: '', referrerpolicy: 'no-referrer' }), el('strong', {}, note.name),
+              note.type === 'out' && el('span', { class: 'to' }, glyph('reply', 'glyph line'), 'to ', item.email),
+              el('span', { class: 'muted' }, ago(note.createdAt))),
+            el('p', {}, note.body))))
   const loadNotes = () => api('GET', `/api/items/${item.id}/notes`).then(reply => paintNotes(reply.notes)).catch(() => {})
   loadNotes()
 
@@ -407,15 +415,41 @@ function itemPage(project, item) {
   }
   paint()
 
-  const noteBody = el('textarea', { rows: '3', maxlength: '4000', placeholder: 'A note for your team; the sender never sees it', 'aria-label': 'Add a note' })
+  // A note stays with the team; a reply (only to an address the sender
+  // confirmed) goes into the thread and to them by email. Notes are the
+  // default, and a reply looks different, so a note can't go out by mistake.
+  const NOTE = 'A note for your team; the sender never sees it'
+  let replying = false
+  const noteBody = el('textarea', { rows: '3', maxlength: '4000', placeholder: NOTE, 'aria-label': 'Add a note' })
+  const sendLabel = el('span', {}, 'Add note')
+  const sent = el('p', { class: 'muted reply-sent', role: 'status', hidden: true })
+  const modes = item.emailVerified && el('div', { class: 'compose-mode', role: 'radiogroup', 'aria-label': 'Note or reply' },
+    [['note', 'Note for your team'], ['reply', 'Reply to sender']].map(([key, label]) => el('button', {
+      type: 'button', role: 'radio', 'aria-checked': String(key === 'note'), onclick: event => {
+        replying = key === 'reply'
+        modes.querySelectorAll('button').forEach(button => button.setAttribute('aria-checked', String(button === event.currentTarget)))
+        addNote.classList.toggle('replying', replying)
+        noteBody.placeholder = replying ? `A reply to ${item.email}${item.emails ? ', sent by email' : ' (they stopped emails; they see it when signed in)'}` : NOTE
+        noteBody.setAttribute('aria-label', replying ? 'Reply to the sender' : 'Add a note')
+        sendLabel.textContent = replying ? 'Send reply' : 'Add note'
+        noteBody.focus()
+      } }, label)))
   const addNote = el('form', { class: 'add-note', onsubmit: async event => {
     event.preventDefault()
     if (!noteBody.value.trim()) return
+    sent.hidden = true
     try {
-      paintNotes((await api('POST', `/api/items/${item.id}/notes`, { body: noteBody.value })).notes)
+      if (replying) {
+        const reply = await api('POST', `/api/items/${item.id}/replies`, { body: noteBody.value })
+        paintNotes(reply.notes)
+        sent.textContent = reply.emailed ? `Sent, and emailed to ${item.email}.` : 'Saved. It wasn’t emailed; they see it when they sign in.'
+        sent.hidden = false
+      } else {
+        paintNotes((await api('POST', `/api/items/${item.id}/notes`, { body: noteBody.value })).notes)
+      }
       noteBody.value = ''
     } catch (problem) { alert(problem.message) }
-  } }, noteBody, el('button', { type: 'submit', class: 'button' }, 'Add note'))
+  } }, modes, noteBody, el('button', { type: 'submit', class: 'button' }, sendLabel))
 
   const fact = (label, ...value) => value.some(Boolean) && el('div', {}, el('dt', {}, label), el('dd', {}, ...value))
   put(el('article', { class: 'item' },
@@ -432,7 +466,10 @@ function itemPage(project, item) {
         ? el('a', { href: pageURL(project), target: '_blank', rel: 'noopener' }, 'Your feedback page')
         : item.page && el('a', { href: item.page, rel: 'noopener noreferrer', target: '_blank' }, item.pageTitle || item.page)),
       item.answers.map(answer => fact(answer.label, answerText(answer) === answer.label ? 'Yes' : answerText(answer))),
-      fact('Email', item.email && el('a', { href: 'mailto:' + item.email }, item.email)),
+      fact('Email', item.email && el('a', { href: 'mailto:' + item.email }, item.email),
+        item.email && (item.emailVerified
+          ? el('span', { class: 'verified', title: 'They confirmed this address with a code' }, glyph('check', 'glyph line'), 'Verified')
+          : el('span', { class: 'muted', title: 'Not confirmed: feedback never emails it' }, ' · not confirmed'))),
       fact('Phone', item.phone && el('a', { href: 'tel:' + item.phone.replace(/[^\d+]/g, '') }, item.phone)),
       fact('Browser', item.browser),
       fact('Window', item.viewport && item.viewport.replace('x', ' × '))),
@@ -449,7 +486,9 @@ function itemPage(project, item) {
       } }, 'Delete')),
     comments,
     el('section', { class: 'notes-section' }, el('h3', {}, 'Thread'),
-      el('p', { class: 'muted section-note' }, 'Your team’s notes and every change, in order. Only you see this.'), notes, addNote)))
+      el('p', { class: 'muted section-note' }, item.emailVerified
+        ? 'Your team’s notes, every change, and your conversation with the sender, in order. They see only the conversation.'
+        : 'Your team’s notes and every change, in order. Only you see this.'), notes, addNote, sent)))
 }
 
 

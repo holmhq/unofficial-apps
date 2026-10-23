@@ -84,6 +84,7 @@ function toggleMenu(button) {
     ? el('div', { class: 'menu', role: 'menu' },
         el('div', { class: 'menu-head' }, el('strong', {}, me.name), me.email && el('span', {}, me.email)),
         el('a', { href: '/', 'data-link': true, role: 'menuitem' }, 'Your projects'),
+        el('a', { href: '/mine', 'data-link': true, role: 'menuitem' }, 'Your feedback'),
         el('a', { href: '/stats', 'data-link': true, role: 'menuitem' }, 'Stats'),
         el('a', { href: '/keys', 'data-link': true, role: 'menuitem' }, 'API keys'),
         theme,

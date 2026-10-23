@@ -59,11 +59,11 @@
     {
       "name": "feedback",
       "path": "feedback",
-      "version": "0.15.0",
-      "tag": "feedback/v0.15.0",
-      "h1": "h1:xaZp8zYR3r0959uP2bBBfgT2GJZqGDdJMgySSOow61Q=",
-      "files": 61,
-      "size": 841579,
+      "version": "0.16.0",
+      "tag": "feedback/v0.16.0",
+      "h1": "h1:PnmK8lc2fXz/MVP1dsIVe+0CgLxk89O0jP6VW8D38z0=",
+      "files": 64,
+      "size": 874667,
       "title": "feedback",
       "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
       "themeColor": "#c2410c",
@@ -73,7 +73,7 @@
         "subtitle": "Feedback for websites, shops and events",
         "category": "Developer tools",
         "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-        "whatsNew": "Accounts for agents: an agent can set feedback up for a site with no sign-in, and whoever opens its inbox link can keep it.",
+        "whatsNew": "Follow what you sent: confirm your email with a code, see everything you sent in Your feedback, and get replies by email.",
         "featured": false,
         "screenshots": [
           {

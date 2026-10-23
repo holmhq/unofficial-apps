@@ -220,6 +220,8 @@ web/                public files, served as-is:
   src/account.js    avatar, menu, theme and Holm's sign-in page in an overlay
   src/keys.js       the API keys page
   src/link.js       an inbox link's page: idle bar, clock and lock
+  src/follow.js     the code step after sending
+  src/mine.js       Your feedback, and stopping emails
   src/widget.js     the panel's logic
   src/lib.js        DOM, API and formatting helpers, icons, dropdown,
                     segmented choice and code box
@@ -240,6 +242,7 @@ api/comments.js     public comments and their approval
 api/stats.js        daily counters and the stats replies
 api/keys.js         API keys and who an owner request is from
 api/accounts.js     agent accounts: making one, keeping one, the sweep
+api/follow.js       confirming a sender's email; replies; Your feedback
 api/links.js        inbox links and their idle-locked sessions
 api/lib.js          responses, request checks, ids, who is asking
 holm.symbol.svg     the app's icon
@@ -314,6 +317,10 @@ stars are the fallback if it cannot load.
 | `POST /api/link/claim` | the link's page, signed in | keep an agent's project in your account, once |
 | `POST /api/accounts.create` | anyone, past Holm's challenge | an agent account: one project and its key |
 | `POST /api/keys/rotate` | a key | replace that key with a new one |
+| `POST /api/follow.send`, `…/follow.verify` | the form, past Holm's challenge | email a code; confirm it |
+| `POST /api/items/<id>/replies` | owner | reply to a confirmed sender, by email too |
+| `GET /api/mine`, `POST /api/mine/<id>/replies` | signed in | your feedback everywhere; write back |
+| `POST /api/stop` | a reply email's link | no more emails about that item |
 
 "Owner" means signed in, or an API key sent as `Authorization: Bearer fb_…`.
 
@@ -335,6 +342,18 @@ it, the project takes no files and 100 items a day, and it is deleted after
 90 days in which nobody used its key or inbox links (swept a few at a time when
 an account is made). The inbox link's page offers to keep it; the first
 signed-in person to accept owns it.
+
+Someone who leaves an email can confirm it: after sending, the form emails a
+6-digit code (`follow.send`, behind a 1 s Holm challenge, 5 a minute per
+address, and at most 3 codes an hour to one address) and checks it
+(`follow.verify`, 5 tries). Only a confirmed address counts: feedback never
+emails an unconfirmed one or ties it to an account. Signed in with a confirmed
+address (Holm only hands apps verified member emails), "Your feedback" lists
+what they sent on every project, its status and their conversation with the
+team. A team reply joins the item's thread and goes out by `env.holm.email`
+from the app's own sender, with a one-click stop link; the sender answers on
+that page, since app email can't receive mail yet, and the item shows "They
+replied". Private notes never leave the team.
 
 ## API
 

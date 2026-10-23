@@ -247,6 +247,22 @@ and, on anyone with the link being able to keep it:
 
 > I accept the risk; its okay
 
+**Iteration 20** let senders confirm their email and follow what they sent:
+
+> - also, i wonder can we build feedback as having email connect? so the form entered email will be verified by an OTP?
+> - so that the person with that email can find their issues/feedback once in feedback app
+> - the  flow is the person needs to sign in to feedback app with the same email they used to file the issue
+> - then signed in user will see all projects they have provided feedback too
+
+then, on the agent's proposal:
+
+> Only if they verify email, will we treat it as real; otherwise its just there, we will never send emails to it nor connect if later he creates as account in that email; sure your ideas for guard rails make sense; yes, show status; may be even send him emails when a reply occurs; if he replies we need it in a thread?
+> - i believe this can be handled beautifully inline in that popup component
+
+and:
+
+> Shouldnt 3 issues posted separately go into separate threads? by a verified email?
+
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private
 documentation, downloaded icon attachment or pre-existing feedback app.

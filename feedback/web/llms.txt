@@ -158,12 +158,16 @@ accent).
   `problem`), `public` (show on the board), `title`.
 - `DELETE /api/items/<item-id>`.
 - `GET` and `POST /api/items/<item-id>/notes` — private notes, `{"body": "..."}`.
+- `POST /api/items/<item-id>/replies` — `{"body": "..."}`, a reply to the sender: it joins the
+  item's thread and is emailed to them. Only for items with `emailVerified: true` (the sender
+  confirmed the address with a code); feedback never emails an unconfirmed address. The reply
+  says whether it was `emailed` (a sender can stop emails; they still see it signed in).
 - `GET` and `POST /api/items/<item-id>/comments` — board comments; `POST` replies as the owner.
   `PATCH /api/comments/<id>` with `{"approved": true}` publishes a visitor's comment;
   `DELETE /api/comments/<id>` removes it.
 
 An item has `id`, `number` (the `#12` shown in the app), `kind`, `status`, `title`, `body`,
-`email` (may be empty), `page`, `pageTitle`, `browser`, `viewport`, `votes`, `public` and
+`email` (may be empty), `emailVerified`, `replyWaiting` (the sender wrote back), `page`, `pageTitle`, `browser`, `viewport`, `votes`, `public` and
 `createdAt`. Link one as `https://feedback.zyt.app/projects/<project-id>/items/<number>`.
 
 ### Open the inbox without signing in

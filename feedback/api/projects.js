@@ -37,7 +37,7 @@ const SLUG = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/
 // First path segments the app itself uses (src/app.js keeps the same list).
 export const RESERVED = new Set(['api', 'auth', 'b', 'f', 'projects', 'keys', 'stats', 'assets', 'src', 'vendor',
   'embed', 'widget', 'new', 'settings', 'account', 'admin', 'login', 'logout', 'signin', 'signup', 'help', 'about',
-  'privacy', 'terms', 'docs', 'www', 'app', 'holm', 'index', 'changelog', 'preview'])
+  'privacy', 'terms', 'docs', 'www', 'app', 'holm', 'index', 'changelog', 'preview', 'mine', 'stop'])
 
 // The script tag for a site. The button reads the project's look when the
 // page loads, so a change here needs no new snippet.

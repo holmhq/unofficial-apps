@@ -6,6 +6,7 @@ import { el, api, glyph, store, ago, inkOn, lighten, STATUS, KIND, KIND_SETS } f
 import { show } from './app.js'
 import { composer, sentMark } from './compose.js'
 import { mark as markOf } from './icons.js'
+import { followStep } from './follow.js'
 
 const SECTIONS = ['progress', 'planned', 'new', 'done']
 const TITLES = { progress: 'In progress', planned: 'Planned', new: 'Under review', done: 'Done' }
@@ -107,12 +108,13 @@ function voteButton(project, item, voted, large) {
   return button
 }
 
-function thanks(project, number, again) {
+function thanks(project, number, again, follow) {
   return el('div', { class: 'board-thanks', role: 'status' },
     sentMark(),
     el('h2', {}, 'Thanks, it’s sent'),
     el('p', {}, number ? `It’s #${number} in ${project.name}’s inbox.` : `It’s in ${project.name}’s inbox.`,
       ' If they add it to this page, it will show up below.'),
+    follow && followStep(follow),
     el('button', { type: 'button', class: 'button', onclick: again }, 'Send another'))
 }
 
@@ -133,7 +135,7 @@ function listView(data, base) {
       contact: project.contact,
       rating: project.rating,
       attachments: project.attachments,
-      onSent: number => { card.replaceChildren(thanks(project, number, fresh)); card.scrollIntoView({ block: 'nearest' }) },
+      onSent: (number, reply = {}) => { card.replaceChildren(thanks(project, number, fresh, reply.follow)); card.scrollIntoView({ block: 'nearest' }) },
       fine: project.contact && project.contact.email === 'off' && project.contact.phone === 'off' ? null : 'Your contact details are only shown to the team.'
     }))
   fresh()

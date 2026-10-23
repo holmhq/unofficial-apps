@@ -7,9 +7,36 @@ import { itemFactory } from "./items.js";
 import { statsFactory } from "./stats.js";
 import { profile, reject } from "./lib.js";
 import { createAccount as makeAccount } from "./accounts.js";
+import { sendCode as mailCode, verifyCode as checkCode } from "./follow.js";
 
 export const contract = {
   "operations": {
+    "follow.send": {
+      "handler": "sendCode", "auth": "public", "risk": "write", "sensitive": true,
+      "summary": "Email a one-time code to follow feedback you just sent",
+      "description": "Use the follow token the send reply returned. Emails a 6-digit code, valid 10 minutes, to the address on that item; at most 3 codes an hour to one address. Solve the Holm challenge first.",
+      "limits": { "rate": { "requests": 5, "per": "1m" }, "challenge": { "work": "1s" } },
+      "input": { "type": "object", "properties": { "token": { "type": "string" } }, "required": ["token"], "additionalProperties": false },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_TOO_MANY_CODES": { "status": 429, "public": true },
+        "APP_EMAIL_FAILED": { "status": 502, "public": true }
+      }
+    },
+    "follow.verify": {
+      "handler": "verifyCode", "auth": "public", "risk": "write", "sensitive": true,
+      "summary": "Confirm the emailed code, so the sender can follow their feedback",
+      "description": "Five tries per code. On success the item's email counts as the sender's: they get replies and see it under Your feedback when signed in with that address.",
+      "limits": { "rate": { "requests": 20, "per": "1m" } },
+      "input": { "type": "object", "properties": { "token": { "type": "string" }, "code": { "type": "string", "maxLength": 12 } }, "required": ["token", "code"], "additionalProperties": false },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_CODE_EXPIRED": { "status": 410, "public": true },
+        "APP_WRONG_CODE": { "status": 400, "public": true }
+      }
+    },
     "accounts.create": {
       "handler": "createAccount", "auth": { "invoke": { "public": true } }, "risk": "write", "sensitive": true,
       "summary": "Make a feedback project with no sign-in, for an app you are building",
@@ -123,6 +150,16 @@ function signedInOwner(env) {
 export function createAccount(input, env, ctx) {
   bind(env.holm);
   return operationAsync(() => makeAccount(input));
+}
+
+export function sendCode(input, env, ctx) {
+  bind(env.holm);
+  return operationAsync(() => mailCode(input));
+}
+
+export function verifyCode(input, env, ctx) {
+  bind(env.holm);
+  return operationAsync(() => checkCode(input));
 }
 
 export function getProject(input, env, ctx) {

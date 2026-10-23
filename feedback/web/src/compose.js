@@ -247,7 +247,7 @@ export function composer({ endpoint, kinds = KIND_SETS.site, fields = [], contac
       const reply = await response.json().catch(() => ({}))
       if (!response.ok || !reply.ok) throw new Error(reply.error?.message || 'It didn’t send. Try again.')
       files.forEach(entry => entry.url && URL.revokeObjectURL(entry.url))
-      onSent(reply.number || null)
+      onSent(reply.number || null, reply)
     } catch (problem) {
       showError(problem.message)
       send.disabled = false

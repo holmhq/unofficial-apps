@@ -8,12 +8,13 @@ import { keysPage } from './keys.js'
 import { statsPage } from './stats.js'
 import { changelogPage } from './changelog.js'
 import { openLink, lockedPage, remembered } from './link.js'
+import { minePage, stopPage } from './mine.js'
 
 // First path segments the app itself uses; any other short name may be a
 // project's custom address (api/projects.js keeps the same list).
 const RESERVED = new Set(['api', 'auth', 'b', 'f', 'projects', 'keys', 'stats', 'assets', 'src', 'vendor',
   'embed', 'widget', 'new', 'settings', 'account', 'admin', 'login', 'logout', 'signin', 'signup', 'help', 'about',
-  'privacy', 'terms', 'docs', 'www', 'app', 'holm', 'index', 'changelog', 'preview'])
+  'privacy', 'terms', 'docs', 'www', 'app', 'holm', 'index', 'changelog', 'preview', 'mine', 'stop'])
 
 const main = $('#main')
 // Optional sections pass false or undefined; leave them out of the page.
@@ -97,7 +98,8 @@ async function projectsPage() {
             : !project.sites[0] && el('span', {}, 'Not on a site yet'))),
       waiting(project.waiting) && el('span', { class: 'project-waiting' }, waiting(project.waiting)),
       glyph('chevron', 'glyph line go'))) :
-      [el('li', { class: 'muted empty' }, 'No projects yet. Name your first one above.')]))
+      [el('li', { class: 'muted empty' }, 'No projects yet. Name your first one above. Sent feedback to someone? See it in ',
+        el('a', { href: '/mine', 'data-link': true }, 'Your feedback'), '.')]))
   } catch (problem) {
     list.replaceChildren(el('li', { class: 'form-error empty' }, problem.message))
   }
@@ -133,6 +135,8 @@ function route() {
   if (path === '/keys') return viewer().me ? keysPage() : landing()
   if (path === '/stats') return viewer().me ? statsPage() : landing()
   if (path === '/changelog') return changelogPage()
+  if (path === '/mine') return minePage()
+  if ((match = /^\/stop\/([a-z0-9]{24})$/.exec(path))) return stopPage(match[1])
   if ((match = /^\/projects\/([a-z0-9]{8})(?:\/(setup|design|form|share|settings|stats|items\/(\d+)))?$/.exec(path))) {
     if (!viewer().me) return landing()
     return projectPage(match[1], match[3] ? Number(match[3]) : match[2] || 'inbox')

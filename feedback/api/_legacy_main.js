@@ -1,13 +1,14 @@
 import { ok, fail, reject, body, member, profile } from './lib.js'
 import { findProject, publicConfig, listProjects, createProject, updateProject, deleteProject, ownProject, projectDTO, setPicture, clearPicture } from './projects.js'
 import { isPicture, servePicture } from './page.js'
-import { submit, submitToWidget, listItems, updateItem, deleteItem, itemFile, listNotes, addNote, board, publicProject, publicItem, vote } from './items.js'
+import { submit, submitToWidget, listItems, updateItem, deleteItem, itemFile, listNotes, addNote, replyToSender, board, publicProject, publicItem, vote } from './items.js'
 import { approvedComments, postComment, listComments, reply, approve, deleteComment } from './comments.js'
 import { count, accountStats, projectStats } from './stats.js'
 import { owner, header, listKeys, createKey, deleteKey, rotateKey } from './keys.js'
 import { seen, installs } from './installs.js'
 import { IDLE_MS, mintLink, openLink, linkUser, linkState, closeLink } from './links.js'
 import { claim } from './accounts.js'
+import { mine, senderReply, stopEmails } from './follow.js'
 
 // An inbox link's page marks its calls (a header, or ?link=1 on a file it
 // shows); they act for the project's owner, on that project's inbox only.
@@ -28,6 +29,11 @@ async function route(request, method, parts) {
     const me = { authenticated: !!value, member: value ? { ...profile(value), email: value.email || '' } : null }
     return ok(linked(request) ? { ...me, link: await linkState(request) } : me)
   }
+
+  // What the signed-in person sent with a confirmed email, on every project.
+  if (area === 'mine' && parts.length === 2 && method === 'GET') return ok(mine())
+  if (area === 'mine' && id && sub === 'replies' && parts.length === 4 && method === 'POST') return ok(senderReply(id, body(request)), 201)
+  if (area === 'stop' && parts.length === 2 && method === 'POST') return ok(stopEmails(body(request)))
 
   // Inbox links: the page spends the link once, says someone is there while
   // they are, and locks.
@@ -111,6 +117,7 @@ async function route(request, method, parts) {
     if (sub === 'files' && subId && parts.length === 5 && method === 'GET') return itemFile(user, id, subId, query)
     if (sub === 'notes' && parts.length === 4 && method === 'GET') return ok({ notes: listNotes(user, id) })
     if (sub === 'notes' && parts.length === 4 && method === 'POST') return ok({ notes: addNote(user, id, body(request)) }, 201)
+    if (sub === 'replies' && parts.length === 4 && method === 'POST') return ok(replyToSender(user, id, body(request), request.origin), 201)
     if (sub === 'comments' && parts.length === 4 && method === 'GET') return ok({ comments: listComments(user, id) })
     if (sub === 'comments' && parts.length === 4 && method === 'POST') return ok({ comments: reply(user, id, body(request)) }, 201)
   }
