@@ -99,7 +99,7 @@ function base64OrText(s) {
 
 // A page of the store: web/shell.html with the index, the tint and the viewer embedded as JSON,
 // so the first paint needs no API call, and for /apps/<app> that app's title, description and
-// cover as its link preview. If the index can't be read, the page loads it from the API instead.
+// cover as its link preview; /start, the guide, gets its own title and description. If the index can't be read, the page loads it from the API instead.
 // The shell isn't called index.html because Holm serves a matching file before this handler runs.
 async function page(request, env, url) {
   const response = await env.holm.web.fetch(new Request(new URL("/shell", url), request));
@@ -109,6 +109,10 @@ async function page(request, env, url) {
   const here = url.origin + url.pathname;
   html = html.replace(/<link rel="canonical" href="[^"]*">/, () => `<link rel="canonical" href="${escapeHTML(here)}">`);
   html = meta(html, "property", "og:url", here);
+  if (/^\/start\/?$/.test(url.pathname)) {
+    html = text(html, "Get started with Holm – Unofficial Holm apps", "Get started with Holm",
+      "Set up a Holm node in about ten minutes, then install any app in this store with one command, or build your own from a prompt.");
+  }
   try {
     bind(env.holm);
     const ref = url.searchParams.get("ref") || "main";
@@ -142,20 +146,25 @@ function meta(html, attr, key, value) {
   return pattern.test(html) ? html.replace(pattern, () => tag) : html.replace("</head>", () => tag + "\n</head>");
 }
 
-// An app page's link preview: its name, the first paragraph of its listing and its cover.
-function describe(html, app, origin) {
-  const listing = app.listing || {};
-  const title = `${app.title} – Unofficial Holm apps`;
-  const first = String(listing.description || app.description || "").split(/\n\s*\n/)[0];
-  const description = first.length > 200 ? first.slice(0, 199).replace(/\s+\S*$/, "") + "…" : first;
+// A page's title, and its name and description in its link preview.
+function text(html, title, name, description) {
   html = html.replace(/<title>[^<]*<\/title>/, () => `<title>${escapeHTML(title)}</title>`);
   for (const [attr, key, value] of [
     ["name", "description", description],
-    ["property", "og:title", app.title],
+    ["property", "og:title", name],
     ["property", "og:description", description],
-    ["name", "twitter:title", app.title],
+    ["name", "twitter:title", name],
     ["name", "twitter:description", description],
   ]) html = meta(html, attr, key, value);
+  return html;
+}
+
+// An app page's link preview: its name, the first paragraph of its listing and its cover.
+function describe(html, app, origin) {
+  const listing = app.listing || {};
+  const first = String(listing.description || app.description || "").split(/\n\s*\n/)[0];
+  const description = first.length > 200 ? first.slice(0, 199).replace(/\s+\S*$/, "") + "…" : first;
+  html = text(html, `${app.title} – Unofficial Holm apps`, app.title, description);
   const cover = listing.cover;
   if (cover) {
     const image = `${origin}/api/media/${app.path}/cover.png${cover.hash ? `?v=${cover.hash}` : ""}`;

@@ -1,11 +1,16 @@
 // Small DOM and formatting helpers shared by the store's views.
 export const REPO = 'https://github.com/holmhq/unofficial-apps'
-export const ALIAS = 'unofficial'
+// The repository as holm app install names it: github.com/<org>/<repo>.
+export const ADDRESS = REPO.replace(/^https?:\/\//, '')
 
 export const store = {
   get(key, fallback) { try { return JSON.parse(localStorage.getItem('catalog.' + key)) ?? fallback } catch { return fallback } },
   set(key, value) { try { localStorage.setItem('catalog.' + key, JSON.stringify(value)) } catch {} }
 }
+
+// The reader's node, as the holm CLI knows it; the install sheet and the
+// guide both write their commands for it.
+export const node = Object.assign({ peer: '', domain: '' }, store.get('node', {}))
 
 export const $ = (selector, root = document) => root.querySelector(selector)
 
@@ -88,4 +93,64 @@ export function applyTint(tint) {
   if (!/^#[0-9a-fA-F]{6}$/.test(tint || '')) return
   document.documentElement.style.setProperty('--tint', tint)
   store.set('tint', tint)
+}
+
+// A command or prompt to copy. Each line is a list of strings and { you }
+// parts, the reader's own values, which are highlighted. Shell commands keep
+// their line breaks (long ones continue with a backslash); a prose prompt is
+// one paragraph that wraps.
+export function command(lines, { label, kind = 'Terminal', prose = false, onCopy } = {}) {
+  const plain = parts => parts.map(part => typeof part === 'string' ? part : part.you).join('')
+  const code = el('code', {}, lines.map(line =>
+    el('span', { class: 'line' }, line.map(part => typeof part === 'string' ? part : el('span', { class: 'you' }, part.you)))))
+  const copy = el('button', { type: 'button', class: 'copy', 'aria-label': 'Copy ' + label }, 'Copy')
+  copy.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(lines.map(plain).join('\n'))
+      copy.textContent = 'Copied'
+      if (onCopy) onCopy()
+    } catch {
+      copy.textContent = 'Select and copy'
+    }
+    setTimeout(() => { copy.textContent = 'Copy' }, 1600)
+  })
+  return el('div', { class: 'command' + (prose ? ' prose' : '') },
+    el('div', { class: 'bar' }, el('span', {}, kind), copy),
+    el('pre', {}, code))
+}
+
+// Tabs over one panel, with the arrow keys moving between them. ways maps
+// each tab's key to its label and a render() for the panel; repaint() draws
+// the current one again.
+export function tabbed({ id, label, ways, current, onChoose }) {
+  const keys = Object.keys(ways)
+  const bar = el('div', { class: 'tabs', role: 'tablist', 'aria-label': label })
+  const panel = el('div', { class: 'panel', role: 'tabpanel', id: id + '-panel' })
+  let at = keys.includes(current) ? current : keys[0]
+  const repaint = () => panel.replaceChildren(...ways[at].render())
+  const paint = () => {
+    bar.replaceChildren(...keys.map(key => el('button', {
+      type: 'button', role: 'tab', id: id + '-' + key, 'aria-controls': id + '-panel',
+      'aria-selected': String(key === at), tabindex: key === at ? '0' : '-1',
+      onclick: () => choose(key)
+    }, ways[key].label)))
+    panel.setAttribute('aria-labelledby', id + '-' + at)
+    repaint()
+  }
+  const choose = key => {
+    at = key
+    onChoose(key)
+    paint()
+    document.getElementById(id + '-' + key).focus()
+  }
+  bar.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    event.preventDefault()
+    const i = keys.indexOf(at)
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1
+      : (i + (event.key === 'ArrowRight' ? 1 : -1) + keys.length) % keys.length
+    choose(keys[next])
+  })
+  paint()
+  return { bar, panel, repaint }
 }

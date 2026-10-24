@@ -10,6 +10,10 @@ for Holm behavior and spell out this repository's own store conventions.
 The prompts are the point. They show how little you need to say to get a
 finished, deployed app.
 
+New to Holm? The store's guide at
+[unofficial.zyt.app/start](https://unofficial.zyt.app/start) sets up a node
+in about ten minutes, then installs any app here with one command.
+
 ## Quick start
 
 1. Clone the repo:
@@ -41,7 +45,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 
 | App | Live | What it shows |
 | --- | --- | --- |
-| [`catalog`](catalog/) | [unofficial.zyt.app](https://unofficial.zyt.app) | An app store: a page per app, reviews, Get to install, and an admin |
+| [`catalog`](catalog/) | [unofficial.zyt.app](https://unofficial.zyt.app) | An app store: a page per app, reviews, Get to install, a setup guide, and an admin |
 | [`pastebin`](pastebin/) | [pastebin.zyt.app](https://pastebin.zyt.app) | Expiring, one-time and revocable links; media; API keys and a CLI |
 | [`feedback`](feedback/) | [feedback.zyt.app](https://feedback.zyt.app) | Feedback for websites, shops and events: a button, a QR code page, one inbox, stats |
 | [`overlap`](overlap/) | not deployed yet | Find a time for a group: paint free times, a live heatmap, sign-in, realtime, sound and motion |
@@ -111,22 +115,22 @@ chapters retain an older baseline.
 
 ## Installing from this repository
 
-The supported path for these examples is to clone the repo (or a reviewed
-release tag), validate, and deploy the app folder with `--spec-v1` as above.
-Do not treat the store's coming-soon install tab as a working installer; its
-Terminal and Ask an agent copy buttons also still have older flags.
-
-The public guide's operator baseline describes trusted repository metadata;
-check your target CLI before using that optional feature:
+From Holm 0.250, one command installs an app from this repository:
 
 ```sh
-holm @<peer> app repo add unofficial https://github.com/holmhq/unofficial-apps
+holm @<peer> app install github.com/holmhq/unofficial-apps/<app> --host <app>.example.com
 ```
 
-Trust is a security decision, not a signature or an install guarantee:
-anyone who can change the repository can change its apps. The catalog at
-[unofficial.zyt.app](https://unofficial.zyt.app) presents this repo's index,
-which is our own convention rather than a documented Holm install schema.
+With no `@<ref>`, Holm takes the release tag that [`index.json`](index.json)
+names for the app; `@v<version>` picks one release. It checks the files
+against the index's `h1` fingerprint, pins them, and deploys; installing a
+newer version on the same host updates the same app and keeps its data.
+These checksums pin a release; they are not signatures, so installing from a
+repository still means trusting whoever can change it. On an older node,
+clone a reviewed release tag, validate, and deploy the app folder with
+`--spec-v1` as above. The store at
+[unofficial.zyt.app](https://unofficial.zyt.app) writes all of these for your
+node from each app's Get button.
 
 - **Release tags:** each app versions independently with `<app>/v<version>`.
 - **Fingerprint:** `h1` is SHA-256 over app-relative file hashes, like Go's
@@ -136,8 +140,7 @@ which is our own convention rather than a documented Holm install schema.
 - **Index:** [`index.json`](index.json) records versions, tags, fingerprints,
   size/file counts, symbols, listings and prompts. `node scripts/index.mjs`
   regenerates it; `--check` catches stale data and changed released files.
-  This does not prove `holm app install` can consume it; that command is
-  unavailable in the installed CLI and the guide's operator baseline.
+  `holm app install` reads each app's `tag` and `h1` from it.
 - **Store listing:** `holm.symbol.svg` is one black path in a 24×24 box,
   painted on the app's `themeColor`. `listing/` holds `listing.json` and
   sample screenshots, excluded with `publish.exclude: ["/listing/"]` in

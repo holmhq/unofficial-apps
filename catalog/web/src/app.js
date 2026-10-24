@@ -6,6 +6,7 @@ import { openInstall } from './install.js'
 import { loadViewer, onViewer, setViewer } from './account.js'
 import { reviewsSection } from './reviews.js'
 import { adminPage } from './admin.js'
+import { startPage, isStart } from './start.js'
 
 const ref = new URLSearchParams(location.search).get('ref') || 'main'
 const withRef = path => ref === 'main' ? path : path + '?ref=' + encodeURIComponent(ref)
@@ -81,13 +82,20 @@ function featured(app) {
       shotImage({ src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height })))
 }
 
+// The way in for someone who has no node yet.
+const intro = () => el('a', { class: 'intro', href: withRef('/start'), 'data-link': true },
+  el('span', { class: 'intro-text' }, el('strong', {}, 'New to Holm? '),
+    'These apps run on a server you own. Set one up in about ten minutes, then install any of them with one command.'),
+  el('span', { class: 'intro-go' }, 'Get started', chevron()))
+
 function storefront() {
   document.title = 'Unofficial Holm apps'
   const feature = index.apps.find(app => app.listing && app.listing.featured && app.listing.screenshots.length)
   show(
     el('section', { class: 'masthead' },
       el('h1', {}, 'Apps'),
-      el('p', { class: 'lede' }, 'Small, real apps for your Holm node, each built by a coding agent from a short prompt.')),
+      el('p', { class: 'lede' }, 'Small, real apps for your Holm node, each built by a coding agent from a short prompt.'),
+      intro()),
     feature && featured(feature),
     el('section', { class: 'shelf' },
       el('h2', {}, 'All apps'),
@@ -103,7 +111,7 @@ function productPage(app) {
   const others = index.apps.filter(other => other !== app)
   track(app.path, 'view')
   show(
-    el('nav', { class: 'back' }, el('a', { href: withRef('/'), 'data-link': true }, chevron(), 'Apps')),
+    back(),
     app.hidden && el('p', { class: 'notice' }, 'This app is hidden from the store. Only admins can see this page.'),
     el('header', { class: 'product' },
       icon(app, 'xl'),
@@ -154,8 +162,15 @@ function notFound(path) {
       el('a', { href: withRef('/'), 'data-link': true }, 'See all apps'), '.')))
 }
 
+const back = () => el('nav', { class: 'back' }, el('a', { href: withRef('/'), 'data-link': true }, chevron(), 'Apps'))
+
 function route() {
+  const start = isStart()
+  const guide = $('.top-link')
+  if (start) guide.setAttribute('aria-current', 'page')
+  else guide.removeAttribute('aria-current')
   if (location.pathname.replace(/\/+$/, '') === '/admin') return adminPage(main, show)
+  if (start) return startPage(index, show, back())
   if (!index) return
   const match = /^\/apps\/([a-z0-9-]+)\/?$/.exec(location.pathname)
   if (!match) return storefront()
@@ -177,7 +192,7 @@ document.addEventListener('click', event => {
   event.preventDefault()
   if (link.href !== location.href) history.pushState(null, '', link.href)
   route()
-  scrollTo(0, 0)
+  scrollTo({ top: 0, behavior: 'instant' })
   main.focus({ preventScroll: true })
 })
 addEventListener('popstate', route)
@@ -191,6 +206,8 @@ async function load() {
     applyTint(body.settings && body.settings.tint)
     route()
   } catch (error) {
+    // The guide reads well without the apps.
+    if (isStart()) return
     main.replaceChildren(el('div', { class: 'status error' },
       el('p', {}, 'The apps didn’t load. ', String(error.message).replace(/\.?$/, '.')),
       el('p', {}, el('button', { type: 'button', class: 'quiet', onclick: () => { main.replaceChildren(el('p', { class: 'status' }, 'Loading the apps…')); load() } }, 'Try again'),
@@ -211,6 +228,7 @@ if (boot && boot.index) {
   route()
 } else {
   loadViewer(false)
+  if (isStart()) route()
   load()
 }
 

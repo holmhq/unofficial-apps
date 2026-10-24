@@ -37,11 +37,15 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   module. Give each
   /apps/<app> page that app's title, description and listing/cover.png as
   its link preview (a 1200x630 card the repo draws with a script).
-- Get opens a sheet remembering my peer/domain, with working clone-a-tag
-  instructions and holm @<peer> app deploy <app-dir> --spec-v1 --host <host>,
-  plus an agent prompt following the app README. The guide does not define
-  this repo's install-index schema, and app install is unavailable in its
-  operator baseline: any future-install tab must be clearly non-working.
+- Get opens a sheet remembering my peer/domain, with tabs for
+  holm @<peer> app install github.com/<org>/<repo>/<app>@v<version> --host
+  <host>, a clone-a-tag holm app deploy <app> --spec-v1, and an agent prompt
+  following the app README.
+- A /start guide, linked from the header, the front page and the sheet, for
+  someone with no node: what Holm is, why a node puts every app here one
+  command away and any app they can describe one deploy away, setup tabs for
+  this computer, a server and an agent (commands from sections 4, 5 and 8),
+  building from a prompt, what Holm gives an app, and links to holmhq.com.
 - Sign in through Holm. Signed-in people may rate/review once per app;
   edits wait for approval too. /admin hides apps, moderates reviews, shows
   rough daily views/Get/copy counts in KV and lets me change the tint.
@@ -51,8 +55,9 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
 - The guide does not document binary net.fetch responses: do not invent
   responseType: 'file'. Keep screenshots as public static files in web/
   until a documented, tested proxy/cache path is available; disclose that
-  gap. Make light/dark mobile/desktop layouts, no sideways scrolling, and
-  an avatar menu and small Holm/source footer.
+  gap. Make light/dark mobile/desktop layouts, no sideways scrolling, an
+  avatar menu with Analytics from __HOLM_SURFACES__, and a small Holm/source
+  footer that stays at the bottom over the scrolling page, frosted.
 
 Run holm app validate --spec-v1 catalog. With my approval, deploy with
 holm @<peer> app deploy catalog --spec-v1 --host unofficial.<my-domain>.
@@ -142,6 +147,20 @@ so the agent drew each app's card as `listing/cover.png` with a new script,
 then made pages arrive with their data and images cacheable by content. The
 feedback app was already listed, so the store's footer gained Send feedback
 instead.
+
+**Iteration 7**, the first message and one sent while the agent worked on it:
+
+> Can we have a nice looking guide for how to install / setup holm?
+> - and link it back to the site?
+> - explain why having a node will enable them to install any of these apps, plus build any on the fly
+> - with all bells & whistles that holm provides
+> - if else someone landing to this page will be confused on what to do
+
+> Also, can the page be built such that the bottom footer is sticky? and has a blurry / translucent background below which the content will scroll?
+> - also, can you add analytics link to avatar popup?
+
+`holm app install` had shipped by then, so the sheet's coming-soon tab
+became its first, working way.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

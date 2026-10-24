@@ -5,6 +5,9 @@ import { $, el, api } from './lib.js'
 let me = null
 let admin = false
 const listeners = []
+// Holm's own pages for this app, analytics among them. Holm puts their
+// addresses in the page for the people allowed to see them.
+let surfaces = globalThis.__HOLM_SURFACES__ || null
 
 export const viewer = () => ({ me, admin })
 export const onViewer = fn => listeners.push(fn)
@@ -57,6 +60,7 @@ function toggleMenu(button) {
     ? el('div', { class: 'menu', role: 'menu' },
         el('div', { class: 'menu-head' }, el('strong', {}, me.name), me.email && el('span', {}, me.email)),
         admin && el('a', { href: '/admin', 'data-link': true, role: 'menuitem' }, 'Admin'),
+        surfaces && surfaces.analytics && el('a', { href: surfaces.analytics, target: '_blank', rel: 'noopener', role: 'menuitem' }, 'Analytics'),
         el('button', { type: 'button', role: 'menuitem', onclick: signOut }, 'Sign out'))
     : el('div', { class: 'menu', role: 'menu' },
         el('button', { type: 'button', role: 'menuitem', onclick: () => signIn().catch(() => {}) }, 'Sign in'))
@@ -89,8 +93,21 @@ async function signOut() {
   } catch {}
   me = null
   admin = false
+  surfaces = null
   render()
   listeners.forEach(fn => fn())
+}
+
+// Signing in here doesn't reload the page, so an admin's links to Holm's
+// pages come from a fresh copy of it.
+async function readSurfaces() {
+  try {
+    const html = await (await fetch(location.pathname, { cache: 'no-store' })).text()
+    const found = /__HOLM_SURFACES__\s*=\s*(\{[^<]*?\});/.exec(html)
+    surfaces = found ? JSON.parse(found[1]) : null
+  } catch {
+    surfaces = null
+  }
 }
 
 let pending = null
@@ -112,6 +129,7 @@ export function signIn() {
       if (event.data.type === 'dismiss') finish(false)
       if (event.data.type === 'signed-in') {
         await loadViewer()
+        if (admin && !surfaces) await readSurfaces()
         finish(!!me)
       }
     }

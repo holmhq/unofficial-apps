@@ -2,9 +2,8 @@
 
 An app store for this repository, live at <https://unofficial.zyt.app>. Every
 app gets its own page with ratings and reviews, a Get button opens an install
-sheet, and authorized admins manage the store from `/admin`. The sheet still
-prints older deploy flags: use the v1 command below, not its current copy
-buttons, to install these apps.
+sheet, a guide at `/start` gets newcomers a Holm node of their own, and
+authorized admins manage the store from `/admin`.
 
 It was built from the requests quoted in [`PROMPT.md`](PROMPT.md).
 
@@ -24,8 +23,24 @@ out of this app's deploy. They are still public source in this repository.
 
 ## What it does
 
-- **Front page:** a featured app on its own colour, then every app as a row
-  with its icon, subtitle, category and a Get button.
+- **Front page:** a "New to Holm?" card linking to the guide, a featured app
+  on its own colour, then every app as a row with its icon, subtitle,
+  category and a Get button.
+- **Get started** at `/start`, linked from the header on every page, the
+  front page and the install sheet. One long page:
+  - what Holm is, with a picture of a node holding every app in the store;
+  - why a node puts every app here one `holm app install` away, and any app
+    you can describe one deploy away;
+  - setting one up, as tabs: **This computer** (install the CLI, read the
+    licence and create a node, start it, install an app you pick, with the
+    address to open), **A server** (DNS, the service installer and a peer,
+    written for the domain you type), and **An agent** (a prompt to paste);
+  - building your own from a prompt, with an example;
+  - twelve things Holm gives every app, each with the API that provides it;
+  - links back to holmhq.com, the public reference and the licence.
+
+  Its commands follow sections 4, 5, 8 and 9 of
+  <https://holmhq.com/llms-full.txt>.
 - **App pages** at `/apps/<app>`:
   - the icon, title, subtitle, Get and a link to the live copy;
   - a strip of facts: version, size, category, license;
@@ -34,18 +49,20 @@ out of this app's deploy. They are still public source in this repository.
   - **Built from a prompt:** the request a coding agent built the app from;
   - information: repository, release tag, size and file count, README.
 - **The install sheet:** type your peer and domain once and every command is
-  written for your node, with your parts highlighted. Three ways, as tabs; the
-  one you pick is remembered:
-  - **Terminal:** clone a release tag and deploy the app folder. Its current
-    command omits `--spec-v1`; use the command in this README instead.
-  - **Ask an agent:** an install prompt; its current command has the same
-    stale flags. Tell the agent to follow the v1 README, not those flags.
-  - **`holm app install`:** a repository-install sketch marked as coming.
-    The guide's operator baseline and the installed CLI report this command
-    as unavailable; it is not a tested install path.
+  written for your node, with your parts highlighted; the guide shares them.
+  Three ways, as tabs; the one you pick is remembered:
+  - **One command:** `holm app install github.com/holmhq/unofficial-apps/<app>@v<version> --host <host>`
+    (Holm 0.250 or newer). Holm fetches that release tag, checks it against
+    the repository's `index.json` fingerprint and deploys it; installing a
+    newer version on the same host updates the same app and keeps its data.
+  - **From source:** clone the release tag and deploy the app folder with
+    `--spec-v1`.
+  - **Ask an agent:** a prompt with the install command and the app's README.
+  - A link for anyone without a node yet goes to the guide.
 - **Accounts:** an avatar circle at the top right signs people in through
   Holm's hosted sign-in page, shown in an overlay so nobody loses their
-  place. Its menu has Admin for those allowed in, and Sign out.
+  place. Its menu has Admin for those allowed in, Analytics (Holm's own
+  analytics page for this app) for the people Holm shows it to, and Sign out.
 - **Ratings and reviews:** anyone signed in can rate an app and write a
   review, one per app, and edit or delete it. A new or edited review is shown
   only to its author, marked as waiting, until an admin approves it. Approved
@@ -62,7 +79,8 @@ out of this app's deploy. They are still public source in this repository.
 - **Look:** slate ink on cool paper, light and dark following the system.
   Each app brings its colour through its icon, and everything else takes the
   tint. Fonts are vendored, so nothing loads from a CDN. A footer links to
-  Holm and the source and has Send feedback, as in pastebin.
+  Holm and the source and has Send feedback, as in pastebin. It stays at the
+  bottom of the window, and the page scrolls on under its frosted glass.
 - **Link previews:** an app page shared in a chat or a post shows that app's
   name, description and cover, the 1200×630 card in its `listing/cover.png`
   (see the root README), instead of the store's own card.
@@ -78,8 +96,9 @@ A Holm app is a folder. `web/` is served as-is. This app's
 standard `Response` objects. Every page (a path without a file extension)
 is `web/shell.html`, read with `env.holm.web.fetch`, with a
 `<script id="boot">` holding the index, tint and viewer added to its head, its
-canonical and `og:url` set to the page's own address, and on an app page that
-app's title, description and `og:`/`twitter:` image tags. The shell is not
+canonical and `og:url` set to the page's own address, on an app page that
+app's title, description and `og:`/`twitter:` image tags, and on `/start` the
+guide's own title and description. The shell is not
 named `index.html` because Holm serves a file that matches the path before the
 handler runs, and `/` would skip all of this; for the same reason `web.spa` is
 off and the handler serves every page. Other paths go to
@@ -91,10 +110,11 @@ web/                public files, served as-is:
   shell.html        page shell, module preloads, install <dialog>, feedback tag
   src/app.js        router, front page and app pages
   src/install.js    the install sheet and its commands
+  src/start.js      the Get started guide at /start
   src/account.js    avatar, menu, sign-in overlay
   src/reviews.js    ratings, reviews and the review form
   src/admin.js      /admin
-  src/lib.js        DOM and API helpers, the app icon, counting
+  src/lib.js        DOM and API helpers, the app icon, counting, commands, tabs
   src/styles.css    the whole design, light and dark
   assets/           icon, favicon and fonts (SIL OFL 1.1)
   vendor/feedback/  embed.js from this repository's feedback app (MIT)
@@ -149,6 +169,11 @@ app-role checks and leaves binary-fetch gaps explicit.
 
 App icons are drawn from SVG path data in the index, painted white on each
 app's `themeColor`.
+
+The Analytics item uses `globalThis.__HOLM_SURFACES__`, which Holm adds to
+the page for the people allowed to see the app's analytics (section 22 of the
+reference). Signing in from the overlay doesn't reload the page, so for an
+admin the menu reads the address from a fresh copy of the page.
 
 ## Deploy your own
 
@@ -218,10 +243,11 @@ The API:
 - The counters accept anonymous requests and aren't rate-limited, so a
   determined visitor could inflate them. They're a rough guide, not a
   measurement.
-- The install sheet's Terminal and Ask an agent commands still use the
-  older flags. Replace them with `--spec-v1`; the folder is already v1.
-  The repository-install tab is a sketch, not a working `holm app install`
-  path in the installed CLI.
+- `holm app install` needs Holm 0.250 or newer; older nodes use the sheet's
+  From source tab. Its checksums pin a release; they are not signatures.
+- The guide copies the Holm Usage License's id and digest from the public
+  reference. If Holm ships changed terms, run `holm server init` without
+  `--accept-license`: it changes nothing and prints the value to pass.
 - Node-role checks and binary screenshot fetching in the inherited handlers
   are outside the documented v1 examples. Verify them on your target before
   treating an admin session or cached image as working.
