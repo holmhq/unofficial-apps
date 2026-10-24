@@ -1,7 +1,7 @@
 // The store: a front page of every app, and a page for each one. Data comes
 // from the repository's index.json: embedded in the page by the server, or
 // through /api/index.
-import { $, el, icon, bytes, paragraphs, stars, track, applyTint, store, REPO } from './lib.js'
+import { $, el, icon, bytes, paragraphs, stars, track, applyTint, store, date, REPO } from './lib.js'
 import { openInstall } from './install.js'
 import { loadViewer, onViewer, setViewer } from './account.js'
 import { reviewsSection } from './reviews.js'
@@ -289,6 +289,7 @@ function productPage(app) {
   document.title = `${app.title} – Unofficial Holm apps`
   const listing = app.listing || { screenshots: [] }
   const others = index.apps.filter(other => other !== app)
+  const history = app.history || []
   track(app.path, 'view')
   show(
     back(),
@@ -311,12 +312,20 @@ function productPage(app) {
       el('ul', {}, listing.screenshots.map(shot => el('li', {},
         shotImage({ src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height, loading: 'lazy', style: `--ratio: ${(shot.width / shot.height).toFixed(4)}` }))))),
     el('section', { class: 'about' }, paragraphs(listing.description || app.description).map(text => el('p', {}, text))),
-    listing.whatsNew && el('section', { class: 'news' },
+    (listing.whatsNew || history.length > 0) && el('section', { class: 'news' },
       el('div', { class: 'section-head' }, el('h2', {}, 'What’s new'), el('span', {}, 'Version ' + app.version)),
-      paragraphs(listing.whatsNew).map(text => el('p', {}, text))),
+      paragraphs(listing.whatsNew).map(text => el('p', {}, text)),
+      history.length > 0 && el('details', { class: 'fold history' },
+        el('summary', {}, 'Version history', el('span', { class: 'fold-count' }, `${history.length} earlier`)),
+        el('ol', { class: 'versions' }, history.map(note => el('li', {},
+          el('div', { class: 'version-head' },
+            el('strong', {}, note.version),
+            // noon, so the day doesn't slip in a time zone behind UTC
+            note.date && el('time', { datetime: note.date }, date(note.date + 'T12:00:00'))),
+          paragraphs(note.whatsNew).map(text => el('p', {}, text))))))),
     reviewsSection(app),
-    app.prompt && el('section', { class: 'prompt' },
-      el('h2', {}, 'Built from a prompt'),
+    app.prompt && el('details', { class: 'fold prompt' },
+      el('summary', {}, el('h2', {}, 'Built from a prompt')),
       el('p', {}, 'A coding agent built this app from this request, with Holm’s public reference as its only guide.'),
       el('blockquote', {}, el('pre', {}, reflow(app.prompt))),
       external(`${REPO}/blob/${encodeURI(app.tag)}/${app.path}/PROMPT.md`, 'Read every request in PROMPT.md')),

@@ -139,9 +139,12 @@ node from each app's Get button.
   includes README, PROMPT and other project-only files. It is a release
   fingerprint, not the exact v1 ingestion payload and not a signature.
 - **Index:** [`index.json`](index.json) records versions, tags, fingerprints,
-  size/file counts, symbols, listings and prompts. `node scripts/index.mjs`
-  regenerates it; `--check` catches stale data and changed released files.
-  `holm app install` reads each app's `tag` and `h1` from it.
+  size/file counts, symbols, listings, prompts and each app's `history`:
+  the `whatsNew` of every earlier tagged version, read from its tag with the
+  date of its commit, listed once under the release that introduced it.
+  `node scripts/index.mjs` regenerates it (tags must be fetched); `--check`
+  catches stale data and changed released files. `holm app install` reads
+  each app's `tag` and `h1` from it.
 - **Store listing:** `holm.symbol.svg` is one black path in a 24×24 box,
   painted on the app's `themeColor`. `listing/` holds `listing.json` and
   sample screenshots, excluded with `publish.exclude: ["/listing/"]` in
@@ -162,7 +165,8 @@ To release a change to an app:
 1. Bump `version` in its `holm.json`. Any fingerprinted file change in the
    app folder (outside `listing/` and hidden files) needs one, including
    README and PROMPT even though they do not deploy.
-   Say what changed in `whatsNew` in its `listing/listing.json`.
+   Say what changed in `whatsNew` in its `listing/listing.json`: that
+   version's notes. Once tagged, they join the app's version history.
 2. Run `node scripts/index.mjs` and commit `index.json` with the change.
 3. Merge to `main`. CI runs `node scripts/index.mjs --check`, which fails if
    the index is stale or a released version's files changed, then tags the

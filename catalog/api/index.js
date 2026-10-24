@@ -53,7 +53,11 @@ function clean(index) {
     symbol: SYMBOL.test(app.symbol || '') ? app.symbol : null,
     demo: /^https:\/\/[^\s"'<>]+$/.test(app.demo || '') ? app.demo : null,
     listing: cleanListing(app.listing),
-    prompt: text(app.prompt, 4000) || null
+    prompt: text(app.prompt, 4000) || null,
+    history: (Array.isArray(app.history) ? app.history : []).slice(0, 30)
+      .filter(note => note && /^\d+\.\d+\.\d+$/.test(note.version || ''))
+      .map(note => ({ version: note.version, date: /^\d{4}-\d{2}-\d{2}$/.test(note.date || '') ? note.date : null, whatsNew: text(note.whatsNew, 2000) }))
+      .filter(note => note.whatsNew)
   })).filter(app => app.path && app.version && app.h1)
   return { schema: 1, repository: text(index.repository, 200), apps }
 }

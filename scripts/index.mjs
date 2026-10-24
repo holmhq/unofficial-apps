@@ -12,6 +12,8 @@
 // "h1:" and the base64 SHA-256 of that summary. Nodes keep it to notice a
 // release tag that later points at different files; it is not shown to people.
 //
+// Each app also carries its version history, from its earlier release tags.
+//
 // An app's store listing lives in <app>/listing/ (listing.json, its
 // screenshots and an optional 1200x630 cover.png from scripts/covers.mjs), kept
 // out of the deploy with "publish": {"exclude": ["/listing/"]}. Each image
@@ -158,6 +160,31 @@ function listing(dir) {
   }
 }
 
+// Earlier releases, newest first: each version tagged below the current one,
+// with its commit's date and the whatsNew its listing had then. A note carried
+// unchanged into later releases is listed once, under the release that
+// introduced it, and notes the current listing still shows are left out.
+const semver = version => version.split('.').map(Number)
+const older = (a, b) => { const x = semver(a), y = semver(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] }
+const HISTORY_MAX = 30
+
+function history(dir, current, whatsNew) {
+  const tags = git(['tag', '-l', `${dir}/v*`]).toString().split('\n').filter(Boolean)
+    .map(tag => ({ tag, version: tag.slice(dir.length + 2) }))
+    .filter(({ version }) => /^\d+\.\d+\.\d+$/.test(version) && older(version, current) < 0)
+    .sort((a, b) => older(a.version, b.version))
+  const notes = []
+  let previous = null
+  for (const { tag, version } of tags) {
+    let text = ''
+    try { text = JSON.parse(git(['show', `${tag}:${dir}/listing/listing.json`], { stdio: 'pipe' }).toString()).whatsNew || '' } catch {}
+    text = text.trim()
+    if (text && text !== previous) notes.push({ version, date: git(['log', '-1', '--format=%cs', tag]).toString().trim(), whatsNew: text })
+    previous = text
+  }
+  return notes.filter(note => note.whatsNew !== whatsNew.trim()).reverse().slice(0, HISTORY_MAX)
+}
+
 // The first request in PROMPT.md: the opening ```text block.
 function prompt(dir) {
   const path = join(ROOT, dir, 'PROMPT.md')
@@ -188,6 +215,7 @@ function readApp(dir) {
     listing: listing(dir),
     prompt: prompt(dir)
   }
+  entry.history = history(dir, manifest.version, (entry.listing && entry.listing.whatsNew) || '')
   for (const key of Object.keys(entry)) if (entry[key] === null) delete entry[key]
   return entry
 }

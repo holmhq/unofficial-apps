@@ -2,7 +2,7 @@
   "subtitle": "A store for app repositories",
   "category": "Developer tools",
   "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button. A Get started guide shows newcomers how to set up a node of their own.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour, and Holm's analytics from the avatar menu.\n\nIt reads the repository's index.json, the same file holm app install uses to pick and check a release. Point it at your own repository to give your apps a store of their own.",
-  "whatsNew": "The cover is a slideshow of the featured apps: it holds while your mouse is over it, and you can drag or swipe it. Below it, search the store as you type and switch between a list and a grid, ruled like the facts on an app's page. The Get started guide is lighter too, with an illustration you can play with.",
+  "whatsNew": "Each app's page keeps its version history under What's new, folded until you open it: every earlier release's notes, with their dates. The prompt that built the app folds away the same way.",
   "screenshots": [
     {
       "file": "store.webp",

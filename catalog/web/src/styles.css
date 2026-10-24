@@ -417,6 +417,30 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .prompt pre { margin: 0; white-space: pre-wrap; overflow-wrap: break-word; font-size: 0.85rem; line-height: 1.65; }
 .prompt > a { font-size: 0.95rem; }
 
+/* Folds: a summary with a chevron at its end, open for more. The prompt that
+   built an app is one; the version history under What's new is another. */
+.fold > summary { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; list-style: none; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::after {
+  content: ""; flex: none; margin-left: auto;
+  width: 0.5rem; height: 0.5rem; border: solid var(--ink-3); border-width: 0 2px 2px 0;
+  transform: translateY(-25%) rotate(45deg); transition: transform 200ms;
+}
+.fold[open] > summary::after { transform: translateY(25%) rotate(225deg); }
+.fold > summary:hover::after { border-color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .fold > summary::after { transition: none; } }
+.prompt[open] > summary { margin-bottom: 0.25rem; }
+.history { margin-top: 0.4rem; padding-top: 0.85rem; border-top: 1px solid var(--rule); }
+.history > summary { font-size: 0.95rem; font-weight: 600; color: var(--ink-2); }
+.history > summary:hover { color: var(--ink); }
+.fold-count { font-weight: 400; color: var(--ink-3); }
+.versions { list-style: none; margin: 1rem 0 0.25rem; padding: 0; display: grid; gap: 1.1rem; }
+.versions li { padding-left: 1rem; border-left: 2px solid var(--rule); }
+.version-head { display: flex; align-items: baseline; gap: 0.6rem; }
+.version-head strong { font-weight: 650; }
+.version-head time { font-size: 0.85rem; color: var(--ink-3); }
+.news .versions p { margin: 0.3rem 0 0; font-size: 0.95rem; color: var(--ink-2); }
+
 .info dl { margin: 0.75rem 0 0; }
 .info dl > div { display: flex; justify-content: space-between; gap: 1.5rem; padding-block: 0.7rem; border-bottom: 1px solid var(--rule); }
 .info dt { color: var(--ink-3); }

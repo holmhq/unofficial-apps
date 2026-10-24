@@ -33,7 +33,9 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   meeting), each near-square cell the icon with its name centred under it,
   no Get and no hover zoom. Each app's own
   /apps/<app> page: icon/colour, version, size, category, license, swipeable
-  screenshots, description, whatsNew, original prompt and source information.
+  screenshots, description, whatsNew with a folded version history (the
+  index's history: each earlier tag's whatsNew and date), the original
+  prompt folded until opened, and source information.
   Read the public repository index with synchronous env.holm.net.fetch,
   not global fetch; cache it in KV and keep the last good index on failure.
 - Make it fast: the handler serves every page with the index and the viewer
@@ -254,6 +256,14 @@ Get stayed on the list view's rows and on the cover.
 **Iteration 16**:
 
 > I think that same touching of separators should be there in detail page too?
+
+**Iteration 17**:
+
+> Shouldnt the changelog be shown as show more or similar after Whats new?
+> - should the prompt be hidden like an according, can be clicked to expand?
+
+The history comes from the repository: scripts/index.mjs reads each earlier
+release tag's listing and adds its notes to index.json.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

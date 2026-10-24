@@ -80,8 +80,11 @@ out of this app's deploy. They are still public source in this repository.
   - a strip of facts: version, size, category, license, ruled like the
     grid of apps, its dividers meeting the lines above and below;
   - screenshots you can swipe through;
-  - the description and what's new in this version;
-  - **Built from a prompt:** the request a coding agent built the app from;
+  - the description and what's new in this version, with **Version
+    history** folded under it: each earlier release's notes, newest first,
+    with its date (from the index's `history`);
+  - **Built from a prompt:** folded until opened, the request a coding
+    agent built the app from;
   - information: repository, release tag, size and file count, README.
 - **The install sheet:** type your peer and domain once and every command is
   written for your node, with your parts highlighted; the guide shares them.
