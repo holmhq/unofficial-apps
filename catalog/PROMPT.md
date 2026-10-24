@@ -126,18 +126,22 @@ owner's message (`llms-full.txt` is the full guide's name):
 
 > I think we should move to llms.txt & llm-full.txt; and update all apps which points to old links
 
-**Iteration 6**, two messages sent while the agent worked on the first:
+**Iteration 6**, the first message and two sent while the agent worked on it:
 
 > I really like the Overlay app's cover image!
 > - i wonder whether all apps have such cover images?
 > - if so, why not we set it as social preview for each app's page?
 > - i trust its possible?
 
+> Lets add feedback app to unofficial app store?
+
 > Also, is the content caching done well, it feels like the pages take a bit to load, and not very snappy
 
 The "cover image" is the store's featured card. No app had one as an image,
 so the agent drew each app's card as `listing/cover.png` with a new script,
-then made pages arrive with their data and images cacheable by content.
+then made pages arrive with their data and images cacheable by content. The
+feedback app was already listed, so the store's footer gained Send feedback
+instead.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for
