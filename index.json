@@ -26,33 +26,44 @@
             "path": "listing/store.webp",
             "alt": "The front page: a featured app and the list of all apps, each with a Get button",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "a306c96b012a"
           },
           {
             "path": "listing/app.webp",
             "alt": "An app's page in dark mode: icon, rating, facts and screenshots",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "73551309a7c3"
           },
           {
             "path": "listing/reviews.webp",
             "alt": "Ratings and reviews on an app's page, with a button to write one",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "acbffb9dbc73"
           },
           {
             "path": "listing/install.webp",
             "alt": "The install sheet, with the terminal commands written for your node",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "68912890f652"
           },
           {
             "path": "listing/admin.webp",
             "alt": "The admin page: apps with their numbers and a switch to show or hide each one",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "ebae3341d1a0"
           }
-        ]
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "b3d0428a1fdc"
+        }
       },
       "prompt": "Build a catalog as a Holm App Spec v1 app using only\nhttps://holmhq.com/llms-full.txt for Holm; read sections 9–12 first. Use catalog/\nwith holm.json (web.spa true), public web/ files, api/main.js exporting\ndefault { async fetch(request, env) }, standard Request/Response, env.holm\nstorage/auth and env.holm.web.fetch(request) fallback. No build step or\nthird-party runtime CDN; vendor fonts and any libraries with licenses.\n\n- Define these repository conventions, not a claimed Holm store protocol:\n  each top-level app has holm.json version, holm.symbol.svg (one black path,\n  no strokes, 0 0 24 24) and listing/listing.json with subtitle, category,\n  description, whatsNew and sample screenshots. Write a dependency-free\n  Node scripts/index.mjs emitting root index.json: name/path/version,\n  <app>/v<version> tag, h1 SHA-256 file fingerprint, size/count, identity,\n  symbol path, listing and PROMPT text. Hash sorted app-relative paths and\n  file SHA-256 values, then hash those “<hex>  <path>\\n” lines and prefix\n  the base64 digest with h1:. Exclude listing/ and hidden files; count README\n  and PROMPT too. --check detects stale indexes or changed release tags;\n  --tag creates missing tags. CI checks then tags versions on main.\n- An App Store-like front page with a featured app and rows, each app's own\n  /apps/<app> page: icon/colour, version, size, category, license, swipeable\n  screenshots, description, whatsNew, original prompt and source information.\n  Read the public repository index with synchronous env.holm.net.fetch,\n  not global fetch; cache it in KV and keep the last good index on failure.\n- Get opens a sheet remembering my peer/domain, with working clone-a-tag\n  instructions and holm @<peer> app deploy <app-dir> --spec-v1 --host <host>,\n  plus an agent prompt following the app README. The guide does not define\n  this repo's install-index schema, and app install is unavailable in its\n  operator baseline: any future-install tab must be clearly non-working.\n- Sign in through Holm. Signed-in people may rate/review once per app;\n  edits wait for approval too. /admin hides apps, moderates reviews, shows\n  rough daily views/Get/copy counts in KV and lets me change the tint.\n  Authorize each route with documented isAppOwner()/isAppAdmin() checks.\n  The guide does not document isNodeOwner()/isNodeAdmin(): do not assume\n  those methods or promise node-role access for a fresh build.\n- The guide does not document binary net.fetch responses: do not invent\n  responseType: 'file'. Keep screenshots as public static files in web/\n  until a documented, tested proxy/cache path is available; disclose that\n  gap. Make light/dark mobile/desktop layouts, no sideways scrolling, and\n  an avatar menu and small Holm/source footer.\n\nRun holm app validate --spec-v1 catalog. With my approval, deploy with\nholm @<peer> app deploy catalog --spec-v1 --host unofficial.<my-domain>.\nCheck the peer/unused host and explicitly allow the repository's egress host;\nask before replacing a host or moving an older-format app. Inspect target\nsettings/command help before sign-in branding. Validation is not execution:\ntest index fetch/failure, screenshots, ownership/admin denials, moderation,\ncopied deploy commands, mobile/desktop and light/dark. Report all gaps."
     },
@@ -80,63 +91,79 @@
             "path": "listing/widget.webp",
             "alt": "The feedback form open on a shop's checkout page on a phone, with its cover, a star rating and a message",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "4f630c7a1deb"
           },
           {
             "path": "listing/page.webp",
             "alt": "A restaurant's feedback page on a phone: Praise, Problem or Idea, and how the visit was in stars",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "eb5b111a440a"
           },
           {
             "path": "listing/design.webp",
             "alt": "The Design tab: the project's colour and icon, picked from 48, with the logo beside them",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "b55d57f76876"
           },
           {
             "path": "listing/form.webp",
             "alt": "The Form tab: made for a place or event, with a star rating to ask for",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "91dce89f4da1"
           },
           {
             "path": "listing/setup.webp",
             "alt": "Set up: a one-line snippet with its copy button, and the sites where the button is live",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "2cb6f1a55055"
           },
           {
             "path": "listing/projects.webp",
             "alt": "Your projects in one panel, each with its icon or logo, its site and what is new",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "1543570feb53"
           },
           {
             "path": "listing/inbox.webp",
             "alt": "A coffee shop's inbox with 340 items: search, sort, and filters for time, kind, rating, site and its own question",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "3a7297dc9b6b"
           },
           {
             "path": "listing/item.webp",
             "alt": "An issue in dark mode, with its screenshot, status and kind",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "ae4634b2b316"
           },
           {
             "path": "listing/stats.webp",
             "alt": "Stats for a project: how many saw a form and how many sent something, per day",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "77d902adbc0c"
           },
           {
             "path": "listing/share.webp",
             "alt": "Sharing the feedback page: its address, its link and a QR code to print",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "0a7d5c2026f8"
           }
-        ]
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "ca10dee8098e"
+        }
       },
       "prompt": "Build a feedback app using https://holmhq.com/llms-full.txt as the only Holm\nreference; Holm's own https://github.com/holmhq/cdn is allowed for feed-stars.\nRead the v1 sections 9–12 first. Use holm.json with web.spa true, public web/\nfiles and api/main.js exporting default { async fetch(request, env) }.\nUse env.holm auth/DS/KV/S3/image, standard Request/Response and same-origin\nbrowser API calls; fall back to env.holm.web.fetch(request). No build step.\nUse relative server imports, request.formData() and File.arrayBuffer() for\nuploads; no global holm/request/respond and no request.files API.\n\n- Signed-in people make one project per website, shop or event. Supply a\n  one-tag widget: a button in a shadow root opens an iframe form; also a\n  stand-alone feedback page at a custom address, with SVG QR code/poster.\n- Design/Form tabs customize title, words, colour, logo, cover, icon, button\n  label/corner/style and theme, with a live preview. Website kinds: Issue,\n  Idea, Question; places: Praise, Problem, Idea. Add optional/required stars,\n  contact email/phone and up to eight text/select/radio/checkbox questions.\n  Support four files, 8 MiB total, and a one-tap phone photo; photo or rating\n  alone can send. Shrink big photos in the browser before upload (at most\n  2048 px, JPEG quality 0.82), and turn iPhone HEIC photos into JPEG. Strip query/fragment from the sending page's address.\n- One private inbox per project: ticket numbers, statuses, notes and a team\n  thread, sort/search/filter for hundreds of items. Only the owner sees\n  files/contact details. The optional public page shows selected items,\n  votes once per browser, and comments only after owner approval.\n- Keep spam out with a trap field, project caps and allowed sites, honestly\n  described as casual-misuse guards, not strong sender authentication.\n  Track daily visits, QR/email-link visits, opens, sends, votes and comments\n  in app KV; no visitor tracking. “Where it's live” separates local copies.\n- Add typed operations for public widget settings and JSON feedback with keyed retries, plus a signed-in owner's private inbox, mark-done action and dashboard counts; keep all existing routes and file flows.\n- API keys: show once, hash SHA-256, accept bearer tokens on owner routes,\n  check project ownership, return the setup snippet; keys cannot mint keys.\n- Make it refined on phones/desktop, light/dark/system, a fixed footer and\n  scrolling projects panel, avatar menu for keys/theme/stats, /changelog,\n  and an optional footer Feedback link to a project I supply.\n- Vendor fonts, QR code code and icons with licenses. For feed-stars use\n  Holm's CDN pinned to a commit and v-X.Y.Z folder with integrity, plus plain\n  stars as fallback. Copy embed.js into other Holm sites when their CSP\n  requires it and allow the feedback origin in the site's frame-src.\n  The guide does not guarantee frame-ancestors defaults: set deliberate\n  web.headers for framing, inspect both responses and test the iframe.\n- Make holm.symbol.svg and run holm app identity generate for the icons,\n  manifest and social card; author og:image tags only to keep a hand-made\n  social preview. Add authored social metadata in web/index.html. Make\n  listing/listing.json plus sample screenshots; these are repo conventions,\n  not a Holm store schema documented by the guide. Use holm.json version.\n\nRun holm app validate --spec-v1 feedback. With my approval, deploy with\nholm @<peer> app deploy feedback --spec-v1 --host feedback.<my-domain>.\nAsk before replacing a host or moving an older-format app. Validation does\nnot run the app: test cross-site embedding, uploads, ownership, comments,\nvotes/stats and mobile/desktop light/dark. Inspect the target settings schema\nbefore setting sign-in branding. Report any guide or runtime gaps honestly."
     },
@@ -164,27 +191,37 @@
             "path": "listing/home.webp",
             "alt": "The home page: a headline, a sign-in button, and a small grid filling in as three people answer",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "418b093ab78e"
           },
           {
             "path": "listing/everyone.webp",
             "alt": "A book club plan: five evenings in a grid, deeper green where more of the six people are free",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "13dbd843835a"
           },
           {
             "path": "listing/mine.webp",
             "alt": "Painting your own free times in coral over a faint view of everyone else's",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "d88c00355655"
           },
           {
             "path": "listing/settled-dark.webp",
             "alt": "In dark mode, the settled time in a gold banner with Add to calendar and Google Calendar buttons",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "97cae7e031cf"
           }
-        ]
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "fcc7ba48a60c"
+        }
       },
       "prompt": "Build \"overlap\", a group scheduling app, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 first.\nMake holm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in and realtime, return standard Responses and fall back to\nenv.holm.web.fetch(request). No build step or third-party runtime CDN; vendor\nany font with its licence.\n\n- A signed-in organiser creates a plan: a name, an optional note, up to 14\n  dates picked on a calendar by pressing and dragging across days, a daily\n  window, 15/30/60-minute slots and a time zone.\n- Anyone with the link answers with just a name (no sign-up) and paints the\n  times they are free: press and drag a rectangle that fills or clears. Keep\n  an edit key in the browser and store only its SHA-256 hash; signed-in\n  people edit from anywhere. Undo, keyboard painting, and touch that paints\n  instead of scrolling.\n- Two views: \"My times\" over a faint heatmap of everyone, and \"Everyone\" as a\n  heatmap. Tooltips name who is free and give the viewer's local time.\n  Ranked best times with who is missing; the organiser picks one and every\n  open page shows it settled, with a calendar file and a Google Calendar link.\n- Broadcast every change on a realtime channel per plan; flash other people's\n  changes in their colour, show who has the page open, reconnect and catch up.\n- Exceptional, warm design: an elegant serif for headings, light/dark/system\n  themes, excellent on phones and desktop. Soft Web Audio sounds (a\n  pentatonic note per painted slot, a chord when a time settles) with a mute\n  switch, small spring motions and confetti, all respecting reduced motion.\n- Give each plan page its own title and link preview, noindex. Never show the\n  organiser's email.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 overlap. With my approval, deploy with\nholm @<peer> app deploy overlap --spec-v1 --host overlap.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test an organiser and an anonymous person in two browsers, live\nupdates both ways, settling a time, and mobile/desktop in light/dark. Report\ngaps honestly. Inspect the target settings schema before setting sign-in\nbranding."
     },
@@ -212,27 +249,37 @@
             "path": "listing/compose.webp",
             "alt": "Writing a paste: highlighted code, and a create button that reads as a sentence",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "2dcb0050dac3"
           },
           {
             "path": "listing/markdown.webp",
             "alt": "A Markdown paste rendered with headings, emphasis and lists",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "f2be52c80cd8"
           },
           {
             "path": "listing/code.webp",
             "alt": "A TypeScript paste in dark mode, with line numbers and a fuse showing when it expires",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "9fefed0775e4"
           },
           {
             "path": "listing/once.webp",
             "alt": "A one-time paste, sealed until the reader chooses to open it",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "476a86a1bb65"
           }
-        ]
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "26430546121b"
+        }
       },
       "prompt": "Build a private-first pastebin using only https://holmhq.com/llms-full.txt for\nHolm. Read its v1 sections 9–12 first. Make holm.json, public web/ files and\napi/main.js exporting default { async fetch(request, env) }. Set web.spa\ntrue, use env.holm for storage/auth, return standard Responses and fall\nback to env.holm.web.fetch(request). No build step or third-party runtime CDN;\nvendor the Markdown parser, sanitizer, highlighter and fonts with licenses.\n\n- Make a minimal cyanotype design, light/dark/system themes, excellent on\n  phones and desktop. The page stays still; only the editor scrolls.\n- Paste text/code with syntax highlighting and safe GitHub-flavoured\n  Markdown (Preview/Source), plus images, video, audio or any file. Put the\n  attachment icon at the editor's top right; support drop and paste.\n- Signed-in owners create expiring, one-time or revocable links. Hide their\n  name/avatar by default. A sealed link needs a click to open, so unfurlers\n  cannot burn it; the owner's preview must not burn it. Use a documented DS\n  transaction to claim once; check expiry on access and delete expired blobs\n  then. The guide does not document ifRevision or blob TTL options: do not\n  promise automatic idle cleanup or claim race safety without testing it.\n- Centre a split create button reading “Create [one-time] link [with] my\n  name for [1h] ▾”; crossing out those words toggles them without layout shift.\n- Put pastes, theme and API keys in the avatar menu. Show keys once, store\n  SHA-256 hashes, check ownership on every owner route. Add JSON/multipart\n  HTTP creation and a small POSIX sh CLI using curl/jq. Read form files via\n  request.formData() and arrayBuffer(); do not expose private files directly.\n- Add safe file downloads, no-referrer/noindex, a Holm/source footer, and an\n  optional footer feedback link only if I supply a feedback project.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 pastebin. With my approval, deploy with\nholm @<peer> app deploy pastebin --spec-v1 --host pastebin.<my-domain>.\nNever replace an occupied host or move an older-format app without asking.\nValidation does not run the app: test uploads, expiry, revocation and two\nsimultaneous one-time opens, plus mobile/desktop in light/dark. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in branding."
     },
@@ -260,27 +307,37 @@
             "path": "listing/chats.webp",
             "alt": "The chat list: a book club group and three friends, with unread counts in violet",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "938814c9609e"
           },
           {
             "path": "listing/group.webp",
             "alt": "A book club group chat, with one message quoting another as a reply",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "daf87cf260f8"
           },
           {
             "path": "listing/chat-dark.webp",
             "alt": "In dark mode, a chat about a Saturday hike, a quoted reply and the friend typing",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "30dc29745599"
           },
           {
             "path": "listing/settings.webp",
             "alt": "Settings: profile photo and name, light, dark or auto theme, and six accent colours",
             "width": 780,
-            "height": 1688
+            "height": 1688,
+            "hash": "7ed726710dd0"
           }
-        ]
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "d1eeb0c1addb"
+        }
       },
       "prompt": "Build \"relay\", a private messenger for the members of my Holm node, using\nonly https://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\nthe common recipes first. Make holm.json, public web/ files and api/main.js\nexporting default { async fetch(request, env) }. Set web.spa true, use\nenv.holm for storage, sign-in, images, email, outbound HTTP and realtime,\nreturn standard Responses and fall back to env.holm.web.fetch(request). No\nbuild step or third-party runtime CDN; vendor fonts and icons with licences.\n\n- After sign-in, claim a username. Add people by username without revealing\n  whether it exists: they accept, decline or block, and the sender learns only\n  of an acceptance. Email a one-time join link to someone not here yet.\n- One-to-one chats and groups with an optional handle in the address. Text,\n  reply with a quote (menu or swipe), copy, forward and delete for everyone.\n  Photos shrink in the browser before upload; any other file up to the node's\n  form-file limit. Server-fetched link previews. Paginated history, search,\n  exact unread counts, typing, nicknames and photos for contacts.\n- Send live events to each member on their own channel, never per room. If\n  the guide offers no way to admit only that member to a private: channel,\n  name a plain channel with a random secret given only to that member, and\n  say so in the README.\n- A phone-first app shell where only panels scroll: Chats, Add, Friends,\n  Settings tabs, light/dark/auto themes and accent colours, sounds,\n  in-app notifications, an installable manifest and service worker. Follow\n  the guide's \"feel finished\" and \"feel native\" recipes, and draw one\n  holm.symbol.svg for every icon.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 relay. With my approval, deploy with\nholm @<peer> app deploy relay --spec-v1 --host relay.<my-domain>. Never\nreplace an occupied host without asking, and ask before granting email or\noutbound HTTP. Validation does not run the app: test two and three members\nin separate browsers, invites, a group, live delivery both ways, uploads,\nand mobile/desktop in light/dark. Report gaps honestly. Inspect the target\nsettings schema before setting sign-in branding."
     }

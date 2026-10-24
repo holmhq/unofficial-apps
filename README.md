@@ -143,6 +143,14 @@ which is our own convention rather than a documented Holm install schema.
   sample screenshots, excluded with `publish.exclude: ["/listing/"]` in
   `holm.json`. These are repository conventions not documented by the v1
   guide. Listing-only changes do not need a version bump.
+- **Cover:** `listing/cover.png` is a 1200×630 card, the store's featured
+  card in landscape (the app's colour, icon, title, subtitle and first
+  screenshot). The store uses it as the app page's link preview.
+  `node scripts/covers.mjs [app]` draws it with a headless Chrome or Chromium
+  (set `CHROME` if none is found); run it again after changing the symbol,
+  colour, title, subtitle or first screenshot. The index gives every listing
+  image a short content hash, so a store can cache it under a URL that changes
+  with the image.
 
 To release a change to an app:
 

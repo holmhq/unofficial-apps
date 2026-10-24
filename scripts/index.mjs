@@ -12,8 +12,11 @@
 // "h1:" and the base64 SHA-256 of that summary. Nodes keep it to notice a
 // release tag that later points at different files; it is not shown to people.
 //
-// An app's store listing lives in <app>/listing/ (listing.json and its
-// screenshots), kept out of the deploy with "publish": {"exclude": ["/listing/"]}.
+// An app's store listing lives in <app>/listing/ (listing.json, its
+// screenshots and an optional 1200x630 cover.png from scripts/covers.mjs), kept
+// out of the deploy with "publish": {"exclude": ["/listing/"]}. Each image
+// carries a short content hash, so a store can cache it under a URL that
+// changes whenever the image does.
 
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
@@ -28,6 +31,7 @@ const SCREENSHOT_MAX = 600 * 1024
 
 const git = (args, options = {}) => execFileSync('git', args, { cwd: ROOT, maxBuffer: 64 << 20, ...options })
 const sha256 = bytes => createHash('sha256').update(bytes).digest()
+const shortHash = bytes => sha256(bytes).toString('hex').slice(0, 12)
 const fail = message => { throw new Error(message) }
 
 // The subset of publish.exclude this script understands: plain names and
@@ -133,15 +137,24 @@ function listing(dir) {
     const bytes = readFileSync(file)
     if (bytes.length > SCREENSHOT_MAX) fail(`${dir}/listing/${shot.file}: over ${SCREENSHOT_MAX / 1024} KB`)
     const [width, height] = imageSize(bytes, `${dir}/listing/${shot.file}`)
-    return { path: `listing/${shot.file}`, alt: shot.alt || '', width, height }
+    return { path: `listing/${shot.file}`, alt: shot.alt || '', width, height, hash: shortHash(bytes) }
   })
+  const coverFile = join(ROOT, dir, 'listing', 'cover.png')
+  let cover = null
+  if (existsSync(coverFile)) {
+    const bytes = readFileSync(coverFile)
+    if (bytes.length > SCREENSHOT_MAX) fail(`${dir}/listing/cover.png: over ${SCREENSHOT_MAX / 1024} KB`)
+    const [width, height] = imageSize(bytes, `${dir}/listing/cover.png`)
+    cover = { path: 'listing/cover.png', width, height, hash: shortHash(bytes) }
+  }
   return {
     subtitle: data.subtitle,
     category: data.category,
     description: data.description,
     whatsNew: data.whatsNew || '',
     featured: data.featured === true,
-    screenshots
+    screenshots,
+    ...(cover ? { cover } : {})
   }
 }
 
