@@ -26,13 +26,15 @@ out of this app's deploy. They are still public source in this repository.
 - **Front page:** the cover, then **All apps** with a search field and a
   list/grid switch beside its heading, then every app as a row or a tile.
   - **The cover** is each featured app's card on its own colour (icon,
-    title, subtitle, Get and its first screenshot). With more than one
-    featured app it is a carousel: swipe or scroll it, or use its arrows and
-    dots. It moves on every six seconds, waits while a pointer or focus is
-    on it, stops for good once someone moves it, and never moves by itself
-    for reduced motion. Every slide is as tall as the tallest, so nothing
-    below it moves. An app is featured by `"featured": true` in its
-    `listing/listing.json`.
+    title, subtitle, Get and its first screenshot, in a frame that rounds,
+    clips and shadows it). With more than one featured app it is a
+    slideshow with no controls: it moves on every six seconds and holds
+    while a mouse is over it or focus is in it, and never moves by itself
+    for reduced motion. A mouse drags it (a fifth of the way is enough to
+    move on, and a drag never opens the card under it) and a finger swipes
+    it; the six seconds start over when either lets go. Every slide is as
+    tall as the tallest, so nothing below it moves. An app is featured by
+    `"featured": true` in its `listing/listing.json`.
   - **Search** filters as you type, on name, subtitle, description and
     category; every word must match. The query lives in the address
     (`?q=`), so a search can be shared and Back brings it back, and the
@@ -41,9 +43,10 @@ out of this app's deploy. They are still public source in this repository.
     nothing matches the page offers to clear it or to build the app with
     your agent (`/start#build`).
   - **List or grid**, remembered in the browser. A row has the icon, name,
-    subtitle, category and Get; a grid tile is near square, the icon over
-    its category and a Get icon, with the name as its label and tooltip.
-    The grid is two columns on a phone.
+    subtitle, category and Get. The grid is a ruled table like the facts on
+    an app's page: no boxes, a line under each row and inset dividers
+    between cells, each cell near square with the icon over the name and a
+    Get icon. It is two columns on a phone.
 - **Get started** at `/start`, linked from the install sheet and from the
   header on every page, where it is a tinted pill with a sparkle and a light
   that sweeps across it now and then (still for reduced motion). It assumes

@@ -245,45 +245,39 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .feature h2 a { text-decoration: none; }
 .feature p { margin: 0.5rem 0 1.25rem; max-width: 24em; font-size: 1.1rem; color: rgba(255, 255, 255, 0.82); }
 .feature .get { color: var(--tile, var(--accent)); background: #fff; }
-.feature-shot { align-self: end; height: 21rem; overflow: hidden; }
-.feature-shot img {
-  display: block; width: 100%; height: auto;
+/* The screenshot's frame rounds and clips it, and casts the shadow, so the
+   corners it clips are the corners it rounds. */
+.feature-shot {
+  align-self: end; height: 21rem; overflow: hidden;
   border-radius: 22px 22px 0 0;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 -12px 40px rgba(0, 0, 0, 0.25);
 }
+.feature-shot img { display: block; width: 100%; height: auto; }
 @media (max-width: 40rem) {
   .feature { grid-template-columns: 1fr; gap: 0; padding: 1.5rem 1.5rem 0; }
   .feature-text { padding-bottom: 1.5rem; }
   .feature-shot { height: 15rem; width: min(100%, 15rem); justify-self: center; }
 }
 
-/* The cover as a carousel: one featured card per slide, all as tall as the tallest */
+/* The cover as a slideshow: one featured card per slide, all as tall as the tallest */
 .carousel { margin-top: 0.5rem; }
 .carousel-track {
   display: grid; grid-auto-flow: column; grid-auto-columns: 100%; column-gap: 1rem;
   overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory;
   scrollbar-width: none; position: relative;
   /* room for the cards' shadow, which the scroller would otherwise clip */
-  padding-bottom: 2.75rem; margin-bottom: -2.25rem;
+  padding-bottom: 2.75rem; margin-bottom: -2.75rem;
 }
 .carousel-track::-webkit-scrollbar { display: none; }
+.carousel-track img, .carousel-track a { -webkit-user-drag: none; user-select: none; }
+@media (hover: hover) {
+  .carousel-track { cursor: grab; }
+}
+/* While a mouse drags, the track follows it exactly: no snapping, no easing. */
+.carousel-track.dragging { cursor: grabbing; user-select: none; }
+.carousel-track.dragging, .carousel-track.settling { scroll-snap-type: none; }
 .slide { display: grid; scroll-snap-align: start; scroll-snap-stop: always; }
 .slide > .feature { margin-top: 0; }
-.carousel-nav { display: flex; align-items: center; justify-content: center; gap: 0.75rem; }
-.dots { display: flex; gap: 0.25rem; }
-.dots .dot { width: 1.6rem; height: 1.6rem; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
-.dots .dot::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--rule); transition: transform 200ms, background-color 200ms; }
-.dots .dot[aria-current="true"]::before { background: var(--accent); transform: scale(1.3); }
-.carousel-nav .arrow {
-  display: grid; place-items: center; width: 2.25rem; height: 2.25rem; padding: 0;
-  border: 1px solid var(--rule); border-radius: 50%; background: var(--sheet); color: var(--ink-2); cursor: pointer;
-}
-.carousel-nav .arrow:hover { color: var(--ink); border-color: var(--ink-3); }
-.carousel-nav .arrow svg { width: 0.5rem; height: 0.85rem; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.carousel-nav .arrow:last-child svg { transform: scaleX(-1); }
-@media (prefers-reduced-motion: reduce) {
-  .dots .dot::before { transition: none; }
-}
 
 .shelf { margin-top: 3rem; }
 .shelf h2 { padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule); }
@@ -324,24 +318,31 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .views button[aria-pressed="true"] { background: var(--accent-wash); color: var(--accent); }
 .views svg { width: 1.15rem; height: 1.15rem; }
 
-/* The grid view: near-square tiles, the icon, then category and Get */
-.cards { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 1rem; }
-.app-card {
-  aspect-ratio: 1 / 1; min-width: 0;
-  display: grid; grid-template-rows: minmax(0, 1fr) auto;
-  padding: 0.85rem 0.85rem 0.8rem; border-radius: 22px;
-  background: var(--sheet); border: 1px solid var(--rule);
+/* The grid view: a ruled table of cells, like the facts on an app's page.
+   Each cell draws the line below it and the divider to its right, inset like
+   the facts' dividers; the grid clips the ones past its edges. */
+.cards {
+  list-style: none; margin: 0; padding: 0 0 1px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  overflow: hidden;
 }
-.app-card-link { display: grid; place-items: center; border-radius: 16px; text-decoration: none; }
-.app-card-link .icon { transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.app-card { position: relative; display: grid; gap: 1rem; min-width: 0; padding: 1.5rem 1.1rem 1.1rem; }
+.app-card::before { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--rule); }
+.app-card::after { content: ""; position: absolute; right: -1px; top: 1.1rem; bottom: 1.1rem; width: 1px; background: var(--rule); }
+/* nothing to divide from after the last one */
+.app-card:last-child::after { display: none; }
+.app-card-icon { justify-self: center; border-radius: 22%; }
+.app-card-icon .icon { transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 @media (hover: hover) {
-  .app-card-link:hover .icon { transform: translateY(-2px) scale(1.04); }
+  .app-card:hover .app-card-icon .icon { transform: translateY(-2px) scale(1.04); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .app-card-link .icon { transition: none; }
+  .app-card-icon .icon { transition: none; }
 }
-.app-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.app-card-cat { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.82rem; color: var(--ink-3); }
+.app-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-width: 0; }
+.app-card-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.02rem; font-weight: 650; letter-spacing: -0.01em; text-decoration: none; }
+.app-card-name:hover { text-decoration: underline; text-underline-offset: 0.18em; }
+.app-card-hidden { font-weight: 400; color: var(--ink-3); }
 .get-icon {
   flex: none; display: grid; place-items: center;
   width: 2.25rem; height: 2.25rem; padding: 0;
@@ -354,8 +355,8 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 }
 .get-icon svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 @media (max-width: 36rem) {
-  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
-  .app-card { border-radius: 20px; }
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app-card { padding: 1.25rem 0.85rem 1rem; }
 }
 
 .empty { margin-top: 1.5rem; padding: 1.25rem 1.3rem; border-radius: 16px; border: 1px dashed var(--rule); color: var(--ink-2); }

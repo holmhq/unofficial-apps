@@ -82,59 +82,97 @@ function featured(app, lazy = false) {
       shotImage({ src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height, loading: lazy ? 'lazy' : null })))
 }
 
-// The cover, when several apps are featured: each one's card in turn. Swipe
-// or scroll it, or use the arrows and dots. It moves on by itself every few
-// seconds, waiting while a pointer or focus is on it, never for reduced
-// motion, and not again once someone has moved it themselves.
+// The cover, when several apps are featured: a slideshow of their cards. It
+// moves on every few seconds, and holds while a pointer is over it or focus is
+// in it, and never for reduced motion. A mouse drags it, a finger swipes it.
 function carousel(apps) {
   const track = el('div', { class: 'carousel-track' }, apps.map((app, i) => el('div', {
     class: 'slide', role: 'group', 'aria-roledescription': 'slide', 'aria-label': `${i + 1} of ${apps.length}: ${app.title}`
   }, featured(app, i > 0))))
   const still = matchMedia('(prefers-reduced-motion: reduce)')
+  const width = () => track.children[1].offsetLeft - track.children[0].offsetLeft
   let at = 0
-  const dots = apps.map((app, i) => el('button', { type: 'button', class: 'dot', 'aria-label': 'Show ' + app.title, onclick: () => { stop(); go(i) } }))
-  const mark = () => dots.forEach((dot, i) => dot.setAttribute('aria-current', String(i === at)))
   const go = i => {
     at = (i + apps.length) % apps.length
     track.scrollTo({ left: track.children[at].offsetLeft, behavior: still.matches ? 'instant' : 'smooth' })
-    mark()
   }
-  // The slide in view lights its dot, however it got there.
-  track.addEventListener('scroll', () => {
-    const step = track.children[1].offsetLeft - track.children[0].offsetLeft
-    const i = Math.round(track.scrollLeft / step)
-    if (i !== at) { at = i; mark() }
-  }, { passive: true })
+  track.addEventListener('scroll', () => { at = Math.round(track.scrollLeft / width()) }, { passive: true })
 
+  // The clock starts over whenever a hand lets go, so a slide never moves the
+  // moment someone stops looking at it.
   let timer = null, held = false
-  const stop = () => { clearInterval(timer); timer = null }
-  if (!still.matches) {
+  const run = () => {
+    clearInterval(timer)
+    if (still.matches) return
     timer = setInterval(() => {
-      if (!track.isConnected) return stop()
+      if (!track.isConnected) return clearInterval(timer)
       if (!held && !document.hidden) go(at + 1)
     }, 6000)
   }
-  for (const kind of ['pointerdown', 'wheel', 'touchstart']) track.addEventListener(kind, stop, { passive: true })
-  const arrow = (step, label) => el('button', { type: 'button', class: 'arrow', 'aria-label': label, onclick: () => { stop(); go(at + step) } }, chevron())
-  const root = el('section', { class: 'carousel', 'aria-roledescription': 'carousel', 'aria-label': 'Featured apps' },
-    track,
-    el('div', { class: 'carousel-nav' }, arrow(-1, 'Previous app'), el('div', { class: 'dots' }, dots), arrow(1, 'Next app')))
-  root.addEventListener('pointerenter', () => { held = true })
-  root.addEventListener('pointerleave', () => { held = false })
-  root.addEventListener('focusin', () => { held = true })
-  root.addEventListener('focusout', () => { held = false })
-  mark()
+  const hold = on => { held = on; if (!on) run() }
+
+  // Dragging with a mouse: the track follows the pointer, then settles on the
+  // next slide if it went a fifth of the way there, or back if not. A drag
+  // isn't a click on the card under it.
+  let drag = null, dragged = false
+  track.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return
+    drag = { x: event.clientX, left: track.scrollLeft, from: at }
+    dragged = false
+  })
+  track.addEventListener('pointermove', event => {
+    if (!drag) return
+    const dx = event.clientX - drag.x
+    if (!dragged && Math.abs(dx) < 6) return
+    if (!dragged) {
+      dragged = true
+      track.setPointerCapture(event.pointerId)
+      track.classList.add('dragging')
+    }
+    track.scrollLeft = drag.left - dx
+  })
+  const drop = () => {
+    if (!drag) return
+    const moved = (track.scrollLeft - drag.left) / width()
+    const from = drag.from
+    drag = null
+    if (!dragged) return
+    // Snapping stays off until the slide has eased into place, or it would jump there first.
+    track.classList.replace('dragging', 'settling')
+    const settled = () => track.classList.remove('settling')
+    track.addEventListener('scrollend', settled, { once: true })
+    setTimeout(settled, 800)
+    go(moved > 0.2 ? Math.min(from + 1, apps.length - 1) : moved < -0.2 ? Math.max(from - 1, 0) : from)
+  }
+  track.addEventListener('pointerup', drop)
+  track.addEventListener('pointercancel', drop)
+  track.addEventListener('click', event => {
+    if (!dragged) return
+    event.preventDefault()
+    event.stopPropagation()
+    dragged = false
+  }, true)
+  track.addEventListener('dragstart', event => event.preventDefault())
+
+  const root = el('section', { class: 'carousel', 'aria-roledescription': 'carousel', 'aria-label': 'Featured apps' }, track)
+  root.addEventListener('pointerenter', event => { if (event.pointerType === 'mouse') hold(true) })
+  root.addEventListener('pointerleave', event => { if (event.pointerType === 'mouse') hold(false) })
+  track.addEventListener('touchstart', () => hold(true), { passive: true })
+  track.addEventListener('touchend', () => hold(false), { passive: true })
+  root.addEventListener('focusin', () => hold(true))
+  root.addEventListener('focusout', () => hold(false))
+  run()
   return root
 }
 
-// A grid view's tile, near square: the icon, then the category and a Get
-// button as an icon. The name is the link's label and the tile's tooltip.
+// A grid view's cell: the icon, then the name and a Get button as an icon.
+// The icon repeats the name's link for the pointer, so it is skipped by keys.
 function card(app) {
-  return el('li', { class: 'app-card', title: app.title },
-    el('a', { class: 'app-card-link', href: withRef('/apps/' + app.path), 'data-link': true, 'aria-label': `${app.title}: ${subtitle(app)}` },
-      icon(app, 'l')),
+  const href = withRef('/apps/' + app.path)
+  return el('li', { class: 'app-card' },
+    el('a', { class: 'app-card-icon', href, 'data-link': true, tabindex: '-1', 'aria-hidden': 'true' }, icon(app, 'l')),
     el('div', { class: 'app-card-foot' },
-      el('span', { class: 'app-card-cat' }, app.hidden ? 'Hidden' : (app.listing && app.listing.category) || ''),
+      el('a', { class: 'app-card-name', href, 'data-link': true, title: subtitle(app) }, app.title, app.hidden ? el('span', { class: 'app-card-hidden' }, ' · hidden') : null),
       el('button', { type: 'button', class: 'get-icon', 'aria-label': 'Get ' + app.title, title: 'Get ' + app.title, onclick: () => openInstall(app) }, glyph(GET))))
 }
 

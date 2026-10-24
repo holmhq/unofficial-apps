@@ -26,10 +26,11 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   the base64 digest with h1:. Exclude listing/ and hidden files; count README
   and PROMPT too. --check detects stale indexes or changed release tags;
   --tag creates missing tags. CI checks then tags versions on main.
-- An App Store-like front page: a carousel of the featured apps' cards,
+- An App Store-like front page: a slideshow of the featured apps' cards
+  (no controls; it holds under the mouse, and a mouse drags it),
   then all apps with search (as you type, kept in ?q=) and a list/grid
-  switch below it; grid tiles are near square, the icon over its category
-  and a Get icon. Each app's own
+  switch below it; the grid is ruled like the facts strip (no boxes), each
+  near-square cell the icon over the name and a Get icon. Each app's own
   /apps/<app> page: icon/colour, version, size, category, license, swipeable
   screenshots, description, whatsNew, original prompt and source information.
   Read the public repository index with synchronous env.holm.net.fetch,
@@ -219,6 +220,26 @@ owner picked the belt.
 
 feedback was featured alongside pastebin and overlap; the carousel shows
 them in the index's order.
+
+**Iteration 13**:
+
+> No, the grid is terrible.
+> - perhaps it should be just:
+> - icon
+> - <name> <install-icon>
+> - the rounded border is pathetic, what about just square grid similar in style to meta info display table in detail page
+
+**Iteration 14**, sent while the agent was working on the grid:
+
+> The carousel's control is hideous, avoid it
+> - it should automatically slide and show a slide show unless you place a mouse over it
+> - a mouse can drag the slides
+> - i also noticed a small visual issue
+> - the mobile screen shots in covers have a translucent background with sharp edges
+
+The screenshots rounded their own corners and cast a shadow inside a frame
+that clipped square, so the shadow filled the corners; the frame now rounds,
+clips and shadows them.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for
