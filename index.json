@@ -143,11 +143,11 @@
     {
       "name": "overlap",
       "path": "overlap",
-      "version": "0.1.0",
-      "tag": "overlap/v0.1.0",
-      "h1": "h1:Smjg+8iFGuQzy1dCO0T9oLUpn0I9nz6d+fl0ap4GwfU=",
+      "version": "0.1.1",
+      "tag": "overlap/v0.1.1",
+      "h1": "h1:Ima9xqwJ6QXdZgRexovVejimyORvJp41tt1zud2eZ+A=",
       "files": 29,
-      "size": 469840,
+      "size": 470099,
       "title": "overlap",
       "description": "Find the time that works for everyone. Pick some dates, share one link, and watch everyone's free time overlap, live.",
       "themeColor": "#0e8a78",
@@ -157,7 +157,7 @@
         "subtitle": "Find a time that works for everyone",
         "category": "Productivity",
         "description": "Pick a few dates and the hours you could meet, then share one link. Everyone paints the times they're free, with just a name and no account, and the grid deepens in colour where people overlap, live, on every open screen.\n\nThe best times rise to the top as answers come in, with who can make each one. Pick a time and everyone sees it settle at once, with a calendar file and a Google Calendar link.\n\nPainting plays a soft note for each slot, and the page answers with small motions: it is built to be pleasant to use on a phone and a big screen, in light and dark.",
-        "whatsNew": "First release.",
+        "whatsNew": "Sign out now ends your session: it posts to Holm instead of following a link.",
         "featured": true,
         "screenshots": [
           {
