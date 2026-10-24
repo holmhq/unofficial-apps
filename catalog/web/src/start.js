@@ -1,9 +1,9 @@
 // /start: the guide for someone with no Holm node yet, written for a reader
 // who hands the work to a coding agent rather than typing commands. It says
-// what Holm is and why a node puts every app here one request away, gives a
-// prompt for each way to set one up (with what the agent will do and ask),
-// and shows what Holm gives an app. The agent's own instructions are
-// /llms.txt; the commands follow https://holmhq.com/llms-full.txt.
+// what Holm is, shows the conversation one prompt starts, gives a prompt for
+// each place Holm can run (with what the agent will ask), and lists what
+// Holm gives an app. The agent's own instructions are /llms.txt; the commands
+// follow https://holmhq.com/llms-full.txt.
 import { el, icon, store, node, command, tabbed, ADDRESS, REPO } from './lib.js'
 
 const HOLM = 'https://holmhq.com'
@@ -91,24 +91,51 @@ const PROMPTS = {
   ]
 }
 
-// The hero's picture: the conversation the computer prompt starts.
-function chat(apps) {
-  const transcript = el('ol', { class: 'chat-turns' })
-  refill(() => {
-    const app = chosen(apps)
-    const others = apps.filter(other => other !== app)
-    const turn = (who, ...text) => el('li', { class: 'turn from-' + who }, el('span', { class: 'who' }, who === 'you' ? 'You' : 'Agent'), el('p', {}, ...text))
-    transcript.replaceChildren(
-      turn('you', plain(PROMPTS.computer(app))),
-      turn('agent', 'Installed the holm command. Before I create your node, here is the Holm Usage License. Do you accept it?'),
-      turn('you', 'Yes, I accept.'),
-      turn('agent', 'Your node is running, and ', app.path, ' is live at ',
-        el('span', { class: 'chat-app' }, app.symbol ? icon(app, 'xs') : null, el('strong', {}, `${app.path}.holm.localhost:4698`)), '.',
-        others.length > 0 && [' I can install any of these too: ', el('span', { class: 'chat-icons' }, others.map(other => icon(other, 'xs')))]))
-  })
-  return el('figure', { class: 'chat' },
-    el('figcaption', {}, el('span', { class: 'live', 'aria-hidden': 'true' }), 'Your coding agent'),
-    transcript)
+// The hero's picture: a Hairline figure (vendor/hairline, MIT), drawn with
+// Hairline's create skill. The kernel and the figure are classic scripts; the
+// figure hands itself to globalThis.hairline, and this mounts it the way
+// Hairline's own page does.
+let loading = null
+function hairline() {
+  if (!loading) {
+    loading = new Promise((resolve, reject) => {
+      globalThis.hairline = resolve
+      const script = src => new Promise((done, fail) => document.head.append(el('script', { src, onload: done, onerror: fail })))
+      script('/vendor/hairline/kernel.js').then(() => script('/src/belt.js')).catch(reject)
+    })
+    loading.catch(() => { loading = null })
+  }
+  return loading
+}
+
+function belt(apps) {
+  const stage = el('div', { class: 'belt-stage', 'data-apps': apps.map(app => app.path).join(',') })
+  const label = el('span', { class: 'belt-read', 'aria-hidden': 'true' })
+  const figure = el('figure', { class: 'belt' }, stage, label,
+    el('figcaption', {}, 'From the store, through a fingerprint check, into your node. Point at a crate to slow the belt and read it.'))
+  hairline().then(def => {
+    if (!stage.isConnected) return
+    HL.inject(document)
+    stage.setAttribute('data-hairline', def.name)
+    stage.setAttribute('role', 'img')
+    stage.setAttribute('aria-label', def.means)
+    const svg = HL.mk('svg', { viewBox: '0 0 400 320', 'aria-hidden': 'true' }, stage)
+    let text = ''
+    const read = {
+      get textContent() { return text },
+      set textContent(value) { text = String(value ?? ''); label.textContent = text === 'rest' ? '' : text }
+    }
+    const handle = def.mount({ stage, svg, read }, def.range[1])
+    // The store swaps pages in place: stop the belt once this one is gone.
+    const main = document.getElementById('main')
+    const gone = new MutationObserver(() => {
+      if (stage.isConnected) return
+      gone.disconnect()
+      handle.destroy()
+    })
+    gone.observe(main, { childList: true })
+  }).catch(() => figure.remove())
+  return figure
 }
 
 function copyButton(apps) {
@@ -128,57 +155,60 @@ function copyButton(apps) {
 function hero(apps) {
   const note = el('p', { class: 'hero-note' })
   refill(() => note.replaceChildren('It sets up Holm on this computer and installs ', chosen(apps).path, '. ',
-    el('a', { href: '#setup', onclick: jump('setup') }, 'Choose another app, or a server'), '.'))
+    el('a', { href: '#setup', onclick: jump('setup') }, 'Pick another app, or a server'), '.'))
   return el('section', { class: 'guide-hero' },
     el('div', {},
       el('p', { class: 'eyebrow' }, 'Get started'),
       el('h1', {}, 'Run every app here on a server you own.'),
       el('p', { class: 'lede' }, 'These apps run on ', external(HOLM, 'Holm'),
-        ': one program and one database file that host websites and apps, with sign-in, storage, realtime, email and AI built in. ',
-        'You won’t need a terminal. Paste one prompt into Claude Code, Codex or another coding agent: it sets up Holm, installs the app, and stops only to ask what is yours to decide.'),
+        ', one program and one file that host your apps. You won’t need a terminal: a coding agent sets it up from one prompt.'),
       el('div', { class: 'cta' },
         copyButton(apps),
         el('a', { class: 'button large', href: HOLM, rel: 'noopener', target: '_blank' }, 'Visit holmhq.com', glyph('out'))),
       note),
-    chat(apps))
+    belt(apps))
 }
 
-const reason = (name, title, ...text) => el('li', {},
-  el('span', { class: 'badge' }, glyph(name)),
-  el('h3', {}, title),
-  el('p', {}, ...text))
+const reason = (name, title, text) => el('li', {}, glyph(name), el('h3', {}, title), el('p', {}, text))
 
 function why() {
-  return el('section', { class: 'guide-section' },
-    el('h2', {}, 'What a node gives you'),
-    el('ul', { class: 'why' },
-      reason('download', 'Any app here, for the asking',
-        'Ask your agent for an app by name. ', code('holm app install'), ' fetches its release from this repository, checks it against the fingerprint published with it, and puts it live. Ask again for a newer version; its data stays.'),
-      reason('spark', 'Any app you can describe',
-        'Tell your agent what you want. With Holm’s public reference it writes a folder of plain files and puts it on your node. Every app in this store began as a short prompt.'),
-      reason('file', 'Yours to keep',
-        'Apps, accounts and data live in one SQLite file on a machine you choose. Your agent can back it up while it runs, and check the copy restores.')))
+  return el('ul', { class: 'why' },
+    reason('download', 'Any app here, for the asking', 'Ask your agent for one by name. Holm checks the release against its published fingerprint before it goes live.'),
+    reason('spark', 'Any app you can describe', 'Your agent builds it as plain files and puts it on your node. Every app here began that way.'),
+    reason('file', 'Yours to keep', 'Apps, accounts and data live in one file on a machine you choose, simple to back up.'))
 }
 
-// What the agent will do and what it will stop to ask, for each place.
-const PLANS = {
-  computer: app => ({
-    does: ['Installs the holm command, if it isn’t there.', ['Creates your node: one file, ', code('~/.holm/data.db'), '.'],
-      'Starts it in the background.', `Installs ${app.path}’s latest release and checks it.`, 'Gives you the address to open.'],
-    asks: [['To read and accept the ', external(LICENSE, 'Holm Usage License'), '.'], 'To keep the password it makes for your node.',
-      'Whether to set up sign-in, which most of these apps use.']
-  }),
-  server: app => ({
-    does: ['Lists the DNS records your domain needs.', 'Installs Holm on the server as a service, with HTTPS.',
-      ['Connects this computer to it as the peer ', code(peerName()), '.'], `Installs ${app.path} at ${host(app)}.`],
-    asks: ['How to reach the server, over SSH.', 'To create the DNS records it lists.',
-      ['To read and accept the ', external(LICENSE, 'Holm Usage License'), '.'], 'To keep the admin password the install prints.']
-  }),
-  node: app => ({
-    does: ['Checks your node, and that the address is free.', [`Installs ${app.path}’s latest release with `, code('holm app install'), '.'],
-      'Follows the app’s README for anything else it needs.'],
-    asks: ['Only what the README leaves to you, such as a sign-in provider.']
+// What one prompt starts: the conversation, with the chosen app.
+function chat(apps) {
+  const transcript = el('ol', { class: 'chat-turns' })
+  const live = app => el('span', { class: 'chat-app' }, app.symbol ? icon(app, 'xs') : null, el('strong', {}, `${app.path}.holm.localhost:4698`))
+  refill(() => {
+    const app = chosen(apps)
+    const next = apps[(apps.indexOf(app) + 1) % apps.length]
+    const turn = (who, ...text) => el('li', { class: 'turn from-' + who }, el('span', { class: 'who' }, who === 'you' ? 'You' : 'Agent'), el('p', {}, ...text))
+    const turns = [
+      turn('you', plain(PROMPTS.computer(app))),
+      turn('agent', 'Installed the holm command. Before I create your node, here is the Holm Usage License. Do you accept it?'),
+      turn('you', 'Yes, I accept.'),
+      turn('agent', 'Your node is running, and ', app.path, ' is live at ', live(app), '.')
+    ]
+    if (next && next !== app) turns.push(turn('you', `Add ${next.path} too.`), turn('agent', 'Done: ', live(next), '.'))
+    transcript.replaceChildren(...turns)
   })
+  return el('section', { class: 'guide-section how' },
+    el('div', {},
+      el('h2', {}, 'One prompt, then answers'),
+      el('p', { class: 'section-lede' }, 'Paste the prompt into Claude Code, Codex or another coding agent. It does the work, and stops only for what is yours to decide.')),
+    el('figure', { class: 'chat' },
+      el('figcaption', {}, el('span', { class: 'live', 'aria-hidden': 'true' }), 'Your coding agent'),
+      transcript))
+}
+
+// What the agent will stop to ask, for each place.
+const ASKS = {
+  computer: () => [['To accept the ', external(LICENSE, 'Holm Usage License')], 'To keep your node’s password', 'Whether to set up sign-in'],
+  server: () => ['How to reach the server', 'To create a few DNS records', ['To accept the ', external(LICENSE, 'licence')], 'To keep the admin password'],
+  node: () => ['Only what the app’s README leaves to you']
 }
 
 // The commands behind each prompt, for anyone who wants to check them.
@@ -226,22 +256,18 @@ const COMMANDS = {
   ]
 }
 
-const listItems = items => items.map(item => el('li', {}, item))
-
-// One place's panel: the prompt, the plan, and the commands folded away.
+// One place's panel: the prompt, what the agent will ask, and the commands folded away.
 function hand(key, apps, withNode) {
   const body = el('div', { class: 'hand' })
   const fill = () => {
     const app = chosen(apps)
-    const plan = PLANS[key](app)
     body.replaceChildren(
       command([PROMPTS[key](app)], { label: 'prompt', kind: 'Prompt for your agent', prose: true }),
-      el('div', { class: 'plan' },
-        el('div', {}, el('h3', {}, 'What it does'), el('ol', { class: 'does' }, listItems(plan.does))),
-        el('div', {}, el('h3', {}, 'What it asks you'), el('ul', { class: 'asks' }, plan.asks.map(item => el('li', {}, glyph('ask'), el('span', {}, item)))))),
+      el('div', { class: 'asks' }, el('h3', {}, 'It will ask you'),
+        el('ul', {}, ASKS[key]().map(item => el('li', {}, glyph('ask'), el('span', {}, item))))),
       el('details', { class: 'under' },
         el('summary', {}, 'The commands it runs'),
-        el('p', {}, 'For the curious: your agent takes these from Holm’s ', external(REFERENCE, 'reference'), ' and ',
+        el('p', {}, 'Your agent takes these from Holm’s ', external(REFERENCE, 'reference'), ' and ',
           external(llms(), 'llms.txt'), ', and fills in your answers.'),
         COMMANDS[key](app)))
   }
@@ -249,8 +275,7 @@ function hand(key, apps, withNode) {
   if (!withNode) return [body]
   const form = el('form', { class: 'node', autocomplete: 'off', onsubmit: event => event.preventDefault() },
     el('label', {}, el('span', {}, 'Domain'), el('input', { name: 'domain', placeholder: 'example.com', spellcheck: 'false', inputmode: 'url', value: node.domain })),
-    el('label', {}, el('span', {}, 'Peer name'), el('input', { name: 'peer', placeholder: 'home', spellcheck: 'false', value: node.peer })),
-    el('p', {}, 'Type yours and the prompt follows. The store’s Get sheets remember them too.'))
+    el('label', {}, el('span', {}, 'Peer name'), el('input', { name: 'peer', placeholder: 'home', spellcheck: 'false', value: node.peer })))
   form.addEventListener('input', () => {
     node.domain = form.domain.value.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[/\s].*$/, '')
     node.peer = form.peer.value.trim().replace(/^@/, '').replace(/[^A-Za-z0-9._-]/g, '')
@@ -289,74 +314,64 @@ function setup(apps) {
   const chooser = picker(apps)
   return el('section', { class: 'guide-section', id: 'setup' },
     el('h2', {}, 'Hand it to your agent'),
-    el('p', { class: 'section-lede' }, 'Choose an app and where it runs, then paste the prompt into Claude Code, Codex, pi or any coding agent that can run commands on your computer.'),
+    el('p', { class: 'section-lede' }, 'Pick an app and where it runs, then copy the prompt.'),
     chooser && el('p', { class: 'choose' }, 'Start with'), chooser,
     el('p', { class: 'choose' }, 'Run it on'),
     tabs.bar, tabs.panel)
 }
 
-const flowStep = (title, ...text) => el('li', {}, el('h3', {}, title), el('p', {}, ...text))
-
 function build() {
   return el('section', { class: 'guide-section' },
     el('h2', {}, 'Build your own'),
-    el('p', { class: 'section-lede' }, 'Every app here began as a few sentences to a coding agent. Yours can too: say what you want, and point the agent at Holm’s reference.'),
-    el('ol', { class: 'flow' },
-      flowStep('Describe it', 'What it does and who it’s for, the way you’d tell a person.'),
-      flowStep('The agent writes it', 'A small folder: ', code('holm.json'), ', pages in ', code('web/'), ' and server code in ', code('api/main.js'), '. No build step.'),
-      flowStep('It goes live', 'The agent deploys it to your node. Ask for a change and it deploys again; the data stays.')),
+    el('p', { class: 'section-lede' }, 'Every app here began as a few sentences to a coding agent. Say what you want and point it at Holm’s reference; ',
+      'each app’s page in ', el('a', { href: '/', 'data-link': true }, 'this store'), ' shows the prompt that built it.'),
     command([[
       'Build a Holm app called guestbook: signed-in visitors leave a short message and see everyone’s, newest first, updating live. Use ',
       REFERENCE, ' as your only Holm reference, then deploy it to my local node at guestbook.holm.localhost.'
-    ]], { label: 'example prompt', kind: 'Example prompt', prose: true }),
-    el('p', { class: 'aside' }, 'Each app’s page in ', el('a', { href: '/', 'data-link': true }, 'this store'),
-      ' shows the prompt that built it, under Built from a prompt.'))
+    ]], { label: 'example prompt', kind: 'Example prompt', prose: true }))
 }
 
 const CAPABILITIES = [
-  ['page', 'Pages', 'Files served as they are, with clean addresses, single-page routing and your own 404 page.', 'web/'],
-  ['code', 'Server code', 'JavaScript on the server with the standard Request and Response. No Node.js, no build step.', 'fetch(request, env)'],
-  ['person', 'Sign-in', 'Holm’s own sign-in pages, with Google, GitHub, Discord or Microsoft. The app just asks who is there.', 'env.holm.auth'],
-  ['data', 'Storage', 'Keys with expiry and counters, JSON documents and files: shared by the app, or private to each member.', 'kv · ds · s3'],
-  ['bolt', 'Realtime', 'Send updates from the server, and every open page gets them over one WebSocket.', 'env.holm.realtime'],
-  ['mail', 'Email', 'Send mail from the app through the provider you set up, within the node’s policy.', 'env.holm.email'],
-  ['spark', 'AI', 'Call the AI provider you configure, within a budget the node keeps.', 'env.holm.ai'],
-  ['shield', 'Bot protection', 'Rate limits and proof-of-work challenges turn bots away from sign-ups and forms before the app’s code runs.', 'limits'],
-  ['plug', 'Agent access', 'ChatGPT and Claude can use an app’s public operations through the MCP address Holm serves for it.', '/_holm/mcp'],
-  ['phone', 'Installable', 'One symbol becomes every icon, the web manifest and the link preview card.', 'holm app identity'],
-  ['lock', 'HTTPS and domains', 'Holm fetches certificates itself, and any number of addresses can point to one app.', 'holm host'],
-  ['archive', 'Backups', 'Back up a running node from another computer, verify the copy, and check that it restores.', 'holm db artifact']
+  ['page', 'Pages', 'Static files, clean addresses, single-page apps'],
+  ['code', 'Server code', 'Standard fetch handlers, no build step'],
+  ['person', 'Sign-in', 'Google, GitHub, Discord or Microsoft'],
+  ['data', 'Storage', 'Keys, documents and files, per member too'],
+  ['bolt', 'Realtime', 'Live updates over one WebSocket'],
+  ['mail', 'Email', 'Through the provider you set up'],
+  ['spark', 'AI', 'Your provider, within a budget'],
+  ['shield', 'Bot protection', 'Rate limits and proof-of-work'],
+  ['plug', 'Agent access', 'ChatGPT and Claude, over MCP'],
+  ['phone', 'Installable', 'Every icon and card from one symbol'],
+  ['lock', 'HTTPS and domains', 'Certificates fetched for you'],
+  ['archive', 'Backups', 'Snapshots of a running node']
 ]
 
 function capabilities() {
   return el('section', { class: 'guide-section' },
     el('h2', {}, 'Everything an app needs'),
-    el('p', { class: 'section-lede' }, 'Holm is the whole back end, so your agent writes only the app’s own files. Every node comes with these.'),
-    el('ul', { class: 'caps' }, CAPABILITIES.map(([name, title, text, api]) => el('li', {},
-      glyph(name), el('h3', {}, title), el('p', {}, text), code(api)))),
-    el('p', { class: 'aside' }, 'And more: analytics and logs for every app, outbound hosts you allow one by one, a scan shield, and one command for all your nodes. ',
-      'The full list is in section 24 of the ', external(REFERENCE, 'reference'), '.'))
+    el('p', { class: 'section-lede' }, 'Holm is the whole back end, so your agent writes only the app’s own files.'),
+    el('ul', { class: 'caps' }, CAPABILITIES.map(([name, title, text]) => el('li', {}, glyph(name), el('h3', {}, title), el('p', {}, text)))),
+    el('p', { class: 'aside' }, 'And analytics, logs, outbound rules and more: section 24 of the ', external(REFERENCE, 'reference'), ' has the full list.'))
 }
 
 function closing() {
   return el('section', { class: 'closing' },
     el('h2', {}, 'Holm is free, and in beta.'),
-    el('p', {}, 'Every release before 1.0 is free for personal, internal and commercial use under the Holm Usage License. ',
-      'Expect changes until then; your agent checks your version against the reference.'),
+    el('p', {}, 'Free for personal, internal and commercial use under the Holm Usage License. Expect changes before 1.0.'),
     el('div', { class: 'cta' },
       el('a', { class: 'button large', href: HOLM, rel: 'noopener', target: '_blank' }, 'Visit holmhq.com', glyph('out')),
       external(REFERENCE, 'Holm’s reference'),
       external(llms(), 'Instructions for agents'),
       external(LICENSE, 'The licence')),
     el('p', { class: 'small' }, 'The apps in this store are unofficial examples, not supported products. ',
-      el('a', { href: '/', 'data-link': true }, 'Browse them'), '. Their source is on ', external(REPO, 'GitHub'), '.'))
+      el('a', { href: '/', 'data-link': true }, 'Browse them'), ', or read their source on ', external(REPO, 'GitHub'), '.'))
 }
 
 export function startPage(index, show, back) {
   document.title = 'Get started with Holm – Unofficial Holm apps'
   const apps = index ? index.apps.filter(app => !app.hidden) : []
   refills = []
-  show(back, hero(apps), why(), setup(apps), build(), capabilities(), closing())
+  show(back, hero(apps), why(), chat(apps), setup(apps), build(), capabilities(), closing())
   // A link to a section, such as /start#setup, lands on it.
   if (location.hash) {
     const target = document.getElementById(decodeURIComponent(location.hash.slice(1)))

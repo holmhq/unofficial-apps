@@ -27,20 +27,23 @@ out of this app's deploy. They are still public source in this repository.
   with its icon, subtitle, category and a Get button.
 - **Get started** at `/start`, linked from the install sheet and from the
   header on every page, where it is a tinted pill with a sparkle and a light
-  that sweeps across it now and then (still for reduced motion). It assumes the reader never types a
-  command: a coding agent does the work, and the reader answers what is
-  theirs to decide. One long page:
-  - what Holm is, beside the conversation the setup prompt starts, and a
-    Copy the prompt button;
-  - why a node puts every app here one request away, and any app you can
-    describe too;
+  that sweeps across it now and then (still for reduced motion). It assumes
+  the reader never types a command: a coding agent does the work, and the
+  reader answers what is theirs to decide. Few words, with room around them:
+  - what Holm is, a Copy the prompt button, and **the belt**: an isometric
+    line figure in which the store's apps ride as crates out of a store
+    cabinet, through a gate (the fingerprint check) and into a node drum.
+    Pointing at it slows the belt, and the crate nearest the pointer lifts
+    and names its app; it stands still for reduced motion;
+  - three reasons a node is worth having, in a line each;
+  - **One prompt, then answers:** the conversation the prompt starts with
+    your agent, for the app you pick;
   - **Hand it to your agent:** pick an app, then where it runs (**This
-    computer**, **A server** for the domain you type, or **I have Holm**).
-    Each gives the prompt to paste, what the agent will do, what it will ask
-    you (the licence, a password to keep, SSH, DNS records), and, folded
-    away, the commands it runs;
-  - building your own from a prompt, with an example;
-  - twelve things Holm gives every app, each with the API that provides it;
+    computer**, **A server** for the domain you type, or **I have Holm**),
+    for the prompt to paste, what the agent will ask you, and, folded away,
+    the commands it runs;
+  - building your own from an example prompt;
+  - twelve things Holm gives every app, in a short grid;
   - links back to holmhq.com, the public reference, the licence and
     `/llms.txt`.
 - **`/llms.txt`:** the agent's side of the guide. The prompts send the agent
@@ -128,6 +131,8 @@ web/                public files, served as-is:
   src/styles.css    the whole design, light and dark
   assets/           icon, favicon and fonts (SIL OFL 1.1)
   vendor/feedback/  embed.js from this repository's feedback app (MIT)
+  vendor/hairline/  Hairline's figure kernel (MIT), for the guide's belt
+  src/belt.js       the belt figure, drawn on that kernel
 api/main.js         v1 entry: /api to the routes; pages with data and previews
 api/_holm.js        gives the routes `holm` and `respond` for each request
 api/_legacy_main.js routes (below), written in Holm's original app format
@@ -179,6 +184,14 @@ app-role checks and leaves binary-fetch gaps explicit.
 
 App icons are drawn from SVG path data in the index, painted white on each
 app's `themeColor`.
+
+The guide's belt is a [Hairline](https://hairline.lucasmarkes.com) figure,
+drawn with Hairline's `hairline-create` skill on its unchanged kernel. Only
+`/start` loads them, as two classic scripts: the kernel defines `HL`, and the
+figure hands itself to `globalThis.hairline`, which mounts it the way
+Hairline's own page does and stops it when the page changes. Its colours are
+Hairline's `--hairline-*` properties, set from the store's ink and tint, and
+it takes the app names from the stage's `data-apps`.
 
 The Analytics item uses `globalThis.__HOLM_SURFACES__`, which Holm adds to
 the page for the people allowed to see the app's analytics (section 22 of the
@@ -278,3 +291,5 @@ light/dark and the install instructions before deploying publicly.
 
 The app is MIT-licensed (see the repository `LICENSE`). Bricolage Grotesque
 and Fragment Mono are under the SIL OFL 1.1, in `web/assets/fonts/`.
+Hairline's kernel is MIT-licensed, with its `LICENSE` in
+`web/vendor/hairline/`.

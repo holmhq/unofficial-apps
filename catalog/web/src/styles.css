@@ -588,86 +588,100 @@ a.button { display: inline-flex; align-items: center; gap: 0.45rem; text-decorat
 .preview { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 1.25rem; padding: 1rem; border: 1px dashed var(--rule); border-radius: 14px; }
 .preview a { color: var(--accent); font-weight: 550; }
 
-/* The guide at /start */
+/* The guide at /start: few words, room around them */
 
 .glyph { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .guide-hero {
-  display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   gap: 2.5rem; align-items: center;
-  padding-block: 1.75rem 0.5rem;
+  padding-block: 1.5rem 0;
 }
 .eyebrow { margin: 0; font: 400 0.8rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-.guide-hero h1 { margin-top: 0.7rem; font-size: clamp(2.35rem, 6.5vw, 3.5rem); line-height: 1.02; letter-spacing: -0.035em; text-wrap: balance; }
+.guide-hero h1 { margin-top: 0.7rem; font-size: clamp(2.35rem, 6.5vw, 3.25rem); line-height: 1.02; letter-spacing: -0.035em; text-wrap: balance; }
+.guide-hero .lede { max-width: 26em; }
 .guide-hero .lede a { color: var(--ink); }
-.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; margin-top: 1.6rem; }
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; margin-top: 1.75rem; }
+.hero-note { margin: 0.9rem 0 0; font-size: 0.9rem; color: var(--ink-3); }
 
-.hero-note { margin: 0.9rem 0 0; font-size: 0.92rem; color: var(--ink-3); }
+/* The belt: a Hairline figure, in the store's own ink and tint */
+.belt { margin: 0; position: relative; }
+.belt-stage {
+  --hairline-plate: var(--paper);
+  --hairline-hi: var(--accent);
+  --hairline-edge: color-mix(in oklab, var(--ink) 48%, var(--paper));
+  --hairline-mid: color-mix(in oklab, var(--ink) 30%, var(--paper));
+  --hairline-lo: color-mix(in oklab, var(--ink) 13%, var(--paper));
+  --hairline-stroke: 1;
+  aspect-ratio: 5 / 4;
+}
+.belt-read { position: absolute; top: 0.25rem; right: 0.25rem; font: 400 0.8rem var(--mono); color: var(--accent); }
+.belt figcaption { margin-top: 0.25rem; font-size: 0.85rem; color: var(--ink-3); text-align: center; text-wrap: balance; }
+@media (max-width: 44rem) {
+  .guide-hero { grid-template-columns: 1fr; gap: 1.5rem; }
+  .belt { max-width: 30rem; }
+}
 
+.guide-section { margin-top: 6rem; }
+.guide-section h2 { font-size: clamp(1.6rem, 4.5vw, 2.15rem); letter-spacing: -0.03em; }
+.section-lede { margin: 0.6rem 0 0; max-width: 34em; color: var(--ink-2); }
+.guide-section h3 { margin: 0; font-size: 1.05rem; font-weight: 650; letter-spacing: -0.01em; }
+.aside { margin: 1.5rem 0 0; font-size: 0.92rem; color: var(--ink-3); max-width: 40em; }
+
+.why { list-style: none; margin: 4rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; }
+.why .glyph { width: 1.5rem; height: 1.5rem; margin-bottom: 0.7rem; color: var(--accent); }
+.why h3 { margin: 0; font-size: 1.05rem; font-weight: 650; }
+.why p { margin: 0.35rem 0 0; font-size: 0.95rem; color: var(--ink-2); }
+@media (max-width: 44rem) {
+  .why { grid-template-columns: 1fr; gap: 1.5rem; margin-top: 3rem; }
+}
+
+.how { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 2.5rem; align-items: start; }
+@media (max-width: 44rem) {
+  .how { grid-template-columns: 1fr; gap: 1.5rem; }
+}
 .chat {
   margin: 0; padding: 1rem 1rem 1.1rem;
   border-radius: 24px; border: 1px solid var(--rule);
-  background: linear-gradient(165deg, var(--accent-wash), var(--sheet) 65%);
-  box-shadow: var(--lift);
+  background: linear-gradient(165deg, var(--accent-wash), var(--sheet) 60%);
 }
 .chat figcaption { display: flex; align-items: center; gap: 0.5rem; padding: 0 0.25rem 0.85rem; font-size: 0.82rem; font-weight: 600; color: var(--ink-2); }
 .live { flex: none; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #2bb673; box-shadow: 0 0 0 3px color-mix(in oklab, #2bb673 25%, transparent); }
 .chat-turns { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
-.turn { display: grid; gap: 0.2rem; max-width: 92%; }
+.turn { display: grid; gap: 0.2rem; max-width: 88%; }
 .turn .who { font: 400 0.7rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
-.turn p { margin: 0; padding: 0.6rem 0.8rem; border-radius: 14px; font-size: 0.86rem; line-height: 1.5; overflow-wrap: anywhere; }
+.turn p { margin: 0; padding: 0.6rem 0.8rem; border-radius: 14px; font-size: 0.88rem; line-height: 1.5; overflow-wrap: anywhere; }
 .turn.from-you { justify-self: end; justify-items: end; }
 .turn.from-you p { background: var(--accent); color: var(--paper); border-bottom-right-radius: 4px; }
 .turn.from-agent p { background: var(--paper); border: 1px solid var(--rule); border-bottom-left-radius: 4px; }
 .chat-app { display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle; }
 .chat-app strong { font-weight: 600; }
-.chat-icons { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; vertical-align: middle; margin-top: 0.35rem; }
 .chat .icon-xs { --size: 1.35rem; }
-@media (max-width: 44rem) {
-  .guide-hero { grid-template-columns: 1fr; gap: 2rem; }
-  .chat { max-width: 28rem; }
-}
 
-.guide-section { margin-top: 4rem; }
-.guide-section > h2 { font-size: clamp(1.6rem, 4.5vw, 2.15rem); letter-spacing: -0.03em; }
-.section-lede { margin: 0.55rem 0 0; max-width: 38em; color: var(--ink-2); }
-.guide-section h3 { margin: 0; font-size: 1.08rem; font-weight: 650; letter-spacing: -0.01em; }
-.aside { margin: 1.1rem 0 0; font-size: 0.92rem; color: var(--ink-3); max-width: 40em; }
-
-.why { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-.why li { padding: 1.25rem; border-radius: 20px; background: var(--sheet); border: 1px solid var(--rule); }
-.why p { margin: 0.4rem 0 0; font-size: 0.95rem; color: var(--ink-2); }
-.badge { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; margin-bottom: 0.9rem; border-radius: 12px; background: var(--accent-wash); color: var(--accent); }
-.badge .glyph { width: 1.3rem; height: 1.3rem; }
-@media (max-width: 44rem) {
-  .why { grid-template-columns: 1fr; }
+.choose { margin: 1.75rem 0 0.6rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.picker { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.picker button {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.3rem 0.85rem 0.3rem 0.3rem;
+  border-radius: 999px; border: 1px solid var(--rule); background: var(--sheet);
+  font: 550 0.92rem var(--font); color: var(--ink-2); cursor: pointer;
 }
+.picker button:hover { border-color: var(--ink-3); color: var(--ink); }
+.picker button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--ink); }
 
 #setup .tabs { margin-top: 0; }
 #setup .panel { padding-top: 1.25rem; }
 #setup .node { margin: 0 0 1.25rem; max-width: 34rem; }
 
-.choose { margin: 1.5rem 0 0.6rem; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
-#setup .picker { margin-bottom: 0; }
-
-.plan { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 2rem; margin-top: 1.5rem; }
-.plan h3 { margin-bottom: 0.6rem; }
-.does { list-style: none; margin: 0; padding: 0; counter-reset: does; display: grid; gap: 0.55rem; }
-.does li { position: relative; counter-increment: does; padding-left: 2.1rem; font-size: 0.95rem; color: var(--ink-2); }
-.does li::before {
-  content: counter(does);
-  position: absolute; left: 0; top: 0.05rem;
-  width: 1.45rem; height: 1.45rem; border-radius: 50%;
-  display: grid; place-items: center;
-  background: var(--accent-wash); color: var(--accent);
-  font-size: 0.78rem; font-weight: 700;
+.asks { margin-top: 1.5rem; }
+.asks h3 { margin-bottom: 0.7rem; }
+.asks ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.asks li {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.35rem 0.8rem 0.35rem 0.55rem; border-radius: 999px;
+  background: var(--planned-wash); font-size: 0.9rem; color: var(--ink);
 }
-.asks { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
-.asks li { display: flex; gap: 0.65rem; font-size: 0.95rem; color: var(--ink-2); }
-.asks .glyph { flex: none; width: 1.3rem; height: 1.3rem; margin-top: 0.1rem; color: var(--planned); }
-@media (max-width: 44rem) {
-  .plan { grid-template-columns: 1fr; }
-}
+.asks .glyph { flex: none; width: 1.05rem; height: 1.05rem; color: var(--planned); }
 
 .under { margin-top: 1.5rem; border-top: 1px solid var(--rule); }
 .under summary {
@@ -683,39 +697,22 @@ a.button { display: inline-flex; align-items: center; gap: 0.45rem; text-decorat
 .under .command + .command { margin-top: 0.75rem; }
 @media (prefers-reduced-motion: reduce) { .under summary::before { transition: none; } }
 
-.picker { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.picker button {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.3rem 0.85rem 0.3rem 0.3rem;
-  border-radius: 999px; border: 1px solid var(--rule); background: var(--sheet);
-  font: 550 0.92rem var(--font); color: var(--ink-2); cursor: pointer;
-}
-.picker button:hover { border-color: var(--ink-3); color: var(--ink); }
-.picker button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--ink); }
+.guide-section > .command { margin-top: 1.5rem; }
 
-.flow { list-style: none; margin: 1.5rem 0 1.25rem; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; counter-reset: flow; }
-.flow li { counter-increment: flow; padding-top: 0.9rem; border-top: 2px solid var(--accent); }
-.flow li::before { content: "0" counter(flow); display: block; margin-bottom: 0.35rem; font: 400 0.8rem var(--mono); color: var(--accent); }
-.flow p { margin: 0.35rem 0 0; font-size: 0.95rem; color: var(--ink-2); }
-@media (max-width: 44rem) {
-  .flow { grid-template-columns: 1fr; gap: 1.25rem; }
+.caps { list-style: none; margin: 2rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.75rem 1.5rem; }
+.caps li { display: grid; grid-template-columns: 1.25rem minmax(0, 1fr); column-gap: 0.6rem; align-content: start; }
+.caps .glyph { grid-row: span 2; width: 1.25rem; height: 1.25rem; margin-top: 0.05rem; color: var(--accent); }
+.caps h3 { font-size: 0.98rem; }
+.caps p { margin: 0.2rem 0 0; font-size: 0.88rem; color: var(--ink-3); }
+@media (max-width: 52rem) {
+  .caps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-
-.caps { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr)); gap: 0.85rem; }
-.caps li {
-  display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.85rem; align-content: start;
-  padding: 1.05rem 1.1rem; border-radius: 18px; background: var(--sheet); border: 1px solid var(--rule);
-}
-.caps .glyph { grid-row: span 3; width: 1.45rem; height: 1.45rem; margin-top: 0.1rem; color: var(--accent); }
-.caps p { margin: 0.25rem 0 0; font-size: 0.92rem; color: var(--ink-2); }
-.caps code { margin-top: 0.5rem; justify-self: start; font-size: 0.76rem; color: var(--ink-3); white-space: normal; overflow-wrap: anywhere; }
 @media (max-width: 36rem) {
-  .caps { gap: 0.6rem; }
-  .caps li { padding: 0.9rem 1rem; }
+  .caps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 1rem; }
 }
 
 .closing {
-  margin-top: 4rem; padding: 2.25rem 2.25rem 2rem;
+  margin-top: 6rem; padding: 2.25rem 2.25rem 2rem;
   border-radius: 24px; background: var(--tint); color: #fff;
   box-shadow: var(--lift);
 }

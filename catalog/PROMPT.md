@@ -45,9 +45,13 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   someone with no node who will hand the work to a coding agent, never a
   terminal: what Holm is, why a node puts every app here one request away,
   then pick an app and where it runs (this computer, a server, an existing
-  node) for a prompt to paste, what the agent does and asks (the licence is
-  always the person's to accept), and the commands folded away. Then
-  building from a prompt, what Holm gives an app, links to holmhq.com.
+  node) for a prompt to paste, what the agent asks (the licence is always
+  the person's to accept), and the commands folded away. Then building from
+  a prompt, what Holm gives an app, links to holmhq.com. Keep it airy.
+  Beside its headline, vendor an MIT isometric line-figure kernel and draw
+  an interactive figure on it: the apps ride a belt as crates from a store,
+  through a gate (the fingerprint check), into a node drum; pointing slows
+  the belt and names the crate's app.
 - web/llms.txt for that agent: ground rules, the index, and setup, install,
   sign-in and server steps citing sections 4, 5, 8, 9 and 13 of the guide.
   The sheet's agent prompt comes first.
@@ -175,6 +179,22 @@ became its first, working way.
 
 > That header is a bit weird in home page; about get started
 > - i think we can simply have the top navbar get started button, perhaps in a bit of fancy design so people may notice?
+
+**Iteration 10**, then two short messages sent while the agent was working:
+
+> I love the new button!
+> - and i love how the layout doesnt shift around pages!
+> - can we make the getting started page less dense
+> - now it feels a bit too dense
+> - perhaps use https://hairline.lucasmarkes.com/ skill to build a nice interactive illustration
+> - i like your agent chat example but the last agent's reply has all the app icons stuffed in
+
+> can you show the options once again?
+
+> Is the hariline skill something to install? or is it just docs/
+
+The agent offered three figures (cartridges in a node, a hub, a belt); the
+owner picked the belt.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for
