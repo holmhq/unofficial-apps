@@ -23,8 +23,17 @@ out of this app's deploy. They are still public source in this repository.
 
 ## What it does
 
-- **Front page:** a featured app on its own colour, then every app as a row
-  with its icon, subtitle, category and a Get button.
+- **Front page:** a search field and a list/grid switch under the heading,
+  a featured app on its own colour, then every app as a row (or a card) with
+  its icon, subtitle, category and a Get button.
+  - **Search** filters as you type, on name, subtitle, description and
+    category; every word must match. The query lives in the address
+    (`?q=`), so a search can be shared and Back brings it back; while it is
+    on, the featured app steps aside and the heading counts the matches.
+    `/` jumps to it, Esc clears it, and when nothing matches the page offers
+    to clear it or to build the app with your agent (`/start#build`).
+  - **List or grid**, remembered in the browser. The grid is two columns on
+    a phone.
 - **Get started** at `/start`, linked from the install sheet and from the
   header on every page, where it is a tinted pill with a sparkle and a light
   that sweeps across it now and then (still for reduced motion). It assumes

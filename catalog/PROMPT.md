@@ -26,7 +26,8 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   the base64 digest with h1:. Exclude listing/ and hidden files; count README
   and PROMPT too. --check detects stale indexes or changed release tags;
   --tag creates missing tags. CI checks then tags versions on main.
-- An App Store-like front page with a featured app and rows, each app's own
+- An App Store-like front page with search (as you type, kept in ?q=), a
+  list/grid switch, a featured app and rows, each app's own
   /apps/<app> page: icon/colour, version, size, category, license, swipeable
   screenshots, description, whatsNew, original prompt and source information.
   Read the public repository index with synchronous env.holm.net.fetch,
@@ -195,6 +196,10 @@ became its first, working way.
 
 The agent offered three figures (cartridges in a node, a hub, a belt); the
 owner picked the belt.
+
+**Iteration 11**, sent while the guide was being finished:
+
+> May be we need a search, grid / list view for the apps; i know its early but as more comes in, this may help?
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

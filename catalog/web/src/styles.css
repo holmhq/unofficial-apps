@@ -57,6 +57,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
 /* Whatever gains focus or is scrolled to stays clear of the footer. */
 html { -webkit-text-size-adjust: 100%; scroll-padding-bottom: 4.5rem; }
 @media (prefers-reduced-motion: no-preference) {
@@ -258,6 +259,57 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 
 .shelf { margin-top: 3rem; }
 .shelf h2 { padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule); }
+.shelf h2 .count { margin-left: 0.55rem; font-size: 0.95rem; font-weight: 500; letter-spacing: 0; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* Search and the list/grid switch, under the heading so typing never moves them */
+.finder { display: flex; align-items: center; gap: 0.6rem; margin-top: 1.5rem; max-width: 34rem; }
+.search { position: relative; flex: 1; min-width: 0; display: block; }
+.search > svg { position: absolute; left: 0.85rem; top: 50%; width: 1.1rem; height: 1.1rem; transform: translateY(-50%); pointer-events: none; color: var(--ink-3); }
+.finder svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.search input {
+  width: 100%; height: 2.75rem;
+  /* 16px or more, or iPhones zoom the page when the field is focused. */
+  font: 400 max(1rem, 16px) var(--font); color: var(--ink);
+  background: var(--sheet); border: 1px solid var(--rule); border-radius: 999px;
+  padding: 0 2.75rem 0 2.5rem;
+  -webkit-appearance: none; appearance: none;
+}
+.search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.search input::placeholder { color: var(--ink-3); }
+.search input:focus-visible { outline-offset: 0; border-color: var(--accent); }
+.search kbd, .search .clear { position: absolute; right: 0.55rem; top: 50%; transform: translateY(-50%); }
+.search kbd { padding: 0.05rem 0.4rem; border: 1px solid var(--rule); border-radius: 6px; font: 400 0.75rem var(--mono); color: var(--ink-3); }
+.search .clear { display: none; place-items: center; width: 2rem; height: 2rem; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ink-3); cursor: pointer; }
+.search .clear svg { width: 1rem; height: 1rem; }
+.search .clear:hover { color: var(--ink); background: var(--paper); }
+.finder.typed .clear { display: grid; }
+.finder.typed kbd, .search input:focus ~ kbd { display: none; }
+@media (hover: none) { .search kbd { display: none; } }
+.views { flex: none; display: flex; padding: 3px; border: 1px solid var(--rule); border-radius: 999px; background: var(--sheet); }
+.views button { display: grid; place-items: center; width: 2.6rem; height: 2.3rem; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--ink-3); cursor: pointer; }
+.views button:hover { color: var(--ink); }
+.views button[aria-pressed="true"] { background: var(--accent-wash); color: var(--accent); }
+.views svg { width: 1.15rem; height: 1.15rem; }
+
+/* The grid view */
+.cards { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: 1rem; }
+.app-card { display: grid; align-content: space-between; gap: 0.9rem; padding: 1.1rem 1.1rem 1rem; border-radius: 20px; background: var(--sheet); border: 1px solid var(--rule); }
+.app-card-link { display: grid; gap: 0.25rem; min-width: 0; text-decoration: none; }
+.app-card-link .icon { margin-bottom: 0.65rem; }
+.app-card-title { font-size: 1.12rem; font-weight: 650; letter-spacing: -0.01em; }
+.app-card-link:hover .app-card-title { text-decoration: underline; text-underline-offset: 0.18em; }
+.app-card-sub { color: var(--ink-2); font-size: 0.95rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.app-card .get { justify-self: start; }
+@media (max-width: 36rem) {
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+  .app-card { padding: 0.9rem; border-radius: 16px; }
+  .app-card .icon-l { --size: 3.5rem; }
+}
+
+.empty { margin-top: 1.5rem; padding: 1.25rem 1.3rem; border-radius: 16px; border: 1px dashed var(--rule); color: var(--ink-2); }
+.empty p { margin: 0; }
+.empty p + p { margin-top: 0.4rem; font-size: 0.95rem; }
+.empty a { color: var(--accent); font-weight: 550; }
 .rows { list-style: none; margin: 0; padding: 0; }
 .row { display: flex; align-items: center; gap: 1rem; padding-block: 0.9rem; border-bottom: 1px solid var(--rule); }
 .row-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 1rem; text-decoration: none; }

@@ -1,7 +1,7 @@
 // The store: a front page of every app, and a page for each one. Data comes
 // from the repository's index.json: embedded in the page by the server, or
 // through /api/index.
-import { $, el, icon, bytes, paragraphs, stars, track, applyTint, REPO } from './lib.js'
+import { $, el, icon, bytes, paragraphs, stars, track, applyTint, store, REPO } from './lib.js'
 import { openInstall } from './install.js'
 import { loadViewer, onViewer, setViewer } from './account.js'
 import { reviewsSection } from './reviews.js'
@@ -82,18 +82,124 @@ function featured(app) {
       shotImage({ src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height })))
 }
 
+// A grid view's card: the same parts as a row, stacked.
+function card(app) {
+  return el('li', { class: 'app-card' },
+    el('a', { class: 'app-card-link', href: withRef('/apps/' + app.path), 'data-link': true },
+      icon(app, 'l'),
+      el('span', { class: 'app-card-title' }, app.title),
+      el('span', { class: 'app-card-sub' }, subtitle(app)),
+      el('span', { class: 'row-meta' }, meta(app))),
+    getButton(app))
+}
+
+// Line icons for the view switch and the search field, on a 24-unit grid.
+function glyph(d) {
+  const ns = 'http://www.w3.org/2000/svg'
+  const svg = document.createElementNS(ns, 'svg')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('aria-hidden', 'true')
+  const path = document.createElementNS(ns, 'path')
+  path.setAttribute('d', d)
+  svg.append(path)
+  return svg
+}
+const LIST = 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01'
+const GRID = 'M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z'
+const LENS = 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4'
+const CROSS = 'M7 7l10 10M17 7 7 17'
+
+// What the search looks in, and whether every word typed is there.
+const haystack = app => [app.title, app.path, subtitle(app), app.description, app.listing && app.listing.category, app.listing && app.listing.description]
+  .filter(Boolean).join(' ').toLowerCase()
+const matches = (app, words) => words.every(word => haystack(app).includes(word))
+
+// The front page's own state: the search, kept in the address so it can be
+// shared (and Back brings it back), and list or grid, remembered.
+let query = ''
+let view = store.get('view') === 'grid' ? 'grid' : 'list'
+
 function storefront() {
   document.title = 'Unofficial Holm apps'
+  query = new URLSearchParams(location.search).get('q') || ''
   const feature = index.apps.find(app => app.listing && app.listing.featured && app.listing.screenshots.length)
+  const featureCard = feature && featured(feature)
+  const count = el('span', { class: 'count', 'aria-live': 'polite' })
+  const list = el('ul')
+  const empty = el('div', { class: 'empty', hidden: true })
+
+  const fill = () => {
+    const words = query.toLowerCase().split(/\s+/).filter(Boolean)
+    const found = index.apps.filter(app => matches(app, words))
+    if (featureCard) featureCard.hidden = words.length > 0
+    list.className = view === 'grid' ? 'cards' : 'rows'
+    list.replaceChildren(...found.map(view === 'grid' ? card : row))
+    count.textContent = words.length ? `${found.length} of ${index.apps.length}` : String(index.apps.length)
+    empty.hidden = found.length > 0
+    empty.replaceChildren(
+      el('p', {}, 'No app here matches “', query.trim(), '”.'),
+      el('p', {}, el('button', { type: 'button', class: 'quiet', onclick: () => setQuery('') }, 'Clear the search'), ', or ',
+        el('a', { href: withRef('/start') + '#build', 'data-link': true }, 'build it with your agent'), '.'))
+  }
+
+  const input = el('input', {
+    type: 'search', name: 'q', value: query, placeholder: 'Search apps', 'aria-label': 'Search apps',
+    autocomplete: 'off', spellcheck: 'false', enterkeyhint: 'search'
+  })
+  const clear = el('button', { type: 'button', class: 'clear', 'aria-label': 'Clear the search', onclick: () => { setQuery(''); input.focus() } }, glyph(CROSS))
+  const finder = el('form', { class: 'finder', role: 'search', onsubmit: event => { event.preventDefault(); input.blur() } },
+    el('label', { class: 'search' }, glyph(LENS), input, el('kbd', { 'aria-hidden': 'true' }, '/'), clear),
+    el('div', { class: 'views', role: 'group', 'aria-label': 'Show apps as' },
+      [['list', 'List', LIST], ['grid', 'Grid', GRID]].map(([key, label, d]) => el('button', {
+        type: 'button', 'aria-label': label, title: label, 'aria-pressed': String(view === key), 'data-view': key,
+        onclick: event => {
+          view = key
+          store.set('view', view)
+          for (const button of event.currentTarget.parentNode.children) button.setAttribute('aria-pressed', String(button.dataset.view === view))
+          fill()
+        }
+      }, glyph(d)))))
+  const mark = () => finder.classList.toggle('typed', query !== '')
+  const setQuery = value => {
+    query = value
+    input.value = value
+    const url = new URL(location.href)
+    if (value.trim()) url.searchParams.set('q', value.trim())
+    else url.searchParams.delete('q')
+    history.replaceState(null, '', url)
+    mark()
+    fill()
+  }
+  input.addEventListener('input', () => setQuery(input.value))
+  input.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return
+    if (query) setQuery('')
+    else input.blur()
+  })
+
+  mark()
+  fill()
   show(
     el('section', { class: 'masthead' },
       el('h1', {}, 'Apps'),
-      el('p', { class: 'lede' }, 'Small, real apps for your Holm node, each built by a coding agent from a short prompt.')),
-    feature && featured(feature),
+      el('p', { class: 'lede' }, 'Small, real apps for your Holm node, each built by a coding agent from a short prompt.'),
+      finder),
+    featureCard,
     el('section', { class: 'shelf' },
-      el('h2', {}, 'All apps'),
-      el('ul', { class: 'rows' }, index.apps.map(row))))
+      el('h2', {}, 'All apps', count),
+      list, empty))
 }
+
+// "/" anywhere on the front page goes to the search.
+document.addEventListener('keydown', event => {
+  if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return
+  const at = document.activeElement
+  if (at && (/^(INPUT|TEXTAREA|SELECT)$/.test(at.tagName) || at.isContentEditable)) return
+  const search = $('.finder input')
+  if (!search) return
+  event.preventDefault()
+  search.focus()
+})
 
 const fact = (value, label) => value && el('li', {}, el('strong', {}, value), el('span', {}, label))
 const info = (label, ...value) => el('div', {}, el('dt', {}, label), el('dd', {}, ...value))
