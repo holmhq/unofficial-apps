@@ -105,13 +105,40 @@ h2 { font-size: 1.35rem; line-height: 1.2; }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.25rem; }
 main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .top-end { display: flex; align-items: center; gap: 0.85rem; }
+/* The way in for anyone without a node: a tinted pill with a sparkle, a soft
+   glow and a light that sweeps across it now and then. */
 .top-link {
-  font-size: 0.92rem; font-weight: 600; color: var(--accent);
+  position: relative; overflow: hidden; isolation: isolate;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.45rem 0.95rem 0.45rem 0.8rem; border-radius: 999px;
+  font-size: 0.92rem; font-weight: 650; color: #fff;
   text-decoration: none; white-space: nowrap;
-  padding: 0.35rem 0.85rem; border-radius: 999px; background: var(--accent-wash);
+  background: linear-gradient(135deg, var(--tint), color-mix(in oklab, var(--tint) 55%, #6a3fe0));
+  box-shadow: 0 8px 20px -8px color-mix(in oklab, var(--tint) 80%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: transform 160ms ease, box-shadow 160ms ease;
 }
-.top-link:hover { filter: brightness(0.97); }
-.top-link[aria-current="page"] { color: var(--ink-2); background: none; }
+.top-link svg { width: 0.95rem; height: 0.95rem; fill: currentColor; }
+.top-link::after {
+  content: ""; position: absolute; inset: 0 auto 0 0; z-index: -1;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.38), transparent);
+  transform: translateX(-120%);
+  animation: sweep 6s ease-in-out 1.2s infinite;
+}
+@keyframes sweep {
+  0% { transform: translateX(-120%); }
+  35%, 100% { transform: translateX(260%); }
+}
+@media (hover: hover) {
+  .top-link:hover { transform: translateY(-1px); box-shadow: 0 12px 24px -8px color-mix(in oklab, var(--tint) 85%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .top-link { transition: none; }
+  .top-link::after { display: none; }
+}
+/* On the guide itself it steps back. */
+.top-link[aria-current="page"] { color: var(--ink-2); background: none; box-shadow: none; transform: none; }
+.top-link[aria-current="page"]::after { display: none; }
 .brand { display: inline-flex; align-items: center; gap: 0.55rem; text-decoration: none; font-weight: 650; letter-spacing: -0.01em; }
 .brand svg { width: 1.35rem; height: 1.35rem; }
 .quiet {
@@ -198,22 +225,6 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .masthead { padding-block: 2.5rem 1.5rem; }
 .masthead h1 { font-size: clamp(2.6rem, 8vw, 3.75rem); line-height: 1; letter-spacing: -0.035em; }
 .lede { margin: 0.85rem 0 0; max-width: 34em; font-size: 1.12rem; color: var(--ink-2); }
-
-.intro {
-  display: flex; align-items: center; gap: 0.75rem 1.5rem;
-  margin-top: 1.5rem; padding: 0.95rem 1.15rem;
-  border-radius: 16px; border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--rule));
-  background: var(--accent-wash);
-  text-decoration: none;
-}
-.intro-text { flex: 1; min-width: 0; font-size: 0.98rem; color: var(--ink-2); }
-.intro-text strong { color: var(--ink); font-weight: 650; }
-.intro-go { flex: none; display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 650; color: var(--accent); white-space: nowrap; }
-.intro-go svg { width: 0.5rem; height: 0.85rem; transform: scaleX(-1); fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-.intro:hover .intro-go { text-decoration: underline; text-underline-offset: 0.18em; }
-@media (max-width: 36rem) {
-  .intro { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-}
 
 .feature {
   display: grid;

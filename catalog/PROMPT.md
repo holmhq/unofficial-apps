@@ -41,7 +41,7 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   holm @<peer> app install github.com/<org>/<repo>/<app>@v<version> --host
   <host>, a clone-a-tag holm app deploy <app> --spec-v1, and an agent prompt
   following the app README.
-- A /start guide, linked from the header, the front page and the sheet, for
+- A /start guide, linked from a header button that stands out and the sheet, for
   someone with no node who will hand the work to a coding agent, never a
   terminal: what Holm is, why a node puts every app here one request away,
   then pick an app and where it runs (this computer, a server, an existing
@@ -170,6 +170,11 @@ became its first, working way.
 **Iteration 8**:
 
 > I think we should design the guide such that, we assume no human will run it but an agent will only do it
+
+**Iteration 9**, about a "New to Holm?" card the front page had then:
+
+> That header is a bit weird in home page; about get started
+> - i think we can simply have the top navbar get started button, perhaps in a bit of fancy design so people may notice?
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

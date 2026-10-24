@@ -82,20 +82,13 @@ function featured(app) {
       shotImage({ src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height })))
 }
 
-// The way in for someone who has no node yet.
-const intro = () => el('a', { class: 'intro', href: withRef('/start'), 'data-link': true },
-  el('span', { class: 'intro-text' }, el('strong', {}, 'New to Holm? '),
-    'These apps run on a server you own. Set one up in about ten minutes, then install any of them with one command.'),
-  el('span', { class: 'intro-go' }, 'Get started', chevron()))
-
 function storefront() {
   document.title = 'Unofficial Holm apps'
   const feature = index.apps.find(app => app.listing && app.listing.featured && app.listing.screenshots.length)
   show(
     el('section', { class: 'masthead' },
       el('h1', {}, 'Apps'),
-      el('p', { class: 'lede' }, 'Small, real apps for your Holm node, each built by a coding agent from a short prompt.'),
-      intro()),
+      el('p', { class: 'lede' }, 'Small, real apps for your Holm node, each built by a coding agent from a short prompt.')),
     feature && featured(feature),
     el('section', { class: 'shelf' },
       el('h2', {}, 'All apps'),

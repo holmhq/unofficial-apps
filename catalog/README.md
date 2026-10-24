@@ -23,11 +23,11 @@ out of this app's deploy. They are still public source in this repository.
 
 ## What it does
 
-- **Front page:** a "New to Holm?" card linking to the guide, a featured app
-  on its own colour, then every app as a row with its icon, subtitle,
-  category and a Get button.
-- **Get started** at `/start`, linked from the header on every page, the
-  front page and the install sheet. It assumes the reader never types a
+- **Front page:** a featured app on its own colour, then every app as a row
+  with its icon, subtitle, category and a Get button.
+- **Get started** at `/start`, linked from the install sheet and from the
+  header on every page, where it is a tinted pill with a sparkle and a light
+  that sweeps across it now and then (still for reduced motion). It assumes the reader never types a
   command: a coding agent does the work, and the reader answers what is
   theirs to decide. One long page:
   - what Holm is, beside the conversation the setup prompt starts, and a
