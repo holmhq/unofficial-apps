@@ -146,7 +146,8 @@ node from each app's Get button.
   painted on the app's `themeColor`. `listing/` holds `listing.json` and
   sample screenshots, excluded with `publish.exclude: ["/listing/"]` in
   `holm.json`. These are repository conventions not documented by the v1
-  guide. Listing-only changes do not need a version bump.
+  guide. `"featured": true` in `listing.json` puts the app in the store's
+  cover carousel. Listing-only changes do not need a version bump.
 - **Cover:** `listing/cover.png` is a 1200×630 card, the store's featured
   card in landscape (the app's colour, icon, title, subtitle and first
   screenshot). The store uses it as the app page's link preview.

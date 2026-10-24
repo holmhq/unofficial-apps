@@ -70,7 +70,7 @@ function row(app) {
     getButton(app))
 }
 
-function featured(app) {
+function featured(app, lazy = false) {
   const shot = app.listing.screenshots[0]
   return el('section', { class: 'feature', style: app.themeColor ? `--tile: ${app.themeColor}` : null },
     el('div', { class: 'feature-text' },
@@ -79,18 +79,63 @@ function featured(app) {
       el('p', {}, subtitle(app)),
       getButton(app)),
     el('div', { class: 'feature-shot' },
-      shotImage({ src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height })))
+      shotImage({ src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height, loading: lazy ? 'lazy' : null })))
 }
 
-// A grid view's card: the same parts as a row, stacked.
+// The cover, when several apps are featured: each one's card in turn. Swipe
+// or scroll it, or use the arrows and dots. It moves on by itself every few
+// seconds, waiting while a pointer or focus is on it, never for reduced
+// motion, and not again once someone has moved it themselves.
+function carousel(apps) {
+  const track = el('div', { class: 'carousel-track' }, apps.map((app, i) => el('div', {
+    class: 'slide', role: 'group', 'aria-roledescription': 'slide', 'aria-label': `${i + 1} of ${apps.length}: ${app.title}`
+  }, featured(app, i > 0))))
+  const still = matchMedia('(prefers-reduced-motion: reduce)')
+  let at = 0
+  const dots = apps.map((app, i) => el('button', { type: 'button', class: 'dot', 'aria-label': 'Show ' + app.title, onclick: () => { stop(); go(i) } }))
+  const mark = () => dots.forEach((dot, i) => dot.setAttribute('aria-current', String(i === at)))
+  const go = i => {
+    at = (i + apps.length) % apps.length
+    track.scrollTo({ left: track.children[at].offsetLeft, behavior: still.matches ? 'instant' : 'smooth' })
+    mark()
+  }
+  // The slide in view lights its dot, however it got there.
+  track.addEventListener('scroll', () => {
+    const step = track.children[1].offsetLeft - track.children[0].offsetLeft
+    const i = Math.round(track.scrollLeft / step)
+    if (i !== at) { at = i; mark() }
+  }, { passive: true })
+
+  let timer = null, held = false
+  const stop = () => { clearInterval(timer); timer = null }
+  if (!still.matches) {
+    timer = setInterval(() => {
+      if (!track.isConnected) return stop()
+      if (!held && !document.hidden) go(at + 1)
+    }, 6000)
+  }
+  for (const kind of ['pointerdown', 'wheel', 'touchstart']) track.addEventListener(kind, stop, { passive: true })
+  const arrow = (step, label) => el('button', { type: 'button', class: 'arrow', 'aria-label': label, onclick: () => { stop(); go(at + step) } }, chevron())
+  const root = el('section', { class: 'carousel', 'aria-roledescription': 'carousel', 'aria-label': 'Featured apps' },
+    track,
+    el('div', { class: 'carousel-nav' }, arrow(-1, 'Previous app'), el('div', { class: 'dots' }, dots), arrow(1, 'Next app')))
+  root.addEventListener('pointerenter', () => { held = true })
+  root.addEventListener('pointerleave', () => { held = false })
+  root.addEventListener('focusin', () => { held = true })
+  root.addEventListener('focusout', () => { held = false })
+  mark()
+  return root
+}
+
+// A grid view's tile, near square: the icon, then the category and a Get
+// button as an icon. The name is the link's label and the tile's tooltip.
 function card(app) {
-  return el('li', { class: 'app-card' },
-    el('a', { class: 'app-card-link', href: withRef('/apps/' + app.path), 'data-link': true },
-      icon(app, 'l'),
-      el('span', { class: 'app-card-title' }, app.title),
-      el('span', { class: 'app-card-sub' }, subtitle(app)),
-      el('span', { class: 'row-meta' }, meta(app))),
-    getButton(app))
+  return el('li', { class: 'app-card', title: app.title },
+    el('a', { class: 'app-card-link', href: withRef('/apps/' + app.path), 'data-link': true, 'aria-label': `${app.title}: ${subtitle(app)}` },
+      icon(app, 'l')),
+    el('div', { class: 'app-card-foot' },
+      el('span', { class: 'app-card-cat' }, app.hidden ? 'Hidden' : (app.listing && app.listing.category) || ''),
+      el('button', { type: 'button', class: 'get-icon', 'aria-label': 'Get ' + app.title, title: 'Get ' + app.title, onclick: () => openInstall(app) }, glyph(GET))))
 }
 
 // Line icons for the view switch and the search field, on a 24-unit grid.
@@ -108,6 +153,7 @@ const LIST = 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01'
 const GRID = 'M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z'
 const LENS = 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4'
 const CROSS = 'M7 7l10 10M17 7 7 17'
+const GET = 'M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14'
 
 // What the search looks in, and whether every word typed is there.
 const haystack = app => [app.title, app.path, subtitle(app), app.description, app.listing && app.listing.category, app.listing && app.listing.description]
@@ -115,15 +161,16 @@ const haystack = app => [app.title, app.path, subtitle(app), app.description, ap
 const matches = (app, words) => words.every(word => haystack(app).includes(word))
 
 // The front page's own state: the search, kept in the address so it can be
-// shared (and Back brings it back), and list or grid, remembered.
+// shared (and Back brings it back), and list or grid, remembered. Both sit
+// under the featured app, which stays put, so typing never moves the field.
 let query = ''
 let view = store.get('view') === 'grid' ? 'grid' : 'list'
 
 function storefront() {
   document.title = 'Unofficial Holm apps'
   query = new URLSearchParams(location.search).get('q') || ''
-  const feature = index.apps.find(app => app.listing && app.listing.featured && app.listing.screenshots.length)
-  const featureCard = feature && featured(feature)
+  const features = index.apps.filter(app => app.listing && app.listing.featured && app.listing.screenshots.length)
+  const featureCard = features.length > 1 ? carousel(features) : features[0] && featured(features[0])
   const count = el('span', { class: 'count', 'aria-live': 'polite' })
   const list = el('ul')
   const empty = el('div', { class: 'empty', hidden: true })
@@ -131,7 +178,6 @@ function storefront() {
   const fill = () => {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean)
     const found = index.apps.filter(app => matches(app, words))
-    if (featureCard) featureCard.hidden = words.length > 0
     list.className = view === 'grid' ? 'cards' : 'rows'
     list.replaceChildren(...found.map(view === 'grid' ? card : row))
     count.textContent = words.length ? `${found.length} of ${index.apps.length}` : String(index.apps.length)
@@ -182,11 +228,10 @@ function storefront() {
   show(
     el('section', { class: 'masthead' },
       el('h1', {}, 'Apps'),
-      el('p', { class: 'lede' }, 'Small, real apps for your Holm node, each built by a coding agent from a short prompt.'),
-      finder),
+      el('p', { class: 'lede' }, 'Small, real apps for your Holm node, each built by a coding agent from a short prompt.')),
     featureCard,
     el('section', { class: 'shelf' },
-      el('h2', {}, 'All apps', count),
+      el('div', { class: 'shelf-head' }, el('h2', {}, 'All apps', count), finder),
       list, empty))
 }
 

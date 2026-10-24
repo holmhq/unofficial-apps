@@ -26,8 +26,10 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   the base64 digest with h1:. Exclude listing/ and hidden files; count README
   and PROMPT too. --check detects stale indexes or changed release tags;
   --tag creates missing tags. CI checks then tags versions on main.
-- An App Store-like front page with search (as you type, kept in ?q=), a
-  list/grid switch, a featured app and rows, each app's own
+- An App Store-like front page: a carousel of the featured apps' cards,
+  then all apps with search (as you type, kept in ?q=) and a list/grid
+  switch below it; grid tiles are near square, the icon over its category
+  and a Get icon. Each app's own
   /apps/<app> page: icon/colour, version, size, category, license, swipeable
   screenshots, description, whatsNew, original prompt and source information.
   Read the public repository index with synchronous env.holm.net.fetch,
@@ -200,6 +202,23 @@ owner picked the belt.
 **Iteration 11**, sent while the guide was being finished:
 
 > May be we need a search, grid / list view for the apps; i know its early but as more comes in, this may help?
+
+**Iteration 12**, then a message sent while the agent was working on it:
+
+> Search and grid/list should below the cover!
+> - and the grid icons look terrible; may be we cannot have the descriptions in grid
+> - it should be:
+> icon
+> <category> <install-icon>
+>
+> making it closer to a square aspect ratio
+
+> Can we have a carousel for a few picked apps in cover?
+> - so that the covers of the selected n apps are shown?
+> - say: pastebin/feedback & overlap
+
+feedback was featured alongside pastebin and overlap; the carousel shows
+them in the index's order.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

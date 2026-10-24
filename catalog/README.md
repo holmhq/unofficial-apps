@@ -23,17 +23,27 @@ out of this app's deploy. They are still public source in this repository.
 
 ## What it does
 
-- **Front page:** a search field and a list/grid switch under the heading,
-  a featured app on its own colour, then every app as a row (or a card) with
-  its icon, subtitle, category and a Get button.
+- **Front page:** the cover, then **All apps** with a search field and a
+  list/grid switch beside its heading, then every app as a row or a tile.
+  - **The cover** is each featured app's card on its own colour (icon,
+    title, subtitle, Get and its first screenshot). With more than one
+    featured app it is a carousel: swipe or scroll it, or use its arrows and
+    dots. It moves on every six seconds, waits while a pointer or focus is
+    on it, stops for good once someone moves it, and never moves by itself
+    for reduced motion. Every slide is as tall as the tallest, so nothing
+    below it moves. An app is featured by `"featured": true` in its
+    `listing/listing.json`.
   - **Search** filters as you type, on name, subtitle, description and
     category; every word must match. The query lives in the address
-    (`?q=`), so a search can be shared and Back brings it back; while it is
-    on, the featured app steps aside and the heading counts the matches.
-    `/` jumps to it, Esc clears it, and when nothing matches the page offers
-    to clear it or to build the app with your agent (`/start#build`).
-  - **List or grid**, remembered in the browser. The grid is two columns on
-    a phone.
+    (`?q=`), so a search can be shared and Back brings it back, and the
+    heading counts the matches. The field sits below the cover, which stays
+    put, so typing never moves it. `/` jumps to it, Esc clears it, and when
+    nothing matches the page offers to clear it or to build the app with
+    your agent (`/start#build`).
+  - **List or grid**, remembered in the browser. A row has the icon, name,
+    subtitle, category and Get; a grid tile is near square, the icon over
+    its category and a Get icon, with the name as its label and tooltip.
+    The grid is two columns on a phone.
 - **Get started** at `/start`, linked from the install sheet and from the
   header on every page, where it is a tinted pill with a sparkle and a light
   that sweeps across it now and then (still for reduced motion). It assumes
