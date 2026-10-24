@@ -6,7 +6,11 @@
   "screenshots": [
     {
       "file": "store.webp",
-      "alt": "The front page: search and a list or grid switch, a featured app, and every app with a Get button"
+      "alt": "The front page: the featured apps' covers in a carousel, above every app"
+    },
+    {
+      "file": "grid.webp",
+      "alt": "All apps as a grid in dark mode: square tiles with each app's icon, category and a Get button, under search and the list or grid switch"
     },
     {
       "file": "start.webp",
