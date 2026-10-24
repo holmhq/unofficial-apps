@@ -44,9 +44,10 @@ out of this app's deploy. They are still public source in this repository.
     your agent (`/start#build`).
   - **List or grid**, remembered in the browser. A row has the icon, name,
     subtitle, category and Get. The grid is a ruled table like the facts on
-    an app's page: no boxes, a line under each row and inset dividers
-    between cells, each cell near square with the icon over the name and a
-    Get icon. It is two columns on a phone.
+    an app's page: no boxes, the lines between rows and cells meeting, each
+    near-square cell the icon with the name centred under it and one link
+    to the app's page (Get is there, on its row and on the cover). It is two
+    columns on a phone.
 - **Get started** at `/start`, linked from the install sheet and from the
   header on every page, where it is a tinted pill with a sparkle and a light
   that sweeps across it now and then (still for reduced motion). It assumes

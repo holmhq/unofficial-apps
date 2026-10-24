@@ -319,44 +319,25 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .views svg { width: 1.15rem; height: 1.15rem; }
 
 /* The grid view: a ruled table of cells, like the facts on an app's page.
-   Each cell draws the line below it and the divider to its right, inset like
-   the facts' dividers; the grid clips the ones past its edges. */
+   Each cell draws the line below it and the line to its right, full height so
+   they meet; the grid clips the ones past its edges. */
 .cards {
   list-style: none; margin: 0; padding: 0 0 1px;
   display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
   overflow: hidden;
 }
-.app-card { position: relative; display: grid; gap: 1rem; min-width: 0; padding: 1.5rem 1.1rem 1.1rem; }
+.app-card { position: relative; min-width: 0; }
 .app-card::before { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--rule); }
-.app-card::after { content: ""; position: absolute; right: -1px; top: 1.1rem; bottom: 1.1rem; width: 1px; background: var(--rule); }
+.app-card::after { content: ""; position: absolute; right: -1px; top: 0; bottom: -1px; width: 1px; background: var(--rule); }
 /* nothing to divide from after the last one */
 .app-card:last-child::after { display: none; }
-.app-card-icon { justify-self: center; border-radius: 22%; }
-.app-card-icon .icon { transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-@media (hover: hover) {
-  .app-card:hover .app-card-icon .icon { transform: translateY(-2px) scale(1.04); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .app-card-icon .icon { transition: none; }
-}
-.app-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-width: 0; }
-.app-card-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.02rem; font-weight: 650; letter-spacing: -0.01em; text-decoration: none; }
-.app-card-name:hover { text-decoration: underline; text-underline-offset: 0.18em; }
-.app-card-hidden { font-weight: 400; color: var(--ink-3); }
-.get-icon {
-  flex: none; display: grid; place-items: center;
-  width: 2.25rem; height: 2.25rem; padding: 0;
-  border: 0; border-radius: 50%;
-  background: var(--accent-wash); color: var(--accent); cursor: pointer;
-}
-.get-icon:hover { filter: brightness(0.97); }
-@media (prefers-color-scheme: dark) {
-  .get-icon:hover { filter: brightness(1.15); }
-}
-.get-icon svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.app-card-link { display: grid; justify-items: center; gap: 0.8rem; padding: 1.6rem 0.9rem 1.3rem; text-decoration: none; }
+.app-card-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.02rem; font-weight: 650; letter-spacing: -0.01em; }
+.app-card-link:hover .app-card-name { text-decoration: underline; text-underline-offset: 0.18em; }
+.app-card-hidden { margin-top: -0.6rem; font-size: 0.8rem; color: var(--ink-3); }
 @media (max-width: 36rem) {
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .app-card { padding: 1.25rem 0.85rem 1rem; }
+  .app-card-link { padding: 1.4rem 0.75rem 1.15rem; }
 }
 
 .empty { margin-top: 1.5rem; padding: 1.25rem 1.3rem; border-radius: 16px; border: 1px dashed var(--rule); color: var(--ink-2); }

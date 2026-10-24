@@ -165,15 +165,14 @@ function carousel(apps) {
   return root
 }
 
-// A grid view's cell: the icon, then the name and a Get button as an icon.
-// The icon repeats the name's link for the pointer, so it is skipped by keys.
+// A grid view's cell: the icon with the name centred under it, one link to
+// the app's page, where Get is.
 function card(app) {
-  const href = withRef('/apps/' + app.path)
   return el('li', { class: 'app-card' },
-    el('a', { class: 'app-card-icon', href, 'data-link': true, tabindex: '-1', 'aria-hidden': 'true' }, icon(app, 'l')),
-    el('div', { class: 'app-card-foot' },
-      el('a', { class: 'app-card-name', href, 'data-link': true, title: subtitle(app) }, app.title, app.hidden ? el('span', { class: 'app-card-hidden' }, ' · hidden') : null),
-      el('button', { type: 'button', class: 'get-icon', 'aria-label': 'Get ' + app.title, title: 'Get ' + app.title, onclick: () => openInstall(app) }, glyph(GET))))
+    el('a', { class: 'app-card-link', href: withRef('/apps/' + app.path), 'data-link': true, title: subtitle(app) },
+      icon(app, 'l'),
+      el('span', { class: 'app-card-name' }, app.title),
+      app.hidden && el('span', { class: 'app-card-hidden' }, 'Hidden')))
 }
 
 // Line icons for the view switch and the search field, on a 24-unit grid.
@@ -191,7 +190,6 @@ const LIST = 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01'
 const GRID = 'M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z'
 const LENS = 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4'
 const CROSS = 'M7 7l10 10M17 7 7 17'
-const GET = 'M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14'
 
 // What the search looks in, and whether every word typed is there.
 const haystack = app => [app.title, app.path, subtitle(app), app.description, app.listing && app.listing.category, app.listing && app.listing.description]

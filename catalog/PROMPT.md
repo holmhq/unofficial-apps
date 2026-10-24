@@ -29,8 +29,9 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
 - An App Store-like front page: a slideshow of the featured apps' cards
   (no controls; it holds under the mouse, and a mouse drags it),
   then all apps with search (as you type, kept in ?q=) and a list/grid
-  switch below it; the grid is ruled like the facts strip (no boxes), each
-  near-square cell the icon over the name and a Get icon. Each app's own
+  switch below it; the grid is ruled like the facts strip (no boxes, lines
+  meeting), each near-square cell the icon with its name centred under it,
+  no Get and no hover zoom. Each app's own
   /apps/<app> page: icon/colour, version, size, category, license, swipeable
   screenshots, description, whatsNew, original prompt and source information.
   Read the public repository index with synchronous env.holm.net.fetch,
@@ -240,6 +241,15 @@ them in the index's order.
 The screenshots rounded their own corners and cast a shadow inside a frame
 that clipped square, so the shadow filled the corners; the frame now rounds,
 clips and shadows them.
+
+**Iteration 15**:
+
+> No the icons are getting enlarged on hover, thats so lame!
+> - shall we avoid install/get from listing screen?
+> - so that the names can be shown centerd down the icons?
+> - why is the vertical separators not touching the horizontal separators?
+
+Get stayed on the list view's rows and on the cover.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for
