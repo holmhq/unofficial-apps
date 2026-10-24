@@ -1,0 +1,25 @@
+{
+  "subtitle": "Private chat for the people on your node",
+  "category": "Social",
+  "featured": false,
+  "description": "A messenger for the people who share your Holm node. Pick a username, add friends by theirs, and chat one to one or in groups. Messages, typing and unread counts arrive live, on your phone and your desktop at once.\n\nReply to a message by swiping it, forward it, copy it or delete it for everyone. Send photos, which shrink on your phone before they upload, and videos, audio or any other file up to 16 MB. Links unfold into previews that the server fetches, so the sites you share never see who's reading.\n\nRelay never says whether a username exists: an invite arrives quietly, and you only learn when someone accepts. Invite a friend who isn't here yet with a one-time email link, block anyone, and give contacts your own nicknames and photos. It installs like an app, with light and dark themes and your choice of colour.",
+  "whatsNew": "First release in this store. A new icon and colour, and messages, typing and unread counts now arrive live again.",
+  "screenshots": [
+    {
+      "file": "chats.webp",
+      "alt": "The chat list: a book club group and three friends, with unread counts in violet"
+    },
+    {
+      "file": "group.webp",
+      "alt": "A book club group chat, with one message quoting another as a reply"
+    },
+    {
+      "file": "chat-dark.webp",
+      "alt": "In dark mode, a chat about a Saturday hike, a quoted reply and the friend typing"
+    },
+    {
+      "file": "settings.webp",
+      "alt": "Settings: profile photo and name, light, dark or auto theme, and six accent colours"
+    }
+  ]
+}

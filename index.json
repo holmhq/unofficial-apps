@@ -235,6 +235,54 @@
         ]
       },
       "prompt": "Build a private-first pastebin using only https://holmhq.com/llms-full.txt for\nHolm. Read its v1 sections 9–12 first. Make holm.json, public web/ files and\napi/main.js exporting default { async fetch(request, env) }. Set web.spa\ntrue, use env.holm for storage/auth, return standard Responses and fall\nback to env.holm.web.fetch(request). No build step or third-party runtime CDN;\nvendor the Markdown parser, sanitizer, highlighter and fonts with licenses.\n\n- Make a minimal cyanotype design, light/dark/system themes, excellent on\n  phones and desktop. The page stays still; only the editor scrolls.\n- Paste text/code with syntax highlighting and safe GitHub-flavoured\n  Markdown (Preview/Source), plus images, video, audio or any file. Put the\n  attachment icon at the editor's top right; support drop and paste.\n- Signed-in owners create expiring, one-time or revocable links. Hide their\n  name/avatar by default. A sealed link needs a click to open, so unfurlers\n  cannot burn it; the owner's preview must not burn it. Use a documented DS\n  transaction to claim once; check expiry on access and delete expired blobs\n  then. The guide does not document ifRevision or blob TTL options: do not\n  promise automatic idle cleanup or claim race safety without testing it.\n- Centre a split create button reading “Create [one-time] link [with] my\n  name for [1h] ▾”; crossing out those words toggles them without layout shift.\n- Put pastes, theme and API keys in the avatar menu. Show keys once, store\n  SHA-256 hashes, check ownership on every owner route. Add JSON/multipart\n  HTTP creation and a small POSIX sh CLI using curl/jq. Read form files via\n  request.formData() and arrayBuffer(); do not expose private files directly.\n- Add safe file downloads, no-referrer/noindex, a Holm/source footer, and an\n  optional footer feedback link only if I supply a feedback project.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 pastebin. With my approval, deploy with\nholm @<peer> app deploy pastebin --spec-v1 --host pastebin.<my-domain>.\nNever replace an occupied host or move an older-format app without asking.\nValidation does not run the app: test uploads, expiry, revocation and two\nsimultaneous one-time opens, plus mobile/desktop in light/dark. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in branding."
+    },
+    {
+      "name": "relay",
+      "path": "relay",
+      "version": "0.2.0",
+      "tag": "relay/v0.2.0",
+      "h1": "h1:p/bkDCNB4WmuE594uDc48xSkVn4CX81BnqTYVAt/gKo=",
+      "files": 49,
+      "size": 745251,
+      "title": "Relay",
+      "description": "A private messenger for the people on your Holm node. Add friends by username, chat one to one or in groups, and share photos and files.",
+      "themeColor": "#6a3fe0",
+      "symbol": "M 0 7 L 0 5.5 C 0 2.46243 2.46243 0 5.5 0 L 10.5 0 C 13.53757 0 16 2.46243 16 5.5 L 16 6 L 13 6 C 9.01059 6 5.74868 9.11481 5.51357 13.04515 C 3.87571 14.19677 2.23786 15.34838 0.6 16.5 C 0.57459 14.84811 0.93669 13.00246 1.6863 10.96305 C 0.64679 9.96247 0 8.55677 0 7 Z M 13 20.5 C 9.96243 20.5 7.5 18.03757 7.5 15 L 7.5 13.5 C 7.5 10.46243 9.96243 8 13 8 L 18.5 8 C 21.53757 8 24 10.46243 24 13.5 L 24 15 C 24 16.53994 23.36712 17.93206 22.34728 18.93046 C 23.07413 20.80828 23.42504 22.49812 23.4 24 C 21.53333 22.83333 19.66667 21.66667 17.8 20.5 Z M 11.6 15.7 C 12.40081 15.7 13.05 15.05081 13.05 14.25 C 13.05 13.44919 12.40081 12.8 11.6 12.8 C 10.79919 12.8 10.15 13.44919 10.15 14.25 C 10.15 15.05081 10.79919 15.7 11.6 15.7 Z M 15.75 15.7 C 16.55081 15.7 17.2 15.05081 17.2 14.25 C 17.2 13.44919 16.55081 12.8 15.75 12.8 C 14.94919 12.8 14.3 13.44919 14.3 14.25 C 14.3 15.05081 14.94919 15.7 15.75 15.7 Z M 19.9 15.7 C 20.70081 15.7 21.35 15.05081 21.35 14.25 C 21.35 13.44919 20.70081 12.8 19.9 12.8 C 19.09919 12.8 18.45 13.44919 18.45 14.25 C 18.45 15.05081 19.09919 15.7 19.9 15.7 Z",
+      "demo": "https://relay.zyt.app",
+      "listing": {
+        "subtitle": "Private chat for the people on your node",
+        "category": "Social",
+        "description": "A messenger for the people who share your Holm node. Pick a username, add friends by theirs, and chat one to one or in groups. Messages, typing and unread counts arrive live, on your phone and your desktop at once.\n\nReply to a message by swiping it, forward it, copy it or delete it for everyone. Send photos, which shrink on your phone before they upload, and videos, audio or any other file up to 16 MB. Links unfold into previews that the server fetches, so the sites you share never see who's reading.\n\nRelay never says whether a username exists: an invite arrives quietly, and you only learn when someone accepts. Invite a friend who isn't here yet with a one-time email link, block anyone, and give contacts your own nicknames and photos. It installs like an app, with light and dark themes and your choice of colour.",
+        "whatsNew": "First release in this store. A new icon and colour, and messages, typing and unread counts now arrive live again.",
+        "featured": false,
+        "screenshots": [
+          {
+            "path": "listing/chats.webp",
+            "alt": "The chat list: a book club group and three friends, with unread counts in violet",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/group.webp",
+            "alt": "A book club group chat, with one message quoting another as a reply",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/chat-dark.webp",
+            "alt": "In dark mode, a chat about a Saturday hike, a quoted reply and the friend typing",
+            "width": 780,
+            "height": 1688
+          },
+          {
+            "path": "listing/settings.webp",
+            "alt": "Settings: profile photo and name, light, dark or auto theme, and six accent colours",
+            "width": 780,
+            "height": 1688
+          }
+        ]
+      },
+      "prompt": "Build \"relay\", a private messenger for the members of my Holm node, using\nonly https://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\nthe common recipes first. Make holm.json, public web/ files and api/main.js\nexporting default { async fetch(request, env) }. Set web.spa true, use\nenv.holm for storage, sign-in, images, email, outbound HTTP and realtime,\nreturn standard Responses and fall back to env.holm.web.fetch(request). No\nbuild step or third-party runtime CDN; vendor fonts and icons with licences.\n\n- After sign-in, claim a username. Add people by username without revealing\n  whether it exists: they accept, decline or block, and the sender learns only\n  of an acceptance. Email a one-time join link to someone not here yet.\n- One-to-one chats and groups with an optional handle in the address. Text,\n  reply with a quote (menu or swipe), copy, forward and delete for everyone.\n  Photos shrink in the browser before upload; any other file up to the node's\n  form-file limit. Server-fetched link previews. Paginated history, search,\n  exact unread counts, typing, nicknames and photos for contacts.\n- Send live events to each member on their own channel, never per room. If\n  the guide offers no way to admit only that member to a private: channel,\n  name a plain channel with a random secret given only to that member, and\n  say so in the README.\n- A phone-first app shell where only panels scroll: Chats, Add, Friends,\n  Settings tabs, light/dark/auto themes and accent colours, sounds,\n  in-app notifications, an installable manifest and service worker. Follow\n  the guide's \"feel finished\" and \"feel native\" recipes, and draw one\n  holm.symbol.svg for every icon.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 relay. With my approval, deploy with\nholm @<peer> app deploy relay --spec-v1 --host relay.<my-domain>. Never\nreplace an occupied host without asking, and ask before granting email or\noutbound HTTP. Validation does not run the app: test two and three members\nin separate browsers, invites, a group, live delivery both ways, uploads,\nand mobile/desktop in light/dark. Report gaps honestly. Inspect the target\nsettings schema before setting sign-in branding."
     }
   ]
 }

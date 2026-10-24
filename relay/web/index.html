@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system" data-accent="relay">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <!-- viewport-fit=cover makes env(safe-area-inset-*) real in the installed app; styles.css
+       applies the bottom inset only in standalone mode, where Safari's bar doesn't cover it. -->
+  <!-- anti-FOUC: resolve theme mode + accent before first paint -->
+  <script>(function(){
+    try {
+      var mode = localStorage.getItem('relay-theme') || 'system';
+      var accent = localStorage.getItem('relay-accent') || 'relay';
+      var root = document.documentElement;
+      root.setAttribute('data-theme', mode);
+      root.setAttribute('data-accent', accent);
+      var sysDark = matchMedia('(prefers-color-scheme: dark)').matches;
+      var dark = mode === 'dark' || (mode === 'system' && sysDark);
+      // paint background immediately to avoid white flash
+      var bg = dark ? '#08080c' : '#f3f3f6';
+      document.documentElement.style.background = bg;
+    } catch (e) {}
+  })();</script>
+  <meta name="theme-color" content="#f3f3f6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#08080c" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Relay">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="color-scheme" content="light dark">
+  <title>Relay</title>
+  <link rel="preload" href="/assets/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <!-- boot splash, replaced by the app shell once JS mounts -->
+    <div class="boot">
+      <img src="/favicon.svg" alt="" class="boot-mark" width="76" height="76">
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+  <!-- Feedback goes to the owner's feedback app. A copy of its embed.js lives here because Holm
+       pages run only their own scripts; Settings → Send feedback opens the form. -->
+  <script src="/vendor/feedback/embed.js" data-project="n6yyajpz" data-origin="https://feedback.zyt.app" data-color="#6a3fe0" data-button="none" async></script>
+</body>
+</html>

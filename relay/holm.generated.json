@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:c03965d6883969a74c0f254ee9872eb92a8f37edef32239e9236ddcf6fc7010e",
+  "inputs": {
+    "symbolHash": "sha256:ef881ea346b14173908ea3d96e31cb657d6b917fc453a980eb9b9776562803ae",
+    "themeColor": "#6a3fe0",
+    "name": "Relay",
+    "subtitle": "A private messenger for the people on your Holm node. Add friends by username, chat one to one or in groups, and share photos and files.",
+    "iconStyle": "glass"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.258.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:90eb649da2b77c2cd8c062593dde25b6b5a367d5e97301d1d8f1de007efeaefa",
+    "web/apple-touch-icon.png": "sha256:e9033f240dcb72d0f58c7c311c3e38c0c2ff7bb127ab0dfd568a81a4910b65dc",
+    "web/favicon.ico": "sha256:316c3b6ec56b6cd1930c697ddb46d7d9d221ed01b116dba6e6d5f7887de08159",
+    "web/favicon.png": "sha256:58f5f20d81612192d3d64512edd3463cff04ea9a9a302ffdaf20c1376bb2cdbd",
+    "web/favicon.svg": "sha256:a825e9a5501a68f01719719d6c9ac0d1c02373d27ae36d5336c09d8ca869006f",
+    "web/icon-192.png": "sha256:2cd18fb74261498020db66fc50bb097d768ee539fe2b63ae90ec39ca1df7b23b",
+    "web/icon-512.png": "sha256:75c806e4fa14175121d1747272ba45942a1d3a1976ca6559a15c86878f67afe8",
+    "web/icon-maskable-512.png": "sha256:58995fbd3c1ddccb8b3d0b75069b71a9ae6909517ad49787d83c3dfdd21dbd17",
+    "web/manifest.webmanifest": "sha256:8b0e695b906c92cb4c4a546bac21b810a125860645dc9f98d07f16afa5e866f0",
+    "web/social_preview.png": "sha256:35afda864febc22bfa163a4be083adf93cf412f467a631c1a824d679566d6051"
+  }
+}

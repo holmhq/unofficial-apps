@@ -1,0 +1,21 @@
+{
+  "name": "relay",
+  "version": "0.2.0",
+  "title": "Relay",
+  "shortName": "Relay",
+  "description": "A private messenger for the people on your Holm node. Add friends by username, chat one to one or in groups, and share photos and files.",
+  "themeColor": "#6a3fe0",
+  "web": {
+    "spa": true
+  },
+  "publish": {
+    "exclude": [
+      "/listing/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://relay.zyt.app"
+    }
+  }
+}

@@ -45,6 +45,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 | [`pastebin`](pastebin/) | [pastebin.zyt.app](https://pastebin.zyt.app) | Expiring, one-time and revocable links; media; API keys and a CLI |
 | [`feedback`](feedback/) | [feedback.zyt.app](https://feedback.zyt.app) | Feedback for websites, shops and events: a button, a QR code page, one inbox, stats |
 | [`overlap`](overlap/) | not deployed yet | Find a time for a group: paint free times, a live heatmap, sign-in, realtime, sound and motion |
+| [`relay`](relay/) | [relay.zyt.app](https://relay.zyt.app) | A private messenger: usernames that reveal nothing, groups, files, link previews, realtime |
 
 ## Layout of an app
 
