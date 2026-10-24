@@ -42,10 +42,15 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   <host>, a clone-a-tag holm app deploy <app> --spec-v1, and an agent prompt
   following the app README.
 - A /start guide, linked from the header, the front page and the sheet, for
-  someone with no node: what Holm is, why a node puts every app here one
-  command away and any app they can describe one deploy away, setup tabs for
-  this computer, a server and an agent (commands from sections 4, 5 and 8),
-  building from a prompt, what Holm gives an app, and links to holmhq.com.
+  someone with no node who will hand the work to a coding agent, never a
+  terminal: what Holm is, why a node puts every app here one request away,
+  then pick an app and where it runs (this computer, a server, an existing
+  node) for a prompt to paste, what the agent does and asks (the licence is
+  always the person's to accept), and the commands folded away. Then
+  building from a prompt, what Holm gives an app, links to holmhq.com.
+- web/llms.txt for that agent: ground rules, the index, and setup, install,
+  sign-in and server steps citing sections 4, 5, 8, 9 and 13 of the guide.
+  The sheet's agent prompt comes first.
 - Sign in through Holm. Signed-in people may rate/review once per app;
   edits wait for approval too. /admin hides apps, moderates reviews, shows
   rough daily views/Get/copy counts in KV and lets me change the tint.
@@ -161,6 +166,10 @@ instead.
 
 `holm app install` had shipped by then, so the sheet's coming-soon tab
 became its first, working way.
+
+**Iteration 8**:
+
+> I think we should design the guide such that, we assume no human will run it but an agent will only do it
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

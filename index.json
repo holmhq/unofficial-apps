@@ -5,11 +5,11 @@
     {
       "name": "catalog",
       "path": "catalog",
-      "version": "0.6.0",
-      "tag": "catalog/v0.6.0",
-      "h1": "h1:R5JOLbhZW+QCyXcgV3S7M3CqpwiySLjBdYeqYiFLSIw=",
-      "files": 36,
-      "size": 476858,
+      "version": "0.7.0",
+      "tag": "catalog/v0.7.0",
+      "h1": "h1:cTw+BtcSksQh+qoH7hp5PxNFiMfvEiaAY1ThW0se/hw=",
+      "files": 37,
+      "size": 486729,
       "title": "catalog",
       "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
       "themeColor": "#0e7c66",
@@ -19,7 +19,7 @@
         "subtitle": "A store for app repositories",
         "category": "Developer tools",
         "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button. A Get started guide shows newcomers how to set up a node of their own.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour, and Holm's analytics from the avatar menu.\n\nIt reads the repository's index.json, the same file holm app install uses to pick and check a release. Point it at your own repository to give your apps a store of their own.",
-        "whatsNew": "New to Holm? A Get started guide shows how to set up a node in about ten minutes, why that puts every app here one command away, and what Holm gives an app. Get now installs with holm app install, the footer stays at the bottom of the screen under frosted glass, and admins find Analytics in the avatar menu.",
+        "whatsNew": "The Get started guide is written for your coding agent to follow, not for you to type: pick an app and where it runs, copy one prompt, and see what the agent will do and what it will ask you. Agents read the store's own llms.txt, and the Get sheet's agent prompt now comes first. Get installs with holm app install, the footer stays at the bottom under frosted glass, and admins find Analytics in the avatar menu.",
         "featured": false,
         "screenshots": [
           {
@@ -31,10 +31,10 @@
           },
           {
             "path": "listing/start.webp",
-            "alt": "The Get started guide: what Holm is, with a node holding every app in the store",
+            "alt": "The Get started guide: one prompt to copy, beside the conversation it starts with your coding agent",
             "width": 780,
             "height": 1688,
-            "hash": "ccbad526e9f2"
+            "hash": "d21b2a50224e"
           },
           {
             "path": "listing/app.webp",
@@ -52,10 +52,10 @@
           },
           {
             "path": "listing/install.webp",
-            "alt": "The install sheet: one holm app install command, written for your node",
+            "alt": "The install sheet: a prompt for your coding agent, written for your node",
             "width": 780,
             "height": 1688,
-            "hash": "d8cdf420cc6a"
+            "hash": "fdf40e7db8cd"
           },
           {
             "path": "listing/admin.webp",
@@ -72,7 +72,7 @@
           "hash": "d51ac23862ba"
         }
       },
-      "prompt": "Build a catalog as a Holm App Spec v1 app using only\nhttps://holmhq.com/llms-full.txt for Holm; read sections 9–12 first. Use catalog/\nwith holm.json, public web/ files, api/main.js exporting\ndefault { async fetch(request, env) }, standard Request/Response, env.holm\nstorage/auth and env.holm.web.fetch(request) fallback. No build step or\nthird-party runtime CDN; vendor fonts and any libraries with licenses.\n\n- Define these repository conventions, not a claimed Holm store protocol:\n  each top-level app has holm.json version, holm.symbol.svg (one black path,\n  no strokes, 0 0 24 24) and listing/listing.json with subtitle, category,\n  description, whatsNew and sample screenshots. Write a dependency-free\n  Node scripts/index.mjs emitting root index.json: name/path/version,\n  <app>/v<version> tag, h1 SHA-256 file fingerprint, size/count, identity,\n  symbol path, listing and PROMPT text. Hash sorted app-relative paths and\n  file SHA-256 values, then hash those “<hex>  <path>\\n” lines and prefix\n  the base64 digest with h1:. Exclude listing/ and hidden files; count README\n  and PROMPT too. --check detects stale indexes or changed release tags;\n  --tag creates missing tags. CI checks then tags versions on main.\n- An App Store-like front page with a featured app and rows, each app's own\n  /apps/<app> page: icon/colour, version, size, category, license, swipeable\n  screenshots, description, whatsNew, original prompt and source information.\n  Read the public repository index with synchronous env.holm.net.fetch,\n  not global fetch; cache it in KV and keep the last good index on failure.\n- Make it fast: the handler serves every page with the index and the viewer\n  embedded, so the first paint waits on no API call (Holm serves a matching\n  static file first, so don't name the shell index.html), and preload every\n  module. Give each\n  /apps/<app> page that app's title, description and listing/cover.png as\n  its link preview (a 1200x630 card the repo draws with a script).\n- Get opens a sheet remembering my peer/domain, with tabs for\n  holm @<peer> app install github.com/<org>/<repo>/<app>@v<version> --host\n  <host>, a clone-a-tag holm app deploy <app> --spec-v1, and an agent prompt\n  following the app README.\n- A /start guide, linked from the header, the front page and the sheet, for\n  someone with no node: what Holm is, why a node puts every app here one\n  command away and any app they can describe one deploy away, setup tabs for\n  this computer, a server and an agent (commands from sections 4, 5 and 8),\n  building from a prompt, what Holm gives an app, and links to holmhq.com.\n- Sign in through Holm. Signed-in people may rate/review once per app;\n  edits wait for approval too. /admin hides apps, moderates reviews, shows\n  rough daily views/Get/copy counts in KV and lets me change the tint.\n  Authorize each route with documented isAppOwner()/isAppAdmin() checks.\n  The guide does not document isNodeOwner()/isNodeAdmin(): do not assume\n  those methods or promise node-role access for a fresh build.\n- The guide does not document binary net.fetch responses: do not invent\n  responseType: 'file'. Keep screenshots as public static files in web/\n  until a documented, tested proxy/cache path is available; disclose that\n  gap. Make light/dark mobile/desktop layouts, no sideways scrolling, an\n  avatar menu with Analytics from __HOLM_SURFACES__, and a small Holm/source\n  footer that stays at the bottom over the scrolling page, frosted.\n\nRun holm app validate --spec-v1 catalog. With my approval, deploy with\nholm @<peer> app deploy catalog --spec-v1 --host unofficial.<my-domain>.\nCheck the peer/unused host and explicitly allow the repository's egress host;\nask before replacing a host or moving an older-format app. Inspect target\nsettings/command help before sign-in branding. Validation is not execution:\ntest index fetch/failure, screenshots, ownership/admin denials, moderation,\ncopied deploy commands, mobile/desktop and light/dark. Report all gaps."
+      "prompt": "Build a catalog as a Holm App Spec v1 app using only\nhttps://holmhq.com/llms-full.txt for Holm; read sections 9–12 first. Use catalog/\nwith holm.json, public web/ files, api/main.js exporting\ndefault { async fetch(request, env) }, standard Request/Response, env.holm\nstorage/auth and env.holm.web.fetch(request) fallback. No build step or\nthird-party runtime CDN; vendor fonts and any libraries with licenses.\n\n- Define these repository conventions, not a claimed Holm store protocol:\n  each top-level app has holm.json version, holm.symbol.svg (one black path,\n  no strokes, 0 0 24 24) and listing/listing.json with subtitle, category,\n  description, whatsNew and sample screenshots. Write a dependency-free\n  Node scripts/index.mjs emitting root index.json: name/path/version,\n  <app>/v<version> tag, h1 SHA-256 file fingerprint, size/count, identity,\n  symbol path, listing and PROMPT text. Hash sorted app-relative paths and\n  file SHA-256 values, then hash those “<hex>  <path>\\n” lines and prefix\n  the base64 digest with h1:. Exclude listing/ and hidden files; count README\n  and PROMPT too. --check detects stale indexes or changed release tags;\n  --tag creates missing tags. CI checks then tags versions on main.\n- An App Store-like front page with a featured app and rows, each app's own\n  /apps/<app> page: icon/colour, version, size, category, license, swipeable\n  screenshots, description, whatsNew, original prompt and source information.\n  Read the public repository index with synchronous env.holm.net.fetch,\n  not global fetch; cache it in KV and keep the last good index on failure.\n- Make it fast: the handler serves every page with the index and the viewer\n  embedded, so the first paint waits on no API call (Holm serves a matching\n  static file first, so don't name the shell index.html), and preload every\n  module. Give each\n  /apps/<app> page that app's title, description and listing/cover.png as\n  its link preview (a 1200x630 card the repo draws with a script).\n- Get opens a sheet remembering my peer/domain, with tabs for\n  holm @<peer> app install github.com/<org>/<repo>/<app>@v<version> --host\n  <host>, a clone-a-tag holm app deploy <app> --spec-v1, and an agent prompt\n  following the app README.\n- A /start guide, linked from the header, the front page and the sheet, for\n  someone with no node who will hand the work to a coding agent, never a\n  terminal: what Holm is, why a node puts every app here one request away,\n  then pick an app and where it runs (this computer, a server, an existing\n  node) for a prompt to paste, what the agent does and asks (the licence is\n  always the person's to accept), and the commands folded away. Then\n  building from a prompt, what Holm gives an app, links to holmhq.com.\n- web/llms.txt for that agent: ground rules, the index, and setup, install,\n  sign-in and server steps citing sections 4, 5, 8, 9 and 13 of the guide.\n  The sheet's agent prompt comes first.\n- Sign in through Holm. Signed-in people may rate/review once per app;\n  edits wait for approval too. /admin hides apps, moderates reviews, shows\n  rough daily views/Get/copy counts in KV and lets me change the tint.\n  Authorize each route with documented isAppOwner()/isAppAdmin() checks.\n  The guide does not document isNodeOwner()/isNodeAdmin(): do not assume\n  those methods or promise node-role access for a fresh build.\n- The guide does not document binary net.fetch responses: do not invent\n  responseType: 'file'. Keep screenshots as public static files in web/\n  until a documented, tested proxy/cache path is available; disclose that\n  gap. Make light/dark mobile/desktop layouts, no sideways scrolling, an\n  avatar menu with Analytics from __HOLM_SURFACES__, and a small Holm/source\n  footer that stays at the bottom over the scrolling page, frosted.\n\nRun holm app validate --spec-v1 catalog. With my approval, deploy with\nholm @<peer> app deploy catalog --spec-v1 --host unofficial.<my-domain>.\nCheck the peer/unused host and explicitly allow the repository's egress host;\nask before replacing a host or moving an older-format app. Inspect target\nsettings/command help before sign-in branding. Validation is not execution:\ntest index fetch/failure, screenshots, ownership/admin denials, moderation,\ncopied deploy commands, mobile/desktop and light/dark. Report all gaps."
     },
     {
       "name": "feedback",

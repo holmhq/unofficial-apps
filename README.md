@@ -11,8 +11,9 @@ The prompts are the point. They show how little you need to say to get a
 finished, deployed app.
 
 New to Holm? The store's guide at
-[unofficial.zyt.app/start](https://unofficial.zyt.app/start) sets up a node
-in about ten minutes, then installs any app here with one command.
+[unofficial.zyt.app/start](https://unofficial.zyt.app/start) gives you one
+prompt for your coding agent, which sets up a node and installs any app
+here; agents follow [unofficial.zyt.app/llms.txt](https://unofficial.zyt.app/llms.txt).
 
 ## Quick start
 

@@ -27,20 +27,28 @@ out of this app's deploy. They are still public source in this repository.
   on its own colour, then every app as a row with its icon, subtitle,
   category and a Get button.
 - **Get started** at `/start`, linked from the header on every page, the
-  front page and the install sheet. One long page:
-  - what Holm is, with a picture of a node holding every app in the store;
-  - why a node puts every app here one `holm app install` away, and any app
-    you can describe one deploy away;
-  - setting one up, as tabs: **This computer** (install the CLI, read the
-    licence and create a node, start it, install an app you pick, with the
-    address to open), **A server** (DNS, the service installer and a peer,
-    written for the domain you type), and **An agent** (a prompt to paste);
+  front page and the install sheet. It assumes the reader never types a
+  command: a coding agent does the work, and the reader answers what is
+  theirs to decide. One long page:
+  - what Holm is, beside the conversation the setup prompt starts, and a
+    Copy the prompt button;
+  - why a node puts every app here one request away, and any app you can
+    describe too;
+  - **Hand it to your agent:** pick an app, then where it runs (**This
+    computer**, **A server** for the domain you type, or **I have Holm**).
+    Each gives the prompt to paste, what the agent will do, what it will ask
+    you (the licence, a password to keep, SSH, DNS records), and, folded
+    away, the commands it runs;
   - building your own from a prompt, with an example;
   - twelve things Holm gives every app, each with the API that provides it;
-  - links back to holmhq.com, the public reference and the licence.
-
-  Its commands follow sections 4, 5, 8 and 9 of
-  <https://holmhq.com/llms-full.txt>.
+  - links back to holmhq.com, the public reference, the licence and
+    `/llms.txt`.
+- **`/llms.txt`:** the agent's side of the guide. The prompts send the agent
+  here: ground rules (never accept the licence for the person, keep secrets
+  out of files, check the peer and host first), the app list in `index.json`,
+  and the steps for a local node, a server, installing, sign-in and building
+  a new app, each naming its section of <https://holmhq.com/llms-full.txt>.
+  The store's pages need JavaScript, so their `<noscript>` points agents here.
 - **App pages** at `/apps/<app>`:
   - the icon, title, subtitle, Get and a link to the live copy;
   - a strip of facts: version, size, category, license;
@@ -51,13 +59,14 @@ out of this app's deploy. They are still public source in this repository.
 - **The install sheet:** type your peer and domain once and every command is
   written for your node, with your parts highlighted; the guide shares them.
   Three ways, as tabs; the one you pick is remembered:
+  - **Ask an agent** (first): a prompt with the install command, the app's
+    README and `/llms.txt`.
   - **One command:** `holm app install github.com/holmhq/unofficial-apps/<app>@v<version> --host <host>`
     (Holm 0.250 or newer). Holm fetches that release tag, checks it against
     the repository's `index.json` fingerprint and deploys it; installing a
     newer version on the same host updates the same app and keeps its data.
   - **From source:** clone the release tag and deploy the app folder with
     `--spec-v1`.
-  - **Ask an agent:** a prompt with the install command and the app's README.
   - A link for anyone without a node yet goes to the guide.
 - **Accounts:** an avatar circle at the top right signs people in through
   Holm's hosted sign-in page, shown in an overlay so nobody loses their
@@ -108,6 +117,7 @@ off and the handler serves every page. Other paths go to
 holm.json           name, version, colour, font caching, store metadata
 web/                public files, served as-is:
   shell.html        page shell, module preloads, install <dialog>, feedback tag
+  llms.txt          instructions for coding agents
   src/app.js        router, front page and app pages
   src/install.js    the install sheet and its commands
   src/start.js      the Get started guide at /start

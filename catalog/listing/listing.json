@@ -2,7 +2,7 @@
   "subtitle": "A store for app repositories",
   "category": "Developer tools",
   "description": "The store you're looking at. It lists every app in a repository of Holm apps, gives each one its own page with screenshots, ratings and reviews, and the prompt that built it, and installs it on your node from a Get button. A Get started guide shows newcomers how to set up a node of their own.\n\nSign in to review an app; reviews appear once an admin approves them. The node's owner and admins get an admin page to show or hide apps, see how often each is viewed and installed, approve reviews and pick the store's colour, and Holm's analytics from the avatar menu.\n\nIt reads the repository's index.json, the same file holm app install uses to pick and check a release. Point it at your own repository to give your apps a store of their own.",
-  "whatsNew": "New to Holm? A Get started guide shows how to set up a node in about ten minutes, why that puts every app here one command away, and what Holm gives an app. Get now installs with holm app install, the footer stays at the bottom of the screen under frosted glass, and admins find Analytics in the avatar menu.",
+  "whatsNew": "The Get started guide is written for your coding agent to follow, not for you to type: pick an app and where it runs, copy one prompt, and see what the agent will do and what it will ask you. Agents read the store's own llms.txt, and the Get sheet's agent prompt now comes first. Get installs with holm app install, the footer stays at the bottom under frosted glass, and admins find Analytics in the avatar menu.",
   "screenshots": [
     {
       "file": "store.webp",
@@ -10,7 +10,7 @@
     },
     {
       "file": "start.webp",
-      "alt": "The Get started guide: what Holm is, with a node holding every app in the store"
+      "alt": "The Get started guide: one prompt to copy, beside the conversation it starts with your coding agent"
     },
     {
       "file": "app.webp",
@@ -22,7 +22,7 @@
     },
     {
       "file": "install.webp",
-      "alt": "The install sheet: one holm app install command, written for your node"
+      "alt": "The install sheet: a prompt for your coding agent, written for your node"
     },
     {
       "file": "admin.webp",

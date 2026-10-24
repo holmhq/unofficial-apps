@@ -591,25 +591,30 @@ a.button { display: inline-flex; align-items: center; gap: 0.45rem; text-decorat
 .guide-hero .lede a { color: var(--ink); }
 .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; margin-top: 1.6rem; }
 
-.node-art {
-  margin: 0; padding: 1.15rem 1.15rem 1rem;
-  border-radius: 28px; border: 1px solid var(--rule);
-  background: linear-gradient(160deg, var(--accent-wash), var(--sheet) 70%);
+.hero-note { margin: 0.9rem 0 0; font-size: 0.92rem; color: var(--ink-3); }
+
+.chat {
+  margin: 0; padding: 1rem 1rem 1.1rem;
+  border-radius: 24px; border: 1px solid var(--rule);
+  background: linear-gradient(165deg, var(--accent-wash), var(--sheet) 65%);
   box-shadow: var(--lift);
 }
-.node-bar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.1rem; font-size: 0.85rem; font-weight: 600; color: var(--ink-2); }
-.live { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #2bb673; box-shadow: 0 0 0 3px color-mix(in oklab, #2bb673 25%, transparent); }
-.node-art ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem 0.5rem; }
-.node-art li { display: grid; justify-items: center; gap: 0.4rem; min-width: 0; }
-.node-art li > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; color: var(--ink-2); }
-.node-art .yours .icon { background: none; box-shadow: none; border: 1.5px dashed var(--ink-3); color: var(--ink-3); }
-.node-art .yours .glyph { width: 45%; height: 45%; stroke-width: 2; }
-.node-file { display: flex; align-items: center; gap: 0.45rem; margin: 1.1rem 0 0; padding-top: 0.85rem; border-top: 1px solid var(--rule); font-size: 0.8rem; color: var(--ink-3); }
-.node-file .glyph { flex: none; width: 1rem; height: 1rem; }
-.node-file code { color: var(--ink-2); }
+.chat figcaption { display: flex; align-items: center; gap: 0.5rem; padding: 0 0.25rem 0.85rem; font-size: 0.82rem; font-weight: 600; color: var(--ink-2); }
+.live { flex: none; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #2bb673; box-shadow: 0 0 0 3px color-mix(in oklab, #2bb673 25%, transparent); }
+.chat-turns { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+.turn { display: grid; gap: 0.2rem; max-width: 92%; }
+.turn .who { font: 400 0.7rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.turn p { margin: 0; padding: 0.6rem 0.8rem; border-radius: 14px; font-size: 0.86rem; line-height: 1.5; overflow-wrap: anywhere; }
+.turn.from-you { justify-self: end; justify-items: end; }
+.turn.from-you p { background: var(--accent); color: var(--paper); border-bottom-right-radius: 4px; }
+.turn.from-agent p { background: var(--paper); border: 1px solid var(--rule); border-bottom-left-radius: 4px; }
+.chat-app { display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle; }
+.chat-app strong { font-weight: 600; }
+.chat-icons { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; vertical-align: middle; margin-top: 0.35rem; }
+.chat .icon-xs { --size: 1.35rem; }
 @media (max-width: 44rem) {
   .guide-hero { grid-template-columns: 1fr; gap: 2rem; }
-  .node-art { max-width: 22rem; }
+  .chat { max-width: 28rem; }
 }
 
 .guide-section { margin-top: 4rem; }
@@ -627,38 +632,47 @@ a.button { display: inline-flex; align-items: center; gap: 0.45rem; text-decorat
   .why { grid-template-columns: 1fr; }
 }
 
-#setup .tabs { margin-top: 1.5rem; }
-#setup .panel { padding-top: 1.5rem; }
-#setup .panel > p { font-size: 0.95rem; max-width: 40em; }
-#setup .panel > p + p { margin-top: 0.6rem; }
-#setup .panel > .command { margin-top: 0; }
-#setup .node { margin: 0 0 1.75rem; max-width: 34rem; }
+#setup .tabs { margin-top: 0; }
+#setup .panel { padding-top: 1.25rem; }
+#setup .node { margin: 0 0 1.25rem; max-width: 34rem; }
 
-.steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
-.step { position: relative; counter-increment: step; padding: 0 0 2rem 3.25rem; }
-.step::before {
-  content: counter(step);
-  position: absolute; left: 0; top: -0.1rem;
-  width: 2.1rem; height: 2.1rem; border-radius: 50%;
+.choose { margin: 1.5rem 0 0.6rem; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+#setup .picker { margin-bottom: 0; }
+
+.plan { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 2rem; margin-top: 1.5rem; }
+.plan h3 { margin-bottom: 0.6rem; }
+.does { list-style: none; margin: 0; padding: 0; counter-reset: does; display: grid; gap: 0.55rem; }
+.does li { position: relative; counter-increment: does; padding-left: 2.1rem; font-size: 0.95rem; color: var(--ink-2); }
+.does li::before {
+  content: counter(does);
+  position: absolute; left: 0; top: 0.05rem;
+  width: 1.45rem; height: 1.45rem; border-radius: 50%;
   display: grid; place-items: center;
-  background: var(--accent); color: var(--paper);
-  font-weight: 700; font-size: 0.95rem;
+  background: var(--accent-wash); color: var(--accent);
+  font-size: 0.78rem; font-weight: 700;
 }
-.step::after { content: ""; position: absolute; left: calc(1.05rem - 1px); top: 2.4rem; bottom: 0.45rem; width: 2px; border-radius: 2px; background: var(--rule); }
-.step:last-child { padding-bottom: 0; }
-.step:last-child::after { display: none; }
-.step h3 { margin-bottom: 0.7rem; }
-.step > p { margin: 0.7rem 0 0; font-size: 0.95rem; color: var(--ink-2); max-width: 40em; }
-.step > p.lead-in { margin: 0 0 0.6rem; }
-.step > div > p { margin: 0.7rem 0 0; font-size: 0.95rem; color: var(--ink-2); }
-.step a { overflow-wrap: anywhere; }
-@media (max-width: 30rem) {
-  .step { padding-left: 2.75rem; }
-  .step::before { width: 1.85rem; height: 1.85rem; font-size: 0.88rem; }
-  .step::after { left: calc(0.925rem - 1px); top: 2.15rem; }
+.asks { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+.asks li { display: flex; gap: 0.65rem; font-size: 0.95rem; color: var(--ink-2); }
+.asks .glyph { flex: none; width: 1.3rem; height: 1.3rem; margin-top: 0.1rem; color: var(--planned); }
+@media (max-width: 44rem) {
+  .plan { grid-template-columns: 1fr; }
 }
 
-.picker { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem; }
+.under { margin-top: 1.5rem; border-top: 1px solid var(--rule); }
+.under summary {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.85rem 0 0; cursor: pointer; list-style: none;
+  font-size: 0.92rem; font-weight: 600; color: var(--ink-2);
+}
+.under summary::-webkit-details-marker { display: none; }
+.under summary::before { content: ""; width: 0.45rem; height: 0.45rem; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform 150ms; }
+.under[open] summary::before { transform: rotate(45deg); }
+.under summary:hover { color: var(--ink); }
+.under > p { margin: 0.6rem 0 0.8rem; font-size: 0.9rem; color: var(--ink-3); max-width: 40em; }
+.under .command + .command { margin-top: 0.75rem; }
+@media (prefers-reduced-motion: reduce) { .under summary::before { transition: none; } }
+
+.picker { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .picker button {
   display: inline-flex; align-items: center; gap: 0.5rem;
   padding: 0.3rem 0.85rem 0.3rem 0.3rem;

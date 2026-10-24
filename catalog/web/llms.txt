@@ -1,0 +1,87 @@
+# Unofficial Holm apps
+
+> A store for the open-source apps in https://github.com/holmhq/unofficial-apps, each built by a
+> coding agent from a short prompt. They run on Holm: one program and one SQLite database that
+> host websites and apps, with sign-in, storage, realtime, email and AI built in. This file is
+> for the coding agent a person asked to set up Holm or install these apps. Holm's own reference,
+> https://holmhq.com/llms-full.txt, is the source for every Holm command; read the sections named
+> below before you run them.
+
+## Ground rules
+
+- You run the commands; the person decides. Ask them only for what is theirs to give: their
+  acceptance of the licence, a domain, access to a server, DNS changes, sign-in credentials.
+- Never accept the Holm Usage License for them. Show it (`holm license show`, or
+  https://license.holmhq.com/v1/), and pass `--accept-license` only after they say they accept.
+- Keep passwords, tokens and keys out of files, logs and summaries. Show a generated password
+  to the person once, for them to keep.
+- Check before you change anything: the peer (`holm peer list`) and that the host you will use is
+  free (`holm @<peer> host list --limit 1000`). Use `--force` only to update an app you installed
+  for them. Holm is pre-1.0: check `holm --version` against the reference.
+- When you finish, give the person the app's address and say what is left for them, if anything.
+
+## The apps
+
+The repository's index lists every app with its title, description, version and release tag:
+https://raw.githubusercontent.com/holmhq/unofficial-apps/main/index.json (`apps[].path` is the
+name to install). Each app's README says what it needs after installing, such as sign-in branding
+or an outbound host to allow:
+https://github.com/holmhq/unofficial-apps/blob/main/<app>/README.md
+
+## Set up Holm on the person's computer (reference section 4)
+
+1. If `holm --version` fails, install the CLI with
+   `curl -fsSL https://holmhq.com/install.sh | bash -s -- --mode cli` and put `~/.local/bin` on
+   PATH. Linux or macOS, amd64 or arm64.
+2. If `holm peer list` already shows a healthy `local` peer, there is a node: go to step 5.
+3. Show the licence and wait for their answer. Run `holm server init --username <name>
+   --password '<strong password>' --domain holm.localhost` without `--accept-license` first: it
+   changes nothing and prints the exact value to pass. Once they accept, run it again with
+   `--accept-license <that value>`. It creates `~/.holm/data.db` and never overwrites a node.
+4. Start the node in the background, then check it:
+   `nohup holm start --runtime-mode manual > ~/.holm/holm.log 2>&1 &` and `holm status`.
+   It registers itself as the `local` peer.
+5. Install the app they asked for (below) with `--host <app>.holm.localhost`. Its address is
+   `http://<app>.holm.localhost:4698`; Chrome, Firefox and Edge open it with no DNS setup.
+
+## Install an app (Holm 0.250 or newer, reference section 9)
+
+    holm @<peer> app install github.com/holmhq/unofficial-apps/<app> --host <host>
+
+With no `@<ref>`, Holm installs the release tag that index.json names, checks its files against
+the index's `h1` fingerprint and pins them; `@v<version>` picks a release. Installing a newer
+version on the same host updates the same app and keeps its data. It prints the app id: use it
+for the README's follow-up steps, then open the address and check the app answers.
+
+On an older node, clone the release tag and deploy the folder:
+`git clone --depth 1 --branch <app>/v<version> https://github.com/holmhq/unofficial-apps`, then
+`holm @<peer> app deploy <app> --spec-v1 --host <host>` from the clone.
+
+## Sign-in (reference section 13)
+
+Most of these apps let people sign in, and a new node has no sign-in method. Tell the person, and
+offer to add one: `holm auth provider` supports Google, GitHub, Discord and Microsoft, with a
+client id and secret that they create with that provider. Never invent credentials.
+
+## Put Holm on a server (reference sections 5, 8 and 14)
+
+1. Ask how to reach their Linux server (SSH) and which domain to use.
+2. Tell them which DNS records to create: A/AAAA records for `admin.<domain>` and for each app's
+   host, pointing at the server, with HTTP and HTTPS open in its firewall. Wait until the names
+   resolve.
+3. On the server, once they accept the licence:
+   `curl -fsSL https://holmhq.com/install.sh | bash -s -- --mode server --domain <domain>
+   --email <their email> --accept-license <value>` (section 4.2 gives the value). `--email`
+   turns on HTTPS. The install prints an admin password, for the person to keep, and a one-time
+   `holm peer add` command.
+4. On their computer, install the CLI if needed and run that `holm peer add <name> --url
+   https://admin.<domain> --token <key>` (add `--accept-license <value>` on a computer that has
+   never run Holm). Check it with `holm peer check <name>`.
+5. Install apps on `@<name>` with `--host <app>.<domain>`.
+
+## Build a new app (reference sections 9 to 12)
+
+A Holm app is a folder: `holm.json`, public files in `web/`, and optionally `api/main.js`
+exporting `default { fetch(request, env) }`. The node runs no build. Deploy with
+`holm @<peer> app deploy <dir> --spec-v1 --host <host>`, with `--spec-v1` every time. Each app's
+PROMPT.md in the repository shows the request that built it.

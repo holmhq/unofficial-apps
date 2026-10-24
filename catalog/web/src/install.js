@@ -14,6 +14,17 @@ const setup = app => el('p', {}, 'Then follow its ', external(readme(app), 'READ
   ' for any setup it needs, such as sign-in branding or an outbound host to allow.')
 
 const WAYS = {
+  agent: {
+    label: 'Ask an agent',
+    render: app => [
+      command([[
+        'Install ', app.title, ' ', app.version, ' on my Holm node: run `holm ', ...peer(), 'app install ',
+        ADDRESS, '/', app.path, '@v', app.version, ' --host ', ...host(app), '`, then do any setup its README asks for: ', readme(app),
+        '. ', location.origin, '/llms.txt has the details; use https://holmhq.com/llms-full.txt for every Holm command.'
+      ]], { label: 'agent prompt', kind: 'Agent prompt', prose: true, onCopy: () => track(app.path, 'copy') }),
+      el('p', {}, 'Paste it into Claude Code, Codex, pi or any coding agent that can reach your node. It runs the commands in the other tabs for you, and tells you what the app’s README leaves to you.')
+    ]
+  },
   install: {
     label: 'One command',
     render: app => [
@@ -42,22 +53,11 @@ const WAYS = {
         '. To update, deploy a newer release the same way with ', el('code', {}, '--force'), '; its data stays.'),
       setup(app)
     ]
-  },
-  agent: {
-    label: 'Ask an agent',
-    render: app => [
-      command([[
-        'Install ', app.title, ' ', app.version, ' on my Holm node: run `holm ', ...peer(), 'app install ',
-        ADDRESS, '/', app.path, '@v', app.version, ' --host ', ...host(app), '`, then follow ', readme(app),
-        ' for any setup. Use https://holmhq.com/llms-full.txt as your only Holm reference.'
-      ]], { label: 'agent prompt', kind: 'Agent prompt', prose: true, onCopy: () => track(app.path, 'copy') }),
-      el('p', {}, 'Paste it into Claude Code, Codex, pi or any coding agent on a machine with the ',
-        el('code', {}, 'holm'), ' command.')
-    ]
   }
+
 }
 
-let way = store.get('install-way', 'install')
+let way = store.get('install-way', 'agent')
 
 function render(dialog, app) {
   const ways = Object.fromEntries(Object.entries(WAYS).map(([key, value]) => [key, { label: value.label, render: () => value.render(app) }]))
