@@ -21,6 +21,12 @@ async function loadSession() {
   renderAccount()
 }
 
+// Holm signs out on POST only: a link (a GET) answers 405 and leaves the session.
+async function signOut() {
+  try { await fetch(session.logoutURL || '/auth/logout', { method: 'POST', headers: { accept: 'application/json' } }) } catch {}
+  location.href = '/'
+}
+
 function renderAccount() {
   const root = document.getElementById('account')
   root.replaceChildren()
@@ -33,7 +39,7 @@ function renderAccount() {
     h('div', { class: 'who' }, h('strong', {}, session.me.name || 'Signed in'), session.me.email || ''),
     h('a', { href: '/', role: 'menuitem' }, 'Your plans'),
     h('a', { href: '/new', role: 'menuitem' }, 'New plan'),
-    h('a', { href: session.logoutURL, role: 'menuitem', 'data-native': '' }, 'Sign out'))
+    h('button', { type: 'button', role: 'menuitem', onclick: signOut }, 'Sign out'))
   const button = h('button', { class: 'avatar-button', type: 'button', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: 'Account' }, avatar(me, '2.1rem'))
   const wrap = h('div', { class: 'menu-wrap' }, button, menu)
   const close = () => { menu.hidden = true; button.setAttribute('aria-expanded', 'false') }
