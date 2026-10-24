@@ -368,13 +368,15 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
   .product { gap: 1.1rem; align-items: flex-start; }
 }
 
+/* Each fact carries the strip's height, so the dividers between them meet
+   the lines above and below, as in the grid of apps. */
 .facts {
-  list-style: none; margin: 0; padding: 0.9rem 0;
+  list-style: none; margin: 0; padding: 0;
   display: flex; overflow-x: auto;
   border-block: 1px solid var(--rule);
   scrollbar-width: none;
 }
-.facts li { flex: 1 0 auto; display: grid; justify-items: center; gap: 0.1rem; padding: 0 1.25rem; text-align: center; }
+.facts li { flex: 1 0 auto; display: grid; justify-items: center; gap: 0.1rem; padding: 0.9rem 1.25rem; text-align: center; }
 .facts li + li { border-left: 1px solid var(--rule); }
 .facts strong { font-size: 1.1rem; font-weight: 650; white-space: nowrap; }
 .facts span { font-size: 0.82rem; color: var(--ink-3); }

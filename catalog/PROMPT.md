@@ -251,6 +251,10 @@ clips and shadows them.
 
 Get stayed on the list view's rows and on the cover.
 
+**Iteration 16**:
+
+> I think that same touching of separators should be there in detail page too?
+
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for
 runtime and deploy behavior and states the node-role and binary-fetch gaps.

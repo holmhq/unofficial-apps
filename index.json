@@ -5,11 +5,11 @@
     {
       "name": "catalog",
       "path": "catalog",
-      "version": "0.11.1",
-      "tag": "catalog/v0.11.1",
-      "h1": "h1:TtIWkU7utMjxRnYmceRYz0/RaOWUFANbWuA5znK6CgI=",
+      "version": "0.11.2",
+      "tag": "catalog/v0.11.2",
+      "h1": "h1:VQUTmzgKduhac59qZu03MdU/1b8dJ3hgDD/zozm53XY=",
       "files": 40,
-      "size": 541641,
+      "size": 541951,
       "title": "catalog",
       "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
       "themeColor": "#0e7c66",
@@ -48,7 +48,7 @@
             "alt": "An app's page in dark mode: icon, rating, facts and screenshots",
             "width": 780,
             "height": 1688,
-            "hash": "73551309a7c3"
+            "hash": "529b0a177a8c"
           },
           {
             "path": "listing/reviews.webp",

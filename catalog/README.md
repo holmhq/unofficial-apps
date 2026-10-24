@@ -77,7 +77,8 @@ out of this app's deploy. They are still public source in this repository.
   The store's pages need JavaScript, so their `<noscript>` points agents here.
 - **App pages** at `/apps/<app>`:
   - the icon, title, subtitle, Get and a link to the live copy;
-  - a strip of facts: version, size, category, license;
+  - a strip of facts: version, size, category, license, ruled like the
+    grid of apps, its dividers meeting the lines above and below;
   - screenshots you can swipe through;
   - the description and what's new in this version;
   - **Built from a prompt:** the request a coding agent built the app from;
