@@ -1,7 +1,9 @@
 // Holm App Spec v1 entry for server code written in Holm's original app format, which is kept
-// unchanged in ./_legacy_main.js. API paths go to that handler; everything else is web/.
+// in ./_legacy_main.js. API paths go to that handler; pages get the store's data and their own
+// link preview (see page below); everything else is web/.
 import { bind, takeResponded } from "./_holm.js";
-import handler from "./_legacy_main.js";
+import handler, { boot } from "./_legacy_main.js";
+import { REF } from "./index.js";
 
 const API_PREFIXES = ["/api"];
 const JSON_TYPE = /^application\/(?:[\w.-]+\+)?json\s*(?:;|$)/i;
@@ -10,7 +12,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (!API_PREFIXES.some((p) => url.pathname === p || url.pathname.startsWith(p + "/"))) {
-      return env.holm.web.fetch(request);
+      const isPage = (request.method === "GET" || request.method === "HEAD") && !/\.[A-Za-z0-9]+$/.test(url.pathname);
+      return isPage ? page(request, env, url) : env.holm.web.fetch(request);
     }
     bind(env.holm);
     const req = await originalRequest(request, url);
@@ -92,4 +95,80 @@ function base64OrText(s) {
   } catch {
     return s;
   }
+}
+
+// A page of the store: web/shell.html with the index, the tint and the viewer embedded as JSON,
+// so the first paint needs no API call, and for /apps/<app> that app's title, description and
+// cover as its link preview. If the index can't be read, the page loads it from the API instead.
+// The shell isn't called index.html because Holm serves a matching file before this handler runs.
+async function page(request, env, url) {
+  const response = await env.holm.web.fetch(new Request(new URL("/shell", url), request));
+  if (!response.ok || !/text\/html/i.test(response.headers.get("content-type") || "")) return response;
+  let html = await response.text();
+  // Holm wrote the shell's own address into these; give them the page's.
+  const here = url.origin + url.pathname;
+  html = html.replace(/<link rel="canonical" href="[^"]*">/, () => `<link rel="canonical" href="${escapeHTML(here)}">`);
+  html = meta(html, "property", "og:url", here);
+  try {
+    bind(env.holm);
+    const ref = url.searchParams.get("ref") || "main";
+    if (REF.test(ref)) {
+      const data = boot(ref);
+      const script = `<script type="application/json" id="boot">${scriptJSON(data)}</script>\n`;
+      html = html.replace("</head>", () => script + "</head>");
+      const match = /^\/apps\/([a-z0-9-]+)\/?$/.exec(url.pathname);
+      const app = match && data.index.apps.find((a) => a.path === match[1]);
+      if (app) html = describe(html, app, url.origin);
+    }
+  } catch {
+    // The page still works without the embedded data.
+  }
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  return new Response(request.method === "HEAD" ? null : html, { status: response.status, headers });
+}
+
+// JSON that is safe inside a <script> element.
+function scriptJSON(value) {
+  return JSON.stringify(value).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+}
+
+const escapeHTML = (value) => String(value).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+
+// Set a <meta> tag's content, replacing the one Holm injected or adding it.
+function meta(html, attr, key, value) {
+  const tag = `<meta ${attr}="${key}" content="${escapeHTML(value)}">`;
+  const pattern = new RegExp(`<meta ${attr}="${key.replace(/[.:]/g, "\\$&")}" content="[^"]*">`);
+  return pattern.test(html) ? html.replace(pattern, () => tag) : html.replace("</head>", () => tag + "\n</head>");
+}
+
+// An app page's link preview: its name, the first paragraph of its listing and its cover.
+function describe(html, app, origin) {
+  const listing = app.listing || {};
+  const title = `${app.title} – Unofficial Holm apps`;
+  const first = String(listing.description || app.description || "").split(/\n\s*\n/)[0];
+  const description = first.length > 200 ? first.slice(0, 199).replace(/\s+\S*$/, "") + "…" : first;
+  html = html.replace(/<title>[^<]*<\/title>/, () => `<title>${escapeHTML(title)}</title>`);
+  for (const [attr, key, value] of [
+    ["name", "description", description],
+    ["property", "og:title", app.title],
+    ["property", "og:description", description],
+    ["name", "twitter:title", app.title],
+    ["name", "twitter:description", description],
+  ]) html = meta(html, attr, key, value);
+  const cover = listing.cover;
+  if (cover) {
+    const image = `${origin}/api/media/${app.path}/cover.png${cover.hash ? `?v=${cover.hash}` : ""}`;
+    const alt = `${app.title}: ${listing.subtitle || app.description || ""}`;
+    for (const [attr, key, value] of [
+      ["property", "og:image", image],
+      ["property", "og:image:type", "image/png"],
+      ["property", "og:image:width", String(cover.width)],
+      ["property", "og:image:height", String(cover.height)],
+      ["property", "og:image:alt", alt],
+      ["name", "twitter:image", image],
+      ["name", "twitter:image:alt", alt],
+    ]) html = meta(html, attr, key, value);
+  }
+  return html;
 }

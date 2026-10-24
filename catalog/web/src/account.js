@@ -9,7 +9,8 @@ const listeners = []
 export const viewer = () => ({ me, admin })
 export const onViewer = fn => listeners.push(fn)
 
-export async function loadViewer() {
+// Who is looking, from the API; notify tells the page to read the index again.
+export async function loadViewer(notify = true) {
   try {
     const body = await api('GET', '/api/me')
     me = body.member
@@ -19,7 +20,14 @@ export async function loadViewer() {
     admin = false
   }
   render()
-  listeners.forEach(fn => fn())
+  if (notify) listeners.forEach(fn => fn())
+}
+
+// Who is looking, as the server embedded it in the page.
+export function setViewer(value) {
+  me = (value && value.member) || null
+  admin = !!(value && value.admin)
+  render()
 }
 
 function person() {

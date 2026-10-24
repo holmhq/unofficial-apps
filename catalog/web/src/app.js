@@ -1,8 +1,9 @@
 // The store: a front page of every app, and a page for each one. Data comes
-// from the repository's index.json through /api/index.
+// from the repository's index.json: embedded in the page by the server, or
+// through /api/index.
 import { $, el, icon, bytes, paragraphs, stars, track, applyTint, REPO } from './lib.js'
 import { openInstall } from './install.js'
-import { loadViewer, onViewer } from './account.js'
+import { loadViewer, onViewer, setViewer } from './account.js'
 import { reviewsSection } from './reviews.js'
 import { adminPage } from './admin.js'
 
@@ -15,11 +16,27 @@ let index = null
 const show = (...sections) => main.replaceChildren(...sections.filter(Boolean))
 
 const subtitle = app => (app.listing && app.listing.subtitle) || app.description
-const shotURL = (app, shot) => `/api/file?ref=${encodeURIComponent(ref)}&app=${app.path}&path=${encodeURIComponent(shot.path)}`
+// At main, images come from /api/media under a URL that carries their hash, which the
+// edge can cache; other refs read them through /api/file.
+const shotURL = (app, shot) => ref === 'main' && shot.hash
+  ? `/api/media/${app.path}/${shot.path.replace(/^listing\//, '')}?v=${shot.hash}`
+  : `/api/file?ref=${encodeURIComponent(ref)}&app=${app.path}&path=${encodeURIComponent(shot.path)}`
 // PROMPT.md wraps its lines at 80 columns; rejoin them so the prompt reflows
 // on a phone, keeping paragraphs and list items.
 const reflow = text => text.replace(/\n(?!\n|- )\s*/g, ' ')
 const external = (href, ...children) => el('a', { href, rel: 'noopener', target: '_blank' }, ...children)
+
+// A screenshot the store hasn't cached yet can come back busy, since the node
+// limits how many files an app fetches at once: try it again a few times.
+function shotImage(attributes) {
+  const image = el('img', attributes)
+  let tries = 0
+  image.addEventListener('error', () => {
+    if (++tries > 3) return
+    setTimeout(() => { image.src = attributes.src + '&retry=' + tries }, 400 * tries * tries)
+  })
+  return image
+}
 
 const getButton = app => el('button', { type: 'button', class: 'get', 'aria-label': 'Get ' + app.title, onclick: () => openInstall(app) }, 'Get')
 
@@ -61,7 +78,7 @@ function featured(app) {
       el('p', {}, subtitle(app)),
       getButton(app)),
     el('div', { class: 'feature-shot' },
-      el('img', { src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height })))
+      shotImage({ src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height })))
 }
 
 function storefront() {
@@ -104,7 +121,7 @@ function productPage(app) {
       fact('MIT', 'License')),
     listing.screenshots.length > 0 && el('section', { class: 'shots', 'aria-label': 'Screenshots' },
       el('ul', {}, listing.screenshots.map(shot => el('li', {},
-        el('img', { src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height, loading: 'lazy', style: `--ratio: ${(shot.width / shot.height).toFixed(4)}` }))))),
+        shotImage({ src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height, loading: 'lazy', style: `--ratio: ${(shot.width / shot.height).toFixed(4)}` }))))),
     el('section', { class: 'about' }, paragraphs(listing.description || app.description).map(text => el('p', {}, text))),
     listing.whatsNew && el('section', { class: 'news' },
       el('div', { class: 'section-head' }, el('h2', {}, 'What’s new'), el('span', {}, 'Version ' + app.version)),
@@ -146,6 +163,13 @@ function route() {
   app ? productPage(app) : notFound(match[1])
 }
 
+// The feedback form loads only when someone heads for it, so store pages stay light.
+const feedback = $('#feedback')
+const preloadFeedback = () => globalThis.HolmFeedback && globalThis.HolmFeedback.preload()
+feedback.addEventListener('pointerenter', preloadFeedback)
+feedback.addEventListener('focus', preloadFeedback)
+feedback.addEventListener('click', () => globalThis.HolmFeedback && globalThis.HolmFeedback.open())
+
 // Links inside the store change the page without reloading it.
 document.addEventListener('click', event => {
   const link = event.target.closest('a[data-link]')
@@ -174,7 +198,22 @@ async function load() {
   }
 }
 
+// The server puts the index and the viewer in the page, so it draws at once;
+// without them, ask the API for both together.
+function embedded() {
+  try { return JSON.parse(document.getElementById('boot')?.textContent || 'null') } catch { return null }
+}
+const boot = embedded()
+if (boot && boot.index) {
+  index = boot.index
+  applyTint(boot.settings && boot.settings.tint)
+  setViewer(boot.viewer)
+  route()
+} else {
+  loadViewer(false)
+  load()
+}
+
 // Signing in or out can change what's visible (admins see hidden apps), so
 // the index is read again for the new viewer.
 onViewer(() => load())
-loadViewer()

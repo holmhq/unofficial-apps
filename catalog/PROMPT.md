@@ -10,7 +10,7 @@ itself; no private plan or existing catalog is needed.
 ```text
 Build a catalog as a Holm App Spec v1 app using only
 https://holmhq.com/llms-full.txt for Holm; read sections 9–12 first. Use catalog/
-with holm.json (web.spa true), public web/ files, api/main.js exporting
+with holm.json, public web/ files, api/main.js exporting
 default { async fetch(request, env) }, standard Request/Response, env.holm
 storage/auth and env.holm.web.fetch(request) fallback. No build step or
 third-party runtime CDN; vendor fonts and any libraries with licenses.
@@ -31,6 +31,12 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   screenshots, description, whatsNew, original prompt and source information.
   Read the public repository index with synchronous env.holm.net.fetch,
   not global fetch; cache it in KV and keep the last good index on failure.
+- Make it fast: the handler serves every page with the index and the viewer
+  embedded, so the first paint waits on no API call (Holm serves a matching
+  static file first, so don't name the shell index.html), and preload every
+  module. Give each
+  /apps/<app> page that app's title, description and listing/cover.png as
+  its link preview (a 1200x630 card the repo draws with a script).
 - Get opens a sheet remembering my peer/domain, with working clone-a-tag
   instructions and holm @<peer> app deploy <app-dir> --spec-v1 --host <host>,
   plus an agent prompt following the app README. The guide does not define
@@ -119,6 +125,19 @@ copies itself instead.
 owner's message (`llms-full.txt` is the full guide's name):
 
 > I think we should move to llms.txt & llm-full.txt; and update all apps which points to old links
+
+**Iteration 6**, two messages sent while the agent worked on the first:
+
+> I really like the Overlay app's cover image!
+> - i wonder whether all apps have such cover images?
+> - if so, why not we set it as social preview for each app's page?
+> - i trust its possible?
+
+> Also, is the content caching done well, it feels like the pages take a bit to load, and not very snappy
+
+The "cover image" is the store's featured card. No app had one as an image,
+so the agent drew each app's card as `listing/cover.png` with a new script,
+then made pages arrive with their data and images cacheable by content.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

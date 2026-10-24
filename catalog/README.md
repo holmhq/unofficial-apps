@@ -13,8 +13,9 @@ It was built from the requests quoted in [`PROMPT.md`](PROMPT.md).
 catalog follows [Holm App Spec v1](https://holmhq.com/llms-full.txt), sections
 9–12: `holm.json` holds identity and web settings, `web/` holds public files,
 and `api/main.js` exports `default { fetch(request, env) }`. Use `env.holm`,
-return standard `Response` objects, and set `web.spa: true` in `holm.json`.
-There is no build step on the node or in this app.
+and return standard `Response` objects. `web.spa` is off: the handler serves
+every page itself (see How it is built). There is no build step on the node
+or in this app.
 
 Use a current signed Holm release; the public app guide targets 0.243.2.
 Every deploy needs `--spec-v1`. Only `web/` is served as files: `api/` and
@@ -61,19 +62,33 @@ out of this app's deploy. They are still public source in this repository.
 - **Look:** slate ink on cool paper, light and dark following the system.
   Each app brings its colour through its icon, and everything else takes the
   tint. Fonts are vendored, so nothing loads from a CDN. A footer links to
-  Holm and the source, as in pastebin.
+  Holm and the source and has Send feedback, as in pastebin.
+- **Link previews:** an app page shared in a chat or a post shows that app's
+  name, description and cover, the 1200×630 card in its `listing/cover.png`
+  (see the root README), instead of the store's own card.
+- **Fast first paint:** every page arrives with the index, the tint and who
+  is looking already in it, so the store draws without waiting on an API
+  call. The page preloads every module, and screenshots and covers come from
+  URLs that carry their content hash, which Cloudflare and browsers keep.
 
 ## How it is built
 
 A Holm app is a folder. `web/` is served as-is. This app's
 `api/main.js` routes `/api/*`, decodes JSON and converts its answers to
-standard `Response` objects. Other paths go to
-`env.holm.web.fetch(request)` for static files and SPA fallback.
+standard `Response` objects. Every page (a path without a file extension)
+is `web/shell.html`, read with `env.holm.web.fetch`, with a
+`<script id="boot">` holding the index, tint and viewer added to its head, its
+canonical and `og:url` set to the page's own address, and on an app page that
+app's title, description and `og:`/`twitter:` image tags. The shell is not
+named `index.html` because Holm serves a file that matches the path before the
+handler runs, and `/` would skip all of this; for the same reason `web.spa` is
+off and the handler serves every page. Other paths go to
+`env.holm.web.fetch(request)` for static files.
 
 ```text
-holm.json           name, version, colour, SPA routing, store metadata
+holm.json           name, version, colour, font caching, store metadata
 web/                public files, served as-is:
-  index.html        page shell and the install <dialog>
+  shell.html        page shell, module preloads, install <dialog>, feedback tag
   src/app.js        router, front page and app pages
   src/install.js    the install sheet and its commands
   src/account.js    avatar, menu, sign-in overlay
@@ -82,7 +97,8 @@ web/                public files, served as-is:
   src/lib.js        DOM and API helpers, the app icon, counting
   src/styles.css    the whole design, light and dark
   assets/           icon, favicon and fonts (SIL OFL 1.1)
-api/main.js         v1 entry: hands /api requests to the routes
+  vendor/feedback/  embed.js from this repository's feedback app (MIT)
+api/main.js         v1 entry: /api to the routes; pages with data and previews
 api/_holm.js        gives the routes `holm` and `respond` for each request
 api/_legacy_main.js routes (below), written in Holm's original app format
 api/index.js        reads index.json and screenshots from GitHub, cached
@@ -113,9 +129,17 @@ scaffolding, not the v1 authoring contract. For a fresh build, put routes in
   route must authorize on the server, not just hide its button.
 - **`env.holm.app.ds`:** reviews, one per member per app, pending until
   approved.
-- **`env.holm.app.s3`:** screenshot cache served by `/api/file`, restricted
-  to paths the index lists; an existing cached copy can survive a remote
-  fetch failure.
+- **`env.holm.app.s3`:** screenshot and cover cache served by `/api/media`
+  and `/api/file`, restricted to paths the index lists; an existing cached
+  copy can survive a remote fetch failure. A copy whose bytes match the
+  index's hash is kept for good, since the hash names that exact image.
+- **`crypto.subtle`:** checks a cached image's SHA-256 against its hash before
+  `/api/media` lets it be cached for a year.
+
+The node caps how many outbound requests an app has open at once. A page of
+uncached screenshots can exceed that cap, so `/api/media` answers such a
+request `503` with `Retry-After`, and the page tries an image again a few
+times.
 
 The inherited authorization also calls `isNodeOwner()` and `isNodeAdmin()`;
 its screenshot fetch uses `responseType: 'file'`. Those details are not
@@ -158,13 +182,28 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#0e7c66'
 `?ref=<branch>` on any page shows the store at another branch or tag, which is
 handy for checking a pull request before it merges.
 
+Send feedback in the footer uses a local copy of the [feedback](../feedback/)
+app's `embed.js`. Set `data-project` and `data-origin` in
+`catalog/web/shell.html` to your own project, or remove that tag and the
+button. The form loads when a pointer or focus reaches the button. The site
+must be allowed to frame it:
+
+```sh
+holm @<peer> policy set security.csp.frame_src "https://feedback.example.com" --app <app-id>
+```
+
+Fonts are served with a one-year `Cache-Control` from `web.headers` in
+`holm.json`; give a changed font a new file name. Shell files keep Holm's
+`no-cache`, so a deploy shows at once.
+
 The API:
 
 | Route | Who | Purpose |
 | --- | --- | --- |
 | `GET /api/me` | anyone | who is signed in, and whether they're an admin |
 | `GET /api/index` | anyone | the apps they may see, with ratings and the tint |
-| `GET /api/file` | anyone | a screenshot the index lists |
+| `GET /api/media/<app>/<file>?v=<hash>` | anyone | a screenshot or cover at main, cacheable |
+| `GET /api/file` | anyone | a screenshot or cover the index lists, at any ref |
 | `POST /api/events` | anyone | count a view, Get or copy |
 | `GET /api/reviews/<app>` | anyone | approved reviews, and your own |
 | `PUT`, `DELETE /api/reviews/<app>` | signed in | write or remove your review |
@@ -186,8 +225,10 @@ The API:
 - Node-role checks and binary screenshot fetching in the inherited handlers
   are outside the documented v1 examples. Verify them on your target before
   treating an admin session or cached image as working.
-- Pages are drawn in the browser, so link previews show the store's generic
-  title and description rather than the app's.
+- An app without `listing/cover.png` keeps the store's own social card in
+  its link preview, with its own title and description.
+- The index refreshes every five minutes, and the first page view after that
+  waits on GitHub for it. A failed read keeps the last good copy.
 
 ## Testing
 

@@ -1,14 +1,22 @@
 {
   "name": "catalog",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "title": "catalog",
   "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
   "themeColor": "#0e7c66",
   "web": {
-    "spa": true,
+    "spa": false,
     "inject": {
       "analytics": true
-    }
+    },
+    "headers": [
+      {
+        "path": "/assets/fonts/*",
+        "set": {
+          "Cache-Control": "public, max-age=31536000, immutable"
+        }
+      }
+    ]
   },
   "publish": {
     "exclude": [

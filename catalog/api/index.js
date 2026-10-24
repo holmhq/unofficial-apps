@@ -10,10 +10,16 @@ const COLOR = /^#[0-9a-fA-F]{6}$/
 const SYMBOL = /^[MLHVCSQTAZ0-9. -]{1,8000}$/
 const SHOT = /^listing\/[A-Za-z0-9._-]{1,80}\.(png|webp)$/
 const TYPES = { png: 'image/png', webp: 'image/webp' }
+const HASH = /^[0-9a-f]{12}$/
 
 const text = (value, max) => typeof value === 'string' ? value.replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, ' ').trim().slice(0, max) : ''
 const size = value => Number.isInteger(value) && value > 0 && value < 1e9 ? value : null
 const publicError = message => Object.assign(new Error(message), { public: true })
+
+// An image named in the listing: a screenshot or the cover. The hash is the
+// start of the file's SHA-256, so a URL carrying it can be cached for good.
+const cleanImage = image => ({ path: image.path, width: image.width, height: image.height, ...(HASH.test(image.hash || '') ? { hash: image.hash } : {}) })
+const validImage = image => image && SHOT.test(image.path || '') && size(image.width) && size(image.height)
 
 function cleanListing(listing) {
   if (!listing || typeof listing !== 'object') return null
@@ -24,8 +30,9 @@ function cleanListing(listing) {
     whatsNew: text(listing.whatsNew, 2000),
     featured: listing.featured === true,
     screenshots: (Array.isArray(listing.screenshots) ? listing.screenshots : []).slice(0, 10)
-      .filter(shot => shot && SHOT.test(shot.path || '') && size(shot.width) && size(shot.height))
-      .map(shot => ({ path: shot.path, alt: text(shot.alt, 200), width: shot.width, height: shot.height }))
+      .filter(validImage)
+      .map(shot => ({ ...cleanImage(shot), alt: text(shot.alt, 200) })),
+    cover: validImage(listing.cover) ? cleanImage(listing.cover) : null
   }
 }
 
@@ -67,26 +74,31 @@ export function readIndex(ref) {
   }
 }
 
-// A screenshot listed in the index at this ref, from the blob cache or GitHub.
-// Blobs written from a fetched file can't expire on their own, so a KV key
-// with a TTL marks the cached copy fresh; a stale copy still serves if GitHub
-// doesn't answer.
-export function readScreenshot(ref, appPath, path) {
+// A screenshot or cover listed in the index at this ref, from the blob cache or
+// GitHub, with the hash the index gives it. Blobs written from a fetched file
+// can't expire on their own, so a KV key with a TTL marks the cached copy
+// fresh; a stale copy still serves if GitHub doesn't answer. mode "reload"
+// skips the cache, for a copy that turned out not to match its hash; mode
+// "cached" returns the cached copy however old, or null, without GitHub.
+export function readScreenshot(ref, appPath, path, mode = '') {
   const app = readIndex(ref).index.apps.find(app => app.path === appPath)
-  const shot = app && app.listing && app.listing.screenshots.find(shot => shot.path === path)
+  const listing = app && app.listing
+  const shot = listing && [...listing.screenshots, listing.cover].find(image => image && image.path === path)
   if (!shot) throw Object.assign(publicError('No such screenshot in the index.'), { status: 404 })
   const key = `screenshots/${ref}/${appPath}/${path}`
   const type = TYPES[path.split('.').pop()]
+  const hash = shot.hash || null
   const cached = holm.app.s3.get(key)
-  if (cached && holm.app.kv.get('fresh:' + key)) return { data: cached.data, type }
+  if (mode === 'cached') return cached ? { data: cached.data, type, hash } : null
+  if (cached && mode !== 'reload' && holm.app.kv.get('fresh:' + key)) return { data: cached.data, type, hash }
   try {
     const remote = holm.net.fetch(`${SOURCE}${ref}/${appPath}/${path}`, { timeout: 10000, responseType: 'file' })
     if (!remote.ok) throw publicError(`GitHub answered ${remote.status} for ${appPath}/${path}`)
     holm.app.s3.put(key, remote.file, type)
     holm.app.kv.set('fresh:' + key, true, ref === 'main' ? 3600000 : 86400000)
-    return { data: holm.app.s3.get(key).data, type }
+    return { data: holm.app.s3.get(key).data, type, hash }
   } catch (error) {
-    if (cached) return { data: cached.data, type }
+    if (cached) return { data: cached.data, type, hash }
     throw error
   }
 }

@@ -108,8 +108,9 @@ h2 { font-size: 1.35rem; line-height: 1.2; }
   padding-block: 3rem max(2rem, env(safe-area-inset-bottom));
   font-size: 0.82rem;
 }
-.foot a { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--ink-3); text-decoration: none; }
-.foot a:hover { color: var(--ink); }
+.foot a, .foot button { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--ink-3); text-decoration: none; }
+.foot button { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
+.foot a:hover, .foot button:hover { color: var(--ink); }
 .foot svg { width: 0.95rem; height: 0.95rem; }
 
 .status { margin: 3rem 0; color: var(--ink-2); }
