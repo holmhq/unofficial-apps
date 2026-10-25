@@ -5,11 +5,11 @@
     {
       "name": "3dsvg",
       "path": "3dsvg",
-      "version": "0.1.0",
-      "tag": "3dsvg/v0.1.0",
-      "h1": "h1:6vQ8Jx1CeGTVFw6nEKtL/GVhzJfqHCumUIjMgtKxDlE=",
+      "version": "0.1.1",
+      "tag": "3dsvg/v0.1.1",
+      "h1": "h1:AbxdbHbAILKxdTNUbeKJfVyKBBTMPKneYqBbQerrA5k=",
       "files": 90,
-      "size": 35487270,
+      "size": 35487323,
       "title": "3dsvg",
       "description": "Turn SVGs, text and pixel art into interactive 3D. Export 4K images, video and 3D models; sign in to keep your shapes and share them by link.",
       "themeColor": "#4f46e5",
@@ -19,7 +19,7 @@
         "subtitle": "Turn SVGs, text and pixel art into 3D",
         "category": "Design",
         "description": "Draw pixel art, type a word in one of ten fonts, paste SVG code or drop an SVG file, and it stands up as a 3D object you can spin, light and dress in plastic, metal, glass, chrome, gold or wood.\n\nSet its depth, smoothness and colour, choose a backdrop and an animation, and move the key light. Take a still up to 4K, transparent if you like, record a few loops as MP4 or WebM and trim them, or download the model as GLB, STL, OBJ or PLY for Blender, a game or a 3D printer.\n\nIt works without an account, and your design stays in the browser. Sign in to keep your shapes in My shapes, open them on any device, and share any one by a link that anyone can turn and copy, until you turn it off. A port of the open-source 3dsvg editor, with no build step.",
-        "whatsNew": "3dsvg joins the store: the open-source editor rebuilt without a build step, now with sign-in, saved shapes and share links. Videos convert much faster, MP4s are H.264, and exported models face the right way.",
+        "whatsNew": "Documentation only: the prompt now quotes the original choices exactly as they were picked.",
         "featured": false,
         "screenshots": [
           {
@@ -59,7 +59,13 @@
         }
       },
       "prompt": "Port the MIT-licensed 3dsvg editor (https://github.com/renatoworks/3dsvg),\nwhich turns SVGs, text and pixel art into interactive 3D, to a Holm app\nnamed \"3dsvg\", using only https://holmhq.com/llms-full.txt for Holm. Read\nits v1 sections 9–12 and \"Make an app feel finished\" and \"Make it feel\nnative\" first. Make holm.json, public web/ files and api/main.js exporting\ndefault { async fetch(request, env) }. Set web.spa true, use env.holm for\nstorage and sign-in, return standard Responses and fall back to\nenv.holm.web.fetch(request). No build step or third-party runtime CDN:\nrewrite the React Three Fiber scene in plain three.js, load it through an\nimport map, and vendor three.js, opentype.js, ffmpeg.wasm and the fonts\nwith their licences, keeping 3dsvg's licence and credit.\n\n- Keep the editor as it is: the four inputs, every setting, the PNG, video\n  (with trimming and MP4 or WebM through ffmpeg.wasm) and 3D model exports,\n  the embed code, and the same look. Fix what you find on the way.\n- Signed out, keep the design in localStorage. Add sign-in: a round avatar\n  at the top right whose menu holds Light, Dark or System, Send feedback\n  and Sign out.\n- Signed in, Save keeps a shape in member storage with a thumbnail. My\n  shapes lists them to open, rename and delete. Mark unsaved changes.\n- Any saved shape can get a revocable read-only share link, copied into\n  shared storage under a random token and refreshed on each save. Its page\n  shows the shape alone with \"Edit a copy\", and its own link-preview tags.\n- Phones first, light and dark, installable with a network-first service\n  worker that never caches member data or the video converter.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 3dsvg. With my approval, deploy with\nholm @<peer> app deploy 3dsvg --spec-v1 --host 3dsvg.<my-domain>. Never\nreplace an occupied host without asking. Validation does not run the app:\ntest every input and export, a video conversion, two members' saves kept\napart, a share link signed out and after it is turned off, and mobile and\ndesktop in light and dark. Report gaps honestly. Inspect the target\nsettings schema before setting sign-in branding.",
-      "history": []
+      "history": [
+        {
+          "version": "0.1.0",
+          "date": "2026-10-26",
+          "whatsNew": "3dsvg joins the store: the open-source editor rebuilt without a build step, now with sign-in, saved shapes and share links. Videos convert much faster, MP4s are H.264, and exported models face the right way."
+        }
+      ]
     },
     {
       "name": "catalog",

@@ -50,10 +50,12 @@ settings schema before setting sign-in branding.
 ## The original request
 
 3dsvg was ported from its public repository, from this message, typed as-is
-to a coding agent; the answers it gave to three questions follow it.
+to a coding agent:
 
 > Can we adapt this in: https://github.com/renatoworks/3dsvg
 > - may be add a sign-in system to save shapes?
 > - round avatar icon at the top right?
 
-> Name: Keep 3dsvg. Saving: Private + share link. Video: Full parity.
+The agent then asked three questions, and these options were picked: for the
+name, "Keep 3dsvg"; for saving, "Private + share link (Recommended)"; for
+video, "Full parity".
