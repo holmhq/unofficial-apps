@@ -1,0 +1,25 @@
+{
+  "subtitle": "Turn SVGs, text and pixel art into 3D",
+  "category": "Design",
+  "featured": false,
+  "description": "Draw pixel art, type a word in one of ten fonts, paste SVG code or drop an SVG file, and it stands up as a 3D object you can spin, light and dress in plastic, metal, glass, chrome, gold or wood.\n\nSet its depth, smoothness and colour, choose a backdrop and an animation, and move the key light. Take a still up to 4K, transparent if you like, record a few loops as MP4 or WebM and trim them, or download the model as GLB, STL, OBJ or PLY for Blender, a game or a 3D printer.\n\nIt works without an account, and your design stays in the browser. Sign in to keep your shapes in My shapes, open them on any device, and share any one by a link that anyone can turn and copy, until you turn it off. A port of the open-source 3dsvg editor, with no build step.",
+  "whatsNew": "3dsvg joins the store: the open-source editor rebuilt without a build step, now with sign-in, saved shapes and share links. Videos convert much faster, MP4s are H.264, and exported models face the right way.",
+  "screenshots": [
+    {
+      "file": "editor.webp",
+      "alt": "The editor on a phone: a space invader drawn on the pixel grid, standing in 3D below it"
+    },
+    {
+      "file": "settings.webp",
+      "alt": "A gold star above the settings, with the gold material's metalness and roughness"
+    },
+    {
+      "file": "shapes.webp",
+      "alt": "My shapes: wooden lettering, a glass heart, a gold star, a pink Hello and the invader"
+    },
+    {
+      "file": "share.webp",
+      "alt": "A shared link to the glass heart, opened without signing in, with Edit a copy"
+    }
+  ]
+}

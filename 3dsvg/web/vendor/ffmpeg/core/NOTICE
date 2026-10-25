@@ -1,0 +1,13 @@
+ffmpeg-core.js and ffmpeg-core.wasm are @ffmpeg/core 0.12.10 from the
+ffmpeg.wasm project: FFmpeg compiled to WebAssembly together with x264,
+x265, libvpx, LAME, Ogg, Theora, Opus and other libraries. This build is
+licensed under the GNU General Public License, version 2 or later; its text
+is in COPYING.GPLv2 beside this file.
+
+The corresponding source, with the build scripts that pin every library's
+version, is at https://github.com/ffmpegwasm/ffmpeg.wasm/tree/v0.12.10
+(see its Dockerfile and build/ folder). FFmpeg's own source is at
+https://ffmpeg.org/download.html.
+
+The files are unchanged. The 3dsvg app loads them only to convert a
+recording someone made, in their own browser.

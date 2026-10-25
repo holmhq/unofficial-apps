@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>3dsvg</title>
+  <meta name="description" content="Turn SVGs, text and pixel art into interactive 3D. Export 4K images, video and 3D models; sign in to keep your shapes and share them by link.">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="3dsvg">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="preload" href="/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/src/styles.css">
+  <script type="importmap">
+    { "imports": { "three": "/vendor/three/three.module.min.js", "three/addons/": "/vendor/three/addons/" } }
+  </script>
+  <script>
+    // Apply the saved appearance before the first paint.
+    (function () {
+      var s = {}
+      try { s = JSON.parse(localStorage.getItem('3dsvg:settings:v1')) || {} } catch (e) {}
+      var mode = s.appearance === 'light' || s.appearance === 'dark' ? s.appearance : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+      document.documentElement.setAttribute('data-theme', mode)
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', mode === 'light' ? '#f4f4f6' : '#0a0a0a')
+    })()
+  </script>
+</head>
+<body>
+  <main class="app" id="app">
+    <div class="stage" id="stage"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="loader" id="loader" aria-hidden="true"><span class="spinner"></span><span id="loader-text">Loading…</span></div>
+    <div class="tools" id="tools"></div>
+    <div class="actions" id="actions"></div>
+    <aside class="settings glass" id="settings" aria-label="Settings" hidden></aside>
+    <div class="camera" id="camera"></div>
+    <footer class="foot" id="foot">
+      <a href="https://holmhq.com">
+        <svg viewBox="0 0 32 32" width="12" height="12" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0ZM6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>
+        A Holm app</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://github.com/holmhq/unofficial-apps/tree/main/3dsvg">Source</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://github.com/renatoworks/3dsvg">Based on 3dsvg</a>
+    </footer>
+  </main>
+  <script type="module" src="/src/app.js"></script>
+  <!-- Feedback goes to the owner's feedback app. A copy of its embed.js lives here because Holm
+       pages run only their own scripts; the account menu's Send feedback opens the form. -->
+  <script src="/vendor/feedback/embed.js" data-project="8busr3vm" data-origin="https://feedback.zyt.app" data-color="#4f46e5" data-button="none" async></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:1b9e87c83a411b6732291160f2ead56c6d4c3b8c7ffbb3b22fd0aa60321e6dd7",
+  "inputs": {
+    "symbolHash": "sha256:30b3a9e445a1049c7b7327c062752c38933a456d850bc49d35ff2cc277184da5",
+    "themeColor": "#4f46e5",
+    "name": "3dsvg",
+    "subtitle": "Turn SVGs, text and pixel art into interactive 3D. Export 4K images, video and 3D models; sign in to keep your shapes and share them by link.",
+    "iconStyle": "glass"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.259.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:89fa1fe326e5474564f1f218de767da79dac3344f5b7bfde3ce62301b144a193",
+    "web/apple-touch-icon.png": "sha256:ca68235883936dd55f3bd0c4d329096b9ef7e703ef87afc20db4272d6c8a2ed8",
+    "web/favicon.ico": "sha256:749a1a3f7facd86fd4c884e367f48f016dd1188180f4eca6a90a83c67d61f4aa",
+    "web/favicon.png": "sha256:4e405dfa9aa08b074ffd77ebdba67f29675635551a0e055b919327aa2ba143c7",
+    "web/favicon.svg": "sha256:f76a4376392fee486af08299fc441eb94c7793f27e1b76222df5c91b9ee0bfbb",
+    "web/icon-192.png": "sha256:5b817e097d5f34738e8e31f8a3de0404e5c4d1007effb400d042f11c2405e3c3",
+    "web/icon-512.png": "sha256:889d9191808b5b00e64e6e6bfe42a4fbc2f73a6c2cc4212b79007cc0e220be01",
+    "web/icon-maskable-512.png": "sha256:d28af242a8df9b003362f5d22a15840d33ed4b68869093783182e17ed29368d0",
+    "web/manifest.webmanifest": "sha256:80c2cd6daa997ddfe3280dcdd9ce282ce7e48d5604fb3d0fba1b37f6c7d5c19f",
+    "web/social_preview.png": "sha256:0e6c6464683158ce9079a692c43d8971853f1fb9c09061cd16beec2dbfce2b31"
+  }
+}
