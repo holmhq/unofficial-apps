@@ -1,0 +1,25 @@
+{
+  "name": "strata",
+  "version": "0.1.0",
+  "title": "Strata",
+  "shortName": "Strata",
+  "description": "A calm falling-block game in warm earth colours. Plays offline with no account; sign in to put your best game, replayed by the server, on the leaderboard.",
+  "themeColor": "#c98b2b",
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    }
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://strata.zyt.app"
+    }
+  }
+}

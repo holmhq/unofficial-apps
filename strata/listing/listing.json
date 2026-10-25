@@ -1,0 +1,25 @@
+{
+  "subtitle": "A calm falling-block game",
+  "category": "Games",
+  "featured": false,
+  "description": "Fit the falling pieces into full rows. Each full row dissolves from the middle out, and the layers above settle gently down. The pace starts slow and levels off, the sounds are soft, and nothing shakes.\n\nTap to turn, drag to move, flick down to drop and swipe up to hold; on a computer, the arrow keys and Space. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it piece by piece to check the score. Four colour sets in warm earth tones, in light and dark.",
+  "whatsNew": "Strata joins the store: a calm falling-block game in sandstone colours, with games that carry on after a reload, a leaderboard that replays every game before it counts, and offline play.",
+  "screenshots": [
+    {
+      "file": "board.webp",
+      "alt": "A game at level 4 in Sandstone: two full rows dissolving under a callout that reads Double, plus 1,200, with a Z piece standing on the stack"
+    },
+    {
+      "file": "over.webp",
+      "alt": "The end of a game: 104,144 points at level 12 with 115 lines, marked New personal best, with Play again and Leaderboard, and a note that the score was saved to the leaderboard"
+    },
+    {
+      "file": "leaderboard.webp",
+      "alt": "The leaderboard with six players; Mei leads with 185,334 points at level 15, and Kit, the player signed in, is third"
+    },
+    {
+      "file": "dark.webp",
+      "alt": "A game in dark mode with the Canyon colours at level 12: an S piece falling above its ghost, and an I piece in the hold slot"
+    }
+  ]
+}

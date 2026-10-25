@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:7ffe18c74b613380dfd8172373b54c61208b29c6ed146af916cc972760934514",
+  "inputs": {
+    "symbolHash": "sha256:cd2d062ac796de878106ece2ce8adb5a1e05f02c2532daf34ca0d951c66261b5",
+    "themeColor": "#c98b2b",
+    "name": "Strata",
+    "subtitle": "A calm falling-block game in warm earth colours. Plays without an account, offline too; sign in to put your best game on the leaderboard, replayed by the server before it counts.",
+    "iconStyle": "glass"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.259.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:c9c0f2d1972b5f68498b9b9e661cb49fe8a2c3befb6f32bbfbef41228daab4a1",
+    "web/apple-touch-icon.png": "sha256:fef040f425f4b0e400234e7c773cafde626a93c712a421e08b82cadf4ee8d101",
+    "web/favicon.ico": "sha256:3e3ebbecf1bc4e64e8a8ff1e3424b703639588af78545baccd82324a8427e9ff",
+    "web/favicon.png": "sha256:c061512334d22efbc2e4dd1c3a11dbfd37bfa3692aeea2024925faf562d33a1b",
+    "web/favicon.svg": "sha256:597df8a179f8a0c191e448b4a18790bb8edad16894ebb2fe69cc7d7d5baa2b37",
+    "web/icon-192.png": "sha256:c5485966941ddadd8f302c4aa72e486c95e64417796f937691327c7b798224ff",
+    "web/icon-512.png": "sha256:247c198f27e8b681d0f2cc4d8d8ab293f128560f4d0b1b4c4668701f0d516c5f",
+    "web/icon-maskable-512.png": "sha256:81b0bf6f1f3fd4c507518cd9408e0b3aad81e79d0bd1592039bfd566897bc913",
+    "web/manifest.webmanifest": "sha256:e5c45aafec57737829bc55a36a0464a4a3526d6269520cccd218448bea77f279",
+    "web/social_preview.png": "sha256:10aae1de0017b190b7cde203f1033711f0e9f8398e646adc74ac1b62206ba063"
+  }
+}

@@ -729,6 +729,65 @@
       "history": []
     },
     {
+      "name": "strata",
+      "path": "strata",
+      "version": "0.1.0",
+      "tag": "strata/v0.1.0",
+      "h1": "h1:rIFOmogViiBn/ADM+lScl/a3z0Qh2ep938B0n3j7kDg=",
+      "files": 31,
+      "size": 369080,
+      "title": "Strata",
+      "description": "A calm falling-block game in warm earth colours. Plays offline with no account; sign in to put your best game, replayed by the server, on the leaderboard.",
+      "themeColor": "#c98b2b",
+      "symbol": "M 10.1 0 L 13.9 0 C 14.728427 0 15.4 0.671573 15.4 1.5 L 15.4 5.3 C 15.4 6.128427 14.728427 6.8 13.9 6.8 L 10.1 6.8 C 9.271573 6.8 8.6 6.128427 8.6 5.3 L 8.6 1.5 C 8.6 0.671573 9.271573 0 10.1 0 Z M 1.4 8.6 L 5.6 8.6 C 5.971303 8.6 6.327399 8.7475 6.589949 9.010051 C 6.8525 9.272601 7 9.628697 7 10 L 7 11.8 C 7 12.171303 6.8525 12.527399 6.589949 12.789949 C 6.327399 13.0525 5.971303 13.2 5.6 13.2 L 1.4 13.2 C 1.028697 13.2 0.672601 13.0525 0.410051 12.789949 C 0.1475 12.527399 0 12.171303 0 11.8 L 0 10 C 0 9.628697 0.1475 9.272601 0.410051 9.010051 C 0.672601 8.7475 1.028697 8.6 1.4 8.6 Z M 18.4 8.6 L 22.6 8.6 C 23.373199 8.6 24 9.226801 24 10 L 24 11.8 C 24 12.573199 23.373199 13.2 22.6 13.2 L 18.4 13.2 C 17.626801 13.2 17 12.573199 17 11.8 L 17 10 C 17 9.226801 17.626801 8.6 18.4 8.6 Z M 1.4 14 L 22.6 14 C 23.373199 14 24 14.626801 24 15.4 L 24 17.2 C 24 17.973199 23.373199 18.6 22.6 18.6 L 1.4 18.6 C 0.626801 18.6 0 17.973199 0 17.2 L 0 15.4 C 0 15.028697 0.1475 14.672601 0.410051 14.410051 C 0.672601 14.1475 1.028697 14 1.4 14 Z M 1.4 19.4 L 22.6 19.4 C 23.373199 19.4 24 20.026801 24 20.8 L 24 22.6 C 24 23.373199 23.373199 24 22.6 24 L 1.4 24 C 0.626801 24 0 23.373199 0 22.6 L 0 20.8 C 0 20.026801 0.626801 19.4 1.4 19.4 Z",
+      "demo": "https://strata.zyt.app",
+      "listing": {
+        "subtitle": "A calm falling-block game",
+        "category": "Games",
+        "description": "Fit the falling pieces into full rows. Each full row dissolves from the middle out, and the layers above settle gently down. The pace starts slow and levels off, the sounds are soft, and nothing shakes.\n\nTap to turn, drag to move, flick down to drop and swipe up to hold; on a computer, the arrow keys and Space. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it piece by piece to check the score. Four colour sets in warm earth tones, in light and dark.",
+        "whatsNew": "Strata joins the store: a calm falling-block game in sandstone colours, with games that carry on after a reload, a leaderboard that replays every game before it counts, and offline play.",
+        "featured": false,
+        "screenshots": [
+          {
+            "path": "listing/board.webp",
+            "alt": "A game at level 4 in Sandstone: two full rows dissolving under a callout that reads Double, plus 1,200, with a Z piece standing on the stack",
+            "width": 780,
+            "height": 1688,
+            "hash": "d2be328febd0"
+          },
+          {
+            "path": "listing/over.webp",
+            "alt": "The end of a game: 104,144 points at level 12 with 115 lines, marked New personal best, with Play again and Leaderboard, and a note that the score was saved to the leaderboard",
+            "width": 780,
+            "height": 1688,
+            "hash": "6f9249f9ec8f"
+          },
+          {
+            "path": "listing/leaderboard.webp",
+            "alt": "The leaderboard with six players; Mei leads with 185,334 points at level 15, and Kit, the player signed in, is third",
+            "width": 780,
+            "height": 1688,
+            "hash": "8c63bf6a0271"
+          },
+          {
+            "path": "listing/dark.webp",
+            "alt": "A game in dark mode with the Canyon colours at level 12: an S piece falling above its ghost, and an I piece in the hold slot",
+            "width": 780,
+            "height": 1688,
+            "hash": "962c21bf2180"
+          }
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "853e671b60cf"
+        }
+      },
+      "prompt": "Build \"Strata\", a calm falling-block game for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage and\nsign-in, return standard Responses and fall back to env.holm.web.fetch(request).\nNo build step or third-party runtime CDN; vendor the icons with their licence.\n\n- A 10 × 20 field with the seven four-cell pieces dealt from shuffled bags of\n  seven, wall kicks, hold, a ghost, soft and hard drops, T-spins,\n  back-to-back and combo points. A gentle pace that levels off at level 15.\n- Calm, not frantic: warm earth colours (sandstone, ochre, clay, sage) on\n  paper by day and night sand after dark, faint sediment bands behind the\n  field, a piece that glides between rows, full rows that dissolve and then\n  settle, soft pentatonic sounds, no screen shake, and a quiet word for each\n  clear. Four colour sets, each light and dark or following the device.\n- Touch anywhere in the play area: tap to turn, drag to move, flick down to\n  drop, swipe up to hold. Keys on a computer. Pause with a button; a hidden\n  tab pauses, and a reload carries on the same game.\n- Rules in one file with no clock or Math.random: a game is a seed and its\n  inputs stamped with frame numbers. Signed in, send each new best as\n  { seed, log, score }; the server replays it with the same rules file,\n  keeps the member's best in member KV and one leaderboard row per member in\n  a shared collection. Signed out, keep the best in localStorage and send it\n  after sign-in. Mind the runtime's per-request allocation budget: replay a\n  long game without allocating every frame. Write a script that plays bot\n  games and checks that they replay exactly.\n- Installable, with a network-first service worker, so it plays offline.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 strata. With my approval, deploy with\nholm @<peer> app deploy strata --spec-v1 --host strata.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test play by touch and keys, pause and reload, signing in with a best\ngame on the device, a refused forged score, a long game's replay on the\nnode, going offline, and mobile/desktop in light/dark. Report gaps honestly.\nInspect the target settings schema before setting sign-in branding.",
+      "history": []
+    },
+    {
       "name": "until",
       "path": "until",
       "version": "0.1.0",

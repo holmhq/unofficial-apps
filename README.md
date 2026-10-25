@@ -54,6 +54,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 | [`until`](until/) | [until.zyt.app](https://until.zyt.app) | Count down to dates and rate each day: works signed out, member storage, installable, offline |
 | [`sokoban`](sokoban/) | [sokoban.zyt.app](https://sokoban.zyt.app) | A puzzle game: canvas, touch and keys, plays offline signed out, and a leaderboard that replays every solution |
 | [`3dsvg`](3dsvg/) | [3dsvg.zyt.app](https://3dsvg.zyt.app) | SVGs, text and pixel art in 3D: three.js with no build, picture, video and model exports, saved shapes and share links |
+| [`strata`](strata/) | [strata.zyt.app](https://strata.zyt.app) | A calm falling-block game: deterministic rules, games that resume after a reload, and a leaderboard that replays every game |
 
 ## Layout of an app
 
