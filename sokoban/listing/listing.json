@@ -1,0 +1,25 @@
+{
+  "subtitle": "A calm box-pushing puzzle",
+  "category": "Games",
+  "featured": false,
+  "description": "Push every box onto a ring. Boxes only move when you push them, and never two at once, so each of the nineteen levels is a small knot to untie, from a single push to a twenty-push long haul.\n\nSwipe to walk, tap a square to walk straight there, or tap a box beside you to push it; on a computer, the arrow keys. Undo takes back a whole walk at once, and even a restart can be undone. Solve a level in its par, the fewest pushes it can take, for the full thousand points.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your solved levels move to your account, where the server replays every solution move by move before it counts on the leaderboard. Five pastel colour sets, in light and dark.",
+  "whatsNew": "Sokoban joins the store: rewritten without a build step, with tap-to-walk, undo that takes back a whole move, a reload that resumes on the next level, offline play, and a leaderboard that checks every solution.",
+  "screenshots": [
+    {
+      "file": "board.webp",
+      "alt": "Level 10, Conveyor, in Bloom: two boxes already on their rings, the player beside the third box, 17 moves and 4 pushes so far"
+    },
+    {
+      "file": "solved.webp",
+      "alt": "Level 10 solved: plus 1,000 points in 7 pushes, par 7, marked Par: perfect, with Next level and Replay, and a note that the score was saved to the leaderboard"
+    },
+    {
+      "file": "leaderboard.webp",
+      "alt": "The leaderboard with five players; Mei leads with all 19 levels and 19,000 points, and Ada, the player signed in, is fourth"
+    },
+    {
+      "file": "levels-dark.webp",
+      "alt": "The level list in dark mode: ten levels solved at par, level 11, The Pocket, next"
+    }
+  ]
+}

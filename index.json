@@ -605,6 +605,65 @@
       "history": []
     },
     {
+      "name": "sokoban",
+      "path": "sokoban",
+      "version": "0.1.0",
+      "tag": "sokoban/v0.1.0",
+      "h1": "h1:d+pI6+UiCGL/v6rWrEVxdgzcCT5fMa8fnJU0+HySb5c=",
+      "files": 31,
+      "size": 331094,
+      "title": "Sokoban",
+      "description": "A calm box-pushing puzzle in 19 levels. Plays without an account, offline too; sign in to put your checked solves on the leaderboard.",
+      "themeColor": "#b197dc",
+      "symbol": "M 2.826667 2.666667 H 21.16 L 19.906667 1.333333 H 3.906667 Z M 23.386667 2.973333 C 23.773333 3.426667 24 4 24 4.666667 V 21.333333 A 2.666667 2.666667 0 0 1 21.333333 24 H 2.666667 A 2.666667 2.666667 0 0 1 0 21.333333 V 4.666667 C 0 4 0.226667 3.426667 0.613333 2.973333 L 2.453333 0.733333 C 2.826667 0.28 3.373333 0 4 0 H 20 C 20.626667 0 21.173333 0.28 21.533333 0.733333 Z M 4 20 H 12 V 16 H 4 Z",
+      "demo": "https://sokoban.zyt.app",
+      "listing": {
+        "subtitle": "A calm box-pushing puzzle",
+        "category": "Games",
+        "description": "Push every box onto a ring. Boxes only move when you push them, and never two at once, so each of the nineteen levels is a small knot to untie, from a single push to a twenty-push long haul.\n\nSwipe to walk, tap a square to walk straight there, or tap a box beside you to push it; on a computer, the arrow keys. Undo takes back a whole walk at once, and even a restart can be undone. Solve a level in its par, the fewest pushes it can take, for the full thousand points.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your solved levels move to your account, where the server replays every solution move by move before it counts on the leaderboard. Five pastel colour sets, in light and dark.",
+        "whatsNew": "Sokoban joins the store: rewritten without a build step, with tap-to-walk, undo that takes back a whole move, a reload that resumes on the next level, offline play, and a leaderboard that checks every solution.",
+        "featured": false,
+        "screenshots": [
+          {
+            "path": "listing/board.webp",
+            "alt": "Level 10, Conveyor, in Bloom: two boxes already on their rings, the player beside the third box, 17 moves and 4 pushes so far",
+            "width": 780,
+            "height": 1688,
+            "hash": "76c00ab9cdce"
+          },
+          {
+            "path": "listing/solved.webp",
+            "alt": "Level 10 solved: plus 1,000 points in 7 pushes, par 7, marked Par: perfect, with Next level and Replay, and a note that the score was saved to the leaderboard",
+            "width": 780,
+            "height": 1688,
+            "hash": "0129989c0118"
+          },
+          {
+            "path": "listing/leaderboard.webp",
+            "alt": "The leaderboard with five players; Mei leads with all 19 levels and 19,000 points, and Ada, the player signed in, is fourth",
+            "width": 780,
+            "height": 1688,
+            "hash": "f621b67caed7"
+          },
+          {
+            "path": "listing/levels-dark.webp",
+            "alt": "The level list in dark mode: ten levels solved at par, level 11, The Pocket, next",
+            "width": 780,
+            "height": 1688,
+            "hash": "9837ee3fa4ea"
+          }
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "323c8cfeab3f"
+        }
+      },
+      "prompt": "Build \"Sokoban\", a calm box-pushing puzzle for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage and\nsign-in, return standard Responses and fall back to env.holm.web.fetch(request).\nNo build step or third-party runtime CDN; vendor the icons with their licence.\n\n- Nineteen levels in the classic notation, easy to hard, each with a par: the\n  fewest pushes that solve it. Write a script that solves every level to\n  prove its par. Credit any level taken from a freely shared set.\n- Draw the board on a canvas in soft pastel colours, with a slide for each\n  step. Swipe anywhere in the play area to walk, tap a square to walk there,\n  tap a box beside the player to push it; arrow keys on a computer. Undo\n  takes back a whole action, and a restart can be undone.\n- After a win, show the points and a focused \"Next level\" button, so Enter\n  goes on, and make a reload open the next level. Every level stays open.\n- Signed out, keep progress in localStorage; the game needs no server. Signed\n  in, send each solve as a LURD string. The server replays it with the same\n  rules file, keeps the member's bests in member KV, and keeps one leaderboard\n  row per member in a shared collection. Sign-in sends the device's solves.\n- Five colour sets, each light and dark or following the device, and a sound\n  switch in the account menu. Installable, with a network-first service\n  worker, so it plays offline.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 sokoban. With my approval, deploy with\nholm @<peer> app deploy sokoban --spec-v1 --host sokoban.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test the level flow, touch and keyboard, signing in with solves on the\ndevice, a refused bad solution, going offline, and mobile/desktop in\nlight/dark. Report gaps honestly. Inspect the target settings schema before\nsetting sign-in branding.",
+      "history": []
+    },
+    {
       "name": "until",
       "path": "until",
       "version": "0.1.0",

@@ -52,6 +52,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 | [`overlap`](overlap/) | [overlap.zyt.app](https://overlap.zyt.app) | Find a time for a group: paint free times, a live heatmap, sign-in, realtime, sound and motion |
 | [`relay`](relay/) | [relay.zyt.app](https://relay.zyt.app) | A private messenger: usernames that reveal nothing, groups, files, link previews, realtime |
 | [`until`](until/) | [until.zyt.app](https://until.zyt.app) | Count down to dates and rate each day: works signed out, member storage, installable, offline |
+| [`sokoban`](sokoban/) | [sokoban.zyt.app](https://sokoban.zyt.app) | A puzzle game: canvas, touch and keys, plays offline signed out, and a leaderboard that replays every solution |
 
 ## Layout of an app
 

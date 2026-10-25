@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:f8027853a577421c0ef9e09be1d980989cbce1bc29068e11bf3392a6136129f2",
+  "inputs": {
+    "symbolHash": "sha256:5a062c3cf705530c4836cfff5786e4cd1b088592098aa57ccdce6752c75dddb4",
+    "themeColor": "#b197dc",
+    "name": "Sokoban",
+    "subtitle": "A calm box-pushing puzzle in 19 levels. Plays without an account, offline too; sign in to put your checked solves on the leaderboard.",
+    "iconStyle": "glass"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.259.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:892d1d60c402377078ce7887d8a63a55ec10d6349e9c5538f5b98a6417f7423b",
+    "web/apple-touch-icon.png": "sha256:2ec0dc5ae557bffee7c18b29b21314bc726cabc69f4a0978548eb208ce232364",
+    "web/favicon.ico": "sha256:f18e286d49749012f5de90ff7bd2d9fadb4cfa90b82afbe049df6b48428f05c6",
+    "web/favicon.png": "sha256:675922d9d7c4d1d84b470c9245dd94444f2dbc6042b8210960f88d12a8952c60",
+    "web/favicon.svg": "sha256:e92d209177eab3339c9981f884401b2e8ca92281495c187c36ae18310f3d10c6",
+    "web/icon-192.png": "sha256:96efa40a3a97d5148695eb932e9fb0e475168bcdfb7ae1175e13aa94d895285a",
+    "web/icon-512.png": "sha256:c08b0da0660192405535c773c87954d751e409b6aaee5c6aa19fac1edaa08fb4",
+    "web/icon-maskable-512.png": "sha256:5c66a2c3bc4472304d2021b41ad8a1b8333ab1957dcac0162c0ee6af6dc7c936",
+    "web/manifest.webmanifest": "sha256:0b0614576927120ac6702aad37582ac07f1b4199fc9a34cf7b4519876aa85a46",
+    "web/social_preview.png": "sha256:5e5f6bde54e7716dce4df7256bd1b5e4c27e60c283649c44290cc723907cc024"
+  }
+}

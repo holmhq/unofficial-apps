@@ -1,0 +1,25 @@
+{
+  "name": "sokoban",
+  "version": "0.1.0",
+  "title": "Sokoban",
+  "shortName": "Sokoban",
+  "description": "A calm box-pushing puzzle in 19 levels. Plays without an account, offline too; sign in to put your checked solves on the leaderboard.",
+  "themeColor": "#b197dc",
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    }
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://sokoban.zyt.app"
+    }
+  }
+}

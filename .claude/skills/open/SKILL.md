@@ -55,7 +55,7 @@ Offer three choices, and recommend the first:
 3. **Build a new app from a prompt:** help them write a short `PROMPT.md` in
    the same style, then build it with `llms-full.txt` as the only Holm reference.
 
-## 4. Run an app locally (pastebin as the example)
+## 4. Run an app locally (Sokoban as the example)
 
 Follow §4.2 for the exact commands.
 
@@ -69,23 +69,26 @@ Follow §4.2 for the exact commands.
    Start the node in a second terminal (`holm start --runtime-mode manual`),
    then register it as the `local` peer, all as in §4.2.
 4. **Deploy:**
-   `holm @local app deploy pastebin --host pastebin.holm.localhost --spa --no-build`.
+   `holm @local app deploy sokoban --spec-v1 --host sokoban.holm.localhost`.
    Add `--force` when redeploying.
-5. **Open** <http://pastebin.holm.localhost:4698/>. Chrome and Firefox resolve
-   `*.localhost` to this machine.
-6. **Signing in.** A fresh node has no sign-in method (§13.1). Offer two
-   options:
+5. **Open** <http://sokoban.holm.localhost:4698/>. Chrome and Firefox resolve
+   `*.localhost` to this machine. The game plays straight away with no
+   account; progress stays in the browser.
+6. **Signing in, for the leaderboard.** A fresh node has no sign-in method
+   (§13.1). Offer two options:
    - **Quick look:** make a test user and a session bound to the exact host
      the browser uses, port included. Run
      `holm test create-user --name You --email you@test.local`, then
-     `holm test create-session --address you@test.local --host pastebin.holm.localhost:4698`.
+     `holm test create-session --address you@test.local --host sokoban.holm.localhost:4698`.
      In the browser's developer tools, add the printed token as a cookie
      named `holm_session` for that host and reload. These test commands write
      to the local database, so never point them at a real node.
    - **Real use:** set up magic-link email through their own SMTP server
      (§12.14), or an OAuth provider (§13.1).
-7. **Links in API replies.** For links from the API and the `pb` CLI to point
-   at the local copy, set `DEFAULT_ORIGIN` in `pastebin/api/lib.js` to
+7. **Next, pastebin.** Deploy it the same way with
+   `--host pastebin.holm.localhost`; signing in works as in step 6, with that
+   host. For links from its API and the `pb` CLI to point at the local copy,
+   set `DEFAULT_ORIGIN` in `pastebin/api/lib.js` to
    `http://pastebin.holm.localhost:4698` and redeploy.
 
 Stop the node with Ctrl-C in its terminal. `holm @local app list` shows what

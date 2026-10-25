@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" data-theme="system" data-palette="bloom">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sokoban</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f4f3f7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sokoban">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="stylesheet" href="/src/styles.css">
+  <script>
+    // Apply the saved look before the first paint.
+    (function () {
+      var accents = { bloom: '#b197dc', mist: '#8fb0cc', sage: '#8fb5a0', soda: '#bf9ad6', mono: '#b0aeb8' }
+      var mode = 'system', palette = 'bloom'
+      try {
+        mode = localStorage.getItem('sokoban:theme') || 'system'
+        palette = localStorage.getItem('sokoban:palette') || 'bloom'
+      } catch (e) {}
+      if (!accents[palette]) palette = 'bloom'
+      var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+      var root = document.documentElement
+      root.setAttribute('data-theme', mode)
+      root.setAttribute('data-palette', palette)
+      root.style.setProperty('--accent', accents[palette])
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#101014' : '#f4f3f7')
+    })()
+  </script>
+</head>
+<body>
+  <div class="app" id="app">
+    <main class="play" id="play"></main>
+    <footer class="foot">
+      <a href="https://holmhq.com">
+        <svg viewBox="0 0 32 32" width="12" height="12" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0ZM6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>
+        A Holm app</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://github.com/holmhq/unofficial-apps/tree/main/sokoban">Source</a>
+    </footer>
+  </div>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
