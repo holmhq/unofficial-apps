@@ -1,0 +1,24 @@
+{
+  "name": "until",
+  "version": "0.1.0",
+  "title": "Until",
+  "shortName": "Until",
+  "description": "Count down the days to anything, and rate each one as it passes. Works on your phone without an account; sign in to keep it everywhere.",
+  "themeColor": "#177a5e",
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    }
+  },
+  "publish": {
+    "exclude": [
+      "/listing/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://until.zyt.app"
+    }
+  }
+}

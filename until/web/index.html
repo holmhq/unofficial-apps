@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" data-theme-family="garden" data-theme-mode="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Until</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#eff8f1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Until">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/src/styles.css">
+  <script>
+    // Apply the saved colour and appearance before the first paint.
+    (function () {
+      var bars = { garden: { light: '#eff8f1', dark: '#102019' }, signal: { light: '#fff3ef', dark: '#201620' } }
+      var s = {}
+      try { s = JSON.parse(localStorage.getItem('until:settings:v1')) || {} } catch (e) {}
+      var family = s.themeFamily === 'signal' ? 'signal' : 'garden'
+      var mode = s.appearance === 'light' || s.appearance === 'dark' ? s.appearance : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      var root = document.documentElement
+      root.setAttribute('data-theme-family', family)
+      root.setAttribute('data-theme-mode', mode)
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', bars[family][mode])
+    })()
+  </script>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header" id="header">
+      <div class="bar">
+        <h1 class="app-title">Until</h1>
+        <div class="account-controls" id="account"></div>
+      </div>
+    </header>
+    <main class="scroller" id="main">
+      <div class="column">
+        <p class="status-banner" id="status" role="status" hidden></p>
+        <div id="notes"></div>
+        <div id="trackers"><p class="loading">Loading…</p></div>
+        <footer class="foot">
+          <a href="https://holmhq.com">
+            <svg viewBox="0 0 32 32" width="13" height="13" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0ZM6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>
+            A Holm app</a>
+          <span aria-hidden="true">·</span>
+          <a href="https://github.com/holmhq/unofficial-apps/tree/main/until">Source</a>
+        </footer>
+      </div>
+    </main>
+    <button class="fab" id="add" type="button" aria-label="Add tracker" hidden></button>
+  </div>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>

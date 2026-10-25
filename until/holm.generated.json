@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:1d9abe657dbeecd23a55f5149f9795be959fe3f1db27b4813238578e209e0978",
+  "inputs": {
+    "symbolHash": "sha256:49d63145d1308e65912be47359fdba6fe9db8e9959f0272ac3ceafd63c650f54",
+    "themeColor": "#177a5e",
+    "name": "Until",
+    "subtitle": "Count down the days to anything, and rate each one as it passes. Works on your phone without an account; sign in to keep it everywhere.",
+    "iconStyle": "glass"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.259.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:8a77e4eb68ff067aea49f251ccc982f18bea2bb3bc68d87e40a8e1751735e6b2",
+    "web/apple-touch-icon.png": "sha256:c19d154cd7c03f16bf00d381a80c5dfe300beb0cd8837c465d358d42d570717c",
+    "web/favicon.ico": "sha256:bf84974ff11a166feec157ecedbed52acf283de9184abc4b2010ec685865d6c8",
+    "web/favicon.png": "sha256:a3ab9c6363df2899a87b0f4aefbfcbec38a16eeecd459985d36df54b587fddb1",
+    "web/favicon.svg": "sha256:be57efe2a9502c0c5f2d37dac61467af0e068d5f52a97ca43af409c63153afd3",
+    "web/icon-192.png": "sha256:6f366763254d520fbf1cd078cec995cb0bc8c68efdcc27206cb25288fd7d8785",
+    "web/icon-512.png": "sha256:3a53abedbaf5c39e6e75f0aca888e98e67c9a1de64004125ace0346c248b277b",
+    "web/icon-maskable-512.png": "sha256:32fec7ddc7d0620430bbde42062c7cc2ba0a3ed0bdc60277b376277cbd8ea7b4",
+    "web/manifest.webmanifest": "sha256:91437807853367a154397ac20a45192fdfba6c270a02772149c36f481af9cc34",
+    "web/social_preview.png": "sha256:dfcf8a785695c18d09541ace5ab3bd2abbe0d929408b216d8100567601f4641e"
+  }
+}

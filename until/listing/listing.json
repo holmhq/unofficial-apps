@@ -1,0 +1,25 @@
+{
+  "subtitle": "Count down the days, rate each one",
+  "category": "Lifestyle",
+  "featured": false,
+  "description": "Give Until a start and an end, or a number of days, and it counts down to it: the days left in big, friendly numbers, with the trip, the deadline or the due date underneath.\n\nTap a tracker to rate any day so far from one to five stars, and see today's rating on its card. Trackers that are running come first, then the ones still to start, then the ones you've finished.\n\nIt works straight away on your phone, keeping trackers on the device. Sign in and they move to your account and follow you everywhere, and the installed app still opens offline with your last synced copy. Two colours, Green and Bloom, each in light and dark.",
+  "whatsNew": "Until joins the store: rewritten without a build step, with sign-in on the node's own page, a retry that never makes a second copy, and an installed app that opens offline.",
+  "screenshots": [
+    {
+      "file": "list.webp",
+      "alt": "The list in green: a due date 91 days away, a thesis due in 5 days, and a marathon plan with 4 stars today"
+    },
+    {
+      "file": "rate.webp",
+      "alt": "Rating day 22 of a 112-day marathon plan: five stars with the fourth lit"
+    },
+    {
+      "file": "add.webp",
+      "alt": "Adding Dry January in the pink Bloom colour, from January 1 to 31, 31 days"
+    },
+    {
+      "file": "list-dark.webp",
+      "alt": "The same list in Bloom's dark mode, with pink day counts"
+    }
+  ]
+}
