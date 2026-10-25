@@ -29,12 +29,14 @@ uploads; no global holm/request/respond and no request.files API.
 - One private inbox per project: ticket numbers, statuses, notes and a team
   thread, sort/search/filter for hundreds of items. Only the owner sees
   files/contact details. The optional public page shows selected items,
-  votes once per browser, and comments only after owner approval.
+  votes once per browser, and comments only after owner approval. The owner
+  can file an item themselves and share one item by an unguessable link
+  that needs no sign-in and shows no private fields.
 - Keep spam out with a trap field, project caps and allowed sites, honestly
   described as casual-misuse guards, not strong sender authentication.
   Track daily visits, QR/email-link visits, opens, sends, votes and comments
   in app KV; no visitor tracking. “Where it's live” separates local copies.
-- Add typed operations for public widget settings and JSON feedback with keyed retries, plus a signed-in owner's private inbox, mark-done action and dashboard counts; keep all existing routes and file flows.
+- Add typed operations for public widget settings and JSON feedback with keyed retries, plus a signed-in owner's private inbox, mark-done, filing and sharing actions and dashboard counts; keep all existing routes and file flows.
 - API keys: show once, hash SHA-256, accept bearer tokens on owner routes,
   check project ownership, return the setup snippet; keys cannot mint keys.
 - Make it refined on phones/desktop, light/dark/system, a fixed footer and
@@ -262,6 +264,11 @@ then, on the agent's proposal:
 and:
 
 > Shouldnt 3 issues posted separately go into separate threads? by a verified email?
+
+**Iteration 21** let the owner file an item and share it by link, from a
+question a friend asked in a chat:
+
+> why cant i create as a random user issue in feedback ... and reply to it? yes we need per item link to share; we dont need to send reply by email in cases were we dont have a user to start with
 
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private

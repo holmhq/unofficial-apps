@@ -1,7 +1,7 @@
 // A project's public page, for people who arrive from a link or a QR code:
 // a feedback form anyone can use, then the items the owner chose to show, by
 // status, with votes and comments. It wears the project's name and colour,
-// not the app's.
+// not the app's. One item the owner shared by link looks the same, alone.
 import { el, api, glyph, store, ago, inkOn, lighten, STATUS, KIND, KIND_SETS } from './lib.js'
 import { show } from './app.js'
 import { composer, sentMark } from './compose.js'
@@ -175,19 +175,19 @@ function listView(data, base) {
     powered())
 }
 
-function itemView(data, item, base) {
-  const { project } = data
-  document.title = `${item.title} – ${project.name}`
-  const voted = new Set(store.get('voted', []))
-  const comments = el('ol', { class: 'comments' }, el('li', { class: 'muted' }, 'Loading comments…'))
-  api('GET', `/api/boards/${project.id}/items/${item.id}/comments`).then(reply => {
-    comments.replaceChildren(...(reply.comments.length ? reply.comments.map(comment => el('li', { class: comment.team ? 'team' : null },
+// An item's approved comments, then a form for another, which waits for
+// the owner's approval. `comments` is a promise of the list; new ones go to
+// `path`.
+function discussion(project, comments, path) {
+  const list = el('ol', { class: 'comments' }, el('li', { class: 'muted' }, 'Loading comments…'))
+  comments.then(entries => {
+    list.replaceChildren(...(entries.length ? entries.map(comment => el('li', { class: comment.team ? 'team' : null },
       el('div', { class: 'comment-by' },
         el('strong', {}, comment.name || 'Someone'),
         comment.team && el('span', { class: 'team-badge' }, 'Team'),
         el('span', { class: 'muted' }, ago(comment.createdAt))),
       el('p', {}, comment.body))) : [el('li', { class: 'muted empty-comments' }, 'No comments yet.')]))
-  }).catch(() => comments.replaceChildren(el('li', { class: 'form-error' }, 'Comments didn’t load.')))
+  }).catch(() => list.replaceChildren(el('li', { class: 'form-error' }, 'Comments didn’t load.')))
 
   const body = el('textarea', { rows: '3', maxlength: '2000', required: true, placeholder: 'Add to this, or say why it matters to you', 'aria-label': 'Your comment' })
   const name = el('input', { maxlength: '40', autocomplete: 'nickname', placeholder: 'Your name (optional)', 'aria-label': 'Your name' })
@@ -200,12 +200,21 @@ function itemView(data, item, base) {
     if (body.value.trim().length < 2) { error.textContent = 'Write a comment first.'; error.hidden = false; return }
     post.disabled = true
     try {
-      await api('POST', `/api/boards/${project.id}/items/${item.id}/comments`, { body: body.value, name: name.value, website: trap.value })
+      await api('POST', path, { body: body.value, name: name.value, website: trap.value })
       form.replaceWith(el('p', { class: 'comment-sent', role: 'status' }, glyph('check', 'glyph line'), `Thanks. Your comment will show here once ${project.name} approves it.`))
     } catch (problem) { error.textContent = problem.message; error.hidden = false; post.disabled = false }
   } }, body, el('div', { class: 'comment-row' }, name, post), trap, error,
     el('p', { class: 'muted fine' }, `Comments appear once ${project.name} approves them.`))
 
+  return el('section', { class: 'comments-section', 'aria-labelledby': 'comments-title' },
+    el('h2', { id: 'comments-title' }, 'Comments'), list, form)
+}
+
+function itemView(data, item, base) {
+  const { project } = data
+  document.title = `${item.title} – ${project.name}`
+  const voted = new Set(store.get('voted', []))
+  const path = `/api/boards/${project.id}/items/${item.id}/comments`
   show(
     brand(project, false),
     el('article', { class: 'board-item' },
@@ -217,9 +226,37 @@ function itemView(data, item, base) {
           el('h1', {}, item.title),
           el('p', { class: 'muted' }, KIND[item.kind], ' #', item.number, ' · ', ago(item.createdAt)))),
       rest(item) && el('p', { class: 'board-item-body' }, rest(item)),
-      el('section', { class: 'comments-section', 'aria-labelledby': 'comments-title' },
-        el('h2', { id: 'comments-title' }, 'Comments'),
-        comments,
-        form)),
+      discussion(project, api('GET', path).then(reply => reply.comments), path)),
+    powered())
+}
+
+// One item its owner shared by link (/s/<token>): it, who asked, and its
+// comments, with no sign-in, whether or not the project's page is public.
+// The link is the only key, so search engines are asked to leave it out.
+export async function sharedPage(token) {
+  show(el('p', { class: 'muted page-loading' }, 'Loading…'))
+  document.head.append(el('meta', { name: 'robots', content: 'noindex' }))
+  let data
+  try {
+    data = await api('GET', `/api/shared/${token}`)
+  } catch (problem) {
+    document.title = 'Not found – feedback'
+    return show(el('section', { class: 'page-head' }, el('h1', {}, 'This link doesn’t open anything'), el('p', { class: 'lede' }, problem.message)))
+  }
+  const { project, item } = data
+  document.title = `${item.title} – ${project.name}`
+  document.body.classList.add('on-board')
+  paint(project)
+  show(
+    brand(project, false),
+    el('article', { class: 'board-item' },
+      project.board && el('a', { class: 'back', href: project.board, 'data-link': true }, glyph('chevron'), 'All feedback'),
+      el('div', { class: 'board-item-head' },
+        el('div', {},
+          el('span', { class: `pill status-${item.status}` }, TITLES[item.status] || STATUS[item.status]),
+          el('h1', {}, item.title),
+          el('p', { class: 'muted' }, KIND[item.kind], ' #', item.number, item.askedBy && ` · asked by ${item.askedBy}`, ' · ', ago(item.createdAt)))),
+      rest(item) && el('p', { class: 'board-item-body' }, rest(item)),
+      discussion(project, Promise.resolve(data.comments), `/api/shared/${token}/comments`)),
     powered())
 }

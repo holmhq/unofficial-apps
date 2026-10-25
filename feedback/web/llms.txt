@@ -154,8 +154,9 @@ accent).
 
 - `GET /api/projects/<id>/items?status=<s>` — the inbox. `status` is `new`, `planned`,
   `progress`, `done`, `closed`, or `open` for new + planned + progress; omit it for all.
+- `POST /api/projects/<id>/items` — file one yourself (see "Answer someone with a link").
 - `PATCH /api/items/<item-id>` — `status`, `kind` (`issue`, `idea`, `question`, `praise`,
-  `problem`), `public` (show on the board), `title`.
+  `problem`), `public` (show on the board), `title`, `share` (`true`, `false` or `"new"`).
 - `DELETE /api/items/<item-id>`.
 - `GET` and `POST /api/items/<item-id>/notes` — private notes, `{"body": "..."}`.
 - `POST /api/items/<item-id>/replies` — `{"body": "..."}`, a reply to the sender: it joins the
@@ -167,8 +168,38 @@ accent).
   `DELETE /api/comments/<id>` removes it.
 
 An item has `id`, `number` (the `#12` shown in the app), `kind`, `status`, `title`, `body`,
-`email` (may be empty), `emailVerified`, `replyWaiting` (the sender wrote back), `page`, `pageTitle`, `browser`, `viewport`, `votes`, `public` and
-`createdAt`. Link one as `https://feedback.zyt.app/projects/<project-id>/items/<number>`.
+`email` (may be empty), `emailVerified`, `replyWaiting` (the sender wrote back), `page`, `pageTitle`, `browser`, `viewport`, `votes`, `public`,
+`source` (`widget`, `page`, or `owner` for one you filed), `askedBy`, `share` (its link, or
+`null`) and `createdAt`. Link the owner to one as
+`https://feedback.zyt.app/projects/<project-id>/items/<number>`.
+
+### Answer someone with a link
+
+A question reached the owner another way, a chat or a call, and they want to answer it and send
+the person one link. File it, answer it and share it in one call:
+
+```sh
+curl https://feedback.zyt.app/api/projects/<id>/items -H "Authorization: Bearer $KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Can Holm run on a Raspberry Pi?","askedBy":"Priya","answer":"Yes: ...","share":true}'
+```
+
+Fields: `title` (≤90; or the `body`'s first line), `body` (≤4000), `kind` (default `question`,
+or the project's first kind), `askedBy` (a name, ≤60, shown on the link), `email` (kept for the
+owner and never emailed), `status` (default `new`), `answer` (posted as the project's public
+reply) and `share`. The reply is `{"item": {...}}`; `item.share` is the link,
+`https://feedback.zyt.app/s/<token>`. Hand it to the owner to send on.
+
+The link opens the item, who asked and its approved public comments with no sign-in, whether or
+not the project's page is public. It never shows the email, phone, page, browser, answers or
+files. Anyone with it can comment; those comments wait for the owner's approval.
+
+- More replies: `POST /api/items/<item-id>/comments` with `{"body": "..."}`.
+- `PATCH /api/items/<item-id>` with `{"share": false}` stops the link at once; `{"share": "new"}`
+  replaces it, and the old one stops; `{"share": true}` turns it on, keeping its link if it has
+  one. Each change shows in the item's thread.
+- feedback emails only an address its owner confirmed with a code. To get replies by email, the
+  person sends their question through the form and confirms their address there.
 
 ### Open the inbox without signing in
 
@@ -185,8 +216,8 @@ for a new link.
 
 `https://feedback.zyt.app/_holm/mcp` is an MCP endpoint with two public tools: `projects_get`
 (a widget's public settings) and `feedback_submit` (send text or rated feedback; it requires an
-`idempotency_key`, reused only to retry the same input, so a retry is never sent twice). Owner tools (inbox, triage, settings) need sign-in, which is
-not available yet; use the owner API above.
+`idempotency_key`, reused only to retry the same input, so a retry is never sent twice). Owner tools (inbox, triage, filing and sharing items, settings) need
+sign-in, which is not available yet; use the owner API above.
 
 ## Rules for agents
 
@@ -195,6 +226,7 @@ not available yet; use the owner API above.
 - Set the new project's `color` and logo from the site itself (see "Use the site's own icon").
 - Keep the key where the owner keeps it; never print, log or commit it. On a 401, ask the owner
   for a key instead of retrying.
-- Don't delete projects, items or comments, or turn a board public, unless asked to.
+- Don't delete projects, items or comments, turn a board public or share an item by link, unless
+  asked to. A link works for anyone it is forwarded to.
 - Feedback can hold visitors' emails: summarise it for the owner, never post it publicly.
 - After adding the button, load the page and check the button opens the form.

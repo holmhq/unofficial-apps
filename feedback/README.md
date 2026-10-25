@@ -93,6 +93,15 @@ deploy. They are still public source in this repository.
   them). Its **thread**, for your team only, lists when it came in,
   every note and every change of status, kind or visibility, by whom. Only
   the owner can open the files.
+- **Filed by you, answered by link:** feedback that reached you another way,
+  a message, a call or a chat, goes in with **New item**: a title, details,
+  kind, who asked, their email if you have it (only you see it, and feedback
+  never emails it) and, if you like, your reply. Any item can have a link of
+  its own, `/s/<token>`, that opens it with no sign-in, whether or not your
+  feedback page is on: the item, who asked and its public comments, never
+  contact details, the page, browser, answers or files. Whoever has the link
+  can comment; their comments wait for your approval, as on the page. Turn
+  the link off and it stops at once, or make a new one and the old one stops.
 - **The feedback page,** off by default, at `/<custom-address>` (or
   `/b/<project>`, which always works): made for someone who arrives from a
   link or a QR code, so it stands alone in the project's name and colour,
@@ -177,8 +186,8 @@ Named typed operations are also exported in `contract.operations`, with
 native `(input, env, ctx)` handlers and shared request-local storage factories.
 Call them with JSON at `POST /api/<operation key>`: `projects.get` reads only
 public widget configuration; `feedback.submit` sends JSON without attachments;
-`items.list`, `items.done` and `stats.get` require a signed-in project
-owner. Inbox items and stats are sensitive and never public. Existing routes,
+`items.list`, `items.done`, `items.create`, `items.share` and `stats.get`
+require a signed-in project owner. Inbox items and stats are sensitive and never public. Existing routes,
 bearer API keys, the dashboard, widget, QR codes and multipart uploads remain
 available; app-owned bearer keys do not authorize member operations.
 
@@ -233,7 +242,8 @@ api/main.js         v1 entry: hands /api requests to the routes
 api/_holm.js        gives the routes `holm` and `respond` for each request
 api/_legacy_main.js routes (below), written in Holm's original app format
 api/projects.js     projects, their settings and custom addresses
-api/items.js        sending, triage, notes, the page and votes
+api/items.js        sending, filing, triage, notes, share links, the page
+                    and votes
 api/files.js        attachments: checks, storage, previews, serving
 api/page.js         a page's logo and cover: resizing and serving
 api/form.js         contact rules, rating, questions, checking answers
@@ -299,14 +309,17 @@ stars are the fallback if it cannot load.
 | `POST /api/boards/<page>/items` | anyone | send feedback from the page |
 | `POST /api/boards/<page>/items/<id>/vote` | anyone | vote, once per browser |
 | `GET`, `POST /api/boards/<page>/items/<id>/comments` | anyone | approved comments; add one |
+| `GET /api/shared/<token>` | anyone with the link | one shared item and its approved comments |
+| `POST /api/shared/<token>/comments` | anyone with the link | add a comment, which waits for approval |
 | `GET`, `POST /api/projects` | owner | your projects, with the sites each is on; make one |
 | `GET`, `PATCH`, `DELETE /api/projects/<id>` | owner | one project |
 | `GET /api/projects/<id>/items[?status=]` | owner | its inbox: `open`, `new`, `planned`, `progress`, `done`, `closed` |
+| `POST /api/projects/<id>/items` | owner | file an item yourself; optionally answer it and share it |
 | `GET /api/projects/<id>/stats?days=` | owner | its stats over 7, 30 or 90 days |
 | `GET /api/projects/<id>/installs` | owner | sites where its button loaded lately |
 | `POST`, `DELETE /api/projects/<id>/logo`, `…/cover` | owner | upload one (multipart), or go back to the default |
 | `GET /api/stats?days=` | owner | stats for all your projects |
-| `PATCH`, `DELETE /api/items/<id>` | owner | status, kind, public; delete |
+| `PATCH`, `DELETE /api/items/<id>` | owner | status, kind, public, share (`true`, `false`, `"new"`); delete |
 | `GET /api/items/<id>/files/<n>` | owner | a file; `?preview=1`, `?download=1` |
 | `GET`, `POST /api/items/<id>/notes` | owner | private notes |
 | `GET`, `POST /api/items/<id>/comments` | owner | all comments; reply publicly |
@@ -393,9 +406,22 @@ curl -X PATCH https://feedback.example.com/api/items/<item-id> -H "Authorization
   -H 'Content-Type: application/json' -d '{"status":"planned","public":true}'
 ```
 
-Snippets and page links in replies use the app's `ORIGIN` constant in
-`api/projects.js`. Set it to your public origin; this is an app choice, not
-a v1 host limitation. A fresh handler can use the standard `request.url`.
+To file a question that reached you another way, answer it and get a link
+that opens it with no sign-in, in one call:
+
+```sh
+curl https://feedback.example.com/api/projects/<id>/items -H "Authorization: Bearer $FEEDBACK_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Can it run on a Raspberry Pi?","askedBy":"Priya","answer":"Yes.","share":true}'
+```
+
+The reply's `item.share` is the link. `PATCH /api/items/<item-id>` with
+`{"share": false}` stops it, and `{"share": "new"}` replaces it.
+
+Snippets, page links and share links in replies use the app's `ORIGIN`
+constant in `api/projects.js`. Set it to your public origin; this is an app
+choice, not a v1 host limitation. A fresh handler can use the standard
+`request.url`. The dashboard shows share links on its own origin.
 
 ## Deploy your own
 
@@ -455,6 +481,12 @@ and dark, and browser CSP errors. Local validation is not runtime proof.
 - Custom addresses are first come, first served across the whole app, and a
   few words the app uses itself (like `stats` and `projects`) are reserved.
 - Files are owner-only and can't be shown on the public page.
+- A share link is the only key to its item: anyone it's forwarded to can
+  read the item and comment (comments wait for approval). Turn it off, or
+  make a new one, to stop it.
+- An email you enter on an item you file is never emailed: feedback writes
+  only to addresses their owners confirmed with a code. For replies by email,
+  the person sends their question through the form and confirms there.
 - A project's id is public by design: it's in every snippet, the form's
   address and `/b/<id>`. It only lets people send feedback and read what the
   form shows (name, colours, logo, cover, questions); every owner route

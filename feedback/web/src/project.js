@@ -98,7 +98,7 @@ export async function projectPage(id, view) {
     show(shell.root)
   }
   const ticket = ++shell.ticket
-  const tab = typeof view === 'number' ? 'inbox' : view === 'settings' ? 'setup' : view
+  const tab = typeof view === 'number' || view === 'new' ? 'inbox' : view === 'settings' ? 'setup' : view
   shell.nav.querySelectorAll('a').forEach(link => link.dataset.tab === tab ? link.setAttribute('aria-current', 'page') : link.removeAttribute('aria-current'))
   const { project } = shell
   document.title = `${project.name} – feedback`
@@ -107,6 +107,7 @@ export async function projectPage(id, view) {
   if (view === 'form') return formTab(project)
   if (view === 'share') return share(project)
   if (view === 'stats') return put(statsView({ project }))
+  if (view === 'new') return newItem(project)
 
   // The inbox and its items: draw what's known at once, then again only if
   // a fresh copy differs.
@@ -149,10 +150,13 @@ const ORDER = {
 }
 // Where an item came from: the feedback page, or the site that sent it.
 const sourceOf = item => {
-  if (item.source === 'page') return 'page'
+  if (item.source === 'page' || item.source === 'owner') return item.source
   try { return new URL(item.page).origin } catch { return 'unknown' }
 }
-const sourceName = source => source === 'page' ? 'Your feedback page' : source === 'unknown' ? 'An unknown page' : source.replace(/^https?:\/\//, '')
+const sourceName = source => source === 'page' ? 'Your feedback page' : source === 'owner' ? 'Filed by you' : source === 'unknown' ? 'An unknown page' : source.replace(/^https?:\/\//, '')
+
+// An item's share link on this copy of the app, or '' while it has none.
+const shareURL = item => typeof item.share === 'string' && item.share.includes('/s/') ? location.origin + item.share.slice(item.share.indexOf('/s/')) : ''
 
 // "/" jumps to the inbox's search box.
 document.addEventListener('keydown', event => {
@@ -196,7 +200,7 @@ function inbox(project, items) {
     }
     if (more.text) {
       const words = more.text.toLowerCase().split(/\s+/)
-      const haystack = ['#' + item.number, item.title, item.body, item.email, item.phone, item.page, item.pageTitle, ...item.answers.map(answerText)].join(' ').toLowerCase()
+      const haystack = ['#' + item.number, item.title, item.body, item.askedBy, item.email, item.phone, item.page, item.pageTitle, ...item.answers.map(answerText)].join(' ').toLowerCase()
       if (!words.every(word => haystack.includes(word))) return false
     }
     return true
@@ -228,12 +232,12 @@ function inbox(project, items) {
   const fold = el('button', { type: 'button', class: 'chip-toggle filters-fold', 'aria-expanded': 'false', 'aria-controls': 'inbox-filters',
     onclick: () => { const open = !bar.classList.toggle('folded'); fold.setAttribute('aria-expanded', String(open)) } }, glyph('sliders', 'glyph line'), 'Filters', setCount)
   const bar = el('div', { class: 'filters folded' },
-    el('div', { class: 'filters-top' }, el('span', { class: 'search' }, glyph('search', 'glyph line'), search, el('kbd', {}, '/')), fold, sorter),
+    el('div', { class: 'filters-top' }, el('span', { class: 'search' }, glyph('search', 'glyph line'), search, el('kbd', {}, '/')), fold, sorter, fileOne()),
     el('div', { class: 'filters-more', id: 'inbox-filters' },
       dropdown('Any time', 'time', TIMES),
       dropdown('Any kind', 'kind', kinds.map(kind => ({ value: kind, label: KIND[kind], icon: kind, line: false }))),
       rated && dropdown('Any rating', 'rating', [5, 4, 3, 2, 1].map(n => ({ value: String(n), label: `${n} ${n === 1 ? 'star' : 'stars'}`, icon: 'star', line: false }))),
-      sources.length > 1 && dropdown('From anywhere', 'from', sources.map(source => ({ value: source, label: sourceName(source), icon: source === 'page' ? 'link' : 'globe' }))),
+      sources.length > 1 && dropdown('From anywhere', 'from', sources.map(source => ({ value: source, label: sourceName(source), icon: source === 'page' ? 'link' : source === 'owner' ? 'person' : 'globe' }))),
       choiceFields(project).map(field => dropdown(field.label, field.id, field.options.map(option => ({ value: option, label: option })), value => { more.answers[field.id] = value })),
       toggle('photos', 'With photos', 'camera'),
       asks && toggle('contact', 'Can reply', 'reply'),
@@ -264,21 +268,79 @@ function inbox(project, items) {
           el('span', { class: 'ticket-title' }, item.rating && el('span', { class: 'ticket-rating', 'aria-label': `${item.rating} out of 5` }, glyph('star'), item.rating), item.title),
           item.answers.length > 0 && el('span', { class: 'ticket-answers' }, item.answers.map(answer => answer.type === 'text' ? `${answer.label}: ${answerText(answer)}` : answerText(answer)).join(' · ')),
           el('span', { class: 'ticket-meta' },
-            KIND[item.kind], ' from ', item.source === 'page' ? 'your feedback page' : item.page ? item.page.replace(/^https?:\/\//, '') : 'an unknown page', ', ', ago(item.createdAt),
+            item.source === 'owner'
+              ? [KIND[item.kind], item.askedBy && ` from ${item.askedBy}`, ', filed by you, ', ago(item.createdAt)]
+              : [KIND[item.kind], ' from ', item.source === 'page' ? 'your feedback page' : item.page ? item.page.replace(/^https?:\/\//, '') : 'an unknown page', ', ', ago(item.createdAt)],
             item.files.length ? `, ${item.files.length} ${item.files.length === 1 ? 'file' : 'files'}` : '',
             item.notes ? `, ${item.notes} ${item.notes === 1 ? 'note' : 'notes'}` : '',
-            item.public ? `, on the page with ${item.votes} ${item.votes === 1 ? 'vote' : 'votes'}` : ''),
+            item.public ? `, on the page with ${item.votes} ${item.votes === 1 ? 'vote' : 'votes'}` : '',
+            item.share ? ', shared by link' : ''),
           item.pending > 0 && el('span', { class: 'ticket-waiting' }, glyph('comment'), `${item.pending} ${item.pending === 1 ? 'comment' : 'comments'} to approve`),
           item.replyWaiting && el('span', { class: 'ticket-waiting' }, glyph('reply', 'glyph line'), 'They replied')),
         el('span', { class: `pill status-${item.status}` }, STATUS[item.status])))) :
       [el('li', { class: 'empty' }, items.length
         ? el('span', {}, 'Nothing matches. ', active() ? el('button', { type: 'button', class: 'link-button', onclick: () => clear.click() }, 'Clear the filters') : 'Try another status', '.')
-        : link.project ? el('span', {}, 'No feedback yet.') : el('span', {}, 'No feedback yet. ', el('a', { href: `/projects/${project.id}/setup`, 'data-link': true }, 'Add the snippet to your site'),
-          ' or ', el('a', { href: `/projects/${project.id}/share`, 'data-link': true }, 'share your feedback page'), ', and it will arrive here.'))]))
+        : link.project ? el('span', {}, 'No feedback yet. Heard from someone another way? ', el('a', { href: `/projects/${project.id}/new`, 'data-link': true }, 'File it'), '.')
+        : el('span', {}, 'No feedback yet. ', el('a', { href: `/projects/${project.id}/setup`, 'data-link': true }, 'Add the snippet to your site'),
+          ' or ', el('a', { href: `/projects/${project.id}/share`, 'data-link': true }, 'share your feedback page'), ', and it will arrive here. Heard from someone another way? ',
+          el('a', { href: `/projects/${project.id}/new`, 'data-link': true }, 'File it yourself'), '.'))]))
   }
   paint()
   put(waiting > 0 && el('p', { class: 'notice' }, glyph('comment'), `${waiting} ${waiting === 1 ? 'comment is' : 'comments are'} waiting for your approval.`),
     items.length > 0 && bar, chips, items.length > 0 && summary, list, moreButton)
+
+  function fileOne() {
+    return el('a', { class: 'button primary file-one', href: `/projects/${project.id}/new`, 'data-link': true, 'aria-label': 'New item', title: 'File feedback that reached you another way' },
+      glyph('plus', 'glyph line'), el('span', {}, 'New item'))
+  }
+}
+
+// Feedback that reached the owner another way, a chat or a call: file it,
+// answer it, and share it by link, in one go. Who asked shows with it on the
+// link; their email stays with the team and is never sent anything.
+function newItem(project) {
+  document.title = `New item – ${project.name} – feedback`
+  const inbox = `/projects/${project.id}`
+  let kind = project.kinds.includes('question') ? 'question' : project.kinds[0]
+  const kinds = segmented({ label: 'Kind', value: kind, options: project.kinds.map(key => ({ value: key, label: KIND[key], icon: key, line: false })), onchange: value => { kind = value } })
+  const field = (label, id, control, note) => el('div', { class: 'field' }, el('label', { for: id }, label), Object.assign(control, { id }), note && el('small', {}, note))
+  const title = el('input', { maxlength: '90', required: true, autocomplete: 'off', placeholder: 'What they asked, in a line' })
+  const details = el('textarea', { rows: '4', maxlength: '4000', placeholder: 'Their words, or more about it' })
+  const askedBy = el('input', { maxlength: '60', autocomplete: 'off', placeholder: 'A name' })
+  const email = el('input', { type: 'email', maxlength: '200', autocomplete: 'off', placeholder: 'name@example.com' })
+  const answer = el('textarea', { rows: '4', maxlength: '2000', placeholder: `Your reply, as ${project.name}` })
+  const share = el('input', { type: 'checkbox', class: 'switch' })
+  const error = el('p', { class: 'form-error', role: 'alert', hidden: true })
+  const submit = el('button', { type: 'submit', class: 'button primary' }, 'File it')
+  const form = el('form', { class: 'file-form', novalidate: true, onsubmit: async event => {
+    event.preventDefault()
+    error.hidden = true
+    if (title.value.trim().length < 3) { error.textContent = 'Give it a title of a few words.'; error.hidden = false; title.focus(); return }
+    submit.disabled = true
+    try {
+      const { item } = await api('POST', `/api/projects/${project.id}/items`, {
+        kind, title: title.value, body: details.value, askedBy: askedBy.value, email: email.value, answer: answer.value, share: share.checked
+      })
+      if (shell?.items) shell.items = [item, ...shell.items]
+      go(`${inbox}/items/${item.number}`)
+    } catch (problem) { error.textContent = problem.message; error.hidden = false; submit.disabled = false }
+  } },
+    el('div', { class: 'field' }, el('span', {}, 'Kind'), kinds),
+    field('Title', 'file-title', title),
+    field('Details', 'file-body', details, 'Optional.'),
+    el('div', { class: 'field-pair' },
+      field('Asked by', 'file-by', askedBy, 'Optional. Shown with it on its link.'),
+      field('Their email', 'file-email', email, 'Optional. Only you see it; feedback never emails it.')),
+    field('Reply', 'file-answer', answer, 'Optional. It shows with the item, on its link and on your page if you show it there.'),
+    el('label', { class: 'toggle big' }, share, el('span', {}, 'Make a link to share', el('small', {}, 'Anyone with it can read this item and its replies, and comment, without signing in.'))),
+    error,
+    el('div', { class: 'form-actions' }, el('a', { class: 'button', href: inbox, 'data-link': true }, 'Cancel'), submit))
+  put(el('section', { class: 'file-item' },
+    el('a', { class: 'back', href: inbox, 'data-link': true }, glyph('chevron'), 'Inbox'),
+    el('h2', {}, 'File an item'),
+    el('p', { class: 'muted section-note' }, 'For feedback that reached you another way: a message, a call, a chat. Reply here and send them a link; they don’t need an account.'),
+    form))
+  title.focus()
 }
 
 function attachments(item) {
@@ -338,10 +400,10 @@ function publicComments(project, item) {
   } }, body, el('button', { type: 'submit', class: 'button' }, 'Reply'))
   return el('section', { class: 'notes-section' },
     el('h3', {}, 'Public comments'),
-    el('p', { class: 'muted section-note' }, item.public
-      ? 'Visitors’ comments wait here until you approve them. Your replies show at once.'
-      : 'Show this item on your public page and visitors can comment on it.'),
-    list, item.public && form)
+    el('p', { class: 'muted section-note' }, item.public || item.share
+      ? `They show ${item.public && item.share ? 'on your public page and its link' : item.public ? 'on your public page' : 'on its link'}. Visitors’ comments wait here until you approve them; your replies show at once.`
+      : 'Show this item on your public page, or share a link to it, and people can read your replies and comment.'),
+    list, (item.public || item.share) && form)
 }
 
 // Changes show at once and are undone if the server says no; only the
@@ -353,7 +415,9 @@ function itemPage(project, item) {
   const who = [item.email, item.phone].filter(Boolean).join(', ')
   const paintNotes = list => notes.replaceChildren(
     el('li', { class: 'event' }, glyph(item.kind), el('span', {},
-      el('strong', {}, who || 'Someone'), ' sent it from ', item.source === 'page' ? 'your feedback page' : (item.pageTitle || item.page || 'a site'),
+      item.source === 'owner'
+        ? [item.askedBy && [el('strong', {}, item.askedBy), ' asked; '], el('strong', {}, item.filedBy || 'You'), ' filed it']
+        : [el('strong', {}, who || 'Someone'), ' sent it from ', item.source === 'page' ? 'your feedback page' : (item.pageTitle || item.page || 'a site')],
       el('span', { class: 'muted' }, ' · ', ago(item.createdAt)))),
     ...list.map(note => note.type === 'event'
       ? el('li', { class: 'event' }, el('img', { src: note.avatar, alt: '', referrerpolicy: 'no-referrer' }),
@@ -384,6 +448,13 @@ function itemPage(project, item) {
     onchange: value => save({ kind: value })
   })
   const shown = el('input', { type: 'checkbox', class: 'switch', onchange: event => save({ public: event.target.checked }) })
+  // A link to this item alone, for someone without an account.
+  const sharing = el('input', { type: 'checkbox', class: 'switch', onchange: event => save({ share: event.target.checked }) })
+  const linkBox = codeBox('', 'Copy link')
+  const shareBox = el('div', { class: 'share-link', hidden: true },
+    linkBox,
+    el('p', { class: 'muted' }, 'Anyone with this link can read the item, who asked and its public comments, and comment, without signing in. It never shows contact details, the page, browser, answers or files. ',
+      el('button', { type: 'button', class: 'link-button', onclick: () => confirm('Make a new link? This one stops working.') && save({ share: 'new' }) }, 'Make a new link'), '.'))
   const paint = (before = {}) => {
     const next = stub(item)
     ticketStub.replaceWith(next)
@@ -391,7 +462,12 @@ function itemPage(project, item) {
     statuses.querySelectorAll('button').forEach(button => button.setAttribute('aria-checked', String(button.dataset.status === item.status)))
     kind.value = item.kind
     shown.checked = item.public
-    if ('public' in before && before.public !== item.public) {
+    // While a link is being made, say so; while it's replaced, keep the old one.
+    sharing.checked = !!item.share
+    if (shareURL(item) || !item.share) linkBox.set(shareURL(item))
+    else if (item.share === true) linkBox.set('Making a link…')
+    shareBox.hidden = !item.share
+    if (('public' in before && before.public !== item.public) || ('share' in before && !before.share !== !item.share)) {
       const fresh = publicComments(project, item)
       comments.replaceWith(fresh)
       comments = fresh
@@ -403,7 +479,10 @@ function itemPage(project, item) {
     item = { ...item, ...changes }
     paint(before)
     try {
+      const sent = item
       item = (await api('PATCH', '/api/items/' + item.id, changes)).item
+      // Only the server makes a share link.
+      if ('share' in changes) paint(sent)
       remember()
       loadNotes()
     } catch (problem) {
@@ -461,10 +540,11 @@ function itemPage(project, item) {
       fact('Kind', kind),
       fact('Rating', item.rating && el('span', { class: 'stars-row', role: 'img', 'aria-label': `${item.rating} out of 5` },
         [1, 2, 3, 4, 5].map(n => glyph('star', n <= item.rating ? 'glyph lit' : 'glyph')), el('span', { class: 'muted' }, `${item.rating} of 5`))),
-      fact('Sent', new Date(item.createdAt).toLocaleString()),
-      fact('From', item.source === 'page'
-        ? el('a', { href: pageURL(project), target: '_blank', rel: 'noopener' }, 'Your feedback page')
+      fact(item.source === 'owner' ? 'Filed' : 'Sent', new Date(item.createdAt).toLocaleString()),
+      fact('From', item.source === 'owner' ? `Filed by ${item.filedBy || 'you'}`
+        : item.source === 'page' ? el('a', { href: pageURL(project), target: '_blank', rel: 'noopener' }, 'Your feedback page')
         : item.page && el('a', { href: item.page, rel: 'noopener noreferrer', target: '_blank' }, item.pageTitle || item.page)),
+      fact('Asked by', item.askedBy),
       item.answers.map(answer => fact(answer.label, answerText(answer) === answer.label ? 'Yes' : answerText(answer))),
       fact('Email', item.email && el('a', { href: 'mailto:' + item.email }, item.email),
         item.email && (item.emailVerified
@@ -474,8 +554,10 @@ function itemPage(project, item) {
       fact('Browser', item.browser),
       fact('Window', item.viewport && item.viewport.replace('x', ' × '))),
     el('div', { class: 'item-actions' },
-      el('label', { class: 'toggle' }, shown,
-        project.public ? 'Show on your public page' : 'Show on your public page (the page is off)'),
+      el('div', { class: 'item-switches' },
+        el('label', { class: 'toggle' }, shown,
+          project.public ? 'Show on your public page' : 'Show on your public page (the page is off)'),
+        el('label', { class: 'toggle' }, sharing, 'Share a link to it')),
       !link.project && el('button', { type: 'button', class: 'button danger', onclick: async () => {
         if (!confirm(`Delete #${item.number} for good?`)) return
         try {
@@ -483,7 +565,8 @@ function itemPage(project, item) {
           if (shell?.items) shell.items = shell.items.filter(entry => entry.id !== item.id)
           go(`/projects/${project.id}`)
         } catch (problem) { alert(problem.message) }
-      } }, 'Delete')),
+      } }, 'Delete'),
+      shareBox),
     comments,
     el('section', { class: 'notes-section' }, el('h3', {}, 'Thread'),
       el('p', { class: 'muted section-note' }, item.emailVerified

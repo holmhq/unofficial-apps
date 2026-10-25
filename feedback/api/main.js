@@ -111,6 +111,38 @@ export const contract = {
       "output": { "type": "object" },
       "errors": { "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_UNAUTHORIZED": { "status": 401, "public": true } }
     },
+    "items.create": {
+      "handler": "createItem", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "summary": "File an item in your own project, answer it and share it by link",
+      "description": "Use while signed in as the project's owner for feedback that reached you another way, like a chat. Give a title (or a body whose first line is one); optionally the kind, who asked, their email (kept private and never emailed), a status, an answer posted as the project's public reply, and share: true for a link that opens the item and its answer with no sign-in. The item's share field is that link. Optionally send an Idempotency-Key for safe retries.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "projectId": { "type": "string" }, "title": { "type": "string" }, "body": { "type": "string" },
+          "kind": { "type": "string" }, "askedBy": { "type": "string" }, "email": { "type": "string" },
+          "status": { "type": "string" }, "answer": { "type": "string" }, "share": { "type": "boolean" }
+        },
+        "required": ["projectId"], "additionalProperties": false
+      },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_UNAUTHORIZED": { "status": 401, "public": true },
+        "APP_BUSY": { "status": 429, "public": true },
+        "APP_INVALID_BODY": { "status": 400, "public": true },
+        "APP_INVALID_EMAIL": { "status": 400, "public": true },
+        "APP_INVALID_KIND": { "status": 400, "public": true },
+        "APP_INVALID_STATUS": { "status": 400, "public": true }
+      }
+    },
+    "items.share": {
+      "handler": "shareItem", "auth": "member", "risk": "write", "sensitive": true,
+      "summary": "Turn an item's share link on or off, or replace it",
+      "description": "Use while signed in as the item's project owner. share true gives the item a link that opens it and its approved comments with no sign-in (the same link if it has one), false stops the link at once, and \"new\" replaces it so the old one stops. The link never shows contact details, the page, browser, answers or files. Returns the item; its share field is the link or null.",
+      "input": { "type": "object", "properties": { "itemId": { "type": "string" }, "share": { "type": ["boolean", "string"] } }, "required": ["itemId", "share"], "additionalProperties": false },
+      "output": { "type": "object" },
+      "errors": { "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_INVALID_SHARE": { "status": 400, "public": true } }
+    },
     "stats.get": {
       "handler": "getStats", "auth": "member", "risk": "read", "sensitive": true,
       "summary": "Read your own project's dashboard counts",
@@ -180,6 +212,14 @@ export function listInbox(input, env, ctx) {
 
 export function markDone(input, env, ctx) {
   return operation(() => ({ item: itemFactory(env).updateItem(signedInOwner(env), input.itemId, { status: "done" }) }));
+}
+
+export function createItem(input, env, ctx) {
+  return operation(() => ({ item: itemFactory(env).fileItem(signedInOwner(env), input.projectId, input) }));
+}
+
+export function shareItem(input, env, ctx) {
+  return operation(() => ({ item: itemFactory(env).updateItem(signedInOwner(env), input.itemId, { share: input.share }) }));
 }
 
 export function getStats(input, env, ctx) {

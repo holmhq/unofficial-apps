@@ -345,6 +345,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .facts dd { margin: 0; overflow-wrap: anywhere; font-size: 0.95rem; }
 .facts select { padding: 0.3rem 0.5rem; }
 .item-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.25rem; }
+.item-switches { display: grid; gap: 0.6rem; }
+/* An item's share link, under its switches; on a phone, Delete goes last. */
+.share-link { flex: 1 1 100%; display: grid; gap: 0.5rem; }
+.share-link p { margin: 0; font-size: 0.88rem; }
+@media (max-width: 36rem) { .item-actions > .danger { order: 1; } }
 .notes-section { margin-top: 2.25rem; }
 .notes-section h3 { font-size: 1.1rem; margin-bottom: 0.75rem; }
 .notes { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.75rem; }
@@ -439,6 +444,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .comments li { padding: 0.8rem 1rem; background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; }
 .comments li.team { border-color: color-mix(in oklab, var(--accent) 45%, var(--rule)); }
 .comments li.waiting { border-style: dashed; background: color-mix(in oklab, var(--planned-bg) 35%, var(--sheet)); }
+/* Set up's .waiting row (below) would lay a waiting comment out flat. */
+.comments li.waiting { display: block; color: var(--ink); font-size: inherit; }
 .comments li.muted { background: none; border: 1px dashed var(--rule); text-align: center; }
 .comments p { margin: 0.35rem 0 0; white-space: pre-line; overflow-wrap: anywhere; }
 .comment-by { display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem; font-size: 0.88rem; }
@@ -747,6 +754,18 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .clear-filters:hover { background: color-mix(in oklab, var(--accent) 10%, transparent); }
 .clear-filters .glyph { width: 0.9rem; height: 0.9rem; }
 .filters-fold { display: none; }
+.file-one { flex: none; min-height: 2.6rem; padding: 0 1rem; border-radius: 999px; white-space: nowrap; }
+@media (max-width: 26rem) { .file-one { width: 2.6rem; padding: 0; } .file-one span { display: none; } }
+
+/* Filing an item yourself */
+
+.file-item { max-width: 40rem; margin-top: 1.5rem; }
+.file-item h2 { font-size: 1.35rem; }
+.file-form { display: grid; gap: 1.1rem; margin-top: 1.25rem; }
+.file-form .segmented { justify-self: start; }
+.field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+@media (max-width: 36rem) { .field-pair { grid-template-columns: 1fr; } }
+.toggle.big small { display: block; margin-top: 0.15rem; font-weight: 400; font-size: 0.85rem; color: var(--ink-3); }
 .filters-fold .count:not(:empty) { min-width: 1.2rem; padding: 0 0.3rem; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 0.75rem; text-align: center; }
 @media (max-width: 36rem) {
   .filters-top { flex-wrap: wrap; }

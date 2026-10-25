@@ -1,14 +1,16 @@
-// Feedback items: sent by anyone through a project's widget, triaged by the
-// project's owner, and shown on the public board only when the owner says so.
+// Feedback items: sent by anyone through a project's widget, or filed by the
+// project's owner, triaged by the owner, and shown on the public board, or by
+// a link to one item, only when the owner says so.
 import { ds, kv, now, iso, text, reject, random, kindOf } from './lib.js'
 import { holm } from './_holm.js'
-import { findBoard, kindsOf, iconOf, projectFactory } from './projects.js'
+import { findBoard, findProject, kindsOf, iconOf, projectFactory, ORIGIN } from './projects.js'
 import { fileFactory, remove, fileDTO, serve } from './files.js'
 import { count, statsFactory } from './stats.js'
 import { pictureURL } from './page.js'
-import { contactOf, fieldsOf, ratingOf, answersFor, contactFor, ratingFor } from './form.js'
+import { contactOf, fieldsOf, ratingOf, answersFor, contactFor, ratingFor, EMAIL } from './form.js'
 import { DAILY_LIMIT } from './accounts.js'
 import { followToken, emailReply } from './follow.js'
+import { approvedComments } from './comments.js'
 
 // Every kind there is; each project offers one set of three (KIND_SETS).
 export const KINDS = ['issue', 'idea', 'question', 'praise', 'problem']
@@ -24,10 +26,16 @@ function itemDTO(doc) {
     replyWaiting: !!doc.replyWaiting, emails: !!doc.emailVerified && !doc.mute,
     page: doc.page || '', pageTitle: doc.pageTitle || '',
     browser: doc.browser || '', viewport: doc.viewport || '', votes: doc.votes || 0, source: doc.source || 'widget',
+    askedBy: doc.askedBy || '', filedBy: doc.filedBy || '', share: shareURL(doc),
     files: (doc.files || []).map(fileDTO), comments: doc.comments || 0, pending: doc.pending || 0, notes: doc.notes || 0,
     createdAt: iso(doc.createdAt), updatedAt: iso(doc.updatedAt)
   }
 }
+
+// An item's share link, while it has one. Like other links in replies, it
+// uses ORIGIN; the dashboard swaps in its own.
+const shareURL = doc => doc.share ? `${ORIGIN}/s/${doc.share}` : null
+const SHARE = /^[a-z0-9]{24}$/
 
 // What the public board shows: never the email, page, browser or files.
 const boardDTO = doc => ({ id: doc.id, number: doc.number, kind: kindOf(doc.kind), status: doc.status, title: doc.title, body: doc.body, votes: doc.votes || 0, comments: doc.comments || 0, createdAt: iso(doc.createdAt) })
@@ -49,7 +57,7 @@ export function itemFactory(env) {
   const { findProject, ownProject } = projectFactory(env)
   const { uploads, store, remove } = fileFactory(env)
   const { count } = statsFactory(env)
-  return { submit, submitToWidget, listItems, ownItem, updateItem }
+  return { submit, submitToWidget, fileItem, listItems, ownItem, updateItem }
 
 function submit(project, input, request, source = 'widget') {
   // A filled-in hidden field means a bot; it is told the item was sent.
@@ -101,6 +109,45 @@ function submitToWidget(projectId, input, request) {
   return submit(project, input, request)
 }
 
+// The owner files one themselves: feedback that reached them some other way,
+// a chat or a call. Who asked and their email are the owner's to give; the
+// email is never sent anything (only an address its owner confirmed is). An
+// answer is posted as the project's public reply, and `share: true` makes the
+// item's link at once, so an agent can file, answer and share in one call.
+// It isn't counted as sent: Stats count what visitors send.
+function fileItem(user, projectId, input) {
+  const project = ownProject(user, projectId)
+  const hour = new Date(now()).toISOString().slice(0, 13)
+  if (kv().increment(`rate:${project.id}:${hour}`, 1) > HOURLY_LIMIT) reject(429, 'busy', 'Too many items this hour. Try again later.')
+  if (project.account && kv().increment(`daily:${project.id}:${hour.slice(0, 10)}`, 1) > DAILY_LIMIT) reject(429, 'busy', 'Too many items today. Try again tomorrow.')
+  const words = text(input.body, 4000, true)
+  const title = text(input.title, 90) || words.split('\n')[0].slice(0, 90)
+  if (title.length < 3) reject(400, 'invalid_body', 'Give it a title of a few words.')
+  const email = text(input.email, 200)
+  if (email && !EMAIL.test(email)) reject(400, 'invalid_email', 'That email address doesn’t look right.')
+  const kinds = kindsOf(project)
+  const kind = input.kind == null || input.kind === '' ? (kinds.includes('question') ? 'question' : kinds[0])
+    : KINDS.includes(kindOf(input.kind)) ? kindOf(input.kind) : reject(400, 'invalid_kind', 'Unknown kind.')
+  const status = input.status == null || input.status === '' ? 'new' : STATUSES.includes(input.status) ? input.status : reject(400, 'invalid_status', 'Unknown status.')
+  const answer = text(input.answer, 2000, true)
+  const id = random(24)
+  const at = now()
+  const doc = {
+    id, project: project.id, number: kv().increment('seq:' + project.id, 1),
+    kind, status, public: false, votes: 0, comments: answer ? 1 : 0, pending: 0, source: 'owner',
+    title, body: words, rating: null, email, phone: '', answers: [], files: [],
+    page: '', pageTitle: '', browser: '', viewport: '',
+    askedBy: text(input.askedBy, 60), filedBy: user.name, share: input.share === true ? random(24) : null,
+    createdAt: at, updatedAt: at
+  }
+  ds().transaction(tx => {
+    tx.insert('items', doc)
+    if (answer) tx.insert('comments', { id: random(24), item: id, project: project.id, name: project.name, body: answer, byOwner: true, approved: true, createdAt: at })
+    if (doc.share) tx.insert('notes', { id: random(24), item: id, project: project.id, type: 'event', name: user.name, avatar: user.avatar, body: 'shared it by link', createdAt: at })
+  })
+  return itemDTO(ds().findOne('items', { id }))
+}
+
 function listItems(user, projectId, status) {
   const project = ownProject(user, projectId)
   const query = { project: project.id }
@@ -123,11 +170,20 @@ function updateItem(user, id, input) {
   if ('kind' in input) changes.kind = KINDS.includes(kindOf(input.kind)) ? kindOf(input.kind) : reject(400, 'invalid_kind', 'Unknown kind.')
   if ('public' in input) changes.public = input.public === true
   if ('title' in input) changes.title = text(input.title, 90) || doc.title
+  // A link to this item alone: on (the same link if it has one), off (the
+  // link stops at once), or "new" (a new link; the old one stops).
+  if ('share' in input) {
+    if (input.share === false) changes.share = null
+    else if (input.share === true) changes.share = doc.share || random(24)
+    else if (input.share === 'new') changes.share = random(24)
+    else reject(400, 'invalid_share', 'Share is true, false or "new".')
+  }
   // The item's thread keeps who changed what, beside the notes.
   const said = []
   if (changes.status && changes.status !== doc.status) said.push(`marked it ${STATUS_NAMES[changes.status]}`)
   if (changes.kind && changes.kind !== kindOf(doc.kind)) said.push(`made it ${KIND_NAMES[changes.kind]}`)
   if ('public' in changes && changes.public !== !!doc.public) said.push(changes.public ? 'showed it on the public page' : 'took it off the public page')
+  if ('share' in changes && changes.share !== (doc.share || null)) said.push(!doc.share ? 'shared it by link' : changes.share ? 'made a new share link' : 'stopped sharing it')
   ds().transaction(tx => {
     tx.update('items', { id: doc.id }, { $set: changes })
     if (said.length) tx.insert('notes', { id: random(24), item: doc.id, project: doc.project, type: 'event', name: user.name, avatar: user.avatar, body: said.join(' and '), createdAt: now() })
@@ -138,6 +194,7 @@ function updateItem(user, id, input) {
 
 export const submit = (...args) => itemFactory({ holm }).submit(...args)
 export const submitToWidget = (...args) => itemFactory({ holm }).submitToWidget(...args)
+export const fileItem = (...args) => itemFactory({ holm }).fileItem(...args)
 export const listItems = (...args) => itemFactory({ holm }).listItems(...args)
 const ownItem = (...args) => itemFactory({ holm }).ownItem(...args)
 export const updateItem = (...args) => itemFactory({ holm }).updateItem(...args)
@@ -223,6 +280,26 @@ export function publicItem(project, itemId) {
   const doc = typeof itemId === 'string' && itemId.length <= 64 ? ds().findOne('items', { id: itemId }) : null
   if (!doc || doc.project !== project.id || !doc.public) reject(404, 'not_found', 'Item not found.')
   return doc
+}
+
+// An item by its share link's token. Turned off or replaced, the old link
+// finds nothing, whether or not the project's page is public.
+export function sharedItem(token) {
+  const doc = SHARE.test(token || '') ? ds().findOne('items', { share: token }) : null
+  const project = doc && findProject(doc.project)
+  if (!project) reject(404, 'not_found', 'This link doesn’t work any more. Ask whoever sent it for a new one.')
+  return { project, item: doc }
+}
+
+// What a share link shows: the item as the board would, who asked, its
+// approved comments, and the project's name and mark. Never the email,
+// phone, page, browser, answers or files.
+export function shared(project, doc) {
+  return {
+    project: { name: project.name, color: project.color, icon: iconOf(project), logo: pictureURL(project, 'logo'), board: project.public ? `/${project.slug || 'b/' + project.id}` : null },
+    item: { number: doc.number, kind: kindOf(doc.kind), status: doc.status, title: doc.title, body: doc.body, askedBy: doc.askedBy || '', createdAt: iso(doc.createdAt) },
+    comments: approvedComments(doc)
+  }
 }
 
 // One vote per browser: the board keeps a random token in local storage and

@@ -3,7 +3,7 @@ import { $, el, api, glyph, inkOn } from './lib.js'
 import { mark } from './icons.js'
 import { loadViewer, onViewer, viewer, signIn } from './account.js'
 import { projectPage } from './project.js'
-import { boardPage } from './board.js'
+import { boardPage, sharedPage } from './board.js'
 import { keysPage } from './keys.js'
 import { statsPage } from './stats.js'
 import { changelogPage } from './changelog.js'
@@ -119,14 +119,16 @@ async function openFromLink(token) {
 function route() {
   const path = location.pathname.replace(/\/+$/, '') || '/'
   document.body.classList.remove('on-board', 'fit')
+  document.querySelector('meta[name="robots"]')?.remove()
   let match
   if ((match = /^\/v\/([a-z0-9]{32})$/.exec(path))) return openFromLink(match[1])
   if (path === '/v') return lockedPage()
+  if ((match = /^\/s\/([a-z0-9]{24})$/.exec(path))) return sharedPage(match[1])
   // A tab opened from an inbox link shows that inbox and its items, nothing else.
   const { link } = viewer()
   if (link) {
-    match = /^\/projects\/([a-z0-9]{8})(?:\/items\/(\d+))?$/.exec(path)
-    if (match?.[1] === link.project) return projectPage(link.project, match[2] ? Number(match[2]) : 'inbox')
+    match = /^\/projects\/([a-z0-9]{8})(?:\/(new|items\/(\d+)))?$/.exec(path)
+    if (match?.[1] === link.project) return projectPage(link.project, match[3] ? Number(match[3]) : match[2] || 'inbox')
     history.replaceState(null, '', `/projects/${link.project}`)
     return projectPage(link.project, 'inbox')
   }
@@ -137,7 +139,7 @@ function route() {
   if (path === '/changelog') return changelogPage()
   if (path === '/mine') return minePage()
   if ((match = /^\/stop\/([a-z0-9]{24})$/.exec(path))) return stopPage(match[1])
-  if ((match = /^\/projects\/([a-z0-9]{8})(?:\/(setup|design|form|share|settings|stats|items\/(\d+)))?$/.exec(path))) {
+  if ((match = /^\/projects\/([a-z0-9]{8})(?:\/(setup|design|form|share|settings|stats|new|items\/(\d+)))?$/.exec(path))) {
     if (!viewer().me) return landing()
     return projectPage(match[1], match[3] ? Number(match[3]) : match[2] || 'inbox')
   }

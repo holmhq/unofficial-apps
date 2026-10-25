@@ -1,7 +1,7 @@
 import { ok, fail, reject, body, member, profile } from './lib.js'
 import { findProject, publicConfig, listProjects, createProject, updateProject, deleteProject, ownProject, projectDTO, setPicture, clearPicture } from './projects.js'
 import { isPicture, servePicture } from './page.js'
-import { submit, submitToWidget, listItems, updateItem, deleteItem, itemFile, listNotes, addNote, replyToSender, board, publicProject, publicItem, vote } from './items.js'
+import { submit, submitToWidget, fileItem, listItems, updateItem, deleteItem, itemFile, listNotes, addNote, replyToSender, board, publicProject, publicItem, vote, sharedItem, shared } from './items.js'
 import { approvedComments, postComment, listComments, reply, approve, deleteComment } from './comments.js'
 import { count, accountStats, projectStats } from './stats.js'
 import { owner, header, listKeys, createKey, deleteKey, rotateKey } from './keys.js'
@@ -80,6 +80,15 @@ async function route(request, method, parts) {
     }
   }
 
+  // Public: one item its owner shared by link, with its approved comments,
+  // whether or not the project's page is public. Comments sent there wait
+  // for the owner's approval, as on a page.
+  if (area === 'shared' && id && (parts.length === 3 || (sub === 'comments' && parts.length === 4))) {
+    const { project, item } = sharedItem(id)
+    if (parts.length === 3 && method === 'GET') return ok(shared(project, item))
+    if (parts.length === 4 && method === 'POST') return ok(postComment(project, item, body(request)), 201)
+  }
+
   // Public: a page's logo and cover.
   if (area === 'pictures' && id && isPicture(sub) && parts.length === 4 && method === 'GET') return servePicture(findProject(id), sub)
 
@@ -103,6 +112,7 @@ async function route(request, method, parts) {
     if (parts.length === 3 && method === 'PATCH') return ok({ project: updateProject(whole(user), id, body(request)) })
     if (parts.length === 3 && method === 'DELETE') { deleteProject(whole(user), id); return ok() }
     if (sub === 'items' && parts.length === 4 && method === 'GET') return ok({ items: listItems(user, id, query.status) })
+    if (sub === 'items' && parts.length === 4 && method === 'POST') return ok({ item: fileItem(user, id, body(request)) }, 201)
     if (sub === 'link' && parts.length === 4 && method === 'POST') return ok(await mintLink(whole(user), id, request.origin), 201)
     if (sub === 'stats' && parts.length === 4 && method === 'GET') return ok(projectStats(ownProject(whole(user), id), query.days))
     if (sub === 'installs' && parts.length === 4 && method === 'GET') return ok({ installs: installs(ownProject(whole(user), id).id) })

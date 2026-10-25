@@ -7,7 +7,7 @@ export const FIELD_TYPES = ['text', 'select', 'radio', 'checkbox']
 const MAX_FIELDS = 8
 const MAX_OPTIONS = 12
 const ASK = ['off', 'optional', 'required']
-const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/
+export const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/
 const PHONE = /^\+?[\d\s().-]{6,24}$/
 
 export const contactOf = doc => ({ email: 'optional', phone: 'off', ...(doc.contact || {}) })

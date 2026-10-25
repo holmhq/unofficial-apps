@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "0.17.0",
+      "date": "2026-10-25",
+      "title": "Answer by link",
+      "changes": [
+        "Heard from someone another way, in a chat or on a call? New item in the inbox files it: who asked, their email if you have it, and your reply, in one go.",
+        "Any item can have a link of its own. It opens the item, who asked and its public comments with no sign-in, whether or not your feedback page is on, and never shows contact details, pages, browsers, answers or files.",
+        "Whoever has the link can comment, and their comments wait for your approval. Turn the link off and it stops at once, or make a new one and the old one stops.",
+        "With an API key, an agent can file a question, answer it and get its link in one call.",
+        "Comments waiting for approval stack like the others again, instead of lying in one row."
+      ]
+    },
+    {
       "version": "0.16.0",
       "date": "2026-10-23",
       "title": "Follow what you sent",
