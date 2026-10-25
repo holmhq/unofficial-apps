@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:4d891413465dba6430e8a73d82e54494545d41994cd4ed82915bb1f35ba88692",
+  "inputs": {
+    "symbolHash": "sha256:42d0518c99842292a3c4dba6e905f8dc50e4165b1583dbb0af4b48b5e38ab063",
+    "themeColor": "#c4607a",
+    "name": "Snake",
+    "subtitle": "A calm snake game on a field that wraps at the edges. Plays offline with no account; sign in to put your best game, replayed by the server, on the leaderboard.",
+    "iconStyle": "glass"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.259.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:02c9a423e28ed3dc89a130e9669c7a721c59b99478afdf84b0c7027e89fba6e5",
+    "web/apple-touch-icon.png": "sha256:76ba0b201c6336043eeb85d042e52cf46f553dc2b7abc0ef659aeeb8a1de3dfc",
+    "web/favicon.ico": "sha256:c16685b50c5b711eab131511a24b456fa9074abe209b3d013fdd2ad392b512e2",
+    "web/favicon.png": "sha256:78561646100a57f2a9f69f070f2ee34c667b376c019e4b1eea6bde14f656bd91",
+    "web/favicon.svg": "sha256:103bae39c0c963e98e8d474ced0fdc8b4e42162412ec3f194e851b918a3e1535",
+    "web/icon-192.png": "sha256:e33bd84ff88cbf7f18f7963bdc77124ec6c3c5d3864884de0417ee9b9399bb3b",
+    "web/icon-512.png": "sha256:fa135ca00e170f622c9621dd6450c1088ab5ca161be2ada2e8f60064233b23db",
+    "web/icon-maskable-512.png": "sha256:e9d18efb51810c4ca083226fc7094989dcb3fbbd03a1d2beb11be8e2e17817bc",
+    "web/manifest.webmanifest": "sha256:ed903ae473f7ded3e6bdc70688d7bd4fd68a425594a27337e692a341937fb381",
+    "web/social_preview.png": "sha256:bf8f0bdddba1c3cd1ba409d016ed5404d0553d5b4a3d23c205e5efe09d22562d"
+  }
+}

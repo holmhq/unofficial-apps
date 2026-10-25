@@ -1,0 +1,25 @@
+{
+  "name": "snake",
+  "version": "0.1.0",
+  "title": "Snake",
+  "shortName": "Snake",
+  "description": "A calm snake game on a field that wraps at the edges. Plays offline with no account; sign in to put your best game, replayed by the server, on the leaderboard.",
+  "themeColor": "#c4607a",
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    }
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://snake.zyt.app"
+    }
+  }
+}

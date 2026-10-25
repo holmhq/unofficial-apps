@@ -1,0 +1,25 @@
+{
+  "subtitle": "A calm snake game",
+  "category": "Games",
+  "featured": false,
+  "description": "Guide the snake to the berries; each one makes it a cell longer and plays the next note of a slow tune. The field wraps at its edges, so only your own tail is in the way, and every sixth berry a bloom opens for a while, worth more.\n\nSwipe the way to go, or tap the turn buttons; on a computer, the arrow keys. The snake slides smoothly from cell to cell and speeds up only a little. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it move by move to check the score. Four colour sets in light and dark.",
+  "whatsNew": "Snake joins the store: a calm snake game in dusty rose, on a field that wraps at its edges, with games that carry on after a reload, a leaderboard that replays every game before it counts, and offline play.",
+  "screenshots": [
+    {
+      "file": "field.webp",
+      "alt": "A game in Coral at level 10: a snake 63 cells long winding across the field and wrapping at its edges, with a berry ahead and a bloom open below"
+    },
+    {
+      "file": "over.webp",
+      "alt": "The end of a game: the snake ran into itself at 7,000 points, length 86, marked New personal best, with Play again and Leaderboard, and a note that the score was saved"
+    },
+    {
+      "file": "leaderboard.webp",
+      "alt": "The leaderboard with six players; Mei leads with 9,350 points and a snake 114 cells long, and Kit, the player signed in, is third"
+    },
+    {
+      "file": "dark.webp",
+      "alt": "A game in dark mode with the Lagoon colours at level 7: a teal snake 34 cells long, its head slipping in at the left edge towards a golden bloom"
+    }
+  ]
+}
