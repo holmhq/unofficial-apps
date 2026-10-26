@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Zend</title>
+  <meta name="description" content="Text from your own Android phone, in a browser or from your scripts.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f9f9fb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Zend">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="preload" href="/assets/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/src/styles.css">
+  <script>
+    // Apply the saved theme before the first paint.
+    (function () {
+      var mode = 'system'
+      try { mode = localStorage.getItem('zend:theme') || 'system' } catch (e) {}
+      var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+      if (dark) document.documentElement.classList.add('dark')
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#000000' : '#f9f9fb')
+    })()
+  </script>
+</head>
+<body>
+  <div id="root"><div class="boot" aria-label="Loading"><span class="mark"><svg width="38" height="38" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M6 3h12a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4h-6.2l-4.75 3.6c-.5.38-1.2-.06-1.08-.68L6.5 19H6a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4Zm6 3.6-4.2 4.2 1.4 1.4 1.8-1.8V16h2v-5.6l1.8 1.8 1.4-1.4Z"/></svg></span></div></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:ee28129f9b09069bbdcc59633f414492ce05065005290fe0eee75cd8b1446ce8",
+  "inputs": {
+    "symbolHash": "sha256:7f11331474cd27fc6ac774e421073e864d0cb9122cd06fa1d7a79b98a0612f91",
+    "themeColor": "#0a6ff0",
+    "name": "Zend",
+    "subtitle": "Text from your own Android phone, in a browser or from your scripts.",
+    "iconStyle": "soft"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.262.1",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:fabfefab2794e33e7f2980f214fdc7cfbd50f40b320fc44682fee61cede587ff",
+    "web/apple-touch-icon.png": "sha256:86df19c92c51f815777b8b605bc1d226b0b889ff301fb4c355d55565d33e7ae3",
+    "web/favicon.ico": "sha256:362b0cad593264a722cde1864359584773d37a36dd0fab8d32c0ccf2d8c5a4b7",
+    "web/favicon.png": "sha256:00dfb79bedeb7c269dadc7749c3dac54dfd8668518aac60bd126581d93b7d278",
+    "web/favicon.svg": "sha256:a27bde353522671af66aa51467f6bdda49244eb9c0e7bf0b7bcc01aaf33defc9",
+    "web/icon-192.png": "sha256:8894f885656f1f144d5b48a49c6a53d6116d0af00aa6a12a56e7d2cef2c0e90c",
+    "web/icon-512.png": "sha256:e6955606ca5d4d47a0e1bcabdf397535fa30eece817b3a009afc2caaa648ea5e",
+    "web/icon-maskable-512.png": "sha256:c3729b0847aa5288a2c4ada814c1d6284ad02d666fda262b35e74282d09bb84b",
+    "web/manifest.webmanifest": "sha256:280b786c470b2b0de7dc903f04dc0c97c7ffafdf503df70c14446c69d04c4a95",
+    "web/social_preview.png": "sha256:ad3fbc8a62b15d0ecb5cb104bf4707a3a8ff0dae768e57b120d4a9f652104088"
+  }
+}

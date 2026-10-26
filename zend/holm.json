@@ -1,0 +1,26 @@
+{
+  "name": "zend",
+  "version": "0.2.0",
+  "title": "Zend",
+  "shortName": "Zend",
+  "description": "Text from your own Android phone, in a browser or from your scripts.",
+  "themeColor": "#0a6ff0",
+  "iconStyle": "soft",
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    }
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://zend.zyt.app"
+    }
+  }
+}

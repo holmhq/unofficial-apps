@@ -1,0 +1,29 @@
+{
+  "subtitle": "Text from your own phone, anywhere",
+  "category": "Social",
+  "featured": false,
+  "description": "Send SMS through the Android phone in your pocket, from any browser or from your own scripts. Install the free SMS Gateway for Android app, paste the username and password it shows, and your texts go out on your own SIM and plan. People see your own number, and their replies come back here.\n\nEvery text shows its time and ticks: one when your phone sends it, two when it's delivered, and a clear note with Try Again when it doesn't get through. Name the people you text, send to up to ten at once, pick a SIM, send later, and fill in templates you use often. A ring counts how much of an SMS you've used as you type. Replies and receipts arrive live, with quiet sounds you can turn off.\n\nIt feels at home on a phone, with a tab bar, sheets that slide up and a swipe to go back, and on a computer, with your conversations beside the open one and keyboard shortcuts.\n\nA personal SIM stays personal: Zend asks before sending anything that reads like an offer or a one-time code, stays under India's limits for bulk texts, and honours every STOP. API keys can be held to a few numbers, so a key that leaks can't text anyone else. No phone handy? A demo phone pretends to send, deliver and reply.",
+  "whatsNew": "Sandesh is now Zend, with a new design from the ground up: ticks and times inside each bubble, frosted bars and large titles, sheets, a press-and-hold menu on every text, a sent text that flies into place, quiet sounds, and a desktop layout with your conversations beside the open one.",
+  "screenshots": [
+    {
+      "file": "thread.webp",
+      "alt": "A conversation with Mom: blue sent texts with two ticks for delivered, her grey replies, and the day pinned at the top"
+    },
+    {
+      "file": "chats.webp",
+      "alt": "The chat list: Mom, Dad with a scheduled text, Alex, Noah and Maya with unread replies, Jordan who replied STOP, and a building office text that wasn't delivered"
+    },
+    {
+      "file": "check.webp",
+      "alt": "Writing a text that reads like a sale: Zend explains that business texts need a registered sender and asks you to confirm it's personal"
+    },
+    {
+      "file": "templates.webp",
+      "alt": "Templates with their blanks drawn as small blue fields, each marked DLT-ready"
+    },
+    {
+      "file": "dark.webp",
+      "alt": "The conversation with Mom in dark mode"
+    }
+  ]
+}

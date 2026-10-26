@@ -680,78 +680,6 @@
       "history": []
     },
     {
-      "name": "sandesh",
-      "path": "sandesh",
-      "version": "0.1.1",
-      "tag": "sandesh/v0.1.1",
-      "h1": "h1:SKELU1duvypNX3Wgyz6qR/z6utOnXcB0ZR3n766YOtM=",
-      "files": 49,
-      "size": 1221182,
-      "title": "Sandesh",
-      "description": "Send texts from your own Android phone, in a browser or from your scripts, with India's SMS rules built in.",
-      "themeColor": "#c3262e",
-      "symbol": "M 3.272727 0.943029 L 20.727273 0.943029 C 22.534909 0.943029 24 2.40812 24 4.215756 L 24 15.124847 C 24 16.932483 22.534909 18.397574 20.727273 18.397574 L 10.363636 18.397574 L 3.927273 22.979392 C 3.6 23.197574 3.163636 22.924847 3.272727 22.543029 L 4.363636 18.397574 L 3.272727 18.397574 C 1.465091 18.397574 0 16.932483 0 15.124847 L 0 4.215756 C 0 2.40812 1.465091 0.943029 3.272727 0.943029 Z M 3.927273 4.65212 L 3.927273 7.379392 L 12 12.833938 L 20.072727 7.379392 L 20.072727 4.65212 L 12 10.106665 Z",
-      "demo": "https://sandesh.zyt.app",
-      "listing": {
-        "subtitle": "Text from your own phone, from anywhere",
-        "category": "Social",
-        "description": "Send SMS through the Android phone in your pocket, from any browser or from your own scripts. Install the free SMS Gateway for Android app, paste the username and password it shows, and your texts go out on your own SIM and plan. People see your own number, and their replies come back here.\n\nEach text you send is stamped like a letter as your phone reports it: sent, delivered, or returned when it couldn't get through. Name the people you text, send to up to ten at once, pick a SIM, schedule a text for the morning, and fill in templates you use often. Live receipts arrive the moment your phone has them.\n\nIndia's SMS rules are built in. A personal SIM is for personal texts, so Sandesh asks before sending anything that reads like an offer or a one-time code, stops at TRAI's limits for bulk texts, and honours every STOP. Templates follow the rules India's DLT system sets for business senders. API keys can be held to a few numbers, so a key that leaks can't text anyone else.\n\nNo phone handy? Try the demo phone: it pretends to send, deliver and reply, so you can explore everything first. Light and dark, on a phone or a computer.",
-        "whatsNew": "Your phone's sign-in is now sealed with standard AES-256-GCM encryption, and the check for same-or-similar texts reads letters in every script, Tamil, Arabic and Thai included. If you connected a phone before this update, connect it once more.",
-        "featured": false,
-        "screenshots": [
-          {
-            "path": "listing/thread.webp",
-            "alt": "A conversation with Amma: two texts sent from SIM 1, each stamped with a violet Delivered postmark at 14:35, and her replies",
-            "width": 780,
-            "height": 1688,
-            "hash": "aaf9ce1310dd"
-          },
-          {
-            "path": "listing/chats.webp",
-            "alt": "The conversation list: Ravi, Amma, Priya and Meera with their latest replies, a scheduled reminder to Dad, and a text to the building office that wasn't delivered",
-            "width": 780,
-            "height": 1688,
-            "hash": "436aa3276cb3"
-          },
-          {
-            "path": "listing/compose.webp",
-            "alt": "Writing a text that reads like a Diwali sale: Sandesh explains that business texts need a DLT-registered sender and asks you to confirm it's personal before it can be sent",
-            "width": 780,
-            "height": 1688,
-            "hash": "7ebdae8c177c"
-          },
-          {
-            "path": "listing/templates.webp",
-            "alt": "Templates with their blanks drawn as dotted fill-in lines, each marked DLT-ready, and the list of blanks you can use",
-            "width": 780,
-            "height": 1688,
-            "hash": "7389b334a5cc"
-          },
-          {
-            "path": "listing/dark.webp",
-            "alt": "A conversation with Ravi in dark mode: a question about Sunday cricket and a filled-in running-late template, both delivered",
-            "width": 780,
-            "height": 1688,
-            "hash": "b262f306d680"
-          }
-        ],
-        "cover": {
-          "path": "listing/cover.png",
-          "width": 1200,
-          "height": 630,
-          "hash": "96c3983366c9"
-        }
-      },
-      "prompt": "Build \"Sandesh\", an app for sending SMS from your own Android phone, using\nonly https://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12\nand \"Make an app feel finished\" and \"Make it feel native\" first. Make\nholm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in, outbound HTTP, secrets and realtime, return standard Responses and\nfall back to env.holm.web.fetch(request). No build step or third-party\nruntime CDN; vendor the font and icons with their licences.\n\n- After sign-in, each member connects their own phone running SMS Gateway\n  for Android (https://sms-gate.app, cloud mode): they paste its username,\n  password and, for live receipts, its webhook signing key. Check them\n  against SMSGate's public API through env.holm.net, never show them again,\n  and keep them encrypted under a VAULT_KEY runtime secret. Offer a demo\n  phone that pretends to send, deliver and reply, so anyone can try it.\n- Conversations per number, with names, unread replies, search, an SMS-part\n  counter (GSM-7 and Unicode), up to 10 numbers per text, SIM choice,\n  scheduled texts that can be cancelled, and states from sent to delivered\n  shown as a postmark on each text. Register the phone's webhooks and verify\n  each one's HMAC signature, timestamp and envelope id.\n- Align it with India's SMS rules (TRAI's TCCCPR 2018 and its 2025 and 2026\n  amendments): personal person-to-person texts only, with a declaration when\n  a phone is connected; texts that read like OTPs or offers need confirming\n  on the page and are refused by the API; stop at TRAI's \"bulk\" counts of\n  same or similar texts (20 a day, 100 a week, 300 a month); cap texts and\n  different people per day; honour STOP replies with an opt-out list.\n  Templates use DLT's {#var#} blanks and are checked against its rules.\n- API keys for the member's own scripts: shown once, stored as a hash,\n  optionally held to a few numbers, with the same limits and an\n  Idempotency-Key for safe retries.\n- An absolutely awesome, phone-first UI with an Indian postal feel: inland\n  letter blue, letterbox red, violet postmark ink, a font that covers\n  Devanagari, light/dark/system themes, installable with a network-first\n  service worker.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 sandesh. With my approval, deploy with\nholm @<peer> app deploy sandesh --spec-v1 --host sandesh.<my-domain>, then\nask before allowing api.sms-gate.app for the app and setting VAULT_KEY.\nNever replace an occupied host without asking. Validation does not run the\napp: test the demo phone, every refusal, two members, API keys, and signed,\nunsigned, stale and repeated webhooks, on mobile and desktop in light and\ndark. Check that code shared by the page and the server gives the same\nanswers in both. Report gaps honestly. Inspect the target settings schema\nbefore setting sign-in branding.",
-      "history": [
-        {
-          "version": "0.1.0",
-          "date": "2026-10-26",
-          "whatsNew": "Sandesh joins the store: texts from your own Android phone through SMS Gateway, with postmarks for sent and delivered, live receipts and replies, templates checked against India's DLT rules, TRAI's bulk limits, an opt-out list, API keys and a demo phone."
-        }
-      ]
-    },
-    {
       "name": "snake",
       "path": "snake",
       "version": "0.1.1",
@@ -997,6 +925,72 @@
         }
       },
       "prompt": "Build \"Until\", a day-countdown app for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for member\nstorage and sign-in, return standard Responses and fall back to\nenv.holm.web.fetch(request). No build step or third-party runtime CDN; vendor\nthe font and icons with their licences.\n\n- A tracker has a title, an optional subtitle, a start date, and either a\n  number of days or an end date, plus a random icon you can re-roll. Cards show\n  the days left in big numbers (a dash before it starts, \"Today\" on the last\n  day, days since after), running ones first.\n- Tap a card to rate any day so far from one to five stars, stepping through\n  the days; show today's rating on the card.\n- Signed out, keep trackers in localStorage. Signed in, keep them in the\n  member's own document store and the colour choice in member KV; offer to\n  move the device's trackers over once, skipping duplicates. A browser-made\n  key on each new tracker makes a retried save find the first attempt.\n- Two colours, green and pink, each light and dark or following the device,\n  in the account menu. Installable, with a network-first service worker; offline,\n  show the last synced copy read only.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 until. With my approval, deploy with\nholm @<peer> app deploy until --spec-v1 --host until.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test signed out and signed in, moving trackers over, going offline, and\nmobile/desktop in light/dark. Report gaps honestly. Inspect the target\nsettings schema before setting sign-in branding.",
+      "history": []
+    },
+    {
+      "name": "zend",
+      "path": "zend",
+      "version": "0.2.0",
+      "tag": "zend/v0.2.0",
+      "h1": "h1:FsJQWUQdU8+7wrG63SB0YpxCgp6Wmwn+7LZdpatDedQ=",
+      "files": 48,
+      "size": 578612,
+      "title": "Zend",
+      "description": "Text from your own Android phone, in a browser or from your scripts.",
+      "themeColor": "#0a6ff0",
+      "symbol": "M 4.8 0.155182 L 19.2 0.155182 C 21.850967 0.155182 24 2.304215 24 4.955182 L 24 14.555182 C 24 17.206148 21.850967 19.355182 19.2 19.355182 L 11.76 19.355182 L 6.06 23.675182 C 5.46 24.131182 4.62 23.603182 4.764 22.859182 L 5.4 19.355182 L 4.8 19.355182 C 2.149033 19.355182 0 17.206148 0 14.555182 L 0 4.955182 C 0 2.304215 2.149033 0.155182 4.8 0.155182 Z M 12 4.475182 L 6.96 9.515182 L 8.64 11.195182 L 10.8 9.035182 L 10.8 15.755182 L 13.2 15.755182 L 13.2 9.035182 L 15.36 11.195182 L 17.04 9.515182 Z",
+      "demo": "https://zend.zyt.app",
+      "listing": {
+        "subtitle": "Text from your own phone, anywhere",
+        "category": "Social",
+        "description": "Send SMS through the Android phone in your pocket, from any browser or from your own scripts. Install the free SMS Gateway for Android app, paste the username and password it shows, and your texts go out on your own SIM and plan. People see your own number, and their replies come back here.\n\nEvery text shows its time and ticks: one when your phone sends it, two when it's delivered, and a clear note with Try Again when it doesn't get through. Name the people you text, send to up to ten at once, pick a SIM, send later, and fill in templates you use often. A ring counts how much of an SMS you've used as you type. Replies and receipts arrive live, with quiet sounds you can turn off.\n\nIt feels at home on a phone, with a tab bar, sheets that slide up and a swipe to go back, and on a computer, with your conversations beside the open one and keyboard shortcuts.\n\nA personal SIM stays personal: Zend asks before sending anything that reads like an offer or a one-time code, stays under India's limits for bulk texts, and honours every STOP. API keys can be held to a few numbers, so a key that leaks can't text anyone else. No phone handy? A demo phone pretends to send, deliver and reply.",
+        "whatsNew": "Sandesh is now Zend, with a new design from the ground up: ticks and times inside each bubble, frosted bars and large titles, sheets, a press-and-hold menu on every text, a sent text that flies into place, quiet sounds, and a desktop layout with your conversations beside the open one.",
+        "featured": false,
+        "screenshots": [
+          {
+            "path": "listing/thread.webp",
+            "alt": "A conversation with Mom: blue sent texts with two ticks for delivered, her grey replies, and the day pinned at the top",
+            "width": 780,
+            "height": 1688,
+            "hash": "3f9282c6722e"
+          },
+          {
+            "path": "listing/chats.webp",
+            "alt": "The chat list: Mom, Dad with a scheduled text, Alex, Noah and Maya with unread replies, Jordan who replied STOP, and a building office text that wasn't delivered",
+            "width": 780,
+            "height": 1688,
+            "hash": "8c0f368faf8d"
+          },
+          {
+            "path": "listing/check.webp",
+            "alt": "Writing a text that reads like a sale: Zend explains that business texts need a registered sender and asks you to confirm it's personal",
+            "width": 780,
+            "height": 1688,
+            "hash": "3aedd0bb8678"
+          },
+          {
+            "path": "listing/templates.webp",
+            "alt": "Templates with their blanks drawn as small blue fields, each marked DLT-ready",
+            "width": 780,
+            "height": 1688,
+            "hash": "0a2faa8106e9"
+          },
+          {
+            "path": "listing/dark.webp",
+            "alt": "The conversation with Mom in dark mode",
+            "width": 780,
+            "height": 1688,
+            "hash": "f7d23f94edc3"
+          }
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "7192c2445c6b"
+        }
+      },
+      "prompt": "Build \"Zend\", an app for texting from your own Android phone, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make\nholm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in, outbound HTTP, secrets and realtime, return standard Responses and\nfall back to env.holm.web.fetch(request). No build step or third-party\nruntime CDN; vendor the font and icons with their licences.\n\n- After sign-in, each member connects their own phone running SMS Gateway\n  for Android (https://sms-gate.app, cloud mode): they paste its username,\n  password and, for live receipts, its webhook signing key. Check them\n  against SMSGate's public API through env.holm.net, never show them again,\n  and keep them encrypted under a VAULT_KEY runtime secret. Offer a demo\n  phone that pretends to send, deliver and reply, so anyone can try it.\n- Conversations per number, with names, unread replies, search, an SMS-part\n  counter (GSM-7 and Unicode), up to 10 numbers per text, SIM choice,\n  templates with blanks, and scheduled texts that can be cancelled. Show\n  each text's state as ticks: sent, then delivered. Register the phone's\n  webhooks and verify each one's HMAC signature, timestamp and envelope id.\n- Keep a personal SIM personal, as India's SMS rules (TRAI's TCCCPR 2018 and\n  its 2025 and 2026 amendments) require: a declaration when a phone is\n  connected; texts that read like OTPs or offers need confirming on the\n  page and are refused by the API; stop at TRAI's \"bulk\" counts of same or\n  similar texts; cap texts and different people per day; honour STOP\n  replies with an opt-out list. Templates use DLT's {#var#} blanks.\n- API keys for the member's own scripts: shown once, stored as a hash,\n  optionally held to a few numbers, with the same limits and an\n  Idempotency-Key for safe retries.\n- An exquisite UI that feels like Apple's Messages or Telegram, on a phone\n  and on a desktop: a tab bar on phones, a rail with the conversation list\n  beside the open conversation on wide screens, frosted bars, large titles,\n  bubbles with tails and the time inside, sheets that slide up, a round\n  avatar account button even when signed out, light/dark/auto, motion and\n  quiet sounds. Installable, with a network-first service worker.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 zend. With my approval, deploy with\nholm @<peer> app deploy zend --spec-v1 --host zend.<my-domain>, then ask\nbefore allowing api.sms-gate.app for the app and setting VAULT_KEY. Never\nreplace an occupied host without asking. Validation does not run the app:\ntest the demo phone, every refusal, two members, API keys, and signed,\nunsigned, stale and repeated webhooks, on mobile and desktop in light and\ndark, and sign in and out as a real person would. Check that code shared by\nthe page and the server gives the same answers in both. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in\nbranding.",
       "history": []
     }
   ]
