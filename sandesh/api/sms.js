@@ -82,38 +82,22 @@ export function similarityKey(text) {
   return core.length >= SIMILAR_MIN_LENGTH ? core : null
 }
 
-// Letters only, every other run of characters becoming one space. Written
-// without \p{…} classes, which some JavaScript engines (Holm's included)
-// don't support: a letter is any character with a case, or one from the
-// Indic, Arabic or East Asian blocks that isn't one of their digits or
-// the danda.
+// Letters only, every other run of characters becoming one space. A letter
+// is any Unicode letter or combining mark, so the vowel signs of Indian
+// scripts stay inside their words; digits, the danda and punctuation in
+// every script are gaps.
+const LETTERS = /[\p{L}\p{M}]+/gu
+
 export function isLetter(ch) {
-  if (ch.toLowerCase() !== ch.toUpperCase()) return true
-  const cp = ch.codePointAt(0)
-  if (cp >= 0x0900 && cp <= 0x0dff) return cp !== 0x0964 && cp !== 0x0965 && ((cp & 0x7f) < 0x66 || (cp & 0x7f) > 0x6f)
-  if (cp >= 0x0600 && cp <= 0x06ff) return cp < 0x0660 || cp > 0x0669
-  return (cp >= 0x3040 && cp <= 0x9fff) || (cp >= 0xac00 && cp <= 0xd7af)
+  return /^[\p{L}\p{M}]$/u.test(ch)
 }
 
 export function isDigit(ch) {
-  const cp = ch.codePointAt(0)
-  if (cp >= 0x30 && cp <= 0x39) return true
-  return cp >= 0x0900 && cp <= 0x0dff && (cp & 0x7f) >= 0x66 && (cp & 0x7f) <= 0x6f
+  return /^\p{Nd}$/u.test(ch)
 }
 
 function wordsOnly(value) {
-  let out = ''
-  let gap = false
-  for (const ch of value) {
-    if (isLetter(ch)) {
-      if (gap && out) out += ' '
-      out += ch
-      gap = false
-    } else {
-      gap = true
-    }
-  }
-  return out
+  return (value.match(LETTERS) || []).join(' ')
 }
 
 /* ---- Business messages ----------------------------------------------- */

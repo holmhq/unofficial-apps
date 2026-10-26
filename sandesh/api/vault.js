@@ -2,23 +2,21 @@
 // key are stored encrypted under the app's VAULT_KEY runtime secret, which
 // only the node's operator can set, and are never sent back to a browser.
 //
-// Holm's Web Crypto offers HMAC-SHA256 but no AES yet, so this is a
-// textbook construction from HMAC alone: a counter-mode keystream with
-// HMAC as the pseudorandom function, then encrypt-then-MAC. Separate keys
-// for the two jobs, a fresh random nonce for every seal, and a version
-// prefix so stored values can move to AES-GCM once the runtime has it.
+// AES-256-GCM from Web Crypto, with its key derived from VAULT_KEY by HKDF
+// and a fresh random 12-byte IV for every seal:
 //
-//   enc  = HMAC(VAULT_KEY, "sandesh/enc/v1")    mac = HMAC(VAULT_KEY, "sandesh/mac/v1")
-//   ks_i = HMAC(enc, nonce ‖ uint32be(i))       ciphertext = plaintext ⊕ ks
-//   tag  = HMAC(mac, "v1" ‖ nonce ‖ ciphertext ‖ context)
-//   blob = "v1." + base64url(nonce[16] ‖ ciphertext ‖ tag[32])
+//   key  = HKDF-SHA256(VAULT_KEY, salt "sandesh/vault", info "aes-256-gcm/v2")
+//   blob = "v2." + base64url(iv[12] ‖ AES-GCM(key, iv, plaintext, aad = context))
 //
-// The context names the owner and the field, so a sealed value can't be
-// moved to another member or another field and still open.
+// The context names the owner and the field, and is authenticated with the
+// value, so a sealed value can't be moved to another member or another
+// field and still open. Values sealed by Sandesh 0.1.0 ("v1.", an HMAC-only
+// stop-gap from before the runtime had AES) don't open: their members
+// connect the phone again.
 
 import { HttpError } from './lib.js'
 
-const VERSION = 'v1'
+const VERSION = 'v2'
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 
@@ -34,77 +32,42 @@ export function requireVault(env) {
     `The node's operator runs: holm secret runtime set --app ${env.holm.app.id} VAULT_KEY "$(openssl rand -hex 32)"`)
 }
 
-async function keys(env) {
-  const secret = requireVault(env)
-  const root = await hmacKey(encoder.encode(secret), ['sign'])
-  const enc = await crypto.subtle.sign('HMAC', root, encoder.encode('sandesh/enc/v1'))
-  const mac = await crypto.subtle.sign('HMAC', root, encoder.encode('sandesh/mac/v1'))
-  return { enc: await hmacKey(enc, ['sign']), mac: await hmacKey(mac, ['sign', 'verify']) }
-}
-
-function hmacKey(raw, usages) {
-  return crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, usages)
-}
-
-async function keystream(enc, nonce, length) {
-  const out = new Uint8Array(length)
-  const block = new Uint8Array(nonce.length + 4)
-  block.set(nonce)
-  for (let i = 0, offset = 0; offset < length; i++, offset += 32) {
-    new DataView(block.buffer).setUint32(nonce.length, i)
-    const bytes = new Uint8Array(await crypto.subtle.sign('HMAC', enc, block))
-    out.set(bytes.subarray(0, Math.min(32, length - offset)), offset)
-  }
-  return out
-}
-
-function macInput(nonce, ciphertext, context) {
-  const head = encoder.encode(VERSION)
-  const tail = encoder.encode(context)
-  const all = new Uint8Array(head.length + nonce.length + ciphertext.length + tail.length)
-  all.set(head, 0)
-  all.set(nonce, head.length)
-  all.set(ciphertext, head.length + nonce.length)
-  all.set(tail, head.length + nonce.length + ciphertext.length)
-  return all
+async function vaultKey(env) {
+  const root = await crypto.subtle.importKey('raw', encoder.encode(requireVault(env)), 'HKDF', false, ['deriveKey'])
+  return crypto.subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt: encoder.encode('sandesh/vault'), info: encoder.encode('aes-256-gcm/v2') },
+    root, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
 }
 
 // Seal a string for one owner and field.
 export async function seal(env, value, context) {
-  const { enc, mac } = await keys(env)
-  const plain = encoder.encode(String(value))
-  const nonce = crypto.getRandomValues(new Uint8Array(16))
-  const stream = await keystream(enc, nonce, plain.length)
-  const ciphertext = new Uint8Array(plain.length)
-  for (let i = 0; i < plain.length; i++) ciphertext[i] = plain[i] ^ stream[i]
-  const tag = new Uint8Array(await crypto.subtle.sign('HMAC', mac, macInput(nonce, ciphertext, context)))
-  const blob = new Uint8Array(16 + ciphertext.length + 32)
-  blob.set(nonce, 0)
-  blob.set(ciphertext, 16)
-  blob.set(tag, 16 + ciphertext.length)
+  const key = await vaultKey(env)
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv, additionalData: encoder.encode(context) }, key, encoder.encode(String(value))))
+  const blob = new Uint8Array(12 + ciphertext.length)
+  blob.set(iv, 0)
+  blob.set(ciphertext, 12)
   return `${VERSION}.${toBase64url(blob)}`
 }
 
 // Open a sealed string, or throw if the vault key changed or the value was
-// altered or moved. The tag is checked (in constant time) before anything
-// is decrypted.
+// altered, moved, or sealed by an older Sandesh.
 export async function open(env, sealed, context) {
-  const { enc, mac } = await keys(env)
+  const key = await vaultKey(env)
   const [version, body] = String(sealed || '').split('.')
   const blob = version === VERSION && body ? fromBase64url(body) : null
-  if (!blob || blob.length < 48) throw new HttpError(409, 'vault_unreadable', unreadable)
-  const nonce = blob.subarray(0, 16)
-  const ciphertext = blob.subarray(16, blob.length - 32)
-  const tag = blob.subarray(blob.length - 32)
-  const good = await crypto.subtle.verify('HMAC', mac, tag, macInput(nonce, ciphertext, context))
-  if (!good) throw new HttpError(409, 'vault_unreadable', unreadable)
-  const stream = await keystream(enc, nonce, ciphertext.length)
-  const plain = new Uint8Array(ciphertext.length)
-  for (let i = 0; i < ciphertext.length; i++) plain[i] = ciphertext[i] ^ stream[i]
-  return decoder.decode(plain)
+  if (!blob || blob.length < 12 + 16) throw new HttpError(409, 'vault_unreadable', unreadable)
+  try {
+    const plain = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: blob.subarray(0, 12), additionalData: encoder.encode(context) }, key, blob.subarray(12))
+    return decoder.decode(plain)
+  } catch {
+    throw new HttpError(409, 'vault_unreadable', unreadable)
+  }
 }
 
-const unreadable = "Sandesh can't read this phone's saved sign-in any more (the node's vault key may have changed). Connect the phone again."
+const unreadable = "Sandesh can't read this phone's saved sign-in any more (the node's vault key changed, or an older Sandesh saved it). Connect the phone again."
 
 function toBase64url(bytes) {
   let binary = ''

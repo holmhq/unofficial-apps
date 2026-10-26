@@ -131,15 +131,15 @@ The Holm primitives it uses, all described in
 - **Sign-in, `env.holm.auth`:** `/api/me` returns the member with
   `getLoginURL()` and `getLogoutURL()`. Sign-in happens on the node's own
   page; sign-out is a POST.
-- **Web Crypto, `crypto.subtle`:** SHA-256 for API keys and HMAC-SHA256 for
-  webhook signatures and the vault.
+- **Web Crypto, `crypto.subtle`:** SHA-256 for API keys, HMAC-SHA256 for
+  webhook signatures, and HKDF with AES-256-GCM for the vault.
 - **`env.holm.web.fetch`:** serves everything else.
 - **App identity:** `holm app identity generate` made the icons, manifest,
   social card and 404 page from `holm.symbol.svg`.
 
 ### Why not `env.holm.sms`
 
-Holm 0.261 has built-in SMS (`env.holm.sms.send`), through one provider
+Holm has built-in SMS (`env.holm.sms.send`), through one provider
 binding per node or per app that the operator sets up. That suits one phone
 for the whole node, an operator's alerts for instance; section 6.7 of the
 guide shows how. Sandesh's members each bring their own phone, so the app
@@ -147,27 +147,25 @@ holds each member's SMSGate sign-in itself and calls SMSGate directly.
 
 ### The vault
 
-The runtime's Web Crypto has HMAC-SHA256 but no AES yet, so the vault is
-built from HMAC alone: two keys derived from `VAULT_KEY` (one to encrypt,
-one to authenticate), a counter-mode keystream with HMAC as the
-pseudorandom function, a fresh random 16-byte nonce for every value, and
-encrypt-then-MAC over the version, nonce, ciphertext and the owner and
-field it belongs to. A value moved to another member or field, or altered,
-fails to open; the tag is checked before anything is decrypted. Values
-carry a version prefix, so they can move to AES-GCM when the runtime has it.
+Each value is sealed with AES-256-GCM under a key that HKDF-SHA256 derives
+from `VAULT_KEY`, with a fresh random 12-byte IV, and the member and field
+it belongs to as additional data. A value moved to another member or
+field, or altered, fails to open. This needs Holm 0.262 or later, the
+first with AES and HKDF in its Web Crypto. Sandesh 0.1.0 had to build its
+vault from HMAC alone; the values it sealed don't open in 0.1.1, so a
+member who connected a phone with 0.1.0 connects it again.
 
 ### Code shared by the page and the server
 
 The server can import only files under `api/`, and a deploy refuses
-symlinks, so `api/sms.js` is a copy of `web/src/sms.js`. The two engines
-differ: Holm's JavaScript engine reads Unicode property escapes such as
-`\p{L}` as plain characters instead of a letter class, so `sms.js` decides
-what a letter is by hand (any character with a case, plus the Indic, Arabic
-and East Asian blocks without their digits). `node tools/check.mjs` fails if
-the copies differ and checks 47 cases (numbers, SMS parts, similarity,
-business signals, opt-out words, templates, India time) and the vault.
-`CASES` and `run()` are exported, so the same cases can run inside a scratch
-app on a node to compare its answers with Node's.
+symlinks, so `api/sms.js` is a copy of `web/src/sms.js`. A letter is any
+Unicode letter or combining mark (`[\p{L}\p{M}]`), so the vowel signs of
+Indian scripts stay inside their words; Holm's JavaScript engine matches
+these classes like Node's from 0.262. `node tools/check.mjs` fails if the
+copies differ and checks 52 cases (numbers, SMS parts, similarity in five
+scripts, business signals, opt-out words, templates, India time) and the
+vault. `CASES` and `run()` are exported, so the same cases can run inside a
+scratch app on a node to compare its answers with Node's.
 
 ## Deploy your own
 

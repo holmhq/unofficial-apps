@@ -39,6 +39,10 @@ export const CASES = [
   ['similarityKey', ['ok'], null],
   ['similarityKey', ['नमस्ते! आज शाम 7 बजे मिलते हैं, ठीक है?'], 'नमस्ते आज शाम बजे मिलते हैं ठीक है'],
   ['similarityKey', ['Visit https://example.com/x?y=1 for the menu, friend'], 'visit for the menu friend'],
+  ['similarityKey', ['வணக்கம்! நாளை மாலை 5 மணிக்கு சந்திப்போம்'], 'வணக்கம் நாளை மாலை மணிக்கு சந்திப்போம்'],
+  ['similarityKey', ['আজ রাতে দেখা হবে। ঠিক আছে তো?'], 'আজ রাতে দেখা হবে ঠিক আছে তো'],
+  ['similarityKey', ['مرحبا، نلتقي غدا في الساعة 5 مساء'], 'مرحبا نلتقي غدا في الساعة مساء'],
+  ['similarityKey', ['สวัสดีครับ พรุ่งนี้เจอกัน 9 โมง'], 'สวัสดีครับ พรุ่งนี้เจอกัน โมง'],
   // Business signals
   ['signals', ['Your OTP is 482913. Do not share it.'], { otp: true, promo: false, business: true, links: [] }],
   ['signals', ['Use code is 1234 to log in'], { otp: true, promo: false, business: true, links: [] }],
@@ -63,6 +67,7 @@ export const CASES = [
   ['fillTemplate', ['Hi {#var#}, table for {#numeric#}', ['Asha', 'four']], { text: 'Hi Asha, table for four', errors: { 1: 'Numbers only.' } }],
   ['fillTemplate', ['Code {#alphanumeric#}', ['AB 12']], { text: 'Code AB 12', errors: {} }],
   ['fillTemplate', ['Code {#alphanumeric#}', ['AB-12']], { text: 'Code AB-12', errors: { 0: 'Letters and numbers only.' } }],
+  ['fillTemplate', ['Code {#alphanumeric#}', ['कोड १२']], { text: 'Code कोड १२', errors: {} }],
   ['fillTemplate', ['Hi {#var#}', ['x'.repeat(31)]], { text: 'Hi ' + 'x'.repeat(31), errors: { 0: 'At most 30 characters.' } }],
   // India Standard Time
   ['ist', [Date.UTC(2026, 9, 26, 16, 0)], { hour: 21, minute: 30, day: '2026-10-26' }],
@@ -98,6 +103,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   await assert.rejects(open(env, sealed, 'm2\nphone'), /can't read/)
   const tampered = sealed.slice(0, -2) + (sealed.endsWith('A') ? 'BB' : 'AA')
   await assert.rejects(open(env, tampered, 'm1\nphone'), /can't read/)
+  await assert.rejects(open({ ...env, holm: { ...env.holm, secrets: { get: () => 'j'.repeat(64) } } }, sealed, 'm1\nphone'), /can't read/)
+  await assert.rejects(open(env, 'v1.' + sealed.slice(3), 'm1\nphone'), /can't read/)
+  assert.match(sealed, /^v2\.[\w-]+$/)
   assert.notEqual(await seal(env, 'same', 'c'), await seal(env, 'same', 'c'))
   const longer = 'x'.repeat(100)
   assert.equal(await open(env, await seal(env, longer, 'c'), 'c'), longer)

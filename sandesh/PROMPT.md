@@ -69,3 +69,8 @@ Sandesh was built from these messages, passed on to a coding agent:
 **Iteration 2**, choosing the name and how to publish it:
 
 > name: Sandesh ; no need  to keep it private, just do it public in this repo and deploy to sandesh.zyt.app
+
+**Version 0.1.1** needed no new request. Once Holm 0.262 added AES and
+HKDF to its Web Crypto and matched Node on `\p{…}` classes, the vault moved
+to AES-256-GCM and the text rules to Unicode letter classes, as the first
+build had planned.
