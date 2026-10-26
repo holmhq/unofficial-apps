@@ -790,11 +790,11 @@
     {
       "name": "strata",
       "path": "strata",
-      "version": "0.1.0",
-      "tag": "strata/v0.1.0",
-      "h1": "h1:rIFOmogViiBn/ADM+lScl/a3z0Qh2ep938B0n3j7kDg=",
+      "version": "0.1.1",
+      "tag": "strata/v0.1.1",
+      "h1": "h1:xojUEMPS56XRPw9BQ14OxuVI/pJfP3cpnKHZFw5zya0=",
       "files": 31,
-      "size": 369080,
+      "size": 367002,
       "title": "Strata",
       "description": "A calm falling-block game in warm earth colours. Plays offline with no account; sign in to put your best game, replayed by the server, on the leaderboard.",
       "themeColor": "#c98b2b",
@@ -803,8 +803,8 @@
       "listing": {
         "subtitle": "A calm falling-block game",
         "category": "Games",
-        "description": "Fit the falling pieces into full rows. Each full row dissolves from the middle out, and the layers above settle gently down. The pace starts slow and levels off, the sounds are soft, and nothing shakes.\n\nTap to turn, drag to move, flick down to drop and swipe up to hold; on a computer, the arrow keys and Space. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it piece by piece to check the score. Four colour sets in warm earth tones, in light and dark.",
-        "whatsNew": "Strata joins the store: a calm falling-block game in sandstone colours, with games that carry on after a reload, a leaderboard that replays every game before it counts, and offline play.",
+        "description": "Fit the falling pieces into full rows. Each full row dissolves from the middle out, then the layers above drop into place. The pace starts slow and levels off, the sounds are soft, and nothing shakes.\n\nTap to turn, drag to move, flick down to drop and swipe up to hold; on a computer, the arrow keys and Space. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it piece by piece to check the score. Four colour sets in warm earth tones, in light and dark.",
+        "whatsNew": "Pieces now move a whole cell at a time instead of gliding between rows, and after a clear the stack drops straight into place. The leaderboard also no longer takes games that scored nothing.",
         "featured": false,
         "screenshots": [
           {
@@ -843,8 +843,14 @@
           "hash": "853e671b60cf"
         }
       },
-      "prompt": "Build \"Strata\", a calm falling-block game for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage and\nsign-in, return standard Responses and fall back to env.holm.web.fetch(request).\nNo build step or third-party runtime CDN; vendor the icons with their licence.\n\n- A 10 × 20 field with the seven four-cell pieces dealt from shuffled bags of\n  seven, wall kicks, hold, a ghost, soft and hard drops, T-spins,\n  back-to-back and combo points. A gentle pace that levels off at level 15.\n- Calm, not frantic: warm earth colours (sandstone, ochre, clay, sage) on\n  paper by day and night sand after dark, faint sediment bands behind the\n  field, a piece that glides between rows, full rows that dissolve and then\n  settle, soft pentatonic sounds, no screen shake, and a quiet word for each\n  clear. Four colour sets, each light and dark or following the device.\n- Touch anywhere in the play area: tap to turn, drag to move, flick down to\n  drop, swipe up to hold. Keys on a computer. Pause with a button; a hidden\n  tab pauses, and a reload carries on the same game.\n- Rules in one file with no clock or Math.random: a game is a seed and its\n  inputs stamped with frame numbers. Signed in, send each new best as\n  { seed, log, score }; the server replays it with the same rules file,\n  keeps the member's best in member KV and one leaderboard row per member in\n  a shared collection. Signed out, keep the best in localStorage and send it\n  after sign-in. Mind the runtime's per-request allocation budget: replay a\n  long game without allocating every frame. Write a script that plays bot\n  games and checks that they replay exactly.\n- Installable, with a network-first service worker, so it plays offline.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 strata. With my approval, deploy with\nholm @<peer> app deploy strata --spec-v1 --host strata.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test play by touch and keys, pause and reload, signing in with a best\ngame on the device, a refused forged score, a long game's replay on the\nnode, going offline, and mobile/desktop in light/dark. Report gaps honestly.\nInspect the target settings schema before setting sign-in branding.",
-      "history": []
+      "prompt": "Build \"Strata\", a calm falling-block game for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage and\nsign-in, return standard Responses and fall back to env.holm.web.fetch(request).\nNo build step or third-party runtime CDN; vendor the icons with their licence.\n\n- A 10 × 20 field with the seven four-cell pieces dealt from shuffled bags of\n  seven, wall kicks, hold, a ghost, soft and hard drops, T-spins,\n  back-to-back and combo points. A gentle pace that levels off at level 15.\n- Calm, not frantic: warm earth colours (sandstone, ochre, clay, sage) on\n  paper by day and night sand after dark, faint sediment bands behind the\n  field, pieces that move a whole cell at a time, full rows that dissolve\n  before the stack drops into place, soft pentatonic sounds, no screen\n  shake, and a quiet word for each clear. Four colour sets, each light and dark or following the device.\n- Touch anywhere in the play area: tap to turn, drag to move, flick down to\n  drop, swipe up to hold. Keys on a computer. Pause with a button; a hidden\n  tab pauses, and a reload carries on the same game.\n- Rules in one file with no clock or Math.random: a game is a seed and its\n  inputs stamped with frame numbers. Signed in, send each new best as\n  { seed, log, score }; the server replays it with the same rules file,\n  keeps the member's best in member KV and one leaderboard row per member in\n  a shared collection. Signed out, keep the best in localStorage and send it\n  after sign-in. Mind the runtime's per-request allocation budget: replay a\n  long game without allocating every frame. Write a script that plays bot\n  games and checks that they replay exactly.\n- Installable, with a network-first service worker, so it plays offline.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 strata. With my approval, deploy with\nholm @<peer> app deploy strata --spec-v1 --host strata.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test play by touch and keys, pause and reload, signing in with a best\ngame on the device, a refused forged score, a long game's replay on the\nnode, going offline, and mobile/desktop in light/dark. Report gaps honestly.\nInspect the target settings schema before setting sign-in branding.",
+      "history": [
+        {
+          "version": "0.1.0",
+          "date": "2026-10-26",
+          "whatsNew": "Strata joins the store: a calm falling-block game in sandstone colours, with games that carry on after a reload, a leaderboard that replays every game before it counts, and offline play."
+        }
+      ]
     },
     {
       "name": "until",

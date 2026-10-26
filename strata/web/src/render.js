@@ -1,23 +1,20 @@
 // Strata — canvas renderer. Draws the field (faint sediment bands, the
 // stack, the ghost and the falling piece) and the small hold and next
-// previews. The piece glides between rows instead of jumping, full rows
-// dissolve from the middle out, and the stack above them settles down
-// smoothly. All of that is drawing only: the game itself moves in whole cells.
+// previews. The piece is drawn where the game has it, a whole cell at a
+// time; full rows dissolve from the middle out before the stack above them
+// drops into place.
 
 import { COLS, ROWS, CLEAR_FRAMES, shapeCells } from './rules.js'
 import { PALETTES, shade, hexToRgba, effectiveDark } from './theme.js'
 
 const GAP = 0.07     // fraction of a cell left as the gap on each side
 const RADIUS = 0.16  // corner radius as a fraction of a cell
-const GLIDE_MS = 30  // how quickly the drawn piece catches up with the real one
-const SETTLE_MS = 190
 const FLASH_MS = 220
 const TRAIL_MS = 260
 // Heights of the faint bands behind the field, top to bottom.
 const BANDS = [3, 2, 4, 1, 3, 2, 3, 2]
 
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)')
-const easeOut = (t) => 1 - Math.pow(1 - t, 3)
 const clamp01 = (t) => Math.max(0, Math.min(1, t))
 
 export function createRenderer({ field, hold, next }) {
@@ -30,9 +27,6 @@ export function createRenderer({ field, hold, next }) {
   const cfg = { paletteId: 'sandstone', ghost: true, dark: effectiveDark() }
 
   // Drawing state that the game never sees.
-  let drawn = null      // { serial, row, col }: where the falling piece is drawn
-  let last = 0
-  let settling = null   // { offsets, start }
   let flashes = []      // { cells, start }
   let trails = []       // { cells, from, type, start }
 
@@ -64,25 +58,14 @@ export function createRenderer({ field, hold, next }) {
 
   /* ---- effects, started by the game's events ---- */
 
-  // After full rows go: each remaining row falls from where it was.
-  function settle(rows) {
-    if (reduceMotion.matches) return
-    const offsets = new Array(ROWS).fill(0)
-    for (let r = 0; r < ROWS; r++) {
-      if (rows.includes(r)) continue
-      const below = rows.filter((x) => x > r).length
-      offsets[r + below] = below
-    }
-    settling = { offsets, start: performance.now() }
-  }
   function flash(cells) {
     if (!reduceMotion.matches) flashes.push({ cells, start: performance.now() })
   }
   function trail(cells, from, type) {
     if (!reduceMotion.matches) trails.push({ cells, from, type, start: performance.now() })
   }
-  function busy(now) {
-    return !!settling || flashes.length > 0 || trails.length > 0 || now - last < 100
+  function busy() {
+    return flashes.length > 0 || trails.length > 0
   }
 
   /* ---- shapes ---- */
@@ -161,21 +144,13 @@ export function createRenderer({ field, hold, next }) {
 
   function draw(game, now = performance.now()) {
     const t = tiles()
-    const dt = last ? Math.min(100, now - last) : 16
-    last = now
     background()
 
-    // the stack, settling after a clear
-    let offsets = null
-    if (settling) {
-      const k = clamp01((now - settling.start) / SETTLE_MS)
-      if (k >= 1) settling = null
-      else offsets = settling.offsets.map((o) => o * (1 - easeOut(k)))
-    }
+    // the stack, with full rows dissolving
     const clearing = game.phase === 'clearing' ? game.clearing : null
     const k = clearing ? 1 - game.clearTimer / CLEAR_FRAMES : 0
     for (let r = 0; r < ROWS; r++) {
-      const y = (r - (offsets ? offsets[r] : 0)) * cell
+      const y = r * cell
       const dissolving = clearing && clearing.includes(r)
       for (let c = 0; c < COLS; c++) {
         const type = game.grid[r][c]
@@ -236,16 +211,6 @@ export function createRenderer({ field, hold, next }) {
     // ghost and falling piece
     const piece = game.piece
     if (piece && game.phase === 'falling') {
-      const targetRow = piece.row + game.progress
-      if (!drawn || drawn.serial !== game.serial || reduceMotion.matches) {
-        drawn = { serial: game.serial, row: targetRow, col: piece.col }
-      } else {
-        const follow = 1 - Math.exp(-dt / GLIDE_MS)
-        drawn.row += (targetRow - drawn.row) * follow
-        drawn.col += (piece.col - drawn.col) * follow
-        if (Math.abs(targetRow - drawn.row) < 0.01) drawn.row = targetRow
-        if (Math.abs(piece.col - drawn.col) < 0.01) drawn.col = piece.col
-      }
       const cells = shapeCells(piece.type, piece.rot)
       if (cfg.ghost) {
         const gr = game.ghostRow()
@@ -254,12 +219,9 @@ export function createRenderer({ field, hold, next }) {
         }
       }
       for (const [r, c] of cells) {
-        const y = (drawn.row + r) * cell
-        if (y <= -cell) continue
-        block(fctx, (drawn.col + c) * cell, y, cell, t[piece.type])
+        if (piece.row + r < 0) continue
+        block(fctx, (piece.col + c) * cell, (piece.row + r) * cell, cell, t[piece.type])
       }
-    } else {
-      drawn = null
     }
 
     drawPreview(hctx, game.hold, mini, t, !game.canHold)
@@ -289,5 +251,5 @@ export function createRenderer({ field, hold, next }) {
     nctx.clearRect(0, 0, 4 * mini, 2 * mini)
   }
 
-  return { resize, setConfig, draw, drawEmpty, settle, flash, trail, busy, get cell() { return cell } }
+  return { resize, setConfig, draw, drawEmpty, flash, trail, busy, get cell() { return cell } }
 }

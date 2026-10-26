@@ -35,9 +35,9 @@ public URLs.
   turn, Z or Ctrl turn the other way, Space drops, C or Shift holds, P or Esc
   pauses, Enter plays or resumes.
 - **Calm:** the pace starts at a second a row and levels off at a tenth of a
-  second at level 15 (a level every ten lines). Full rows dissolve from the
-  middle out, then the stack settles smoothly; the falling piece glides
-  between rows. A quiet word names each clear, sounds are soft pentatonic
+  second at level 15 (a level every ten lines). The falling piece moves a
+  whole cell at a time, just as the game does. Full rows dissolve from the
+  middle out, then the stack drops into place. A quiet word names each clear, sounds are soft pentatonic
   tones, and nothing shakes. The end card waits a moment before it takes a
   key or tap, so a drop meant for the game can't start a new one.
 - **Points:** guideline scoring: 100, 300, 500 and 800 for one to four rows,

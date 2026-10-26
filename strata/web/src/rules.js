@@ -110,7 +110,7 @@ function generator(seed) {
 
 export class Game {
   // onEvent(type, detail) hears what happens, for sound and animation:
-  // spawn, move, rotate, fall, drop, hold, lock, clear, settle, level, over.
+  // spawn, move, rotate, fall, drop, hold, lock, clear, level, over.
   constructor(seed, onEvent = null) {
     this.seed = seed >>> 0
     this.random = generator(this.seed)
@@ -123,7 +123,7 @@ export class Game {
     this.canHold = true
     this.active = { type: 'I', rot: 0, row: 0, col: 0 }
     this.piece = null      // the active piece, { type, rot, row, col }, or null between pieces
-    this.serial = 0        // counts pieces as they enter, for drawing
+    this.serial = 0        // counts pieces as they enter
     this.score = 0
     this.lines = 0
     this.level = 1
@@ -152,11 +152,6 @@ export class Game {
   get over() { return this.phase === 'over' }
   get next() { return this.queue.slice(0, 3) }
   get gravity() { return GRAVITY[this.level] }
-  // How far the piece is through its current row of fall, 0 to 1, for drawing.
-  get progress() {
-    if (!this.piece || this.soft || !this.fits(this.piece, 1)) return 0
-    return Math.min(1, this.fall / GRAVITY[this.level])
-  }
 
   take() {
     while (this.queue.length <= 7) {
@@ -428,7 +423,6 @@ export class Game {
     }
     for (; to >= 0; to--) for (let c = 0; c < COLS; c++) grid[to][c] = null
     this.phase = 'falling'
-    if (this.onEvent) this.emit('settle', { rows: rows.slice() })
     rows.length = 0
     this.spawn(this.take())
   }

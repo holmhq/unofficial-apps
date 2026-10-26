@@ -2,8 +2,8 @@
 
 The public reference at <https://holmhq.com/llms-full.txt> teaches Holm App Spec
 v1. Give the build request below to a coding agent with the `holm` CLI and a
-node you control. The quoted message later is history, not an additional
-instruction or source.
+node you control. The quoted messages later are history, not additional
+instructions or sources.
 
 ## Build from scratch
 
@@ -21,9 +21,9 @@ No build step or third-party runtime CDN; vendor the icons with their licence.
   back-to-back and combo points. A gentle pace that levels off at level 15.
 - Calm, not frantic: warm earth colours (sandstone, ochre, clay, sage) on
   paper by day and night sand after dark, faint sediment bands behind the
-  field, a piece that glides between rows, full rows that dissolve and then
-  settle, soft pentatonic sounds, no screen shake, and a quiet word for each
-  clear. Four colour sets, each light and dark or following the device.
+  field, pieces that move a whole cell at a time, full rows that dissolve
+  before the stack drops into place, soft pentatonic sounds, no screen
+  shake, and a quiet word for each clear. Four colour sets, each light and dark or following the device.
 - Touch anywhere in the play area: tap to turn, drag to move, flick down to
   drop, swipe up to hold. Keys on a computer. Pause with a button; a hidden
   tab pauses, and a reload carries on the same game.
@@ -50,7 +50,7 @@ node, going offline, and mobile/desktop in light/dark. Report gaps honestly.
 Inspect the target settings schema before setting sign-in branding.
 ```
 
-## The original request
+## The original requests
 
 Strata began as a Tetris-style game in another repository, written with a
 copy of a pre-release Holm SDK and server code in Holm's original app format.
@@ -66,3 +66,8 @@ a coding agent:
 
 The agent then asked one question, and this option was picked for the name
 and colours: "Strata · sandstone (Recommended)".
+
+Version 0.1.1 came from this follow-up, after the first version drew the
+falling piece gliding smoothly between rows:
+
+> I think strata's smooth movement is jarring; instead of cell based quantised movement

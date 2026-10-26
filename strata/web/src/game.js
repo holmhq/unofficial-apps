@@ -107,7 +107,6 @@ export function mountPlay(container, handlers) {
         say(d.tspin ? TWISTS[n] : CLEARS[n], d.points, extra.join(' · '))
         break
       }
-      case 'settle': renderer.settle(d.rows); break
       case 'level':
         setTimeout(() => { sfx.level(); say(`Level ${d.level}`) }, 380)
         break
@@ -228,7 +227,7 @@ export function mountPlay(container, handlers) {
     if (status === 'idle') renderer.drawEmpty()
     else renderer.draw(game, now)
     syncStats()
-    if (status === 'playing' || renderer.busy(now)) kick()
+    if (status === 'playing' || renderer.busy()) kick()
     else lastTs = 0
   }
 

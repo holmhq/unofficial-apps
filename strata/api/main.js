@@ -60,7 +60,7 @@ export default {
 
       const store = env.holm.app.member.kv
       const before = store.get(BEST)
-      const improved = better(result, before)
+      const improved = result.score > 0 && better(result, before)
       if (improved) store.set(BEST, { ...result, seed, log, at: Date.now() })
       const board = updateBoard(env.holm, auth.getMember(), improved ? result : before)
       return json({ result, best: publicBest(improved ? result : before), improved, board })

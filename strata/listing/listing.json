@@ -2,8 +2,8 @@
   "subtitle": "A calm falling-block game",
   "category": "Games",
   "featured": false,
-  "description": "Fit the falling pieces into full rows. Each full row dissolves from the middle out, and the layers above settle gently down. The pace starts slow and levels off, the sounds are soft, and nothing shakes.\n\nTap to turn, drag to move, flick down to drop and swipe up to hold; on a computer, the arrow keys and Space. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it piece by piece to check the score. Four colour sets in warm earth tones, in light and dark.",
-  "whatsNew": "Strata joins the store: a calm falling-block game in sandstone colours, with games that carry on after a reload, a leaderboard that replays every game before it counts, and offline play.",
+  "description": "Fit the falling pieces into full rows. Each full row dissolves from the middle out, then the layers above drop into place. The pace starts slow and levels off, the sounds are soft, and nothing shakes.\n\nTap to turn, drag to move, flick down to drop and swipe up to hold; on a computer, the arrow keys and Space. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it piece by piece to check the score. Four colour sets in warm earth tones, in light and dark.",
+  "whatsNew": "Pieces now move a whole cell at a time instead of gliding between rows, and after a clear the stack drops straight into place. The leaderboard also no longer takes games that scored nothing.",
   "screenshots": [
     {
       "file": "board.webp",
