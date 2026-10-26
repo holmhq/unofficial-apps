@@ -1,6 +1,6 @@
 // Who is looking: the avatar circle, its menu, and Holm's hosted sign-in page
 // in an overlay, so the reader keeps their place.
-import { $, el, api } from './lib.js'
+import { $, el, api, themeMode, setTheme } from './lib.js'
 
 let me = null
 let admin = false
@@ -33,44 +33,76 @@ export function setViewer(value) {
   render()
 }
 
-function person() {
+function glyph(d) {
   const ns = 'http://www.w3.org/2000/svg'
   const svg = document.createElementNS(ns, 'svg')
   svg.setAttribute('viewBox', '0 0 24 24')
   svg.setAttribute('aria-hidden', 'true')
   const path = document.createElementNS(ns, 'path')
-  path.setAttribute('d', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0')
+  path.setAttribute('d', d)
   svg.append(path)
   return svg
 }
+const PERSON = 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0'
+const THEMES = [
+  ['light', 'Light', 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4'],
+  ['dark', 'Dark', 'M20 14.5A8.5 8.5 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5Z'],
+  ['system', 'Same as device', 'M4 4h16a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 16H4a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 4ZM8.5 20h7M12 16v4']
+]
+
+// Light, dark or the device's choice: picking one keeps the menu open.
+function themeRow() {
+  const group = el('div', { class: 'views', role: 'group', 'aria-label': 'Theme' },
+    THEMES.map(([mode, label, d]) => el('button', {
+      type: 'button', role: 'menuitemradio', 'aria-label': label, title: label,
+      'aria-checked': String(themeMode() === mode), 'data-theme': mode,
+      onclick: () => {
+        setTheme(mode)
+        for (const button of group.children) button.setAttribute('aria-checked', String(button.dataset.theme === mode))
+      }
+    }, glyph(d))))
+  return el('div', { class: 'menu-theme' }, el('span', {}, 'Theme'), group)
+}
+
+let closeMenu = null
 
 function render() {
+  if (closeMenu) closeMenu()
   const button = el('button', {
     type: 'button', class: 'avatar-btn', 'aria-haspopup': 'menu', 'aria-expanded': 'false',
     'aria-label': me ? `Account: ${me.name}` : 'Sign in',
     onclick: event => { event.stopPropagation(); toggleMenu(button) }
-  }, me ? el('img', { src: me.avatar, alt: '', referrerpolicy: 'no-referrer' }) : person())
+  }, me ? el('img', { src: me.avatar, alt: '', referrerpolicy: 'no-referrer' }) : glyph(PERSON))
   $('#account').replaceChildren(button)
 }
 
 function toggleMenu(button) {
-  const open = $('.menu')
-  if (open) return close(open, button)
+  if (closeMenu) return closeMenu()
   const menu = me
     ? el('div', { class: 'menu', role: 'menu' },
         el('div', { class: 'menu-head' }, el('strong', {}, me.name), me.email && el('span', {}, me.email)),
+        themeRow(),
         admin && el('a', { href: '/admin', 'data-link': true, role: 'menuitem' }, 'Admin'),
         surfaces && surfaces.analytics && el('a', { href: surfaces.analytics, target: '_blank', rel: 'noopener', role: 'menuitem' }, 'Analytics'),
         el('button', { type: 'button', role: 'menuitem', onclick: signOut }, 'Sign out'))
     : el('div', { class: 'menu', role: 'menu' },
+        themeRow(),
         el('button', { type: 'button', role: 'menuitem', onclick: () => signIn().catch(() => {}) }, 'Sign in'))
   $('#account').append(menu)
   button.setAttribute('aria-expanded', 'true')
-  menu.querySelector('a, button').focus()
+  menu.querySelector('[aria-checked="true"], a, button').focus()
+  // A click outside closes the menu, and so does one of its items; the
+  // avatar's own click is left to toggle it, or it would close and reopen.
   const dismiss = event => {
     if (event.type === 'keydown' && event.key !== 'Escape') return
-    if (event.type === 'click' && menu.contains(event.target) && !event.target.closest('a, button')) return
-    close(menu, button, event.type === 'keydown')
+    if (event.type === 'click' && (button.contains(event.target) || (menu.contains(event.target) && !event.target.closest('[role="menuitem"]')))) return
+    closeMenu(event.type === 'keydown')
+  }
+  closeMenu = refocus => {
+    closeMenu = null
+    menu.remove()
+    button.setAttribute('aria-expanded', 'false')
+    if (refocus) button.focus()
     document.removeEventListener('click', dismiss, true)
     document.removeEventListener('keydown', dismiss)
   }
@@ -78,12 +110,6 @@ function toggleMenu(button) {
     document.addEventListener('click', dismiss, true)
     document.addEventListener('keydown', dismiss)
   })
-}
-
-function close(menu, button, refocus) {
-  menu.remove()
-  button.setAttribute('aria-expanded', 'false')
-  if (refocus) button.focus()
 }
 
 async function signOut() {

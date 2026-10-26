@@ -72,9 +72,11 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
 - The guide does not document binary net.fetch responses: do not invent
   responseType: 'file'. Keep screenshots as public static files in web/
   until a documented, tested proxy/cache path is available; disclose that
-  gap. Make light/dark mobile/desktop layouts, no sideways scrolling, an
-  avatar menu with Analytics from __HOLM_SURFACES__, and a small Holm/source
-  footer that stays at the bottom over the scrolling page, frosted.
+  gap. Make light/dark mobile/desktop layouts, no sideways scrolling, and a
+  small Holm/source footer that stays at the bottom over the scrolling page,
+  frosted. The avatar menu (a second tap closes it) has a light/dark/
+  same-as-device switch, kept in the browser and applied before first
+  paint, and Analytics from __HOLM_SURFACES__.
 
 Run holm app validate --spec-v1 catalog. With my approval, deploy with
 holm @<peer> app deploy catalog --spec-v1 --host unofficial.<my-domain>.
@@ -274,6 +276,16 @@ release tag's listing and adds its notes to index.json.
 
 The fold was hidden rather than removed: one switch in web/src/app.js brings
 it back.
+
+**Iteration 19**, then the answer when the agent asked which app was meant
+(several others already had the switch):
+
+> Can you add theme switch light / dark / system to avatar popup
+
+> Catalog, Plus the sign-in popup does go away which the avatar button is clicked again
+
+The menu didn't close on a second tap of the avatar: it closed and opened
+again at once. That is fixed alongside the switch.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

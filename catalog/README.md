@@ -102,8 +102,10 @@ out of this app's deploy. They are still public source in this repository.
   - A link for anyone without a node yet goes to the guide.
 - **Accounts:** an avatar circle at the top right signs people in through
   Holm's hosted sign-in page, shown in an overlay so nobody loses their
-  place. Its menu has Admin for those allowed in, Analytics (Holm's own
-  analytics page for this app) for the people Holm shows it to, and Sign out.
+  place. Its menu has a light, dark or same-as-device theme switch for
+  everyone, Admin for those allowed in, Analytics (Holm's own analytics page
+  for this app) for the people Holm shows it to, and Sign out. Tapping the
+  avatar again closes it.
 - **Ratings and reviews:** anyone signed in can rate an app and write a
   review, one per app, and edit or delete it. A new or edited review is shown
   only to its author, marked as waiting, until an admin approves it. Approved
@@ -117,7 +119,9 @@ out of this app's deploy. They are still public source in this repository.
   - approve, reject, unpublish or delete reviews;
   - the store's tint: six presets or any colour, previewed live before saving,
     with a warning if it would be hard to read.
-- **Look:** slate ink on cool paper, light and dark following the system.
+- **Look:** slate ink on cool paper, light and dark following the device
+  unless the reader picks one in the avatar menu; the choice stays in their
+  browser and is applied before the first paint.
   Each app brings its colour through its icon, and everything else takes the
   tint. Fonts are vendored, so nothing loads from a CDN. A footer links to
   Holm and the source and has Send feedback, as in pastebin. It stays at the

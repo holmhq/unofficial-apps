@@ -36,24 +36,24 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #0f1a1e;
-    --sheet: #15252b;
-    --ink: #e2ebe8;
-    --ink-2: #a3b4b2;
-    --ink-3: #74878a;
-    --rule: #233740;
-    --accent: color-mix(in oklab, var(--tint) 58%, white);
-    --accent-wash: color-mix(in oklab, var(--tint) 30%, var(--paper));
-    --planned: #e3b35a;
-    --star: #f0b43c;
-    --danger: #f08a68;
-    --planned-wash: #2e2614;
-    --scrim: rgba(0, 0, 0, 0.6);
-    --lift: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 40px -24px rgba(0, 0, 0, 0.8);
-    color-scheme: dark;
-  }
+/* Dark, when the device asks for it or the reader picks it in the avatar
+   menu; shell.html sets data-theme before first paint. */
+:root[data-theme="dark"] {
+  --paper: #0f1a1e;
+  --sheet: #15252b;
+  --ink: #e2ebe8;
+  --ink-2: #a3b4b2;
+  --ink-3: #74878a;
+  --rule: #233740;
+  --accent: color-mix(in oklab, var(--tint) 58%, white);
+  --accent-wash: color-mix(in oklab, var(--tint) 30%, var(--paper));
+  --planned: #e3b35a;
+  --star: #f0b43c;
+  --danger: #f08a68;
+  --planned-wash: #2e2614;
+  --scrim: rgba(0, 0, 0, 0.6);
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 40px -24px rgba(0, 0, 0, 0.8);
+  color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -217,9 +217,7 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
   cursor: pointer;
 }
 .get:hover { filter: brightness(0.97); }
-@media (prefers-color-scheme: dark) {
-  .get:hover { filter: brightness(1.15); }
-}
+[data-theme="dark"] .get:hover { filter: brightness(1.15); }
 
 /* Store front */
 
@@ -578,6 +576,16 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
   text-align: left; text-decoration: none; cursor: pointer;
 }
 .menu a:hover, .menu button:hover { background: var(--paper); }
+/* Light, dark or the device's choice, in the same pill as the list/grid switch. */
+.menu-theme {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.3rem 0.3rem 0.5rem 0.65rem; margin-bottom: 0.3rem; border-bottom: 1px solid var(--rule);
+  font-size: 0.95rem; color: var(--ink-2);
+}
+.menu .views button { width: 2.4rem; height: 2rem; padding: 0; justify-content: center; border-radius: 999px; color: var(--ink-3); }
+.menu .views button:hover { background: none; color: var(--ink); }
+.menu .views button[aria-checked="true"] { background: var(--accent-wash); color: var(--accent); }
+.menu .views svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .signin { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 1rem; background: var(--scrim); }
 .signin iframe { width: min(27.5rem, 100%); height: min(40rem, 100%); border: 0; border-radius: 18px; background: #fff; box-shadow: var(--lift); }

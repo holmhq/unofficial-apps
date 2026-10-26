@@ -95,6 +95,28 @@ export function applyTint(tint) {
   store.set('tint', tint)
 }
 
+// Light, dark or the device's choice, remembered in this browser. The page
+// carries the one in effect as data-theme; shell.html sets it before first
+// paint the same way, so a reload doesn't flash.
+const darkQuery = matchMedia('(prefers-color-scheme: dark)')
+const BAR = { light: '#f2f5f4', dark: '#0f1a1e' }
+
+export const themeMode = () => ['light', 'dark'].includes(store.get('theme')) ? store.get('theme') : 'system'
+
+export function setTheme(mode) {
+  store.set('theme', mode)
+  applyTheme()
+}
+
+export function applyTheme() {
+  const mode = themeMode()
+  const shown = mode === 'system' ? (darkQuery.matches ? 'dark' : 'light') : mode
+  document.documentElement.dataset.theme = shown
+  for (const meta of document.querySelectorAll('meta[name="theme-color"]')) meta.content = BAR[shown]
+}
+
+darkQuery.addEventListener('change', () => { if (themeMode() === 'system') applyTheme() })
+
 // A command or prompt to copy. Each line is a list of strings and { you }
 // parts, the reader's own values, which are highlighted. Shell commands keep
 // their line breaks (long ones continue with a backslash); a prose prompt is

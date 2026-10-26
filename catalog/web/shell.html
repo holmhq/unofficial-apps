@@ -13,6 +13,15 @@
   <script>
     // The admin-chosen tint, before first paint, so the page doesn't flash green.
     try { var t = JSON.parse(localStorage.getItem('catalog.tint')); if (/^#[0-9a-f]{6}$/i.test(t)) document.documentElement.style.setProperty('--tint', t) } catch (e) {}
+    // Light, dark or the device's choice, likewise (lib.js keeps it after that).
+    (function () {
+      var m = 'system'
+      try { m = JSON.parse(localStorage.getItem('catalog.theme')) || 'system' } catch (e) {}
+      var shown = m === 'light' || m === 'dark' ? m : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      document.documentElement.dataset.theme = shown
+      var metas = document.querySelectorAll('meta[name="theme-color"]')
+      for (var i = 0; i < metas.length; i++) metas[i].content = shown === 'dark' ? '#0f1a1e' : '#f2f5f4'
+    })()
   </script>
   <link rel="stylesheet" href="/src/styles.css">
   <!-- Every module at once, instead of each import waiting for the file that names it. -->
