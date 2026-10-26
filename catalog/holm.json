@@ -1,6 +1,6 @@
 {
   "name": "catalog",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "title": "catalog",
   "description": "A store for a repository of Holm apps: a page for every app, and a sheet that installs it on your node.",
   "themeColor": "#0e7c66",

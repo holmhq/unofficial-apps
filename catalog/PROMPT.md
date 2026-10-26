@@ -34,8 +34,9 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   no Get and no hover zoom. Each app's own
   /apps/<app> page: icon/colour, version, size, category, license, swipeable
   screenshots, description, whatsNew with a folded version history (the
-  index's history: each earlier tag's whatsNew and date), the original
-  prompt folded until opened, and source information.
+  index's history: each earlier tag's whatsNew and date), and source
+  information. Keep each app's prompt in the index, but don't show it for
+  now.
   Read the public repository index with synchronous env.holm.net.fetch,
   not global fetch; cache it in KV and keep the last good index on failure.
 - Make it fast: the handler serves every page with the index and the viewer
@@ -264,6 +265,15 @@ Get stayed on the list view's rows and on the cover.
 
 The history comes from the repository: scripts/index.mjs reads each earlier
 release tag's listing and adds its notes to index.json.
+
+**Iteration 18**:
+
+> i think we should disable prompts from the app store?
+> - may be just hide it for the time being?
+> - and /close
+
+The fold was hidden rather than removed: one switch in web/src/app.js brings
+it back.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

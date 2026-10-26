@@ -83,8 +83,10 @@ out of this app's deploy. They are still public source in this repository.
   - the description and what's new in this version, with **Version
     history** folded under it: each earlier release's notes, newest first,
     with its date (from the index's `history`);
-  - **Built from a prompt:** folded until opened, the request a coding
-    agent built the app from;
+  - **Built from a prompt:** the request a coding agent built the app
+    from, folded until opened. It is hidden for now: `SHOW_PROMPT` in
+    `web/src/app.js` brings it back, and the index still carries each
+    app's prompt;
   - information: repository, release tag, size and file count, README.
 - **The install sheet:** type your peer and domain once and every command is
   written for your node, with your parts highlighted; the guide shares them.

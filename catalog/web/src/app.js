@@ -9,6 +9,9 @@ import { adminPage } from './admin.js'
 import { startPage, isStart } from './start.js'
 
 const ref = new URLSearchParams(location.search).get('ref') || 'main'
+// The "Built from a prompt" fold on each app's page, hidden for now. The
+// index still carries each app's prompt; set this to bring the fold back.
+const SHOW_PROMPT = false
 const withRef = path => ref === 'main' ? path : path + '?ref=' + encodeURIComponent(ref)
 const main = $('#main')
 let index = null
@@ -324,7 +327,7 @@ function productPage(app) {
             note.date && el('time', { datetime: note.date }, date(note.date + 'T12:00:00'))),
           paragraphs(note.whatsNew).map(text => el('p', {}, text))))))),
     reviewsSection(app),
-    app.prompt && el('details', { class: 'fold prompt' },
+    SHOW_PROMPT && app.prompt && el('details', { class: 'fold prompt' },
       el('summary', {}, el('h2', {}, 'Built from a prompt')),
       el('p', {}, 'A coding agent built this app from this request, with Holm’s public reference as its only guide.'),
       el('blockquote', {}, el('pre', {}, reflow(app.prompt))),

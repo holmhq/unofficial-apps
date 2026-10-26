@@ -323,8 +323,7 @@ function setup(apps) {
 function build() {
   return el('section', { class: 'guide-section', id: 'build' },
     el('h2', {}, 'Build your own'),
-    el('p', { class: 'section-lede' }, 'Every app here began as a few sentences to a coding agent. Say what you want and point it at Holm’s reference; ',
-      'each app’s page in ', el('a', { href: '/', 'data-link': true }, 'this store'), ' shows the prompt that built it.'),
+    el('p', { class: 'section-lede' }, 'Every app here began as a few sentences to a coding agent. Say what you want and point it at Holm’s reference.'),
     command([[
       'Build a Holm app called guestbook: signed-in visitors leave a short message and see everyone’s, newest first, updating live. Use ',
       REFERENCE, ' as your only Holm reference, then deploy it to my local node at guestbook.holm.localhost.'
