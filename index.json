@@ -466,6 +466,86 @@
       ]
     },
     {
+      "name": "margin",
+      "path": "margin",
+      "version": "0.1.0",
+      "tag": "margin/v0.1.0",
+      "h1": "h1:McIkVDgrLSb/Hr+vWqjuy2pjQjGRb0UdygjwDqU/TDM=",
+      "files": 99,
+      "size": 2128070,
+      "title": "Margin",
+      "description": "A blog for your team: invited writers, quote comments, claps, swappable themes, and Claude as a co-writer.",
+      "themeColor": "#1a7f64",
+      "symbol": "M 1.418182 5.454545 L 11.672727 5.454545 C 12.048852 5.454545 12.409573 5.603961 12.675533 5.869921 C 12.941494 6.135882 13.090909 6.496602 13.090909 6.872727 L 13.090909 6.872727 C 13.090909 7.248852 12.941494 7.609573 12.675533 7.875533 C 12.409573 8.141494 12.048852 8.290909 11.672727 8.290909 L 1.418182 8.290909 C 0.634942 8.290909 0 7.655967 0 6.872727 L 0 6.872727 C 0 6.089487 0.634942 5.454545 1.418182 5.454545 Z M 1.418182 11.672727 L 11.672727 11.672727 C 12.048852 11.672727 12.409573 11.822142 12.675533 12.088103 C 12.941494 12.354064 13.090909 12.714784 13.090909 13.090909 L 13.090909 13.090909 C 13.090909 13.467034 12.941494 13.827754 12.675533 14.093715 C 12.409573 14.359676 12.048852 14.509091 11.672727 14.509091 L 1.418182 14.509091 C 1.042057 14.509091 0.681337 14.359676 0.415376 14.093715 C 0.149415 13.827754 0 13.467034 0 13.090909 L 0 13.090909 C 0 12.714784 0.149415 12.354064 0.415376 12.088103 C 0.681337 11.822142 1.042057 11.672727 1.418182 11.672727 Z M 1.418182 17.890909 L 7.309091 17.890909 C 7.685216 17.890909 8.045936 18.040324 8.311897 18.306285 C 8.577858 18.572246 8.727273 18.932966 8.727273 19.309091 L 8.727273 19.309091 C 8.727273 19.685216 8.577858 20.045936 8.311897 20.311897 C 8.045936 20.577858 7.685216 20.727273 7.309091 20.727273 L 1.418182 20.727273 C 1.042057 20.727273 0.681337 20.577858 0.415376 20.311897 C 0.149415 20.045936 0 19.685216 0 19.309091 L 0 19.309091 C 0 18.932966 0.149415 18.572246 0.415376 18.306285 C 0.681337 18.040324 1.042057 17.890909 1.418182 17.890909 Z M 18 3.272727 L 21.818182 3.272727 Q 24 3.272727 24 5.454545 L 24 10.909091 Q 24 13.090909 21.818182 13.090909 L 19.2 13.090909 L 15.709091 15.927273 L 15.927273 12.436364 Q 15.818182 12 15.818182 10.909091 L 15.818182 5.454545 Q 15.818182 3.272727 18 3.272727 Z",
+      "demo": "https://blog.zyt.app",
+      "listing": {
+        "subtitle": "A blog for your team, with Claude on it",
+        "category": "Productivity",
+        "description": "A blog where a whole team writes, each at their own address: /@maya/designing-the-empty-week. Only the people you invite can post. Anyone can sign in to read, clap and comment. Shared personas such as @team let several people post under one name, and one blog can be the site's home page.\n\nReaders comment the way they would in a book's margin: select any passage, add a note, and it stays highlighted for everyone, with the conversation beside it. Or respond to the whole post at the end. Each blog chooses whether comments from outside the team, or every comment, wait for approval. Claps go up to fifty a person.\n\nThe editor is block-based like Notion: press / for headings, lists, to-dos, quotes, callouts, code and tables; drop in photos and short videos; paste a YouTube, Figma or CodePen link to embed it, or another post's address to show it as a card. Posts are Markdown underneath, rendered on the server, so every page reads without JavaScript and search engines see it all.\n\nConnect Claude and it can draft and publish posts as you, answer ordinary comments in your voice and leave anything sensitive for you, and even design a new theme. Themes are a few HTML templates and a stylesheet that you can download, change and upload; Margin checks them first. It comes with two: Quiet, clean and Apple-like, and Editorial, a serif page with notes in the margin.",
+        "whatsNew": "Margin is here: team blogs with invites, personas, quote comments, claps, a block editor, swappable themes, and tools for Claude.",
+        "featured": false,
+        "screenshots": [
+          {
+            "path": "listing/post.webp",
+            "alt": "A post on a phone in the Quiet theme: tags, a large headline, the byline and cover, and a floating bar with 214 claps and 5 comments",
+            "width": 780,
+            "height": 1688,
+            "hash": "f2f1645960f1"
+          },
+          {
+            "path": "listing/quote.webp",
+            "alt": "Comments on a highlighted passage: Alex's note and the author's reply as chat bubbles under the quoted line",
+            "width": 780,
+            "height": 1688,
+            "hash": "ff50a9a36aa1"
+          },
+          {
+            "path": "listing/editor.webp",
+            "alt": "The editor on a phone with the slash menu open: Text, Heading, Subheading, lists, To-do, Quote and Callout",
+            "width": 780,
+            "height": 1688,
+            "hash": "03184e21d68e"
+          },
+          {
+            "path": "listing/home.webp",
+            "alt": "The sample team's landing page: the site name, its tagline and a featured post with a cover",
+            "width": 780,
+            "height": 1688,
+            "hash": "013c4162c8ac"
+          },
+          {
+            "path": "listing/editorial.webp",
+            "alt": "A research post in the Editorial theme: serif text, section headings and a pulled quote",
+            "width": 780,
+            "height": 1688,
+            "hash": "842c638d01fe"
+          },
+          {
+            "path": "listing/inbox.webp",
+            "alt": "Studio's comment inbox with a reader's question waiting for approval, and Approve, Reject and Reply buttons",
+            "width": 780,
+            "height": 1688,
+            "hash": "b7c8aa7ca3da"
+          },
+          {
+            "path": "listing/dark.webp",
+            "alt": "An engineering post in dark mode with a code sample and a table of conflict rules",
+            "width": 780,
+            "height": 1688,
+            "hash": "d64149c3b34b"
+          }
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "c58787f51dfb"
+        }
+      },
+      "prompt": "Build \"Margin\", a blog for a team, using only https://holmhq.com/llms-full.txt\nfor Holm. Read its v1 sections 9–12 (with \"Use your app from ChatGPT or Claude\"\nand \"One page per document id\") and \"Make an app feel finished\" first. Make\nholm.json, public web/ files and api/main.js exporting default\n{ fetch(request, env) } plus named operations. Use env.holm for storage,\nsign-in, realtime and email, return standard Responses, and fall back to\nenv.holm.web.fetch(request). No third-party runtime CDN: vendor libraries and\nfonts with their licences. A locally built editor bundle is fine if its build\nscript is in the folder.\n\n- People: anyone signs in to read, clap and comment. Only people an admin\n  invites (a single-use link, optionally tied to an email) can write. Each\n  writer picks a handle, and their posts live at /@handle/seo-slug. Admins\n  make personas (/@team) that chosen writers can post and comment as. An\n  admin can make the site's home a landing page or any one blog, whose posts\n  then live at /<slug>. Old addresses keep redirecting.\n- Reading pages are rendered on the server, readable with no JavaScript,\n  with feeds, a sitemap and social cards. Posts are Markdown underneath, with\n  callouts, embeds from a bare link (YouTube, Vimeo, Loom, CodePen, Figma,\n  Spotify), cards for other posts, and figures with captions and widths.\n- Comments like Medium: select a passage to comment on it (keep the quote\n  with its surrounding words so it re-anchors), or respond to the whole post;\n  one level of replies; per-blog approval of comments from outside the team,\n  or of all. Claps, up to 50 per person. Link previews for posts.\n- Themes are swappable: theme.json, Mustache templates, partials and assets,\n  with a validator that refuses scripts, outside URLs and raw HTML other than\n  Margin's own hooks. Ship two (a clean Apple-like one with chat-style\n  comment threads, and an editorial serif one with notes in the margin);\n  admins download, upload, preview and switch them.\n- A Notion-like editor: slash menu, a bar for formatting, block handles,\n  dropped-in photos (shrunk in the browser) and short videos, autosave for\n  drafts.\n- Studio for writers and admins: posts, a comment inbox, blogs and personas,\n  team and invites, site settings, themes, and how to connect Claude.\n- MCP tools for Claude: write and edit posts, read the comment inbox and\n  answer only ordinary comments (asking the writer about anything sensitive),\n  comment as a persona (marked as sample when it's for screenshots), manage\n  personas, and get, validate, save and switch themes.\n- Sample content: a fictional team with personas, posts, abstract covers and\n  comments, loaded and removed from Studio.\n- UI refined like Apple's apps: Inter, one accent, frosted bars, sheets on\n  phones, a round avatar account button even when signed out, light, dark\n  and auto. For this repository's store, use holm.json version,\n  holm.symbol.svg and listing/listing.json with sample screenshots.\n\nRun holm app validate --spec-v1 margin. With my approval, deploy with\nholm @<peer> app deploy margin --spec-v1 --host <host>. Never replace an\noccupied host without asking. Test as an admin, an invited writer, an\noutside reader and signed out, on mobile and desktop, in light and dark.\nReport gaps honestly.",
+      "history": []
+    },
+    {
       "name": "overlap",
       "path": "overlap",
       "version": "0.1.1",

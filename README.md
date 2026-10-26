@@ -57,6 +57,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 | [`strata`](strata/) | [strata.zyt.app](https://strata.zyt.app) | A calm falling-block game: deterministic rules, games that resume after a reload, and a leaderboard that replays every game |
 | [`snake`](snake/) | [snake.zyt.app](https://snake.zyt.app) | A calm snake game on a wrapping field: smooth canvas drawing, swipe and keys, resume after a reload, a replayed leaderboard |
 | [`zend`](zend/) | [zend.zyt.app](https://zend.zyt.app) | Texts from your own Android phone: outbound HTTP to SMSGate, an encrypted vault, signed webhooks, realtime receipts, API keys, India's SMS rules |
+| [`margin`](margin/) | [blog.zyt.app](https://blog.zyt.app) | A team blog: server-rendered pages through swappable themes, quote comments, claps, a block editor, invites, personas, and MCP tools for Claude |
 
 ## Layout of an app
 

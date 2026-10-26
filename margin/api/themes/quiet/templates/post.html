@@ -1,0 +1,53 @@
+<article class="q-article">
+  <header class="q-article-head">
+    {{#post.has_tags}}<div class="q-tags">{{#post.tags}}<a class="q-tag{{#first}} q-tag-first{{/first}}" href="{{url}}">{{name}}</a>{{/post.tags}}</div>{{/post.has_tags}}
+    <h1 class="q-title">{{post.title}}</h1>
+    {{#post.subtitle}}<p class="q-subtitle">{{post.subtitle}}</p>{{/post.subtitle}}
+    <div class="q-byline">
+      <a href="{{blog.url}}"><img class="q-avatar" src="{{blog.avatar}}" alt="" width="40" height="40"></a>
+      <div class="q-byline-text">
+        <a class="q-byline-name" href="{{blog.url}}">{{blog.name}}</a>
+        <span class="q-byline-meta"><time datetime="{{post.date_iso}}">{{post.date}}</time> · {{post.reading_time}}</span>
+      </div>
+    </div>
+  </header>
+
+  {{#post.cover}}
+  <figure class="q-cover"><img src="{{url}}" alt="{{alt}}"{{#width}} width="{{width}}" height="{{height}}"{{/width}}></figure>
+  {{/post.cover}}
+
+  <div class="q-prose">
+    {{{post.body}}}
+  </div>
+
+  <div class="q-dock">{{{margin.actions}}}</div>
+
+  <footer class="q-article-foot">
+    {{#post.has_tags}}<div class="q-tags">{{#post.tags}}<a class="q-pill" href="{{url}}">{{name}}</a>{{/post.tags}}</div>{{/post.has_tags}}
+    <a class="q-author" href="{{blog.url}}">
+      <img class="q-avatar" src="{{blog.avatar}}" alt="" width="56" height="56">
+      <span class="q-author-text">
+        <span class="q-kicker">Written by</span>
+        <span class="q-author-name">{{blog.name}}</span>
+        {{#blog.bio}}<span class="q-author-bio">{{blog.bio}}</span>{{/blog.bio}}
+      </span>
+    </a>
+  </footer>
+</article>
+
+<div class="q-after">
+  {{{margin.comments}}}
+
+  {{#related.length}}
+  <section class="q-section">
+    <h2 class="q-section-title">Keep reading</h2>
+    <div class="q-grid q-grid-3">{{#related}}{{> card}}{{/related}}</div>
+  </section>
+  {{/related.length}}
+  {{^related.length}}{{#more.length}}
+  <section class="q-section">
+    <h2 class="q-section-title">More from {{blog.name}}</h2>
+    <div class="q-grid q-grid-3">{{#more}}{{> card}}{{/more}}</div>
+  </section>
+  {{/more.length}}{{/related.length}}
+</div>

@@ -1,0 +1,22 @@
+{
+  "name": "margin-editor-bundle",
+  "private": true,
+  "type": "module",
+  "description": "Builds web/vendor/editor/tiptap.js and its LICENSE from Tiptap's MIT packages. Run: npm install && npm run build",
+  "scripts": {
+    "build": "esbuild entry.js --bundle --format=esm --minify --legal-comments=none --target=es2020 --outfile=../../web/vendor/editor/tiptap.js && node licenses.mjs"
+  },
+  "devDependencies": {
+    "@tiptap/core": "3.32.0",
+    "@tiptap/pm": "3.32.0",
+    "@tiptap/starter-kit": "3.32.0",
+    "@tiptap/extensions": "3.32.0",
+    "@tiptap/extension-image": "3.32.0",
+    "@tiptap/extension-list": "3.32.0",
+    "@tiptap/extension-table": "3.32.0",
+    "@tiptap/markdown": "3.32.0",
+    "@tiptap/suggestion": "3.32.0",
+    "@tiptap/extension-bubble-menu": "3.32.0",
+    "esbuild": "0.25.0"
+  }
+}

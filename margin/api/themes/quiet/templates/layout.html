@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="{{site.locale}}">
+<head>
+{{{margin.head}}}
+<link rel="preload" href="{{theme.assets}}/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{theme.assets}}/theme.css">
+</head>
+<body class="q-page-{{page.type}}">
+<header class="q-bar">
+  <div class="q-bar-inner">
+    <a class="q-brand" href="{{site.home_url}}">
+      {{#site.logo}}<img class="q-brand-logo" src="{{site.logo}}" alt="" width="30" height="30">{{/site.logo}}
+      {{^site.logo}}<span class="q-brand-mark" aria-hidden="true">{{site.initial}}</span>{{/site.logo}}
+      <span class="q-brand-name">{{site.name}}</span>
+    </a>
+    <nav class="q-nav" aria-label="Site">
+      {{#site.nav}}<a href="{{url}}">{{label}}</a>{{/site.nav}}
+      {{^site.has_nav}}{{#site.home_is_blog}}<a href="{{site.latest_url}}">Latest</a>{{/site.home_is_blog}}{{/site.has_nav}}
+    </nav>
+    <span class="q-bar-gap"></span>
+    {{{margin.account}}}
+  </div>
+</header>
+<main class="q-main" id="main">
+{{{body}}}
+</main>
+<footer class="q-foot">
+  <div class="q-foot-inner">
+    <span>© {{year}} {{site.name}}</span>
+    <a href="{{site.feed_url}}">RSS</a>
+    <span class="q-bar-gap"></span>
+    <a class="q-holm" href="https://holmhq.com">A Holm app</a>
+  </div>
+</footer>
+{{{margin.foot}}}
+</body>
+</html>

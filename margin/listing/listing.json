@@ -1,0 +1,37 @@
+{
+  "subtitle": "A blog for your team, with Claude on it",
+  "category": "Productivity",
+  "featured": false,
+  "description": "A blog where a whole team writes, each at their own address: /@maya/designing-the-empty-week. Only the people you invite can post. Anyone can sign in to read, clap and comment. Shared personas such as @team let several people post under one name, and one blog can be the site's home page.\n\nReaders comment the way they would in a book's margin: select any passage, add a note, and it stays highlighted for everyone, with the conversation beside it. Or respond to the whole post at the end. Each blog chooses whether comments from outside the team, or every comment, wait for approval. Claps go up to fifty a person.\n\nThe editor is block-based like Notion: press / for headings, lists, to-dos, quotes, callouts, code and tables; drop in photos and short videos; paste a YouTube, Figma or CodePen link to embed it, or another post's address to show it as a card. Posts are Markdown underneath, rendered on the server, so every page reads without JavaScript and search engines see it all.\n\nConnect Claude and it can draft and publish posts as you, answer ordinary comments in your voice and leave anything sensitive for you, and even design a new theme. Themes are a few HTML templates and a stylesheet that you can download, change and upload; Margin checks them first. It comes with two: Quiet, clean and Apple-like, and Editorial, a serif page with notes in the margin.",
+  "whatsNew": "Margin is here: team blogs with invites, personas, quote comments, claps, a block editor, swappable themes, and tools for Claude.",
+  "screenshots": [
+    {
+      "file": "post.webp",
+      "alt": "A post on a phone in the Quiet theme: tags, a large headline, the byline and cover, and a floating bar with 214 claps and 5 comments"
+    },
+    {
+      "file": "quote.webp",
+      "alt": "Comments on a highlighted passage: Alex's note and the author's reply as chat bubbles under the quoted line"
+    },
+    {
+      "file": "editor.webp",
+      "alt": "The editor on a phone with the slash menu open: Text, Heading, Subheading, lists, To-do, Quote and Callout"
+    },
+    {
+      "file": "home.webp",
+      "alt": "The sample team's landing page: the site name, its tagline and a featured post with a cover"
+    },
+    {
+      "file": "editorial.webp",
+      "alt": "A research post in the Editorial theme: serif text, section headings and a pulled quote"
+    },
+    {
+      "file": "inbox.webp",
+      "alt": "Studio's comment inbox with a reader's question waiting for approval, and Approve, Reject and Reply buttons"
+    },
+    {
+      "file": "dark.webp",
+      "alt": "An engineering post in dark mode with a code sample and a table of conflict rules"
+    }
+  ]
+}

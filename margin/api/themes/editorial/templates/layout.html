@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="{{site.locale}}">
+<head>
+{{{margin.head}}}
+<link rel="preload" href="{{theme.assets}}/newsreader-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{theme.assets}}/theme.css">
+</head>
+<body class="e-page-{{page.type}}">
+<header class="e-bar">
+  <div class="e-bar-inner">
+    <a class="e-brand" href="{{site.home_url}}">
+      {{#site.logo}}<img class="e-brand-logo" src="{{site.logo}}" alt="" width="30" height="30">{{/site.logo}}
+      {{^site.logo}}<span class="e-brand-mark" aria-hidden="true">{{site.initial}}</span>{{/site.logo}}
+      <span class="e-brand-name">{{site.name}}</span>
+    </a>
+    <nav class="e-nav" aria-label="Site">
+      <a href="{{site.latest_url}}">Latest</a>
+      {{#site.nav}}<a href="{{url}}">{{label}}</a>{{/site.nav}}
+    </nav>
+    <span class="e-gap"></span>
+    {{{margin.account}}}
+  </div>
+</header>
+<main class="e-main" id="main">
+{{{body}}}
+</main>
+<footer class="e-foot">
+  <div class="e-foot-inner">
+    <span class="e-foot-name">{{site.name}}</span>
+    {{#site.tagline}}<span>{{site.tagline}}</span>{{/site.tagline}}
+    <span class="e-gap"></span>
+    <a href="{{site.feed_url}}">RSS</a>
+    <a href="https://holmhq.com">A Holm app</a>
+  </div>
+</footer>
+{{{margin.foot}}}
+</body>
+</html>

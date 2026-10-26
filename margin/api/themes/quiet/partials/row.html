@@ -1,0 +1,11 @@
+<article class="q-row">
+  <a class="q-row-link" href="{{url}}">
+    <span class="q-row-text">
+      <span class="q-card-blog"><img class="q-avatar" src="{{blog.avatar}}" alt="" width="20" height="20" loading="lazy">{{blog.name}}</span>
+      <span class="q-row-title">{{title}}</span>
+      {{#description}}<span class="q-row-desc">{{description}}</span>{{/description}}
+      <span class="q-card-meta">{{date}} · {{reading_time}}{{#claps}} · {{claps_label}}{{/claps}}{{#comments}} · {{comments_label}}{{/comments}}</span>
+    </span>
+    {{#cover}}<span class="q-row-cover"><img src="{{url}}" alt="{{alt}}" loading="lazy"{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
+  </a>
+</article>

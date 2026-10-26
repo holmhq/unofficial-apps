@@ -1,0 +1,16 @@
+<aside class="e-side">
+  {{#theme.settings.show_writers}}{{#writers.length}}
+  <section class="e-side-block">
+    <h2 class="e-side-title">Writers</h2>
+    <ul class="e-writers">
+      {{#writers}}<li><a href="{{url}}"><img class="e-avatar" src="{{avatar}}" alt="" width="32" height="32" loading="lazy"><span><span class="e-writer-name">{{name}}</span><span class="e-meta">{{posts_label}}</span></span></a></li>{{/writers}}
+    </ul>
+  </section>
+  {{/writers.length}}{{/theme.settings.show_writers}}
+  {{#tags.length}}
+  <section class="e-side-block">
+    <h2 class="e-side-title">Topics</h2>
+    <div class="e-tags">{{#tags}}<a class="e-tag" href="{{url}}">{{name}}</a>{{/tags}}</div>
+  </section>
+  {{/tags.length}}
+</aside>

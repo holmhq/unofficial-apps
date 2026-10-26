@@ -1,0 +1,13 @@
+<section class="q-hero q-hero-small">
+  <p class="q-kicker">{{#list.tag}}Topic{{/list.tag}}{{^list.tag}}Everyone{{/list.tag}}</p>
+  <h1 class="q-hero-title">{{list.title}}</h1>
+  <p class="q-hero-text">{{list.description}}</p>
+</section>
+
+<section class="q-section">
+  <div class="q-list">
+    {{#posts}}{{> row}}{{/posts}}
+  </div>
+  {{^posts}}<p class="q-empty">Nothing here yet.</p>{{/posts}}
+  {{> pagination}}
+</section>

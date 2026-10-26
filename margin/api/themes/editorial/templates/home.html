@@ -1,0 +1,29 @@
+<section class="e-masthead">
+  <h1 class="e-masthead-title">{{#theme.settings.masthead}}{{theme.settings.masthead}}{{/theme.settings.masthead}}{{^theme.settings.masthead}}{{site.name}}{{/theme.settings.masthead}}</h1>
+  {{#theme.settings.intro}}<p class="e-masthead-text">{{theme.settings.intro}}</p>{{/theme.settings.intro}}
+  {{^theme.settings.intro}}{{#site.description}}<p class="e-masthead-text">{{site.description}}</p>{{/site.description}}{{/theme.settings.intro}}
+</section>
+
+<div class="e-columns">
+  <div class="e-col-main">
+    {{^pagination.has_prev}}
+    {{#q.lead}}
+    <article class="e-lead">
+      <a class="e-lead-link" href="{{url}}">
+        {{#cover}}<span class="e-lead-cover"><img src="{{url}}" alt="{{alt}}"{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
+        <span class="e-kicker">Featured</span>
+        <span class="e-lead-title">{{title}}</span>
+        {{#description}}<span class="e-lead-desc">{{description}}</span>{{/description}}
+        <span class="e-story-blog"><img class="e-avatar" src="{{blog.avatar}}" alt="" width="22" height="22">{{blog.name}} · {{date_short}} · {{reading_time}}</span>
+      </a>
+    </article>
+    {{/q.lead}}
+    {{/pagination.has_prev}}
+
+    <h2 class="e-rule-title">Latest</h2>
+    <div class="e-stories">{{#posts}}{{> story}}{{/posts}}</div>
+    {{^posts}}<p class="e-empty">Nothing published yet.</p>{{/posts}}
+    {{> pagination}}
+  </div>
+  {{> aside}}
+</div>

@@ -1,0 +1,7 @@
+{{#pagination.many}}
+<nav class="e-pages" aria-label="Pages">
+  {{#pagination.has_prev}}<a href="{{pagination.prev_url}}">← Newer</a>{{/pagination.has_prev}}
+  <span>Page {{pagination.page}} of {{pagination.pages}}</span>
+  {{#pagination.has_next}}<a href="{{pagination.next_url}}">Older →</a>{{/pagination.has_next}}
+</nav>
+{{/pagination.many}}

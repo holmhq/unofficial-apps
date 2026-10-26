@@ -1,0 +1,31 @@
+{
+  "name": "margin",
+  "version": "0.1.0",
+  "title": "Margin",
+  "shortName": "Margin",
+  "description": "A blog for your team: invited writers, quote comments, claps, swappable themes, and Claude as a co-writer.",
+  "themeColor": "#1a7f64",
+  "iconStyle": "soft",
+  "surfaces": {
+    "web": {
+      "renderer": "off"
+    }
+  },
+  "web": {
+    "spa": false,
+    "inject": {
+      "analytics": true
+    }
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://blog.zyt.app"
+    }
+  }
+}

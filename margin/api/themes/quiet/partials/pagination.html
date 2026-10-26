@@ -1,0 +1,7 @@
+{{#pagination.many}}
+<nav class="q-pages" aria-label="Pages">
+  {{#pagination.has_prev}}<a class="q-pill" href="{{pagination.prev_url}}">Newer</a>{{/pagination.has_prev}}
+  <span class="q-pages-at">Page {{pagination.page}} of {{pagination.pages}}</span>
+  {{#pagination.has_next}}<a class="q-pill" href="{{pagination.next_url}}">Older</a>{{/pagination.has_next}}
+</nav>
+{{/pagination.many}}

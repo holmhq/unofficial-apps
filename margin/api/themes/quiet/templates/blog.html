@@ -1,0 +1,15 @@
+<section class="q-profile">
+  <img class="q-avatar q-profile-avatar" src="{{blog.avatar}}" alt="" width="88" height="88">
+  <h1 class="q-profile-name">{{blog.name}}</h1>
+  <p class="q-profile-handle">@{{blog.handle}}{{#blog.is_persona}} · Team blog{{/blog.is_persona}}</p>
+  {{#blog.bio}}<p class="q-profile-bio">{{blog.bio}}</p>{{/blog.bio}}
+  <p class="q-profile-links"><a class="q-pill" href="{{blog.feed_url}}">RSS</a></p>
+</section>
+
+<section class="q-section">
+  <div class="q-list">
+    {{#posts}}{{> row}}{{/posts}}
+  </div>
+  {{^posts}}<p class="q-empty">No posts yet.</p>{{/posts}}
+  {{> pagination}}
+</section>

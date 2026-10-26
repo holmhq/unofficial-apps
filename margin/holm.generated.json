@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:dad82ef83fafa7b061e236efe15d73cd481debd290652f541ff2580a3b387d9f",
+  "inputs": {
+    "symbolHash": "sha256:ab997753eb700483d8994a9504bd1f4f6121a5484ada7994a6f00b75799ee038",
+    "themeColor": "#1a7f64",
+    "name": "Margin",
+    "subtitle": "A blog for your team: invited writers, quote comments, claps, swappable themes, and Claude as a co-writer.",
+    "iconStyle": "soft"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.262.2",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:81b9576d270afa49198cd7e51c50d4fc0a3f290a66735ae0beb6f2007bb05790",
+    "web/apple-touch-icon.png": "sha256:762c3ecfea49d839ac6754f52ac4e8b3dcf2895471181fec4c7a803e3499b4e6",
+    "web/favicon.ico": "sha256:f873f19a1f99ec2ac899f31808ddc4693eb1fbfa53b5182726a7d622f19113d3",
+    "web/favicon.png": "sha256:29ac6d96f4b86276d7926775543d6f704c908e1cebe1d8e63c64d08a439154e1",
+    "web/favicon.svg": "sha256:c9930e99f2ad464ba131869927e687897fa1e768fd0b89599a6e8a932644c6a6",
+    "web/icon-192.png": "sha256:f77c951cf49ff3fea347860a4d3ea45ffec6189546c9918562994ed45b80e372",
+    "web/icon-512.png": "sha256:044a4f994b698061bcb9a3037766cd4f6b51238cbaa87e0876146f63c93df4a3",
+    "web/icon-maskable-512.png": "sha256:e541bc862c7d169e0fb3e466a56221357798d6ef1d3ddde5e9c2191601ab5668",
+    "web/manifest.webmanifest": "sha256:375a4aa6c75868207754d11470d95ff5f10e103e7ec34b036936e8a185fdbf0a",
+    "web/social_preview.png": "sha256:504405fd0db458d460243f80f82bc11709ec4b822ed4d5018ea1476dd2aeabb5"
+  }
+}

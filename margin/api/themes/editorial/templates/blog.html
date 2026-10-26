@@ -1,0 +1,18 @@
+<section class="e-profile">
+  <img class="e-avatar e-profile-avatar" src="{{blog.avatar}}" alt="" width="80" height="80">
+  <div class="e-profile-text">
+    <h1 class="e-profile-name">{{blog.name}}</h1>
+    <p class="e-meta">@{{blog.handle}}{{#blog.is_persona}} · Team blog{{/blog.is_persona}} · <a href="{{blog.feed_url}}">RSS</a></p>
+    {{#blog.bio}}<p class="e-profile-bio">{{blog.bio}}</p>{{/blog.bio}}
+  </div>
+</section>
+
+<div class="e-columns">
+  <div class="e-col-main">
+    <h2 class="e-rule-title">Stories</h2>
+    <div class="e-stories">{{#posts}}{{> story}}{{/posts}}</div>
+    {{^posts}}<p class="e-empty">No stories yet.</p>{{/posts}}
+    {{> pagination}}
+  </div>
+  {{> aside}}
+</div>

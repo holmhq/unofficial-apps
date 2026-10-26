@@ -1,0 +1,51 @@
+<div class="e-article">
+  <article class="e-article-inner">
+    <header>
+      {{#post.has_tags}}<p class="e-kicker">{{#post.tags}}{{#first}}<a href="{{url}}">{{name}}</a>{{/first}}{{/post.tags}}</p>{{/post.has_tags}}
+      <h1 class="e-title">{{post.title}}</h1>
+      {{#post.subtitle}}<p class="e-subtitle">{{post.subtitle}}</p>{{/post.subtitle}}
+      <div class="e-byline">
+        <a href="{{blog.url}}"><img class="e-avatar" src="{{blog.avatar}}" alt="" width="44" height="44"></a>
+        <div>
+          <a class="e-byline-name" href="{{blog.url}}">{{blog.name}}</a> <span class="e-byline-handle">@{{blog.handle}}</span>
+          <div class="e-meta">{{post.reading_time}} · <time datetime="{{post.date_iso}}">{{post.date}}</time></div>
+        </div>
+      </div>
+      <div class="e-actions">{{{margin.actions}}}</div>
+    </header>
+
+    {{#post.cover}}<figure class="e-cover"><img src="{{url}}" alt="{{alt}}"{{#width}} width="{{width}}" height="{{height}}"{{/width}}></figure>{{/post.cover}}
+
+    <div class="e-prose">
+      {{{post.body}}}
+    </div>
+
+    <footer class="e-article-foot">
+      {{#post.has_tags}}<div class="e-tags">{{#post.tags}}<a class="e-tag" href="{{url}}">{{name}}</a>{{/post.tags}}</div>{{/post.has_tags}}
+      <div class="e-actions">{{{margin.actions}}}</div>
+      <a class="e-author" href="{{blog.url}}">
+        <img class="e-avatar" src="{{blog.avatar}}" alt="" width="64" height="64">
+        <span>
+          <span class="e-kicker">Written by</span>
+          <span class="e-author-name">{{blog.name}}</span>
+          {{#blog.bio}}<span class="e-author-bio">{{blog.bio}}</span>{{/blog.bio}}
+        </span>
+      </a>
+    </footer>
+
+    {{{margin.comments}}}
+  </article>
+</div>
+
+{{#related.length}}
+<section class="e-more">
+  <h2 class="e-rule-title">Keep reading</h2>
+  <div class="e-more-grid">{{#related}}{{> story}}{{/related}}</div>
+</section>
+{{/related.length}}
+{{^related.length}}{{#more.length}}
+<section class="e-more">
+  <h2 class="e-rule-title">More from {{blog.name}}</h2>
+  <div class="e-more-grid">{{#more}}{{> story}}{{/more}}</div>
+</section>
+{{/more.length}}{{/related.length}}

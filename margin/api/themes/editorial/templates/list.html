@@ -1,0 +1,14 @@
+<section class="e-masthead e-masthead-small">
+  <p class="e-kicker">{{#list.tag}}Topic{{/list.tag}}{{^list.tag}}Everyone{{/list.tag}}</p>
+  <h1 class="e-masthead-title">{{list.title}}</h1>
+  <p class="e-masthead-text">{{list.description}}</p>
+</section>
+
+<div class="e-columns">
+  <div class="e-col-main">
+    <div class="e-stories">{{#posts}}{{> story}}{{/posts}}</div>
+    {{^posts}}<p class="e-empty">Nothing here yet.</p>{{/posts}}
+    {{> pagination}}
+  </div>
+  {{> aside}}
+</div>

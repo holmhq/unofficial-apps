@@ -1,0 +1,11 @@
+<article class="e-story{{#cover}} e-story-has-cover{{/cover}}">
+  <a class="e-story-link" href="{{url}}">
+    <span class="e-story-text">
+      <span class="e-story-blog"><img class="e-avatar" src="{{blog.avatar}}" alt="" width="22" height="22" loading="lazy">{{blog.name}}</span>
+      <span class="e-story-title">{{title}}</span>
+      {{#description}}<span class="e-story-desc">{{description}}</span>{{/description}}
+      <span class="e-meta">{{date_short}} · {{reading_time}}{{#claps}} · {{claps_label}}{{/claps}}{{#comments}} · {{comments_label}}{{/comments}}</span>
+    </span>
+    {{#cover}}<span class="e-story-cover"><img src="{{url}}" alt="{{alt}}" loading="lazy"{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
+  </a>
+</article>

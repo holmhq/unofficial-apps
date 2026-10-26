@@ -1,0 +1,19 @@
+{
+  "id": "editorial",
+  "name": "Editorial",
+  "version": "1.0.0",
+  "description": "A serif reading column with notes in the margin beside the passage they quote, and a newspaper-style landing page.",
+  "comments": "margin",
+  "assets": ["theme.css", "newsreader-latin.woff2", "newsreader-latin-italic.woff2", "inter-latin.woff2", "OFL-newsreader.txt", "OFL-inter.txt"],
+  "settings": [
+    { "key": "accent", "type": "color", "label": "Accent colour", "default": "#1a7f64" },
+    { "key": "masthead", "type": "text", "label": "Masthead (defaults to the site name)", "default": "" },
+    { "key": "intro", "type": "textarea", "label": "Landing introduction", "default": "" },
+    { "key": "show_writers", "type": "boolean", "label": "List the writers beside the stories", "default": true }
+  ],
+  "queries": {
+    "home": {
+      "lead": { "featured": true, "limit": 1 }
+    }
+  }
+}

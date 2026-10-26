@@ -1,0 +1,21 @@
+{
+  "id": "quiet",
+  "name": "Quiet",
+  "version": "1.0.0",
+  "description": "Clean sans-serif reading with frosted bars, a floating clap bar and chat-style comment threads in a side panel.",
+  "comments": "panel",
+  "assets": ["theme.css", "inter-latin.woff2", "OFL-inter.txt"],
+  "settings": [
+    { "key": "accent", "type": "color", "label": "Accent colour", "default": "#0a6ff0" },
+    { "key": "hero_title", "type": "text", "label": "Landing headline", "default": "" },
+    { "key": "hero_text", "type": "textarea", "label": "Landing introduction", "default": "" },
+    { "key": "show_writers", "type": "boolean", "label": "Show the writers on the landing page", "default": true },
+    { "key": "show_tags", "type": "boolean", "label": "Show topics on the landing page", "default": true }
+  ],
+  "queries": {
+    "home": {
+      "lead": { "featured": true, "limit": 1 },
+      "picks": { "featured": true, "offset": 1, "limit": 2 }
+    }
+  }
+}
