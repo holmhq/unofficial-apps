@@ -75,7 +75,6 @@ export class Game {
     this.phase = 'playing' // playing | over
     this.won = false
     this.crash = -1        // the cell the snake ran into
-    this.left = -1         // the cell the tail left on the last step, for drawing
     const start = (ROWS >> 1) * COLS + (COLS >> 1) - START_LENGTH + 1
     for (let i = 0; i < START_LENGTH; i++) this.push(start + i)
     this.food = this.pick()
@@ -172,12 +171,9 @@ export class Game {
       this.crash = next
       return this.end()
     }
-    if (eats) {
-      this.left = -1
-    } else {
+    if (!eats) {
       this.taken[tail] = 0
       this.length--
-      this.left = tail
     }
     this.push(next)
 

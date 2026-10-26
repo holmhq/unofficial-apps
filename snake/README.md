@@ -36,8 +36,9 @@ public URLs.
   resumes.
 - **Calm:** the snake starts at five and a half cells a second and speeds
   up a little every five berries, levelling off at ten. It is drawn as one
-  soft line that narrows towards the tail and slides into each new cell;
-  where it crosses an edge it slips off one side and back on at the other.
+  soft line that narrows towards the tail and moves a whole cell at a time,
+  just as the game does; where it crosses an edge it steps off one side and
+  back on at the other.
   Each berry plays the next note of a slow pentatonic tune. The end card
   waits a moment before it takes a key or tap, so a turn meant for the game
   can't start a new one.

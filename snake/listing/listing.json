@@ -2,8 +2,8 @@
   "subtitle": "A calm snake game",
   "category": "Games",
   "featured": false,
-  "description": "Guide the snake to the berries; each one makes it a cell longer and plays the next note of a slow tune. The field wraps at its edges, so only your own tail is in the way, and every sixth berry a bloom opens for a while, worth more.\n\nSwipe the way to go, or tap the turn buttons; on a computer, the arrow keys. The snake slides smoothly from cell to cell and speeds up only a little. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it move by move to check the score. Four colour sets in light and dark.",
-  "whatsNew": "Snake joins the store: a calm snake game in dusty rose, on a field that wraps at its edges, with games that carry on after a reload, a leaderboard that replays every game before it counts, and offline play.",
+  "description": "Guide the snake to the berries; each one makes it a cell longer and plays the next note of a slow tune. The field wraps at its edges, so only your own tail is in the way, and every sixth berry a bloom opens for a while, worth more.\n\nSwipe the way to go, or tap the turn buttons; on a computer, the arrow keys. The snake moves a whole cell at a time and speeds up only a little. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it move by move to check the score. Four colour sets in light and dark.",
+  "whatsNew": "The snake now moves a whole cell at a time instead of sliding between cells, just as Strata's pieces do.",
   "screenshots": [
     {
       "file": "field.webp",

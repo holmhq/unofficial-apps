@@ -1,6 +1,6 @@
 {
   "name": "snake",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "title": "Snake",
   "shortName": "Snake",
   "description": "A calm snake game on a field that wraps at the edges. Plays offline with no account; sign in to put your best game, replayed by the server, on the leaderboard.",

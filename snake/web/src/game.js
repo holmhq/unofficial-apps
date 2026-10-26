@@ -213,7 +213,7 @@ export function mountPlay(container, handlers) {
     if (status === 'idle') renderer.drawEmpty()
     else renderer.draw(game, now)
     syncStats()
-    if (status === 'playing' || renderer.busy(now)) kick()
+    if (status === 'playing' || renderer.busy()) kick()
     else lastTs = 0
   }
 

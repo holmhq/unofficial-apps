@@ -2,8 +2,8 @@
 
 The public reference at <https://holmhq.com/llms-full.txt> teaches Holm App Spec
 v1. Give the build request below to a coding agent with the `holm` CLI and a
-node you control. The quoted message later is history, not an additional
-instruction or source.
+node you control. The quoted messages later are history, not additional
+instructions or sources.
 
 ## Build from scratch
 
@@ -22,9 +22,9 @@ No build step or third-party runtime CDN; vendor the icons with their licence.
   levels off at ten cells a second.
 - Calm, not frantic: dusty rose on rose paper by day and a deep plum night,
   a faint grid of dots, a snake drawn as one soft line that narrows to the
-  tail and slides into each cell, a breathing berry, and each berry playing
-  the next note of a slow pentatonic tune. Four colour sets, each light and
-  dark or following the device.
+  tail and moves a whole cell at a time, a breathing berry, and each berry
+  playing the next note of a slow pentatonic tune. Four colour sets, each
+  light and dark or following the device.
 - Swipe anywhere in the play area to turn (one drag can turn more than once),
   turn-left and turn-right buttons, arrow keys or WASD on a computer. Pause
   with a button; a hidden tab pauses, and a reload carries on the same game.
@@ -52,7 +52,7 @@ honestly. Inspect the target settings schema before setting sign-in
 branding.
 ```
 
-## The original request
+## The original requests
 
 Snake was written alongside [Strata](../strata/), the calm falling-block
 game, from this message, typed as-is to a coding agent while it was
@@ -60,3 +60,8 @@ building Strata:
 
 > dont ask anything more just get it done; i am off to sleep
 > - if possible build a snake game in similar style too
+
+Version 0.1.1 came from this follow-up, after Strata 0.1.1 had stopped its
+pieces gliding and the first Snake still slid smoothly into each cell:
+
+> Can we make the snake also quantised?

@@ -1,14 +1,12 @@
 // Snake — canvas renderer. Draws the field (a faint grid of dots), the berry
 // and the bloom, and the snake as one soft line from head to tail that
-// narrows towards the tail and slides into each new cell instead of
-// jumping. Where the snake crosses an edge it is drawn on both sides, so it
-// slips off one edge and back on at the other. All of that is drawing only:
-// the game itself moves in whole cells.
+// narrows towards the tail. The snake is drawn where the game has it, a
+// whole cell at a time. Where it crosses an edge it is drawn on both sides,
+// so it steps off one edge and back on at the other.
 
 import { COLS, ROWS } from './rules.js'
 import { PALETTES, hexToRgb, rgbToHex, hexToRgba, effectiveDark } from './theme.js'
 
-const SLIDE_MS = 95 // how long a step's slide takes, at most
 const POP_MS = 420
 
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)')
@@ -26,8 +24,6 @@ export function createRenderer({ field }) {
   let cell = 24
   const cfg = { paletteId: 'coral', dark: effectiveDark() }
 
-  let seen = null   // { game, steps }: the last step drawn, to time each slide
-  let stepAt = 0
   let pops = []     // { cell, color, start }
 
   function resize(px) {
@@ -56,8 +52,8 @@ export function createRenderer({ field }) {
     pops.push({ cell: at, color: kind === 'bloom' ? p.bloom : p.berry, start: performance.now() })
   }
 
-  function busy(now) {
-    return pops.length > 0 || now - stepAt < SLIDE_MS + 20
+  function busy() {
+    return pops.length > 0
   }
 
   const cx = (c) => (c % COLS) + 0.5
@@ -134,16 +130,6 @@ export function createRenderer({ field }) {
 
   function draw(game, now = performance.now()) {
     const p = palette()
-    if (!seen || seen.game !== game) {
-      seen = { game, steps: game.steps }
-      stepAt = now - SLIDE_MS
-    } else if (seen.steps !== game.steps) {
-      seen.steps = game.steps
-      stepAt = now
-    }
-    const slide = Math.min(SLIDE_MS, (game.every * 1000) / 60)
-    const k = reduceMotion.matches || game.over ? 1 : easeOut(clamp01((now - stepAt) / slide))
-
     background()
     if (game.food >= 0) berry(game.food, now, p.berry)
     if (game.bloom >= 0) bloom(game.bloom, game.bloomLeft, now, p.bloom)
@@ -166,27 +152,9 @@ export function createRenderer({ field }) {
       py = near(cy(cells[i]), py, ROWS)
       pts.push([px, py])
     }
-    if (game.left >= 0) {
-      pts.push([near(cx(game.left), px, COLS), near(cy(game.left), py, ROWS)])
-    }
     // The way the head faces, one cell from the cell behind it.
-    let dx = pts.length > 1 ? pts[0][0] - pts[1][0] : 1
-    let dy = pts.length > 1 ? pts[0][1] - pts[1][1] : 0
-    // The head slides from the cell behind it; the tail slides off the
-    // cell it left.
-    if (pts.length > 1 && k < 1) {
-      const [hx, hy] = pts[0]
-      const [bx, by] = pts[1]
-      pts[0] = [bx + (hx - bx) * k, by + (hy - by) * k]
-      if (game.left >= 0) {
-        const n = pts.length
-        const [tx, ty] = pts[n - 1]
-        const [ux, uy] = pts[n - 2]
-        pts[n - 1] = [tx + (ux - tx) * k, ty + (uy - ty) * k]
-      }
-    } else if (game.left >= 0) {
-      pts.pop()
-    }
+    const dx = pts.length > 1 ? pts[0][0] - pts[1][0] : 1
+    const dy = pts.length > 1 ? pts[0][1] - pts[1][1] : 0
 
     const [head, tail] = p.snake
     const n = pts.length

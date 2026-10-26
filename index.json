@@ -743,11 +743,11 @@
     {
       "name": "snake",
       "path": "snake",
-      "version": "0.1.0",
-      "tag": "snake/v0.1.0",
-      "h1": "h1:lMjomg28ozE9TGR2e+iDzzQxQ4clX/S8Jvr8gUMFZBU=",
+      "version": "0.1.1",
+      "tag": "snake/v0.1.1",
+      "h1": "h1:l2AzReG1JSTh2c6fbM5FLzR46oye1QO+DB2WuQGo/8I=",
       "files": 31,
-      "size": 395881,
+      "size": 394598,
       "title": "Snake",
       "description": "A calm snake game on a field that wraps at the edges. Plays offline with no account; sign in to put your best game, replayed by the server, on the leaderboard.",
       "themeColor": "#c4607a",
@@ -756,8 +756,8 @@
       "listing": {
         "subtitle": "A calm snake game",
         "category": "Games",
-        "description": "Guide the snake to the berries; each one makes it a cell longer and plays the next note of a slow tune. The field wraps at its edges, so only your own tail is in the way, and every sixth berry a bloom opens for a while, worth more.\n\nSwipe the way to go, or tap the turn buttons; on a computer, the arrow keys. The snake slides smoothly from cell to cell and speeds up only a little. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it move by move to check the score. Four colour sets in light and dark.",
-        "whatsNew": "Snake joins the store: a calm snake game in dusty rose, on a field that wraps at its edges, with games that carry on after a reload, a leaderboard that replays every game before it counts, and offline play.",
+        "description": "Guide the snake to the berries; each one makes it a cell longer and plays the next note of a slow tune. The field wraps at its edges, so only your own tail is in the way, and every sixth berry a bloom opens for a while, worth more.\n\nSwipe the way to go, or tap the turn buttons; on a computer, the arrow keys. The snake moves a whole cell at a time and speeds up only a little. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it move by move to check the score. Four colour sets in light and dark.",
+        "whatsNew": "The snake now moves a whole cell at a time instead of sliding between cells, just as Strata's pieces do.",
         "featured": false,
         "screenshots": [
           {
@@ -796,8 +796,14 @@
           "hash": "cd17238b946b"
         }
       },
-      "prompt": "Build \"Snake\", a calm snake game for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage and\nsign-in, return standard Responses and fall back to env.holm.web.fetch(request).\nNo build step or third-party runtime CDN; vendor the icons with their licence.\n\n- A 15 × 25 field that wraps at its edges, so only the snake's own body is in\n  the way. Each berry adds a cell and points; every sixth berry a bloom\n  opens for a while, worth more. The pace rises every five berries and\n  levels off at ten cells a second.\n- Calm, not frantic: dusty rose on rose paper by day and a deep plum night,\n  a faint grid of dots, a snake drawn as one soft line that narrows to the\n  tail and slides into each cell, a breathing berry, and each berry playing\n  the next note of a slow pentatonic tune. Four colour sets, each light and\n  dark or following the device.\n- Swipe anywhere in the play area to turn (one drag can turn more than once),\n  turn-left and turn-right buttons, arrow keys or WASD on a computer. Pause\n  with a button; a hidden tab pauses, and a reload carries on the same game.\n- Rules in one file with no clock or Math.random: a game is a seed and its\n  turns stamped with frame numbers. Signed in, send each new best as\n  { seed, log, score }; the server replays it with the same rules file,\n  keeps the member's best in member KV and one leaderboard row per member in\n  a shared collection. Signed out, keep the best in localStorage and send it\n  after sign-in. Mind the runtime's per-request allocation budget: replay a\n  long game without allocating every frame. Write a script that plays bot\n  games and checks that they replay exactly.\n- Installable, with a network-first service worker, so it plays offline.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 snake. With my approval, deploy with\nholm @<peer> app deploy snake --spec-v1 --host snake.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test play by swipe, buttons and keys, pause and reload, signing in with\na best game on the device, a refused forged score, a long game's replay on\nthe node, going offline, and mobile/desktop in light/dark. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in\nbranding.",
-      "history": []
+      "prompt": "Build \"Snake\", a calm snake game for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage and\nsign-in, return standard Responses and fall back to env.holm.web.fetch(request).\nNo build step or third-party runtime CDN; vendor the icons with their licence.\n\n- A 15 × 25 field that wraps at its edges, so only the snake's own body is in\n  the way. Each berry adds a cell and points; every sixth berry a bloom\n  opens for a while, worth more. The pace rises every five berries and\n  levels off at ten cells a second.\n- Calm, not frantic: dusty rose on rose paper by day and a deep plum night,\n  a faint grid of dots, a snake drawn as one soft line that narrows to the\n  tail and moves a whole cell at a time, a breathing berry, and each berry\n  playing the next note of a slow pentatonic tune. Four colour sets, each\n  light and dark or following the device.\n- Swipe anywhere in the play area to turn (one drag can turn more than once),\n  turn-left and turn-right buttons, arrow keys or WASD on a computer. Pause\n  with a button; a hidden tab pauses, and a reload carries on the same game.\n- Rules in one file with no clock or Math.random: a game is a seed and its\n  turns stamped with frame numbers. Signed in, send each new best as\n  { seed, log, score }; the server replays it with the same rules file,\n  keeps the member's best in member KV and one leaderboard row per member in\n  a shared collection. Signed out, keep the best in localStorage and send it\n  after sign-in. Mind the runtime's per-request allocation budget: replay a\n  long game without allocating every frame. Write a script that plays bot\n  games and checks that they replay exactly.\n- Installable, with a network-first service worker, so it plays offline.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 snake. With my approval, deploy with\nholm @<peer> app deploy snake --spec-v1 --host snake.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test play by swipe, buttons and keys, pause and reload, signing in with\na best game on the device, a refused forged score, a long game's replay on\nthe node, going offline, and mobile/desktop in light/dark. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in\nbranding.",
+      "history": [
+        {
+          "version": "0.1.0",
+          "date": "2026-10-26",
+          "whatsNew": "Snake joins the store: a calm snake game in dusty rose, on a field that wraps at its edges, with games that carry on after a reload, a leaderboard that replays every game before it counts, and offline play."
+        }
+      ]
     },
     {
       "name": "sokoban",
