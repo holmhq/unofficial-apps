@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:df527e6b45a5ea694936103355eef751ef078557233caaa4315b36f50d51d466",
+  "inputs": {
+    "symbolHash": "sha256:a7df127cc1682d3bda0c8d4c36ca32971fcf8d23992c7bff511cb7b4d7ffaa7a",
+    "themeColor": "#c3262e",
+    "name": "Sandesh",
+    "subtitle": "Send texts from your own Android phone, in a browser or from your scripts, with India's SMS rules built in.",
+    "iconStyle": "paper"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.261.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:e6bb65647ff48b17ba22f4194ba0946f24e817e04d72af53945f9848fb1c0577",
+    "web/apple-touch-icon.png": "sha256:9b81be9421b605594b9a5ea347db217c9b155d12705a522bc67d0d2c08e87c84",
+    "web/favicon.ico": "sha256:2c558d88aadd4af238d3fe33e74dd7ce6021d9b1bdb044f3942bf511f0af26bf",
+    "web/favicon.png": "sha256:c9a205800e65ce03f9574dd16a1c9bf6b49a019f69a1c9010c04cf5e5cf633b4",
+    "web/favicon.svg": "sha256:0388e2293732fcc5d47a14ae2e1a292a2d16ca20cfd2ad8122bce8c275fe2a36",
+    "web/icon-192.png": "sha256:e2b95e19241d0cf05d4f19c1fa0890907bc9801d545503959db7c6b11639fd82",
+    "web/icon-512.png": "sha256:ca8c4b351a8e30b23dae0d057d5d02f4c5c15b8c14a101a1386cc99f521879f2",
+    "web/icon-maskable-512.png": "sha256:09343d15ac49f139557cb764b68e41812d14f3405fcb7c4870c79d2f161571fb",
+    "web/manifest.webmanifest": "sha256:dc4d279d8dec75943ce923541fa0fbb775c7f31d082ccb0e3e0b731abb1a382c",
+    "web/social_preview.png": "sha256:b29ffc80fc8179b27cf06939d0b65f484af0e18ca4d33ea70defb0d66a6ec7ec"
+  }
+}

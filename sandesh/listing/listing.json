@@ -1,0 +1,29 @@
+{
+  "subtitle": "Text from your own phone, from anywhere",
+  "category": "Social",
+  "featured": false,
+  "description": "Send SMS through the Android phone in your pocket, from any browser or from your own scripts. Install the free SMS Gateway for Android app, paste the username and password it shows, and your texts go out on your own SIM and plan. People see your own number, and their replies come back here.\n\nEach text you send is stamped like a letter as your phone reports it: sent, delivered, or returned when it couldn't get through. Name the people you text, send to up to ten at once, pick a SIM, schedule a text for the morning, and fill in templates you use often. Live receipts arrive the moment your phone has them.\n\nIndia's SMS rules are built in. A personal SIM is for personal texts, so Sandesh asks before sending anything that reads like an offer or a one-time code, stops at TRAI's limits for bulk texts, and honours every STOP. Templates follow the rules India's DLT system sets for business senders. API keys can be held to a few numbers, so a key that leaks can't text anyone else.\n\nNo phone handy? Try the demo phone: it pretends to send, deliver and reply, so you can explore everything first. Light and dark, on a phone or a computer.",
+  "whatsNew": "Sandesh joins the store: texts from your own Android phone through SMS Gateway, with postmarks for sent and delivered, live receipts and replies, templates checked against India's DLT rules, TRAI's bulk limits, an opt-out list, API keys and a demo phone.",
+  "screenshots": [
+    {
+      "file": "thread.webp",
+      "alt": "A conversation with Amma: two texts sent from SIM 1, each stamped with a violet Delivered postmark at 14:35, and her replies"
+    },
+    {
+      "file": "chats.webp",
+      "alt": "The conversation list: Ravi, Amma, Priya and Meera with their latest replies, a scheduled reminder to Dad, and a text to the building office that wasn't delivered"
+    },
+    {
+      "file": "compose.webp",
+      "alt": "Writing a text that reads like a Diwali sale: Sandesh explains that business texts need a DLT-registered sender and asks you to confirm it's personal before it can be sent"
+    },
+    {
+      "file": "templates.webp",
+      "alt": "Templates with their blanks drawn as dotted fill-in lines, each marked DLT-ready, and the list of blanks you can use"
+    },
+    {
+      "file": "dark.webp",
+      "alt": "A conversation with Ravi in dark mode: a question about Sunday cricket and a filled-in running-late template, both delivered"
+    }
+  ]
+}

@@ -675,6 +675,72 @@
       "history": []
     },
     {
+      "name": "sandesh",
+      "path": "sandesh",
+      "version": "0.1.0",
+      "tag": "sandesh/v0.1.0",
+      "h1": "h1:hn0zdWPgIxj+rh/A9IGYyMdu24d5+tVO5X4w8A+BhTA=",
+      "files": 49,
+      "size": 1224001,
+      "title": "Sandesh",
+      "description": "Send texts from your own Android phone, in a browser or from your scripts, with India's SMS rules built in.",
+      "themeColor": "#c3262e",
+      "symbol": "M 3.272727 0.943029 L 20.727273 0.943029 C 22.534909 0.943029 24 2.40812 24 4.215756 L 24 15.124847 C 24 16.932483 22.534909 18.397574 20.727273 18.397574 L 10.363636 18.397574 L 3.927273 22.979392 C 3.6 23.197574 3.163636 22.924847 3.272727 22.543029 L 4.363636 18.397574 L 3.272727 18.397574 C 1.465091 18.397574 0 16.932483 0 15.124847 L 0 4.215756 C 0 2.40812 1.465091 0.943029 3.272727 0.943029 Z M 3.927273 4.65212 L 3.927273 7.379392 L 12 12.833938 L 20.072727 7.379392 L 20.072727 4.65212 L 12 10.106665 Z",
+      "demo": "https://sandesh.zyt.app",
+      "listing": {
+        "subtitle": "Text from your own phone, from anywhere",
+        "category": "Social",
+        "description": "Send SMS through the Android phone in your pocket, from any browser or from your own scripts. Install the free SMS Gateway for Android app, paste the username and password it shows, and your texts go out on your own SIM and plan. People see your own number, and their replies come back here.\n\nEach text you send is stamped like a letter as your phone reports it: sent, delivered, or returned when it couldn't get through. Name the people you text, send to up to ten at once, pick a SIM, schedule a text for the morning, and fill in templates you use often. Live receipts arrive the moment your phone has them.\n\nIndia's SMS rules are built in. A personal SIM is for personal texts, so Sandesh asks before sending anything that reads like an offer or a one-time code, stops at TRAI's limits for bulk texts, and honours every STOP. Templates follow the rules India's DLT system sets for business senders. API keys can be held to a few numbers, so a key that leaks can't text anyone else.\n\nNo phone handy? Try the demo phone: it pretends to send, deliver and reply, so you can explore everything first. Light and dark, on a phone or a computer.",
+        "whatsNew": "Sandesh joins the store: texts from your own Android phone through SMS Gateway, with postmarks for sent and delivered, live receipts and replies, templates checked against India's DLT rules, TRAI's bulk limits, an opt-out list, API keys and a demo phone.",
+        "featured": false,
+        "screenshots": [
+          {
+            "path": "listing/thread.webp",
+            "alt": "A conversation with Amma: two texts sent from SIM 1, each stamped with a violet Delivered postmark at 14:35, and her replies",
+            "width": 780,
+            "height": 1688,
+            "hash": "aaf9ce1310dd"
+          },
+          {
+            "path": "listing/chats.webp",
+            "alt": "The conversation list: Ravi, Amma, Priya and Meera with their latest replies, a scheduled reminder to Dad, and a text to the building office that wasn't delivered",
+            "width": 780,
+            "height": 1688,
+            "hash": "436aa3276cb3"
+          },
+          {
+            "path": "listing/compose.webp",
+            "alt": "Writing a text that reads like a Diwali sale: Sandesh explains that business texts need a DLT-registered sender and asks you to confirm it's personal before it can be sent",
+            "width": 780,
+            "height": 1688,
+            "hash": "7ebdae8c177c"
+          },
+          {
+            "path": "listing/templates.webp",
+            "alt": "Templates with their blanks drawn as dotted fill-in lines, each marked DLT-ready, and the list of blanks you can use",
+            "width": 780,
+            "height": 1688,
+            "hash": "7389b334a5cc"
+          },
+          {
+            "path": "listing/dark.webp",
+            "alt": "A conversation with Ravi in dark mode: a question about Sunday cricket and a filled-in running-late template, both delivered",
+            "width": 780,
+            "height": 1688,
+            "hash": "b262f306d680"
+          }
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "96c3983366c9"
+        }
+      },
+      "prompt": "Build \"Sandesh\", an app for sending SMS from your own Android phone, using\nonly https://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12\nand \"Make an app feel finished\" and \"Make it feel native\" first. Make\nholm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in, outbound HTTP, secrets and realtime, return standard Responses and\nfall back to env.holm.web.fetch(request). No build step or third-party\nruntime CDN; vendor the font and icons with their licences.\n\n- After sign-in, each member connects their own phone running SMS Gateway\n  for Android (https://sms-gate.app, cloud mode): they paste its username,\n  password and, for live receipts, its webhook signing key. Check them\n  against SMSGate's public API through env.holm.net, never show them again,\n  and keep them encrypted under a VAULT_KEY runtime secret. Offer a demo\n  phone that pretends to send, deliver and reply, so anyone can try it.\n- Conversations per number, with names, unread replies, search, an SMS-part\n  counter (GSM-7 and Unicode), up to 10 numbers per text, SIM choice,\n  scheduled texts that can be cancelled, and states from sent to delivered\n  shown as a postmark on each text. Register the phone's webhooks and verify\n  each one's HMAC signature, timestamp and envelope id.\n- Align it with India's SMS rules (TRAI's TCCCPR 2018 and its 2025 and 2026\n  amendments): personal person-to-person texts only, with a declaration when\n  a phone is connected; texts that read like OTPs or offers need confirming\n  on the page and are refused by the API; stop at TRAI's \"bulk\" counts of\n  same or similar texts (20 a day, 100 a week, 300 a month); cap texts and\n  different people per day; honour STOP replies with an opt-out list.\n  Templates use DLT's {#var#} blanks and are checked against its rules.\n- API keys for the member's own scripts: shown once, stored as a hash,\n  optionally held to a few numbers, with the same limits and an\n  Idempotency-Key for safe retries.\n- An absolutely awesome, phone-first UI with an Indian postal feel: inland\n  letter blue, letterbox red, violet postmark ink, a font that covers\n  Devanagari, light/dark/system themes, installable with a network-first\n  service worker.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 sandesh. With my approval, deploy with\nholm @<peer> app deploy sandesh --spec-v1 --host sandesh.<my-domain>, then\nask before allowing api.sms-gate.app for the app and setting VAULT_KEY.\nNever replace an occupied host without asking. Validation does not run the\napp: test the demo phone, every refusal, two members, API keys, and signed,\nunsigned, stale and repeated webhooks, on mobile and desktop in light and\ndark. Check that code shared by the page and the server gives the same\nanswers in both. Report gaps honestly. Inspect the target settings schema\nbefore setting sign-in branding.",
+      "history": []
+    },
+    {
       "name": "snake",
       "path": "snake",
       "version": "0.1.0",

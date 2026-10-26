@@ -56,6 +56,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 | [`3dsvg`](3dsvg/) | [3dsvg.zyt.app](https://3dsvg.zyt.app) | SVGs, text and pixel art in 3D: three.js with no build, picture, video and model exports, saved shapes and share links |
 | [`strata`](strata/) | [strata.zyt.app](https://strata.zyt.app) | A calm falling-block game: deterministic rules, games that resume after a reload, and a leaderboard that replays every game |
 | [`snake`](snake/) | [snake.zyt.app](https://snake.zyt.app) | A calm snake game on a wrapping field: smooth canvas drawing, swipe and keys, resume after a reload, a replayed leaderboard |
+| [`sandesh`](sandesh/) | [sandesh.zyt.app](https://sandesh.zyt.app) | Texts from your own Android phone: outbound HTTP to SMSGate, an encrypted vault, signed webhooks, realtime receipts, API keys, India's SMS rules |
 
 ## Layout of an app
 
