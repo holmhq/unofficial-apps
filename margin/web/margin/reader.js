@@ -1,5 +1,6 @@
-// Margin's reader: the account menu, claps, quote comments, responses, sharing and link
-// previews. Pages work without it; this only adds what needs a signed-in person.
+// Margin's reader: the account menu, claps, quote comments, responses (under any of your
+// names), sharing, link previews and live drawn covers. Pages work without it; this only
+// adds what needs a signed-in person or a pointer.
 
 const boot = JSON.parse(document.getElementById('m-boot')?.textContent || '{}');
 const postId = boot.post || null;
@@ -51,6 +52,9 @@ const ICON = {
   grid: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
   user: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
   out: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14l5-5l-5-5m5 5H9"/></svg>',
+  down: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
   in: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5l-5-5m5 5H3"/></svg>',
   clap: '<svg viewBox="0 0 256 256" aria-hidden="true"><path fill="currentColor" d="M188.87 65a18 18 0 0 0-31.25 18l-24.26-42a18 18 0 0 0-31.22 18L96.4 49a18 18 0 0 0-31.22 18l3.34 5.77A26 26 0 0 0 39.74 111l3 5.2A26 26 0 0 0 23.5 155l35.27 61a80.14 80.14 0 0 0 149.52-39.57a71.92 71.92 0 0 0 1.71-74.85Zm1.2 127.56A64.12 64.12 0 0 1 72.65 208l-35.27-61a10 10 0 0 1 17.34-10L75 172a8 8 0 0 0 13.87-8l-35.25-61A10 10 0 0 1 71 93l31.81 55a8 8 0 0 0 13.87-8l-26-45a10 10 0 0 1 17.35-10l36.5 63a8 8 0 0 0 13.87-8l-12.6-21.75a10 10 0 0 1 17.64-9.25l20.22 35a63.52 63.52 0 0 1 6.41 48.57Z"/></svg>',
 };
@@ -58,7 +62,7 @@ const ICON = {
 // ---------- who is reading ----------
 
 let me = null;
-const ready = api('/api/me?return=' + encodeURIComponent(location.pathname + location.search)).then((d) => (me = d)).catch(() => (me = { signed_in: false, login_url: boot.signin }));
+const ready = api('/api/me?return=' + encodeURIComponent(location.pathname + location.search) + (boot.ws ? '&ws=' + encodeURIComponent(boot.ws) : '')).then((d) => (me = d)).catch(() => (me = { signed_in: false, login_url: boot.signin }));
 const signinURL = () => (me && me.login_url) || boot.signin || '/auth/login';
 
 function signInDialog(title, text) {
@@ -84,6 +88,64 @@ function setTheme(value) {
 }
 function currentTheme() { try { return localStorage.getItem('margin.theme') || 'system'; } catch { return 'system'; } }
 
+// ---------- who you comment as ----------
+
+// Your names: your main one and any personas. The choice sticks on this device.
+const AS_KEY = 'margin.as';
+const names = () => (me && me.identities) || [];
+function currentAs() {
+  const list = names();
+  let saved = null;
+  try { saved = localStorage.getItem(AS_KEY); } catch { saved = null; }
+  return list.find((b) => b.handle === saved) || list[0] || null;
+}
+function paintAs() {
+  const b = currentAs();
+  for (const chip of $$('[data-m-as]')) {
+    chip.hidden = !b;
+    chip.innerHTML = b ? `<img src="${esc(b.avatar)}" alt="">${esc(b.name)}${ICON.down}` : '';
+  }
+  for (const hint of $$('[data-m-held]')) hint.textContent = held() ? 'Waiting for approval before it appears.' : '';
+}
+const asChip = () => (names().length ? '<button type="button" class="m-as" data-m-as aria-haspopup="menu" aria-label="Choose the name you comment as"></button>' : '');
+// Whether a comment under the chosen name waits for the workspace to approve it.
+function held() {
+  if (state.canModerate || state.moderation === 'off') return false;
+  if (state.moderation === 'all') return true;
+  const b = currentAs();
+  return !(b && state.team.includes(b.handle));
+}
+function asMenu(chip) {
+  $$('.m-as-menu').forEach((x) => x.remove());
+  const now = currentAs();
+  const menu = h(`<div class="m-menu m-as-menu" role="menu"><div class="m-menu-label">Comment as</div>
+    ${names().map((b) => `<button type="button" class="m-menu-item m-as-item" role="menuitemradio" aria-checked="${now && b.handle === now.handle}" data-pick="${esc(b.handle)}"><img src="${esc(b.avatar)}" alt=""><span><span class="m-menu-name">${esc(b.name)}</span><span class="m-menu-sub">@${esc(b.handle)}</span></span>${now && b.handle === now.handle ? ICON.check : ''}</button>`).join('')}
+    <div class="m-menu-sep"></div><a class="m-menu-item" role="menuitem" href="/studio/you">${ICON.plus}New persona</a>
+    <p class="m-menu-note">Readers see only the name you pick.</p></div>`);
+  document.body.append(menu);
+  const r = chip.getBoundingClientRect();
+  const top = r.bottom + 6 + menu.offsetHeight > innerHeight ? r.top - menu.offsetHeight - 6 : r.bottom + 6;
+  menu.style.position = 'fixed';
+  menu.style.top = `${Math.max(8, top)}px`;
+  menu.style.left = `${Math.min(Math.max(8, r.left), innerWidth - menu.offsetWidth - 8)}px`;
+  menu.style.right = 'auto';
+  menu.addEventListener('click', (e) => {
+    const pick = e.target.closest('[data-pick]');
+    if (!pick) return;
+    try { localStorage.setItem(AS_KEY, pick.dataset.pick); } catch { /* this session only */ }
+    menu.remove();
+    paintAs();
+  });
+  setTimeout(() => document.addEventListener('click', function off(e) { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', off); } }), 0);
+}
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('[data-m-as]');
+  if (!chip) return;
+  e.preventDefault();
+  e.stopPropagation();
+  asMenu(chip);
+});
+
 // ---------- account menu ----------
 
 async function account() {
@@ -95,7 +157,7 @@ async function account() {
   else btn.innerHTML = ICON.user;
   slot.replaceChildren(btn);
   if (me.writer) {
-    api('/api/inbox?status=pending&limit=1').then((d) => {
+    api(`/api/inbox?status=pending&limit=1&ws=${encodeURIComponent(boot.ws || '')}`).then((d) => {
       if (d.pending_count) slot.append(h(`<span class="m-avatar-badge">${d.pending_count > 99 ? '99+' : d.pending_count}</span>`));
       me.pending = d.pending_count;
     }).catch(() => {});
@@ -109,12 +171,14 @@ async function account() {
     const seg = `<div class="m-seg" role="group" aria-label="Appearance">${['light', 'dark', 'system'].map((t) => `<button type="button" data-theme-pick="${t}" aria-pressed="${t === theme}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div>`;
     let html;
     if (me.signed_in) {
-      const sub = me.handle ? '@' + me.handle : me.role === 'reader' ? 'Reader' : me.role[0].toUpperCase() + me.role.slice(1);
+      const sub = me.handle ? '@' + me.handle : 'Reader';
+      const studio = me.writer && boot.ws ? `/studio/${encodeURIComponent(boot.ws)}` : '/studio';
       html = `<div class="m-menu" role="menu">
         <div class="m-menu-head">${me.picture ? `<img src="${esc(me.picture)}" alt="">` : '<span class="m-menu-ph"></span>'}<div style="min-width:0"><div class="m-menu-name">${esc(me.name || 'You')}</div><div class="m-menu-sub">${esc(sub)}</div></div></div>
-        ${me.writer ? `<a class="m-menu-item" role="menuitem" href="/studio/write">${ICON.pen}Write a post</a>
-        <a class="m-menu-item" role="menuitem" href="/studio">${ICON.grid}Studio${me.pending ? `<span class="m-menu-count">${me.pending}</span>` : ''}</a>` : ''}
-        ${me.handle ? `<a class="m-menu-item" role="menuitem" href="/@${esc(me.handle)}">${ICON.user}Your blog</a>` : ''}
+        ${me.writer ? `<a class="m-menu-item" role="menuitem" href="/studio/write?ws=${encodeURIComponent(boot.ws)}">${ICON.pen}Write a post</a>` : ''}
+        ${me.workspaces && me.workspaces.length ? `<a class="m-menu-item" role="menuitem" href="${studio}">${ICON.grid}Studio${me.pending ? `<span class="m-menu-count">${me.pending}</span>` : ''}</a>`
+          : me.margin && me.margin.can_create ? `<a class="m-menu-item" role="menuitem" href="/new">${ICON.plus}Start a workspace</a>` : ''}
+        ${me.handle ? `<a class="m-menu-item" role="menuitem" href="/@${esc(me.handle)}">${ICON.user}Your page</a>` : `<a class="m-menu-item" role="menuitem" href="/studio/you">${ICON.user}Pick your name</a>`}
         <div class="m-menu-sep"></div>${seg}<div class="m-menu-sep"></div>
         <button type="button" class="m-menu-item" role="menuitem" data-signout>${ICON.out}Sign out</button></div>`;
     } else {
@@ -344,7 +408,7 @@ function quoteFromSelection(range, text) {
 
 // ---------- comments ----------
 
-const state = { comments: [], canModerate: false, moderation: 'outsiders', groups: [], loaded: false };
+const state = { comments: [], canModerate: false, moderation: 'outsiders', team: [], groups: [], loaded: false };
 const groupKey = (q) => norm(q.exact).trim().toLowerCase();
 
 async function loadComments() {
@@ -354,6 +418,7 @@ async function loadComments() {
     state.comments = data.comments;
     state.canModerate = data.can_moderate;
     state.moderation = data.moderation;
+    state.team = data.team || [];
     state.loaded = true;
   } catch { return; }
   paintHighlights();
@@ -438,11 +503,13 @@ async function act(id, action) {
 
 async function send({ body: text, quote, parent }) {
   const payload = { body: text };
+  const as = currentAs();
+  if (as) payload.as = as.handle;
   if (quote) payload.quote = quote;
   if (parent) payload.parent_id = parent;
   const saved = await api(`/api/posts/${postId}/comments`, { method: 'POST', body: payload });
   state.comments.push(saved);
-  if (saved.status === 'pending') toast('Sent. It shows once the author approves it.');
+  if (saved.status === 'pending') toast('Sent. It shows once the workspace approves it.');
   await loadComments();
   return saved;
 }
@@ -544,6 +611,7 @@ const panel = (() => {
       }
     }
     foot.innerHTML = composer();
+    paintAs();
     const ta = foot.querySelector('textarea');
     if (ta) {
       grow(ta);
@@ -561,8 +629,8 @@ const panel = (() => {
   function composer() {
     if (!me || !me.signed_in) return `<div class="m-signin-card"><span>Sign in to join the conversation.</span><a class="m-button" href="${esc(signinURL())}">Sign in</a></div>`;
     const reply = view.replyTo ? state.comments.find((c) => c.id === view.replyTo) : null;
-    const hint = state.moderation === 'all' || (state.moderation === 'outsiders' && !me.writer) ? (state.canModerate ? '' : ' (the author approves comments)') : '';
-    return `<div class="m-compose"><div class="m-compose-field">
+    const hint = held() ? ' (approved before it shows)' : '';
+    return `<div class="m-compose-as">${asChip()}</div><div class="m-compose"><div class="m-compose-field">
       ${reply ? `<div class="m-compose-reply"><span>Replying to ${esc(reply.author.name)}</span><button type="button" data-cancel-reply aria-label="Cancel reply">×</button></div>` : ''}
       <textarea rows="1" placeholder="${view.draft ? 'Add a comment' : reply ? 'Reply' : view.group ? 'Reply' : 'Respond to the post'}${esc(hint)}" aria-label="Comment"></textarea></div>
       <button type="button" class="m-send" aria-label="Send" disabled>${ICON.up}</button></div>`;
@@ -674,13 +742,12 @@ function paintResponses() {
   if (slot && !slot.dataset.ready) {
     slot.dataset.ready = '1';
     if (me && me.signed_in) {
-      slot.innerHTML = `<div class="m-card-compose"><div class="m-card-compose-top">${me.picture ? `<img src="${esc(me.picture)}" alt="">` : ''}${esc(me.name || 'You')}</div>
+      slot.innerHTML = `<div class="m-card-compose"><div class="m-card-compose-top">${names().length ? asChip() : `${me.picture ? `<img src="${esc(me.picture)}" alt="">` : ''}${esc(me.name || 'You')}`}</div>
         <textarea rows="2" placeholder="What are your thoughts?" aria-label="Your response"></textarea>
-        <div class="m-card-compose-foot"><span></span><button type="button" class="m-button" disabled>Respond</button></div></div>`;
+        <div class="m-card-compose-foot"><span data-m-held></span><button type="button" class="m-button" disabled>Respond</button></div></div>`;
+      paintAs();
       const ta = slot.querySelector('textarea');
       const btn = slot.querySelector('.m-button');
-      const hint = slot.querySelector('.m-card-compose-foot span');
-      if (state.moderation === 'all' || (state.moderation === 'outsiders' && !me.writer)) hint.textContent = state.canModerate ? '' : 'The author approves responses before they appear.';
       ta.addEventListener('input', () => { btn.disabled = !ta.value.trim(); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 280) + 'px'; });
       btn.addEventListener('click', async () => {
         btn.disabled = true;
@@ -736,9 +803,10 @@ function responsesEvents() {
 
 function inlineReply(thread, id) {
   if (thread.querySelector('.m-card-compose')) return thread.querySelector('textarea').focus();
-  const box = h(`<div class="m-card-compose" style="margin:14px 0 0 20px"><textarea rows="2" placeholder="Write a reply" aria-label="Reply"></textarea>
-    <div class="m-card-compose-foot"><span></span><button type="button" class="m-button m-quiet" data-cancel>Cancel</button><button type="button" class="m-button" disabled data-send>Reply</button></div></div>`);
+  const box = h(`<div class="m-card-compose" style="margin:14px 0 0 20px">${asChip() ? `<div class="m-card-compose-top">${asChip()}</div>` : ''}<textarea rows="2" placeholder="Write a reply" aria-label="Reply"></textarea>
+    <div class="m-card-compose-foot"><span data-m-held></span><button type="button" class="m-button m-quiet" data-cancel>Cancel</button><button type="button" class="m-button" disabled data-send>Reply</button></div></div>`);
   thread.append(box);
+  paintAs();
   const ta = box.querySelector('textarea');
   const btn = box.querySelector('[data-send]');
   ta.addEventListener('input', () => { btn.disabled = !ta.value.trim(); });
@@ -821,7 +889,7 @@ function previews() {
   const cache = new Map();
   let pop = null;
   let timer = null;
-  const isPost = (a) => a.origin === location.origin && (/^\/@[a-z0-9_-]+\/[a-z0-9-]+\/?$/.test(a.pathname) || (boot.home_blog && /^\/[a-z0-9-]+\/?$/.test(a.pathname))) && a.pathname !== location.pathname;
+  const isPost = (a) => a.origin === location.origin && /^\/(?:[a-z0-9_-]+\/)?@[a-z0-9_-]+\/[a-z0-9-]+\/?$|^\/[a-z0-9_-]+\/[a-z0-9-]+\/?$/.test(a.pathname) && !/^\/(?:studio|api|media|tag|join|c|a|t)\//.test(a.pathname) && a.pathname !== location.pathname;
   const hide = () => { clearTimeout(timer); pop?.remove(); pop = null; };
   document.addEventListener('mouseover', (e) => {
     const a = e.target.closest('a[href]');
@@ -894,3 +962,4 @@ if (postId) {
   window.addEventListener('load', () => notes.paint());
 }
 previews();
+if (document.querySelector('img[src*="/c/"], [data-m-drawing]')) import('/margin/live-covers.js').then((m) => m.upgrade()).catch(() => {});

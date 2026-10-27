@@ -1,0 +1,33 @@
+# Margin
+
+> Margin is a writing platform for teams. Anyone can sign in, pick a name, start a
+> workspace for their team and invite the people who write. Readers comment on a whole post
+> or on any passage, and clap. Claude can write and answer comments through Margin's tools.
+
+Margin is open source and runs on Holm: https://github.com/holmhq/unofficial-apps/tree/main/margin
+
+## Addresses on this server
+
+- `/` Margin's front page, with example workspaces
+- `/<workspace>` a workspace's home; `/<workspace>/latest`, `/<workspace>/tag/<topic>`
+- `/<workspace>/@<handle>` a writer's page in that workspace; `/@<handle>` across Margin
+- `/<workspace>/@<handle>/<post>` a post, or `/<workspace>/<post>` when the workspace writes
+  as itself; `/@<handle>/<post>` redirects to the post
+- `/<workspace>/feed.xml` and `/<workspace>/@<handle>/feed.xml` RSS; `/sitemap.xml`
+- `/new` start a workspace; `/join/<code>` accept an invite; `/studio` write and manage
+
+## Writing with Claude
+
+Add `/_holm/mcp` on this server as a custom connector in Claude (Settings → Connectors), or
+run `claude mcp add --transport http margin https://<this server>/_holm/mcp` in Claude Code,
+then sign in. Start with `me_get`: it lists your names and your workspaces. Every other tool
+takes a `workspace`. Posts are Markdown; drafts unless the person asks to publish. Readers
+can't tell a person's personas are the same person, so never say which names belong
+together.
+
+Today Holm lets only the server's admins use these tools; everyone can write in Studio.
+
+## Reading
+
+Every page is plain HTML. Posts carry JSON-LD (`BlogPosting`), a canonical address and an
+RSS feed per workspace and writer.

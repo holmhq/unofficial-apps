@@ -1,4 +1,5 @@
-"""Draw the sample content's covers and avatars: soft abstract shapes, no people, no logos.
+"""Draw the sample people's avatars: soft abstract shapes, no faces, no logos. (Sample posts
+use drawn covers from api/covers.js; tools/cover-pngs.mjs renders their social images.)
 
 Run from the repository root with a Python that has Pillow:
     python3 margin/tools/sample-images.py
@@ -44,60 +45,6 @@ def gradient(w, h, a, b, angle):
     return img
 
 
-def cover(index, w=1600, h=1000):
-    rnd = random.Random(index * 7919)
-    pal = PALETTES[index % len(PALETTES)]
-    small = gradient(w // 8, h // 8, pal[0], pal[1], rnd.uniform(0, math.pi))
-    img = small.resize((w, h), Image.BICUBIC)
-    layer = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    for _ in range(5):
-        r = rnd.randint(h // 5, h // 2)
-        cx, cy = rnd.randint(0, w), rnd.randint(0, h)
-        col = hex_rgb(rnd.choice(pal[2:]))
-        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=col + (rnd.randint(90, 170),))
-    layer = layer.filter(ImageFilter.GaussianBlur(radius=rnd.randint(60, 110)))
-    img = Image.alpha_composite(img.convert('RGBA'), layer)
-    # One quiet motif per cover; the app in the samples is a calendar.
-    grid = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    g = ImageDraw.Draw(grid)
-    motif = index % 4
-    if motif == 0:  # a month of days, one picked out
-        cols, rows = 7, 5
-        gw, gh = int(w * 0.46), int(h * 0.5)
-        ox, oy = rnd.randint(int(w * 0.08), int(w * 0.46)), rnd.randint(int(h * 0.18), int(h * 0.36))
-        cell_w, cell_h = gw / cols, gh / rows
-        accent = rnd.randrange(cols * rows)
-        for i in range(cols * rows):
-            x0 = ox + (i % cols) * cell_w + 5
-            y0 = oy + (i // cols) * cell_h + 5
-            fill = (255, 255, 255, 235) if i == accent else (255, 255, 255, 34)
-            g.rounded_rectangle([x0, y0, x0 + cell_w - 10, y0 + cell_h - 10], radius=14, fill=fill)
-    elif motif == 1:  # rings, like a week seen from above
-        cx, cy = rnd.randint(int(w * 0.35), int(w * 0.65)), rnd.randint(int(h * 0.4), int(h * 0.6))
-        for k in range(7, 0, -1):
-            r = k * h * 0.06
-            g.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(255, 255, 255, 40 + k * 10), width=3)
-        g.ellipse([cx - 16, cy - 16, cx + 16, cy + 16], fill=(255, 255, 255, 235))
-    elif motif == 2:  # a timeline of bars
-        y = int(h * 0.26)
-        for k in range(6):
-            x0 = int(w * rnd.uniform(0.1, 0.35))
-            x1 = x0 + int(w * rnd.uniform(0.18, 0.5))
-            fill = (255, 255, 255, 230) if k == 2 else (255, 255, 255, 50)
-            g.rounded_rectangle([x0, y, x1, y + 56], radius=28, fill=fill)
-            y += 92
-    else:  # dots joined by thin lines
-        pts = [(rnd.randint(int(w * 0.12), int(w * 0.88)), rnd.randint(int(h * 0.2), int(h * 0.8))) for _ in range(7)]
-        for a, b in zip(pts, pts[1:]):
-            g.line([a, b], fill=(255, 255, 255, 90), width=3)
-        for i, (x, y) in enumerate(pts):
-            r = 20 if i == 3 else 11
-            g.ellipse([x - r, y - r, x + r, y + r], fill=(255, 255, 255, 235 if i == 3 else 150))
-    img = Image.alpha_composite(img, grid)
-    return img.convert('RGB')
-
-
 def avatar(index, size=320):
     rnd = random.Random(index * 104729)
     pal = PALETTES[(index * 3 + 1) % len(PALETTES)]
@@ -113,8 +60,6 @@ def avatar(index, size=320):
 
 
 if __name__ == '__main__':
-    for i in range(8):
-        cover(i).save(os.path.join(OUT, f'cover-{i + 1}.jpg'), quality=82, optimize=True, progressive=True)
-    for i in range(8):
+    for i in range(11):
         avatar(i).save(os.path.join(OUT, f'avatar-{i + 1}.jpg'), quality=85, optimize=True)
     print('ok')

@@ -1,13 +1,15 @@
 // Comments: whole-post responses and notes on a quoted passage, one level of replies.
-// Each blog chooses moderation: off, outsiders (people not on the team) or all.
-// Sample comments (from personas, for screenshots) are seen only by the team.
+// Each workspace chooses moderation: off, outsiders (names not on its team) or all.
+// Anyone signed in comments on any post, under any of their names. Sample comments
+// (for screenshots) are seen only by the workspace's team.
 import { byId, rows, bump, touch } from './lib/store.js';
 import { reject, longText, text, bool } from './lib/util.js';
 import { renderComment } from './markdown.js';
-import { blogByHandle, blogDTO, resolveAs, writableBlogs, avatarURL } from './blogs.js';
+import { blogByHandle, blogDTO, resolveAs, myIdentities, avatarURL, canWriteAs } from './blogs.js';
 import { memberCard } from './people.js';
-import { postById, canEdit, cardDTO } from './posts.js';
-import { siteSettings } from './settings.js';
+import { postById, canEdit, cardDTO, wsCached } from './posts.js';
+import { roleIn, teamHandles, useWorkspace } from './workspaces.js';
+import { marginSettings } from './settings.js';
 
 const MAX_BODY = 4000;
 
@@ -22,31 +24,35 @@ function quote(value) {
   };
 }
 
-function moderationFor(env, post, settings) {
-  const blog = blogByHandle(env, post.blog);
-  return (blog && blog.moderation) || settings.moderation || 'outsiders';
+export function moderationFor(env, ctx, post) {
+  const ws = wsCached(env, ctx, post.ws);
+  return (ws && ws.moderation) || 'outsiders';
 }
 
-function visible(ctx, comment, moderator) {
-  if (comment.status === 'approved') return !comment.sample || ctx.writer;
+const onTeam = (env, ctx, post) => !!(ctx.admin || roleIn(env, ctx, post.ws));
+
+function visible(env, ctx, post, comment, moderator) {
+  if (comment.status === 'approved') return !comment.sample || onTeam(env, ctx, post);
   if (comment.status === 'pending') return moderator || (ctx.member && comment.memberId === ctx.member.id);
   return moderator && comment.status !== 'deleted';
 }
 
-export function commentDTO(env, ctx, comment, post, settings, moderator) {
+export function commentDTO(env, ctx, comment, post, moderator) {
   let author;
+  const team = teamHandles(env, ctx, post.ws);
   if (comment.as) {
     const blog = blogByHandle(env, comment.as);
-    author = blog ? { name: blog.name, avatar: avatarURL(blog), url: blogDTO(blog, settings).url, handle: blog.handle, team: true, persona: blog.kind === 'persona' }
-      : { name: '@' + comment.as, avatar: `/a/${comment.as}.svg`, url: null, handle: comment.as, team: true, persona: true };
+    const isTeam = team.has(comment.as);
+    author = blog ? { name: blog.name, avatar: avatarURL(blog), url: blogDTO(blog, isTeam ? post.ws : null).url, handle: blog.handle, team: isTeam }
+      : { name: '@' + comment.as, avatar: `/a/${comment.as}.svg`, url: null, handle: comment.as, team: isTeam };
   } else {
     const card = memberCard(env, ctx, comment.memberId);
-    author = { name: card.name, avatar: card.picture || null, url: card.handle ? `/@${card.handle}` : null, handle: card.handle, team: card.team, persona: false };
+    author = { name: card.name, avatar: card.picture || null, url: null, handle: null, team: false };
   }
   author.is_author = comment.as ? comment.as === post.blog : false;
   // Written as a persona, it reads as the persona's, even to the person who wrote it.
-  const mine = !!(ctx.member && comment.memberId === ctx.member.id && (!comment.as || (ctx.person && comment.as === ctx.person.handle)));
   const own = !!(ctx.member && comment.memberId === ctx.member.id);
+  const mine = own && (!comment.as || (ctx.person && comment.as === ctx.person.handle));
   return {
     id: comment.id,
     post_id: comment.postId,
@@ -55,6 +61,7 @@ export function commentDTO(env, ctx, comment, post, settings, moderator) {
     body: comment.body,
     body_html: renderComment(comment.body),
     author,
+    as: own ? comment.as || null : undefined,
     status: comment.status,
     sample: !!comment.sample,
     via: comment.via || 'web',
@@ -68,25 +75,25 @@ export function commentDTO(env, ctx, comment, post, settings, moderator) {
 export function listForPost(env, ctx, postId) {
   const post = postById(env, postId);
   if (!post || (post.status !== 'published' && !canEdit(env, ctx, post))) reject(404, 'not_found', 'No such post.');
-  const settings = siteSettings(env);
   const moderator = canEdit(env, ctx, post);
   const all = rows(env, 'comments', { postId: post.id }, 3000);
-  const shown = all.filter((c) => visible(ctx, c, moderator)).sort((a, b) => (a._createdAt || 0) - (b._createdAt || 0));
+  const shown = all.filter((c) => visible(env, ctx, post, c, moderator)).sort((a, b) => (a._createdAt || 0) - (b._createdAt || 0));
   return {
-    comments: shown.map((c) => commentDTO(env, ctx, c, post, settings, moderator)),
+    comments: shown.map((c) => commentDTO(env, ctx, c, post, moderator)),
     can_moderate: moderator,
-    moderation: moderationFor(env, post, settings),
+    moderation: moderationFor(env, ctx, post),
+    team: [...teamHandles(env, ctx, post.ws)].filter((h) => myIdentities(env, ctx).some((b) => b.handle === h)),
     count: post.comments || 0,
     pending: moderator ? post.pending || 0 : 0,
   };
 }
 
 // Server-rendered list for pages without JavaScript: approved, not samples.
-export function publicComments(env, ctx, post, settings) {
+export function publicComments(env, ctx, post) {
   return rows(env, 'comments', { postId: post.id, status: 'approved' }, 1000)
     .filter((c) => !c.sample)
     .sort((a, b) => (a._createdAt || 0) - (b._createdAt || 0))
-    .map((c) => commentDTO(env, ctx, c, post, settings, false));
+    .map((c) => commentDTO(env, ctx, c, post, false));
 }
 
 function rateLimit(env, ctx) {
@@ -100,7 +107,8 @@ export function createComment(env, ctx, postId, input, via = 'web') {
   if (!ctx.member) reject(401, 'unauthorized', 'Sign in to comment.');
   const post = postById(env, postId);
   if (!post || (post.status !== 'published' && !canEdit(env, ctx, post))) reject(404, 'not_found', 'No such post.');
-  const settings = siteSettings(env);
+  if (!ctx.ws || ctx.ws.slug !== post.ws) useWorkspace(env, ctx, wsCached(env, ctx, post.ws));
+  if (marginSettings(env).signups === 'invite' && !ctx.admin && !(ctx.person && ctx.person.handle)) reject(403, 'signups_closed', 'Margin is invite-only here. Ask someone on a workspace for an invite.');
   const body = longText(input.body ?? input.text ?? input.markdown, MAX_BODY, 'Comment', true);
   rateLimit(env, ctx);
   let parentId = null;
@@ -111,21 +119,23 @@ export function createComment(env, ctx, postId, input, via = 'web') {
   }
   let as = null;
   if (input.as) as = resolveAs(env, ctx, input.as).handle;
-  // Writers who can edit the post answer as its blog unless they choose otherwise.
-  if (!as && input.as === undefined && canEdit(env, ctx, post) && ctx.writer) {
+  // People who can edit the post answer as its author unless they choose otherwise.
+  if (!as && input.as === undefined && canEdit(env, ctx, post)) {
     const blog = blogByHandle(env, post.blog);
-    if (blog && (blog.kind === 'persona' || blog.memberId === ctx.member.id)) as = post.blog;
+    if (blog && canWriteAs(ctx, blog)) as = post.blog;
   }
+  if (!as && ctx.person && ctx.person.handle) as = ctx.person.handle;
   const sample = bool(input.sample);
-  if (sample && !ctx.writer) reject(403, 'forbidden', 'Only the team adds sample comments.');
+  if (sample && !onTeam(env, ctx, post)) reject(403, 'forbidden', 'Only the team adds sample comments.');
   const moderator = canEdit(env, ctx, post);
-  const mode = moderationFor(env, post, settings);
+  const mode = moderationFor(env, ctx, post);
   let status = 'approved';
   if (!sample && !moderator) {
-    if (mode === 'all' || (mode === 'outsiders' && !ctx.writer)) status = 'pending';
+    const fromTeam = !!as && teamHandles(env, ctx, post.ws).has(as);
+    if (mode === 'all' || (mode === 'outsiders' && !fromTeam)) status = 'pending';
   }
   const doc = {
-    postId: post.id, parentId, memberId: ctx.member.id, as, quote: parentId ? null : quote(input.quote),
+    postId: post.id, ws: post.ws, parentId, memberId: ctx.member.id, as, quote: parentId ? null : quote(input.quote),
     body, status, sample, via, createdAt: Date.now(), editedAt: null,
   };
   const id = env.holm.app.ds.insert('comments', doc);
@@ -134,7 +144,7 @@ export function createComment(env, ctx, postId, input, via = 'web') {
   if (status === 'approved' && !sample) touch(env);
   try { env.holm.realtime.broadcast(`post:${post.id}`, { type: 'comment', id }); } catch { /* realtime is a nicety */ }
   const saved = byId(env, 'comments', id);
-  return commentDTO(env, ctx, saved, post, settings, moderator);
+  return commentDTO(env, ctx, saved, post, moderator);
 }
 
 export function moderate(env, ctx, commentId, action) {
@@ -146,7 +156,7 @@ export function moderate(env, ctx, commentId, action) {
   const mine = ctx.member && comment.memberId === ctx.member.id;
   if (action === 'delete') {
     if (!moderator && !mine) reject(403, 'forbidden', "You can't delete this comment.");
-  } else if (!moderator) reject(403, 'forbidden', 'Only the blog\'s writers and admins moderate.');
+  } else if (!moderator) reject(403, 'forbidden', "Only the post's writer and the workspace's owners moderate.");
   const next = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : action === 'delete' ? 'deleted' : null;
   if (!next) reject(400, 'invalid_input', 'Action is approve, reject or delete.');
   if (next === comment.status) return { id: comment.id, status: next };
@@ -177,14 +187,16 @@ export function editComment(env, ctx, commentId, body) {
   env.holm.app.ds.update('comments', { id: comment.id }, { $set: { body: value, editedAt: Date.now() } });
   touch(env);
   const post = postById(env, comment.postId);
-  return commentDTO(env, ctx, byId(env, 'comments', comment.id), post, siteSettings(env), canEdit(env, ctx, post));
+  return commentDTO(env, ctx, byId(env, 'comments', comment.id), post, canEdit(env, ctx, post));
 }
 
-// What needs the writer: comments waiting for approval, and threads the blog hasn't answered.
+// What needs the writer in the current workspace: comments waiting for approval, and
+// threads nobody on the post's side has answered.
 export function inbox(env, ctx, options = {}) {
-  if (!ctx.writer) reject(403, 'forbidden', 'Only writers have an inbox.');
-  const settings = siteSettings(env);
-  const handles = new Set(writableBlogs(env, ctx).map((b) => b.handle));
+  if (!ctx.ws || !(ctx.writer || ctx.wsAdmin)) reject(403, 'forbidden', 'Only people on the workspace have an inbox.');
+  const slug = ctx.ws.slug;
+  const mineNames = new Set(myIdentities(env, ctx).map((b) => b.handle));
+  if (ctx.wsAdmin) mineNames.add(slug);
   const postCache = new Map();
   const postOf = (id) => {
     if (!postCache.has(id)) postCache.set(id, postById(env, id));
@@ -192,10 +204,10 @@ export function inbox(env, ctx, options = {}) {
   };
   const mine = (c) => {
     const post = postOf(c.postId);
-    return post && (ctx.admin || handles.has(post.blog)) ? post : null;
+    return post && post.ws === slug && (ctx.wsAdmin || mineNames.has(post.blog)) ? post : null;
   };
   const limit = Math.min(100, Math.max(1, Number(options.limit) || 30));
-  const recent = rows(env, 'comments', {}, 1500).filter((c) => c.status !== 'deleted' && c.status !== 'rejected');
+  const recent = rows(env, 'comments', { ws: slug }, 1500).filter((c) => c.status !== 'deleted' && c.status !== 'rejected');
   const pending = [];
   const threads = new Map();
   for (const c of recent) {
@@ -206,7 +218,7 @@ export function inbox(env, ctx, options = {}) {
     if (!threads.has(root)) threads.set(root, []);
     threads.get(root).push(c);
   }
-  const answeredBy = (c) => c.as && handles.has(c.as) || (ctx.member && c.memberId === ctx.member.id);
+  const answeredBy = (c) => (c.as && mineNames.has(c.as)) || (ctx.member && c.memberId === ctx.member.id);
   const unanswered = [];
   for (const list of threads.values()) {
     list.sort((a, b) => (a._createdAt || 0) - (b._createdAt || 0));
@@ -215,11 +227,11 @@ export function inbox(env, ctx, options = {}) {
   }
   const shape = (c) => {
     const post = postOf(c.postId);
-    const dto = commentDTO(env, ctx, c, post, settings, true);
+    const dto = commentDTO(env, ctx, c, post, true);
     const parent = c.parentId ? byId(env, 'comments', c.parentId) : null;
     return {
       ...dto,
-      post: { id: post.id, title: post.title, url: cardDTO(env, ctx, post, settings).url, blog: post.blog },
+      post: { id: post.id, title: post.title, url: cardDTO(env, ctx, post).url, blog: post.blog },
       thread_quote: parent ? parent.quote || null : c.quote || null,
       in_reply_to: parent ? { id: parent.id, body: parent.body.slice(0, 400) } : null,
     };
@@ -235,7 +247,7 @@ export function inbox(env, ctx, options = {}) {
 }
 
 export function clearSamples(env, ctx, postId) {
-  if (!ctx.admin) reject(403, 'forbidden', 'Only admins clear sample comments.');
+  if (!ctx.admin) reject(403, 'forbidden', "Only Margin's admins clear sample comments.");
   const query = postId ? { postId, sample: true } : { sample: true };
   let removed = 0;
   for (const c of rows(env, 'comments', query, 5000)) {

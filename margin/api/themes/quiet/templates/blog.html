@@ -1,7 +1,7 @@
 <section class="q-profile">
   <img class="q-avatar q-profile-avatar" src="{{blog.avatar}}" alt="" width="88" height="88">
   <h1 class="q-profile-name">{{blog.name}}</h1>
-  <p class="q-profile-handle">@{{blog.handle}}{{#blog.is_persona}} · Team blog{{/blog.is_persona}}</p>
+  <p class="q-profile-handle">@{{blog.handle}}{{#blog.is_workspace}} · The team{{/blog.is_workspace}}</p>
   {{#blog.bio}}<p class="q-profile-bio">{{blog.bio}}</p>{{/blog.bio}}
   <p class="q-profile-links"><a class="q-pill" href="{{blog.feed_url}}">RSS</a></p>
 </section>

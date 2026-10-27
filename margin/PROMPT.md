@@ -8,9 +8,10 @@ instructions or sources.
 ## Build from scratch
 
 ```text
-Build "Margin", a blog for a team, using only https://holmhq.com/llms-full.txt
-for Holm. Read its v1 sections 9–12 (with "Use your app from ChatGPT or Claude"
-and "One page per document id") and "Make an app feel finished" first. Make
+Build "Margin", a writing platform for teams, using only
+https://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 (with
+"Use your app from ChatGPT or Claude" and "One page per document id") and
+"Make an app feel finished" first. Make
 holm.json, public web/ files and api/main.js exporting default
 { fetch(request, env) } plus named operations. Use env.holm for storage,
 sign-in, realtime and email, return standard Responses, and fall back to
@@ -18,36 +19,47 @@ env.holm.web.fetch(request). No third-party runtime CDN: vendor libraries and
 fonts with their licences. A locally built editor bundle is fine if its build
 script is in the folder.
 
-- People: anyone signs in to read, clap and comment. Only people an admin
-  invites (a single-use link, optionally tied to an email) can write. Each
-  writer picks a handle, and their posts live at /@handle/seo-slug. Admins
-  make personas (/@team) that chosen writers can post and comment as. An
-  admin can make the site's home a landing page or any one blog, whose posts
-  then live at /<slug>. Old addresses keep redirecting.
+- A minimal, elegant front page: what Margin is, two example workspaces, and
+  the way in. Anyone signs in, picks a name and handle, starts a workspace for
+  their team (/<workspace>), and invites people with single-use links. Writers'
+  posts live at /<workspace>/@<handle>/seo-slug; a workspace can post as
+  itself. One person can be in many workspaces, with a role in each (owner,
+  admin, writer). Old addresses keep redirecting.
+- Everyone can keep personas: other names to write and comment under. Readers
+  must not be able to tell personas are the same person; a workspace's owners
+  see which names their members use there.
+- Margin's admins (the node's) choose who can join (anyone; anyone to comment
+  with workspaces by invitation; invited only), make the front page Margin's
+  landing, one workspace or one writer, pick the examples, and suspend
+  workspaces. A workspace's owners make its home the latest posts, a curated
+  set of pinned posts, or one writer's page.
 - Reading pages are rendered on the server, readable with no JavaScript,
   with feeds, a sitemap and social cards. Posts are Markdown underneath, with
-  callouts, embeds from a bare link (YouTube, Vimeo, Loom, CodePen, Figma,
-  Spotify), cards for other posts, and figures with captions and widths.
+  callouts, embeds from a bare link, cards for other posts, and figures.
+- Every post without a photo gets a drawn cover: an isometric technical line
+  drawing (one projection, three line weights, flat colour, small labels) in
+  the workspace's style (paper, a flat tone, or blocks), with a subject the
+  writer picks, that reacts to the pointer. Save a PNG of it for link previews.
 - Comments like Medium: select a passage to comment on it (keep the quote
   with its surrounding words so it re-anchors), or respond to the whole post;
-  one level of replies; per-blog approval of comments from outside the team,
-  or of all. Claps, up to 50 per person. Link previews for posts.
+  one level of replies; anyone signed in comments anywhere, as any of their
+  names; each workspace shows comments at once, holds those from outside its
+  team, or holds all. Claps, up to 50 per person. Link previews for posts.
 - Themes are swappable: theme.json, Mustache templates, partials and assets,
   with a validator that refuses scripts, outside URLs and raw HTML other than
-  Margin's own hooks. Ship two (a clean Apple-like one with chat-style
-  comment threads, and an editorial serif one with notes in the margin);
-  admins download, upload, preview and switch them.
+  Margin's own hooks. Ship two (a clean Apple-like one with chat-style comment
+  threads, and an editorial serif one with notes in the margin). Margin's
+  admins add themes; each workspace picks one.
 - A Notion-like editor: slash menu, a bar for formatting, block handles,
-  dropped-in photos (shrunk in the browser) and short videos, autosave for
-  drafts.
-- Studio for writers and admins: posts, a comment inbox, blogs and personas,
-  team and invites, site settings, themes, and how to connect Claude.
-- MCP tools for Claude: write and edit posts, read the comment inbox and
-  answer only ordinary comments (asking the writer about anything sensitive),
-  comment as a persona (marked as sample when it's for screenshots), manage
-  personas, and get, validate, save and switch themes.
-- Sample content: a fictional team with personas, posts, abstract covers and
-  comments, loaded and removed from Studio.
+  dropped-in photos (shrunk in the browser) and short videos, autosave.
+- Studio with a workspace switcher: posts, a comment inbox, team and invites,
+  workspace settings, your names and personas, Claude, and Margin's settings
+  for its admins. MCP tools for Claude that take a workspace: write and edit
+  posts, answer only ordinary comments (asking about anything sensitive),
+  comment under any of your names, manage personas, start and run workspaces,
+  and work on themes. A short /llms.txt for agents.
+- Sample content: two fictional teams with their own logos (made with
+  holm app identity), writers, posts and comments, loaded from Studio.
 - UI refined like Apple's apps: Inter, one accent, frosted bars, sheets on
   phones, a round avatar account button even when signed out, light, dark
   and auto. For this repository's store, use holm.json version,
@@ -55,15 +67,16 @@ script is in the folder.
 
 Run holm app validate --spec-v1 margin. With my approval, deploy with
 holm @<peer> app deploy margin --spec-v1 --host <host>. Never replace an
-occupied host without asking. Test as an admin, an invited writer, an
-outside reader and signed out, on mobile and desktop, in light and dark.
-Report gaps honestly.
+occupied host without asking. Test as an admin, a workspace owner, an invited
+writer, an outside reader and signed out, on mobile and desktop, in light and
+dark. Report gaps honestly.
 ```
 
 ## The original requests
 
 Margin was built from these messages, passed on to a coding agent. A handle
-is replaced with `[handle]`.
+is replaced with `[handle]`, and example names of real people and companies
+with placeholders.
 
 **The first request**
 
@@ -78,3 +91,17 @@ is replaced with `[handle]`.
 > pick a random team name, content and some personas
 
 > Name: Margin
+
+**Margin 0.2.0: from one team's blog to a place where any team writes**
+
+> i want margin to be like this: it should have a minimal / elegant landing page; anyone can create an account and create a workspace, say for their team; then invite anyone from there team to post blogs; most of the behaviour stays the same; so that the structure of Margin will look like: margin.zyt.app/[company]/@[person] […] the admin of Margin can optionally close strangers from creating accounts; make the workspace's home the home of the app; or any individuals blog to be home; or curate the workspace;s home with blogs from any team member […] so anyone can land to a writing platform, create account, connect their claude, and start posting […] on home screen we can show two examples […] the same user can be part of multiple workspaces/companies/teams; a user can comment on any blog; the workspace owner can mandate for comments to land immediately or after approval; all users will be able to connect their account via claude mcp; all users will be able to maintain multiple personas optionally, to write & comment as; for the external user it will not be known these personas are same person
+
+> i wish the covers could be a bit more interesting […] i wonder whether we can make hairline diagram also cover? making it interactive?
+
+> I dont think hairline works well with gradients; it needs flat colors?
+
+> can we make the diagrams more nuanced and nicer; specifically the copperline one looks a bit childish; but the concept is very good.
+
+> use proper icons for the companies; may be use our logo generation stack or similar to get good ones […] I hope the blog will also get images of this? as we need that as cover images for each blog
+
+> I like paper the best; but i think the two companies should have different styles: paper for lumen & coral for copper

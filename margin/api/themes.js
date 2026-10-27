@@ -18,7 +18,7 @@ const LIMITS = { files: 80, text: 200000, asset: 1500000, total: 6000000 };
 
 // Names a template may start a lookup from; anything else is a warning, not an error.
 export const ROOTS = {
-  common: ['site', 'theme', 'page', 'margin', 'viewer', 'latest', 'featured', 'writers', 'tags', 'q', 'year'],
+  common: ['site', 'platform', 'theme', 'page', 'margin', 'viewer', 'latest', 'featured', 'writers', 'tags', 'q', 'year'],
   layout: ['body'],
   home: ['posts', 'pagination'],
   blog: ['blog', 'posts', 'pagination'],

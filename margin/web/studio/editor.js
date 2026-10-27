@@ -427,6 +427,25 @@ const Drop = Extension.create({
 
 // ---------- the view ----------
 
+const MOTIF_LABEL = { week: 'Week', energy: 'Energy', people: 'People', network: 'Sync', stack: 'Layers', inbox: 'Inbox', bars: 'Numbers', rings: 'Quiet' };
+
+// A drawing as a 1280×720 PNG, uploaded, for link previews and feeds.
+async function drawingPNG(covers, spec) {
+  const svg = covers.render(spec, null, { labels: true }).replace('<svg ', '<svg width="1280" height="720" ');
+  const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  try {
+    const img = new window.Image(); // "Image" here is the editor extension
+    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = url; });
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 720;
+    canvas.getContext('2d').drawImage(img, 0, 0, 1280, 720);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) return null;
+    return upload(new File([blob], `${spec.motif}-${spec.seed}.png`, { type: 'image/png' }));
+  } finally { URL.revokeObjectURL(url); }
+}
+
 export async function editorView(root, { me, id, go }) {
   loadCSS();
   let post = null;
@@ -437,13 +456,20 @@ export async function editorView(root, { me, id, go }) {
     }
   }
   const blogs = me.blogs;
+  const ws = me.workspace;
+  const home = `/studio/${ws.slug}`;
+  const prefixFor = (handle) => (handle === ws.slug ? `${location.host}/${ws.slug}/` : `${location.host}/${ws.slug}/@${handle}/`);
   let as = post ? post.as : (blogs.find((b) => b.own) || blogs[0] || {}).handle;
+  const covers = await import('/margin/covers.js');
+  const live = await import('/margin/live-covers.js');
+  // Without a photo a post shows a drawing: its own, or a new one in the workspace's style.
+  let drawing = post && post.drawing ? post.drawing : covers.normalize({ motif: covers.MOTIFS[Math.floor(Math.random() * covers.MOTIFS.length)], look: ws.cover.look, tone: ws.cover.tone, seed: Math.floor(Math.random() * 10000) });
   const published = () => post && post.status === 'published';
   document.title = `${post ? post.title : 'New post'} — Studio`;
 
   root.innerHTML = `<div class="ed">
     <header class="ed-top">
-      <a class="ed-back" href="/studio" data-nav aria-label="Back to posts">${icons.back}<span>Posts</span></a>
+      <a class="ed-back" href="${home}" data-nav aria-label="Back to posts">${icons.back}<span>Posts</span></a>
       <button type="button" class="ed-as" data-as></button>
       <span class="ed-status" data-status></span>
       <span class="ed-grow"></span>
@@ -551,6 +577,7 @@ export async function editorView(root, { me, id, go }) {
     paintStatus();
     try {
       if (!post) {
+        if (!coverURL && !('drawing' in extra)) extra.drawing = { motif: drawing.motif, seed: drawing.seed };
         post = await api('/api/posts', { method: 'POST', body: { ...now, ...extra } });
         history.replaceState({}, '', `/studio/write/${post.id}`);
       } else {
@@ -595,20 +622,41 @@ export async function editorView(root, { me, id, go }) {
       if (published()) { if (!confirm('Leave without updating the published post? Your changes will be lost.')) return; }
       else await save().catch(() => {});
       editor.destroy();
-      go('/studio');
+      go(home);
     } else editor.destroy();
   }, true);
 
   // ---------- cover ----------
   const coverBox = $('[data-cover]', root);
   const paintCover = () => {
-    coverBox.innerHTML = coverURL
-      ? `<div class="ed-cover-img"><img src="${esc(coverURL)}" alt=""><div class="ed-cover-tools"><button type="button" class="ed-chip" data-cover-change>Change</button><button type="button" class="ed-chip ed-danger" data-cover-remove>Remove</button></div></div>`
-      : `<button type="button" class="ed-ghost" data-cover-add>${BI.image}Add cover</button>`;
+    if (coverURL) {
+      coverBox.innerHTML = `<div class="ed-cover-img"><img src="${esc(coverURL)}" alt=""><div class="ed-cover-tools"><button type="button" class="ed-chip" data-cover-change>Change photo</button><button type="button" class="ed-chip" data-cover-remove>Use a drawing</button></div></div>`;
+      return;
+    }
+    coverBox.innerHTML = `<div class="ed-cover-img ed-drawn"><div class="ed-drawing"></div><div class="ed-cover-tools"><button type="button" class="ed-chip" data-drawing>Change drawing</button><button type="button" class="ed-chip" data-cover-add>Use a photo</button></div></div>`;
+    live.mount($('.ed-drawing', coverBox), drawing);
   };
   paintCover();
+  const drawingSheet = () => {
+    const box = h(`<div><p style="margin:0 4px 14px;color:var(--muted)">Pick what the cover draws. Move over it to see it work. ${esc(ws.name)} draws in its ${esc(ws.cover.look)} style; owners change that in Workspace.</p>
+      <div class="ed-motifs">${covers.MOTIFS.map((m) => `<button type="button" class="ed-motif${m === drawing.motif ? ' on' : ''}" data-motif="${m}" aria-pressed="${m === drawing.motif}"><span class="ed-motif-art">${covers.render(covers.normalize({ ...drawing, motif: m }), null, { labels: false })}</span><span>${esc(MOTIF_LABEL[m] || m)}</span></button>`).join('')}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button type="button" class="btn" data-shuffle>New variation</button></div></div>`);
+    const s2 = sheet('Cover drawing', box);
+    const pick = async (next) => {
+      drawing = covers.normalize(next);
+      paintCover();
+      $$('.ed-motif', box).forEach((b) => { const on = b.dataset.motif === drawing.motif; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+      if (post) await save({ drawing: { motif: drawing.motif, seed: drawing.seed } }).catch(() => {});
+    };
+    box.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-motif]');
+      if (b) { pick({ ...drawing, motif: b.dataset.motif }); s2.close(); }
+      if (e.target.closest('[data-shuffle]')) pick({ ...drawing, seed: Math.floor(Math.random() * 10000) });
+    });
+  };
   coverBox.addEventListener('click', async (e) => {
-    if (e.target.closest('[data-cover-remove]')) { coverId = null; coverURL = null; paintCover(); await save({ cover: null }).catch(() => {}); return; }
+    if (e.target.closest('[data-drawing]')) { drawingSheet(); return; }
+    if (e.target.closest('[data-cover-remove]')) { coverId = null; coverURL = null; paintCover(); await save({ cover: null, drawing: { motif: drawing.motif, seed: drawing.seed } }).catch(() => {}); return; }
     if (!e.target.closest('[data-cover-add], [data-cover-change]')) return;
     const file = await pickFile('image/*');
     if (!file) return;
@@ -751,16 +799,16 @@ export async function editorView(root, { me, id, go }) {
     const form = h(`<form novalidate>
       <div class="group">
         <div class="field"><label>Post as</label><select class="select" data-f-as>${blogs.map((b) => `<option value="${esc(b.handle)}"${b.handle === as ? ' selected' : ''}>${esc(b.name)} (@${esc(b.handle)})</option>`).join('')}</select></div>
-        <div class="field"><label for="f-slug">Address</label><div class="ed-slug"><span data-prefix>${esc(location.host)}/@${esc(blog.handle)}/</span><input id="f-slug" class="input" maxlength="100" autocapitalize="none" spellcheck="false" value="${esc(post ? post.slug : '')}" placeholder="from-the-title"></div><small>${published() ? 'Changing it keeps the old address working.' : 'Made from the title until you publish.'}</small></div>
+        <div class="field"><label for="f-slug">Address</label><div class="ed-slug"><span data-prefix>${esc(prefixFor(blog.handle))}</span><input id="f-slug" class="input" maxlength="100" autocapitalize="none" spellcheck="false" value="${esc(post ? post.slug : '')}" placeholder="from-the-title"></div><small>${published() ? 'Changing it keeps the old address working.' : 'Made from the title until you publish.'}</small></div>
         <div class="field"><label for="f-desc">Search and social description</label><textarea id="f-desc" class="textarea" rows="2" maxlength="300" placeholder="${esc(post ? post.excerpt || '' : '')}">${esc(post ? post.description && post.description !== post.subtitle && post.description !== post.excerpt ? post.description : '' : '')}</textarea></div>
         <div class="field"><label for="f-tags">Topics</label><input id="f-tags" class="input" maxlength="200" placeholder="design, engineering" value="${esc(post ? post.tags.map((t) => t.name).join(', ') : '')}"><small>Up to 8, separated by commas.</small></div>
         ${coverURL ? `<div class="field"><label for="f-alt">Cover description</label><input id="f-alt" class="input" maxlength="200" value="${esc(post && post.cover ? post.cover.alt : '')}" placeholder="What the cover shows"></div>` : ''}
-        ${me.admin ? `<label class="row link"><span class="row-main"><span class="row-title" style="font-weight:500">Feature on the front page</span></span><span class="switch"><input type="checkbox" data-f-featured${post && post.featured ? ' checked' : ''}><span></span></span></label>` : ''}
+        ${ws.admin ? `<label class="row link"><span class="row-main"><span class="row-title" style="font-weight:500">Pin on ${esc(ws.name)}’s home</span></span><span class="switch"><input type="checkbox" data-f-featured${post && post.featured ? ' checked' : ''}><span></span></span></label>` : ''}
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">${published() ? '<button type="button" class="btn" data-unpublish>Unpublish</button><span style="flex:1"></span>' : ''}<button class="btn primary" type="submit">${published() ? 'Update post' : 'Publish now'}</button></div>
     </form>`);
     const s = sheet(published() ? 'Update post' : 'Publish', form);
-    $('[data-f-as]', form).addEventListener('change', (e) => { $('[data-prefix]', form).textContent = `${location.host}/@${e.target.value}/`; });
+    $('[data-f-as]', form).addEventListener('change', (e) => { $('[data-prefix]', form).textContent = prefixFor(e.target.value); });
     $('#f-slug', form).addEventListener('input', (e) => { e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'); });
     $('[data-unpublish]', form)?.addEventListener('click', async () => {
       if (!confirm('Take this post down? It becomes a draft again, and its address stops working until you publish.')) return;
@@ -775,16 +823,22 @@ export async function editorView(root, { me, id, go }) {
       const slug = $('#f-slug', form).value.replace(/^-+|-+$/g, '');
       if (slug && (!post || slug !== post.slug)) extra.slug = slug;
       if ($('#f-alt', form)) extra.cover_alt = $('#f-alt', form).value;
-      if (me.admin) extra.featured = $('[data-f-featured]', form).checked;
+      if (ws.admin) extra.featured = $('[data-f-featured]', form).checked;
       try {
         const was = published();
+        // Link previews need a plain image: save the drawing as one.
+        if (!coverURL) {
+          const png = await drawingPNG(covers, drawing).catch((error) => { console.warn('cover image', error); return null; });
+          if (png) extra.cover_png = png.id;
+          extra.drawing = { motif: drawing.motif, seed: drawing.seed };
+        }
         await save(extra);
         s.close();
         const url = location.origin + post.url;
         const done = h(`<div style="text-align:center;padding:8px 8px 4px"><div class="empty-icon" style="margin:0 auto 14px">${icons.check}</div>
           <h2 style="margin:0 0 6px;font-size:21px">${was ? 'Updated' : 'Published'}</h2><p style="margin:0 0 18px;color:var(--muted)">It’s live at</p>
           <div class="code-box" style="margin-bottom:16px;text-align:left"><span>${esc(url)}</span><button class="btn small" data-copy>${icons.copy}</button></div>
-          <div style="display:flex;gap:8px;justify-content:center"><a class="btn primary" href="${esc(post.url)}" target="_blank" rel="noopener">View post</a><a class="btn" href="/studio" data-nav>Back to posts</a></div></div>`);
+          <div style="display:flex;gap:8px;justify-content:center"><a class="btn primary" href="${esc(post.url)}" target="_blank" rel="noopener">View post</a><a class="btn" href="${home}" data-nav>Back to posts</a></div></div>`);
         const s2 = sheet(post.title, done);
         $('[data-copy]', done).addEventListener('click', () => copy(url, 'Link copied'));
         $$('[data-nav]', done).forEach((a) => a.addEventListener('click', () => { s2.close(); editor.destroy(); }));
@@ -793,6 +847,10 @@ export async function editorView(root, { me, id, go }) {
   }
 
   paintStatus();
+  // The workspace's style changed since this post's image was saved: make a fresh one.
+  if (published() && !coverURL && post.cover && post.cover.stale_image) {
+    drawingPNG(covers, drawing).then((png) => png && api(`/api/posts/${post.id}`, { method: 'PATCH', body: { cover_png: png.id } })).catch((error) => console.warn('cover image', error));
+  }
   window.marginEditor = editor;
   if (!post) setTimeout(() => titleEl.focus(), 50);
 }

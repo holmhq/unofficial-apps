@@ -1,7 +1,8 @@
 # Margin themes
 
-A theme decides how every reading page looks: the landing page, each blog, each post, the
-team feed and topic pages, and errors. Studio and the editor are not themed. A theme is a
+A theme decides how a workspace's reading pages look: its home page, each writer's page,
+each post, the latest feed and topic pages, and errors. Each workspace picks one theme from
+Margin's library; Margin's admins add themes to it. Studio and the editor are not themed. A theme is a
 handful of plain files, so it can be downloaded, read, changed and uploaded again, by hand
 or by an assistant.
 
@@ -10,9 +11,9 @@ or by an assistant.
 ```
 theme.json              id, name, version, settings and queries
 templates/layout.html   the page around everything (head, header, footer)
-templates/home.html     the landing page at /
-templates/blog.html     one blog: /@handle (or / when that blog is the home page)
-templates/list.html     the team feed (/latest) and topics (/tag/<topic>)
+templates/home.html     the workspace's home at /<workspace>
+templates/blog.html     one writer: /<workspace>/@handle (and /@handle across Margin)
+templates/list.html     the latest feed (/<workspace>/latest) and topics (/<workspace>/tag/<topic>)
 templates/post.html     one post
 templates/error.html    not found and other errors
 partials/<name>.html    pieces you reuse with {{> name}}
@@ -84,16 +85,17 @@ Load your stylesheet after `{{{margin.head}}}`:
 
 ### Data on every page
 
-- `site`: `name`, `initial`, `tagline`, `description`, `url`, `home_url`, `latest_url`,
-  `feed_url`, `locale`, `logo` (or empty), `home_is_blog`, `nav` (list of `label`, `url`),
-  `has_nav`
+- `site`: the workspace: `name`, `initial`, `tagline`, `description`, `url`, `home_url`,
+  `latest_url`, `feed_url`, `locale`, `logo` (or empty), `home_is_blog`, `slug`, `nav`
+  (list of `label`, `url`), `has_nav`
+- `platform`: Margin itself: `name`, `url` (its front page), `start_url` (start a workspace)
 - `theme`: `id`, `name`, `assets` (the URL your files are under), `settings`
 - `page`: `type` (`home`, `blog`, `list`, `post`, `error`), `title`, `description`,
   `url`, `canonical`
 - `year`
-- `latest`: the 12 newest posts on the site
-- `featured`: up to 6 posts an admin featured
-- `writers`: every blog with published posts: blog fields plus `posts` and `posts_label`
+- `latest`: the 12 newest posts in the workspace
+- `featured`: up to 6 posts pinned on its home, in their order
+- `writers`: everyone with published posts here: blog fields plus `posts` and `posts_label`
 - `tags`: up to 30 topics: `name`, `url`, `posts`
 - `q`: your queries for this template
 
@@ -101,7 +103,8 @@ Lists are computed only when a template reads them.
 
 ### Page data
 
-- **home.html**: `posts` (one page of every published post, newest first), `pagination`
+- **home.html**: `posts` (one page of every published post, newest first; on a curated
+  home, pinned posts first), `pagination`
 - **blog.html**: `blog` (with `posts`, its count), `posts`, `pagination`
 - **list.html**: `list` (`title`, `description`, `kind` = `latest` or `tag`, `tag`,
   `count`), `posts`, `pagination`
@@ -113,16 +116,18 @@ Lists are computed only when a template reads them.
 ### A post (in every list, and `post` on post pages)
 
 `id`, `url`, `slug`, `title`, `subtitle`, `description` (for cards and search),
-`excerpt` (the first real paragraph), `cover` (`url`, `alt`, `width`, `height`, or
-empty), `has_cover`, `date` ("October 16, 2026"), `date_short` ("Oct 16"), `date_iso`,
+`excerpt` (the first real paragraph), `cover` (`url`, `alt`, `width`, `height`, `drawn`:
+every post has one, a photo or a drawing in the workspace's style), `has_cover`, `date` ("October 16, 2026"), `date_short` ("Oct 16"), `date_iso`,
 `year`, `updated`, `updated_iso`, `reading_time` ("6 min read"), `minutes`, `words`,
 `tags` (each `name`, `url`, `first`), `has_tags`, `blog`, `claps`, `comments`,
-`claps_label` ("214 claps"), `comments_label` ("1 response"), `featured`. On post pages also `body` (print with `{{{post.body}}}`) and `is_updated`.
+`claps_label` ("214 claps"), `comments_label` ("1 response"), `featured`, `workspace`
+(`slug`, `name`, `url`, `logo`). On post pages also `body` (print with `{{{post.body}}}`) and `is_updated`.
 
 ### A blog
 
-`handle`, `name`, `bio`, `kind` (`person` or `persona`), `is_persona`, `url`,
-`feed_url`, `avatar` (always an image URL), `initials`, `color`.
+`handle`, `name`, `bio`, `is_workspace` (the workspace writing as itself), `url` (their page
+in this workspace), `profile_url` (their page across Margin), `feed_url`, `avatar` (always an
+image URL), `initials`, `color`. Personas and people look the same here on purpose.
 
 ### pagination
 
@@ -171,8 +176,9 @@ text column with negative margins; give the column room or clip the page horizon
 1. `themes.get` with `"id": "quiet"` (or `editorial`) returns every text file.
 2. Change the files. Give theme.json a new `id` and `name`.
 3. `themes.validate` with the files. Fix every error.
-4. `themes.save` with the files. Preview at `<site>/?theme=<id>` (admins only).
-5. `themes.activate` with the id, and optional `settings`.
+4. `themes.save` with the files (Margin's admins only). Preview at `<host>/<workspace>?theme=<id>`
+   (the workspace's owners and admins).
+5. `themes.activate` with the workspace, the id, and optional `settings`.
 
 A built-in theme's CSS comes back pointing at its own fonts (`/themes/quiet/inter-latin.woff2`),
 so a copy keeps them without uploading anything. To use other fonts or images, add them to

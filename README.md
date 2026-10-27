@@ -57,7 +57,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 | [`strata`](strata/) | [strata.zyt.app](https://strata.zyt.app) | A calm falling-block game: deterministic rules, games that resume after a reload, and a leaderboard that replays every game |
 | [`snake`](snake/) | [snake.zyt.app](https://snake.zyt.app) | A calm snake game on a wrapping field: smooth canvas drawing, swipe and keys, resume after a reload, a replayed leaderboard |
 | [`zend`](zend/) | [zend.zyt.app](https://zend.zyt.app) | Texts from your own Android phone: outbound HTTP to SMSGate, an encrypted vault, signed webhooks, realtime receipts, API keys, India's SMS rules |
-| [`margin`](margin/) | [blog.zyt.app](https://blog.zyt.app) | A team blog: server-rendered pages through swappable themes, quote comments, claps, a block editor, invites, personas, and MCP tools for Claude |
+| [`margin`](margin/) | [margin.zyt.app](https://margin.zyt.app) | A writing platform for teams: workspaces at their own address, personas, quote comments, claps, drawn covers that move, swappable themes, a block editor, and MCP tools for Claude |
 | [`kalendar`](kalendar/) | [kalendar.zyt.app](https://kalendar.zyt.app) | Booking without sign-up: a page at your own link, open times in every guest's zone, double-booking-proof transactions, public operations behind Holm's challenge, HTML emails with calendar links, an .ics feed |
 
 ## Layout of an app

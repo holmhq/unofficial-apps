@@ -346,3 +346,23 @@ mark.m-hl-draft { background: color-mix(in srgb, var(--m-accent) 24%, transparen
 @media (prefers-reduced-motion: reduce) {
   .m-menu, .m-panel, .m-pop, .m-toast, .m-dialog, .m-burst, .m-seltool, .m-msg, .m-scrim { animation: none !important; }
 }
+
+/* ---------- the name you comment as ---------- */
+.m-as { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 10px 0 3px; border: 0; border-radius: 15px; background: var(--m-soft); color: var(--m-ink); font: 600 13.5px/1 var(--m-font); cursor: pointer; max-width: 100%; }
+.m-as[hidden] { display: none; }
+.m-as img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex: none; }
+.m-as svg { width: 14px; height: 14px; flex: none; fill: none; stroke: var(--m-muted); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.m-as:hover { background: color-mix(in srgb, var(--m-ink) 10%, transparent); }
+.m-compose-as { padding: 0 2px 8px; }
+.m-compose-as:empty { display: none; }
+.m-as-menu { z-index: 2147483000; min-width: 260px; }
+.m-menu-label { padding: 8px 10px 4px; font: 600 12px/1.3 var(--m-font); color: var(--m-muted); }
+.m-as-item img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex: none; }
+.m-as-item > span { display: flex; flex-direction: column; min-width: 0; flex: 1; text-align: left; }
+.m-as-item[aria-checked="true"] > svg { color: var(--m-accent); stroke-width: 2.4; }
+.m-menu-note { margin: 6px 10px 6px; font: 400 12.5px/1.4 var(--m-font); color: var(--m-muted); }
+[data-m-held] { font-size: 13px; color: var(--m-muted); }
+
+/* ---------- drawn covers come alive ---------- */
+.m-drawing { overflow: hidden; }
+.m-drawing svg { display: block; width: 100%; height: 100%; }

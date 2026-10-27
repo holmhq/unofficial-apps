@@ -1,37 +1,41 @@
 {
-  "subtitle": "A blog for your team, with Claude on it",
+  "subtitle": "A place for your team to write, with Claude on it",
   "category": "Productivity",
   "featured": false,
-  "description": "A blog where a whole team writes, each at their own address: /@maya/designing-the-empty-week. Only the people you invite can post. Anyone can sign in to read, clap and comment. Shared personas such as @team let several people post under one name, and one blog can be the site's home page.\n\nReaders comment the way they would in a book's margin: select any passage, add a note, and it stays highlighted for everyone, with the conversation beside it. Or respond to the whole post at the end. Each blog chooses whether comments from outside the team, or every comment, wait for approval. Claps go up to fifty a person.\n\nThe editor is block-based like Notion: press / for headings, lists, to-dos, quotes, callouts, code and tables; drop in photos and short videos; paste a YouTube, Figma or CodePen link to embed it, or another post's address to show it as a card. Posts are Markdown underneath, rendered on the server, so every page reads without JavaScript and search engines see it all.\n\nConnect Claude and it can draft and publish posts as you, answer ordinary comments in your voice and leave anything sensitive for you, and even design a new theme. Themes are a few HTML templates and a stylesheet that you can download, change and upload; Margin checks them first. It comes with two: Quiet, clean and Apple-like, and Editorial, a serif page with notes in the margin.",
-  "whatsNew": "Margin is here: team blogs with invites, personas, quote comments, claps, a block editor, swappable themes, and tools for Claude.",
+  "description": "A writing platform for teams. Sign in, pick your name, and start a workspace for your team at its own address, such as /lumen. Invite the people who write with a single-use link. Each writer has a page there, like /lumen/@maya, and can keep personas: other names to write and comment under, which readers can't link back to them. One person can be in many workspaces.\n\nEvery post gets a cover even without a photo: an isometric line drawing in the workspace's style, on paper, in a flat colour or in bold blocks, that moves under your pointer. Point at a day and it lifts out of the calendar; move across a battery and the sun crosses the sky while it charges.\n\nReaders comment the way they would in a book's margin: select any passage, add a note, and it stays highlighted for everyone, with the conversation beside it. Or respond to the whole post. Anyone signed in comments on any workspace, under the name they pick, and each workspace decides whether comments from outside its team wait for approval. Claps go up to fifty a person.\n\nThe editor is block-based like Notion, posts are Markdown underneath, and every page is rendered on the server, so it reads without JavaScript and search engines see it all. Themes are a few HTML templates and a stylesheet; each workspace picks one. Connect Claude and it can draft and publish posts as you, answer ordinary comments in your voice and leave anything sensitive for you.",
+  "whatsNew": "Margin is now a place where any team writes: a front page, workspaces with their own address, team and home page, personas readers can't link back to you, comments from anyone on any workspace, and drawn covers that move under the pointer.",
   "screenshots": [
     {
+      "file": "landing.webp",
+      "alt": "Margin's front page on a phone: \"A quiet place for your team to write.\", Start writing and See an example, and the first sample workspace below"
+    },
+    {
+      "file": "workspace.webp",
+      "alt": "Lumen's home in the Editorial theme: the workspace's name and description, and its pinned post with a drawn calendar cover on paper"
+    },
+    {
       "file": "post.webp",
-      "alt": "A post on a phone in the Quiet theme: tags, a large headline, the byline and cover, and a floating bar with 214 claps and 5 comments"
+      "alt": "A Copperline post in the Quiet theme with its coral drawn cover: a solar array, a battery stack and a house wall, charging at 14:30"
+    },
+    {
+      "file": "comment-as.webp",
+      "alt": "Choosing the name to comment as: Bo's main name or the persona Night Owl, with the note that readers see only the name you pick"
     },
     {
       "file": "quote.webp",
       "alt": "Comments on a highlighted passage: Alex's note and the author's reply as chat bubbles under the quoted line"
     },
     {
+      "file": "start.webp",
+      "alt": "Starting out on a phone: \"What should we call you?\" with a name, a handle that's free, and Continue"
+    },
+    {
       "file": "editor.webp",
       "alt": "The editor on a phone with the slash menu open: Text, Heading, Subheading, lists, To-do, Quote and Callout"
     },
     {
-      "file": "home.webp",
-      "alt": "The sample team's landing page: the site name, its tagline and a featured post with a cover"
-    },
-    {
-      "file": "editorial.webp",
-      "alt": "A research post in the Editorial theme: serif text, section headings and a pulled quote"
-    },
-    {
-      "file": "inbox.webp",
-      "alt": "Studio's comment inbox with a reader's question waiting for approval, and Approve, Reject and Reply buttons"
-    },
-    {
       "file": "dark.webp",
-      "alt": "An engineering post in dark mode with a code sample and a table of conflict rules"
+      "alt": "Designing the empty week in dark mode, with its sparse drawn calendar"
     }
   ]
 }

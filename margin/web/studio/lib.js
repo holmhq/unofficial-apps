@@ -5,8 +5,14 @@ export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 export function h(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 
+// The workspace Studio is in; every request names it so the server knows where you are.
+let workspace = null;
+export function setWorkspace(slug) { workspace = slug || null; }
+export function currentWorkspace() { return workspace; }
+
 export async function api(path, options = {}) {
   const init = { method: options.method || 'GET', headers: { accept: 'application/json' }, credentials: 'same-origin' };
+  if (workspace && options.workspace !== false) init.headers['x-margin-workspace'] = workspace;
   if (options.form) init.body = options.form;
   else if (options.body !== undefined) { init.headers['content-type'] = 'application/json'; init.body = JSON.stringify(options.body); }
   let res;
@@ -51,6 +57,11 @@ export const icons = {
   plus: P('<path d="M5 12h14m-7-7v14"/>'),
   back: P('<path d="m15 18l-6-6l6-6"/>'),
   chev: P('<path d="m9 18l6-6l-6-6"/>'),
+  updown: P('<path d="m7 15l5 5l5-5M7 9l5-5l5 5"/>'),
+  user: P('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
+  home: P('<path d="M4 21V9l8-6l8 6v12h-5v-6H9v6z"/>'),
+  shield: P('<path d="M12 3L4 6v6c0 4.5 3.4 8.2 8 9c4.6-.8 8-4.5 8-9V6z"/>'),
+  drawing: P('<path d="M3 17l6-3.5l6 3.5l6-3.5M3 10.5L9 7l6 3.5L21 7M9 7v10.5m6-7v10"/>'),
   down: P('<path d="m6 9l6 6l6-6"/>'),
   close: P('<path d="M18 6L6 18M6 6l12 12"/>'),
   more: P('<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>'),

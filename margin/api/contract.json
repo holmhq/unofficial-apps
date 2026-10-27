@@ -1,188 +1,1474 @@
 {
   "operations": {
     "me.get": {
-      "handler": "opMe", "auth": "member", "risk": "read", "sensitive": true,
-      "summary": "Start here: who you are on this blog and which blogs you can write as",
-      "description": "Returns your role (admin, writer or reader), your own blog handle, every blog or persona you may write as (pass one as `as` to other tools), the site's name and address, and short guidance. Readers can comment; only invited writers post.",
-      "input": { "type": "object", "properties": {}, "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "handler": "opMe",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "Start here: who you are on Margin, your names, and your workspaces",
+      "description": "Returns your main name and personas (pass one as `as` to write or comment under it), every workspace you are on with your role there (pass its address as `workspace` to other tools), and short guidance. Readers cannot tell your personas are you; never mention which names belong together in posts or comments. Pass `workspace` to also get what you can do there.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
+    "identities.list": {
+      "handler": "opIdentitiesList",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "Your names: your main name and personas",
+      "description": "Lists the names you write and comment under, with each one's address and post count. Only you see that they belong together.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
+    "workspaces.create": {
+      "handler": "opWorkspacesCreate",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
+      "summary": "Start a new workspace for a team",
+      "description": "Creates a workspace at /<slug> with you as its owner, and returns it. Ask the person for the name first; the address defaults to the name.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "tagline": {
+            "type": "string",
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "posts.list": {
-      "handler": "opPostsList", "auth": "member", "risk": "read", "sensitive": true,
+      "handler": "opPostsList",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
       "summary": "List posts you can edit: drafts and published",
       "description": "Writers see posts on their own blog and personas they were given; admins see every post. Filter by status (draft, published, all) or by blog with `as`. Each post has an id for posts.get and posts.update, its public url, and counts of claps, comments and pending comments.",
-      "input": { "type": "object", "properties": { "status": { "type": "string", "enum": ["draft", "published", "all"] }, "as": { "type": "string", "maxLength": 31 }, "limit": { "type": "integer", "minimum": 1, "maximum": 100 } }, "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "all"
+            ]
+          },
+          "as": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "workspace"
+        ]
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "posts.get": {
-      "handler": "opPostsGet", "auth": "member", "risk": "read", "sensitive": true,
+      "handler": "opPostsGet",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
       "summary": "Read one post with its full Markdown",
       "description": "Pass the post's id, or its address (url) such as /@team/launch-notes. Published posts are readable by anyone signed in; drafts only by people who can edit them. Returns title, subtitle, tags, cover, status and the Markdown body.",
-      "input": { "type": "object", "properties": { "id": { "type": "string", "maxLength": 64 }, "url": { "type": "string", "maxLength": 300 } }, "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "posts.create": {
-      "handler": "opPostsCreate", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "handler": "opPostsCreate",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
       "summary": "Write a new post (draft by default) in Markdown",
-      "description": "Writers only. Body is Markdown (GitHub style): headings, lists, tables, code, links, images. Extras: a line `> [!NOTE]` (or TIP, IMPORTANT, WARNING, CAUTION) starts a callout; a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link alone on a line becomes an embed; a link to another post on this blog alone on a line becomes a card; `![alt](/media/<id> \"caption\")` is a figure, add #wide or #full to the address for width; .mp4 or uploaded videos play inline. Leave the H1 out: the title is shown above the body. The address is made from the title unless you pass slug. Use `as` to post as a persona you were given. Status draft keeps it private; published puts it live at once. Unless the person asked to publish, create a draft and give them the preview link.",
-      "input": { "type": "object", "properties": { "as": { "type": "string", "maxLength": 31 }, "title": { "type": "string", "minLength": 1, "maxLength": 160 }, "subtitle": { "type": "string", "maxLength": 280 }, "markdown": { "type": "string", "maxLength": 60000 }, "description": { "type": "string", "maxLength": 300 }, "tags": { "type": "array", "maxItems": 8, "items": { "type": "string", "maxLength": 30 } }, "slug": { "type": "string", "maxLength": 100 }, "cover": { "type": "string", "maxLength": 500 }, "cover_alt": { "type": "string", "maxLength": 200 }, "status": { "type": "string", "enum": ["draft", "published"] }, "featured": { "type": "boolean" }, "published_at": { "type": "string", "maxLength": 40 } }, "required": ["title"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "description": "Writers only. Body is Markdown (GitHub style): headings, lists, tables, code, links, images. Extras: a line `> [!NOTE]` (or TIP, IMPORTANT, WARNING, CAUTION) starts a callout; a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link alone on a line becomes an embed; a link to another post on Margin alone on a line becomes a card; `![alt](/media/<id> \"caption\")` is a figure, add #wide or #full to the address for width; .mp4 or uploaded videos play inline. Leave the H1 out: the title is shown above the body. The address is made from the title unless you pass slug. Use `as` to post under one of your names, or as the workspace itself (its address) if you own or run it. Without a photo `cover`, the post gets a drawn cover in the workspace's style; `drawing` picks its subject. Status draft keeps it private; published puts it live at once. Unless the person asked to publish, create a draft and give them the preview link. Drawn covers: week (calendars, time), energy (power, hardware), people (research), network (sync, devices), stack (layers, documents, process), inbox (messages, support), bars (numbers, speed), rings (sound, quiet, focus). Pass `workspace` (its address, from me_get). `featured` pins it on the workspace home (owners and admins).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "as": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "subtitle": {
+            "type": "string",
+            "maxLength": 280
+          },
+          "markdown": {
+            "type": "string",
+            "maxLength": 60000
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "tags": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "string",
+              "maxLength": 30
+            }
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "cover": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "cover_alt": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published"
+            ]
+          },
+          "featured": {
+            "type": "boolean"
+          },
+          "published_at": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "drawing": {
+            "type": "string",
+            "enum": [
+              "week",
+              "energy",
+              "people",
+              "network",
+              "stack",
+              "inbox",
+              "bars",
+              "rings"
+            ]
+          }
+        },
+        "required": [
+          "workspace",
+          "title"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "posts.update": {
-      "handler": "opPostsUpdate", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "handler": "opPostsUpdate",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
       "summary": "Edit, publish or unpublish a post",
-      "description": "Pass the post id and only the fields to change; the rest stay. markdown replaces the whole body, so read the post first with posts.get and send back the edited text. status published puts it live (drafts) and draft takes it down. A draft's address follows its title until first published; after that it changes only when you pass slug, and the old address redirects. `as` moves the post to another blog you can write as.",
-      "input": { "type": "object", "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 64 }, "as": { "type": "string", "maxLength": 31 }, "title": { "type": "string", "minLength": 1, "maxLength": 160 }, "subtitle": { "type": "string", "maxLength": 280 }, "markdown": { "type": "string", "maxLength": 60000 }, "description": { "type": "string", "maxLength": 300 }, "tags": { "type": "array", "maxItems": 8, "items": { "type": "string", "maxLength": 30 } }, "slug": { "type": "string", "maxLength": 100 }, "cover": { "type": "string", "maxLength": 500 }, "cover_alt": { "type": "string", "maxLength": 200 }, "status": { "type": "string", "enum": ["draft", "published"] }, "featured": { "type": "boolean" }, "published_at": { "type": "string", "maxLength": 40 } }, "required": ["id"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "description": "Pass the post id and only the fields to change; the rest stay. markdown replaces the whole body, so read the post first with posts.get and send back the edited text. status published puts it live (drafts) and draft takes it down. A draft's address follows its title until first published; after that it changes only when you pass slug, and the old address redirects. `as` moves the post to another blog you can write as. `drawing` changes the drawn cover (week, energy, people, network, stack, inbox, bars, rings, or none for a random one).",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "as": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "subtitle": {
+            "type": "string",
+            "maxLength": 280
+          },
+          "markdown": {
+            "type": "string",
+            "maxLength": 60000
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "tags": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "string",
+              "maxLength": 30
+            }
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "cover": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "cover_alt": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published"
+            ]
+          },
+          "featured": {
+            "type": "boolean"
+          },
+          "published_at": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "drawing": {
+            "type": "string",
+            "enum": [
+              "week",
+              "energy",
+              "people",
+              "network",
+              "stack",
+              "inbox",
+              "bars",
+              "rings",
+              "none"
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "posts.delete": {
-      "handler": "opPostsDelete", "auth": "member", "risk": "destructive", "sensitive": true,
+      "handler": "opPostsDelete",
+      "auth": "member",
+      "risk": "destructive",
+      "sensitive": true,
       "summary": "Delete a post with its comments and claps",
       "description": "Permanent. Only for someone who can edit the post. Confirm with the person before calling; to take a post down without losing it, use posts.update with status draft.",
-      "input": { "type": "object", "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 64 } }, "required": ["id"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "comments.inbox": {
-      "handler": "opInbox", "auth": "member", "risk": "read", "sensitive": true,
+      "handler": "opInbox",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
       "summary": "Comments on your posts that need you: waiting for approval, or not answered",
-      "description": "Writers and admins. pending: comments held for approval. unanswered: threads whose latest message is not from the post's blog. Each item has the comment, the quoted passage it is about (if any), the comment it replies to, and the post. To help the writer: reply with comments.reply only to ordinary comments that a friendly, short answer settles (thanks, simple questions the post answers, clarifications). Do not reply, and ask the writer instead, when a comment is a complaint, criticism that needs judgment, legal, medical, financial or security matters, personal data, pricing or promises, anything heated or political, or anything you are unsure about. Approve or reject pending comments only when the writer asked you to.",
-      "input": { "type": "object", "properties": { "status": { "type": "string", "enum": ["all", "pending", "unanswered", "recent"] }, "limit": { "type": "integer", "minimum": 1, "maximum": 100 } }, "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "description": "Writers and admins. pending: comments held for approval. unanswered: threads whose latest message is not from the post's blog. Each item has the comment, the quoted passage it is about (if any), the comment it replies to, and the post. To help the writer: reply with comments.reply only to ordinary comments that a friendly, short answer settles (thanks, simple questions the post answers, clarifications). Do not reply, and ask the writer instead, when a comment is a complaint, criticism that needs judgment, legal, medical, financial or security matters, personal data, pricing or promises, anything heated or political, or anything you are unsure about. Approve or reject pending comments only when the writer asked you to. Covers one workspace; pass `workspace`.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "all",
+              "pending",
+              "unanswered",
+              "recent"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "workspace"
+        ]
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "comments.list": {
-      "handler": "opCommentsList", "auth": "member", "risk": "read", "sensitive": true,
+      "handler": "opCommentsList",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
       "summary": "Read every comment on a post, with quotes and replies",
       "description": "Pass post_id. Returns the comments you may see, oldest first: each has its quoted passage (for notes on a highlight), its parent_id when it is a reply, its author and its status.",
-      "input": { "type": "object", "properties": { "post_id": { "type": "string", "minLength": 1, "maxLength": 64 } }, "required": ["post_id"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "post_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "post_id"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "comments.reply": {
-      "handler": "opCommentsReply", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "handler": "opCommentsReply",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
       "summary": "Reply to a comment, as the post's blog by default",
       "description": "Plain text, a few sentences, in the writer's voice; links are fine. Writers who edit the post answer as its blog unless `as` names another. Only reply to ordinary comments a short answer settles; for anything sensitive, critical, legal, personal, about money or promises, or that you are unsure of, ask the writer first and do not reply.",
-      "input": { "type": "object", "properties": { "comment_id": { "type": "string", "minLength": 1, "maxLength": 64 }, "body": { "type": "string", "minLength": 1, "maxLength": 4000 }, "as": { "type": "string", "maxLength": 31 } }, "required": ["comment_id", "body"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true }, "APP_RATE_LIMITED": { "status": 429, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "comment_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "as": {
+            "type": "string",
+            "maxLength": 31
+          }
+        },
+        "required": [
+          "comment_id",
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
     },
     "comments.create": {
-      "handler": "opCommentsCreate", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "handler": "opCommentsCreate",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
       "summary": "Comment on a post, optionally on a quoted passage or as a persona",
-      "description": "post_id and body are required. quote.exact anchors the comment to a passage of the post (copy it exactly, 600 characters at most; prefix and suffix are the few words around it when the passage repeats). parent_id makes it a reply. Writers may comment as a persona with `as`. sample true marks a comment as sample content, shown only to the team: use it to fill a post with example discussion for screenshots or design reviews. Never post invented comments as if they were real readers on a live blog.",
-      "input": { "type": "object", "properties": { "post_id": { "type": "string", "minLength": 1, "maxLength": 64 }, "body": { "type": "string", "minLength": 1, "maxLength": 4000 }, "quote": { "type": "object", "properties": { "exact": { "type": "string", "maxLength": 600 }, "prefix": { "type": "string", "maxLength": 120 }, "suffix": { "type": "string", "maxLength": 120 } }, "required": ["exact"], "additionalProperties": false }, "parent_id": { "type": "string", "maxLength": 64 }, "as": { "type": "string", "maxLength": 31 }, "sample": { "type": "boolean" } }, "required": ["post_id", "body"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true }, "APP_RATE_LIMITED": { "status": 429, "public": true } }
+      "description": "post_id and body are required. quote.exact anchors the comment to a passage of the post (copy it exactly, 600 characters at most; prefix and suffix are the few words around it when the passage repeats). parent_id makes it a reply. Writers may comment under one of your names with `as`. sample true marks a comment as sample content, shown only to the team: use it to fill a post with example discussion for screenshots or design reviews. Never post invented comments as if they were real readers on a live blog.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "post_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "quote": {
+            "type": "object",
+            "properties": {
+              "exact": {
+                "type": "string",
+                "maxLength": 600
+              },
+              "prefix": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "suffix": {
+                "type": "string",
+                "maxLength": 120
+              }
+            },
+            "required": [
+              "exact"
+            ],
+            "additionalProperties": false
+          },
+          "parent_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "as": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "sample": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "post_id",
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
     },
     "comments.moderate": {
-      "handler": "opCommentsModerate", "auth": "member", "risk": "destructive", "sensitive": true,
+      "handler": "opCommentsModerate",
+      "auth": "member",
+      "risk": "destructive",
+      "sensitive": true,
       "summary": "Approve, reject or delete a comment",
       "description": "For the post's writers and admins (anyone may delete their own comment). approve shows a held comment; reject hides it; delete removes it and its replies. Only act when the writer asked you to.",
-      "input": { "type": "object", "properties": { "comment_id": { "type": "string", "minLength": 1, "maxLength": 64 }, "action": { "type": "string", "enum": ["approve", "reject", "delete"] } }, "required": ["comment_id", "action"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
-    },
-    "blogs.list": {
-      "handler": "opBlogsList", "auth": "member", "risk": "read", "sensitive": true,
-      "summary": "List the team's blogs and personas",
-      "description": "Every blog with its handle, name, bio, kind (person or persona), address and post count, and whether you can write as it.",
-      "input": { "type": "object", "properties": {}, "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "comment_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject",
+              "delete"
+            ]
+          }
+        },
+        "required": [
+          "comment_id",
+          "action"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "personas.create": {
-      "handler": "opPersonasCreate", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "handler": "opPersonasCreate",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
       "summary": "Create a persona: a shared identity people can post and comment as",
-      "description": "Admins only. A persona has a handle (its address, /@handle), a name and a short bio, like @team or @engineering. writers lists member ids allowed to use it (admins always can). Personas can also play sample commenters for screenshots: comment as them with sample true.",
-      "input": { "type": "object", "properties": { "handle": { "type": "string", "minLength": 2, "maxLength": 31 }, "name": { "type": "string", "minLength": 1, "maxLength": 60 }, "bio": { "type": "string", "maxLength": 280 }, "writers": { "type": "array", "maxItems": 200, "items": { "type": "string", "maxLength": 64 } } }, "required": ["handle", "name"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "description": "Adds a persona: another name you can write and comment under, with its own handle, bio and picture. Readers can't tell it is you.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 31
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 280
+          },
+          "avatar": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "handle",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "personas.update": {
-      "handler": "opPersonasUpdate", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
-      "summary": "Change a blog or persona: name, bio, comment approval, writers",
-      "description": "handle picks the blog. moderation is off, outsiders (hold comments from people not on the team), all (hold every comment) or site (follow the site's default). writers (admins only) replaces who may use a persona.",
-      "input": { "type": "object", "properties": { "handle": { "type": "string", "minLength": 2, "maxLength": 31 }, "name": { "type": "string", "minLength": 1, "maxLength": 60 }, "bio": { "type": "string", "maxLength": 280 }, "moderation": { "type": "string", "enum": ["off", "outsiders", "all", "site"] }, "writers": { "type": "array", "maxItems": 200, "items": { "type": "string", "maxLength": 64 } } }, "required": ["handle"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "handler": "opPersonasUpdate",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
+      "summary": "Change one of your names (name, bio, picture)",
+      "description": "Updates your main name or a persona of yours. Workspace owners can also rename the workspace's own voice by its address. An empty avatar removes the picture.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 31
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 280
+          },
+          "avatar": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "media.list": {
-      "handler": "opMediaList", "auth": "member", "risk": "read", "sensitive": true,
+      "handler": "opMediaList",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
       "summary": "List uploaded photos and videos to use in posts",
       "description": "Writers only: your uploads (admins see everyone's), newest first, with the /media/<id> address to put in Markdown and the pixel size. Upload new files in Studio.",
-      "input": { "type": "object", "properties": { "limit": { "type": "integer", "minimum": 1, "maximum": 100 } }, "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
-    "site.update": {
-      "handler": "opSiteUpdate", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
-      "summary": "Change the site's name, tagline, description, home page or default comment approval",
-      "description": "Admins only. home is \"landing\" (the theme's landing page) or a blog such as \"@team\" whose posts then live at /<slug>. moderation is the default for blogs that don't choose: off, outsiders or all. nav is up to 8 { label, url } links for the theme's menu.",
-      "input": { "type": "object", "properties": { "name": { "type": "string", "maxLength": 60 }, "tagline": { "type": "string", "maxLength": 120 }, "description": { "type": "string", "maxLength": 300 }, "home": { "type": "string", "maxLength": 32 }, "moderation": { "type": "string", "enum": ["off", "outsiders", "all"] }, "nav": { "type": "array", "maxItems": 8, "items": { "type": "object", "properties": { "label": { "type": "string", "maxLength": 30 }, "url": { "type": "string", "maxLength": 300 } }, "required": ["label", "url"], "additionalProperties": false } } }, "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+    "workspace.update": {
+      "handler": "opWorkspaceUpdate",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
+      "summary": "Change a workspace's settings (owners and admins)",
+      "description": "Updates the workspace: name, tagline, description, home (\"latest\", \"curated\" for pinned posts first, or \"@handle\" to make one writer's page the home), moderation (\"off\", \"outsiders\": hold comments from names not on the team, \"all\"), cover style (look paper|flat|blocks, tone lilac|tangerine|mint|butter|sky|coral) and menu links.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "tagline": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "home": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "moderation": {
+            "type": "string",
+            "enum": [
+              "off",
+              "outsiders",
+              "all"
+            ]
+          },
+          "cover": {
+            "type": "object",
+            "properties": {
+              "look": {
+                "type": "string",
+                "enum": [
+                  "paper",
+                  "flat",
+                  "blocks"
+                ]
+              },
+              "tone": {
+                "type": "string",
+                "enum": [
+                  "lilac",
+                  "tangerine",
+                  "mint",
+                  "butter",
+                  "sky",
+                  "coral"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "nav": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 30
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 300
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "workspace"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "themes.list": {
-      "handler": "opThemesList", "auth": "member", "risk": "read", "sensitive": true,
+      "handler": "opThemesList",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
       "summary": "List themes and which one is live",
       "description": "Admins only. Built-in themes (quiet, editorial) and any saved ones, with the active id and each theme's comment layout.",
-      "input": { "type": "object", "properties": {}, "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "workspace"
+        ]
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "themes.reference": {
-      "handler": "opThemesReference", "auth": "member", "risk": "read", "sensitive": true,
+      "handler": "opThemesReference",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
       "summary": "How themes work: files, template data, hooks and rules",
       "description": "Read this before changing a theme. It lists every file a theme has, the data each page template receives, the hooks a theme must print, how settings and queries work, and what the validator refuses.",
-      "input": { "type": "object", "properties": {}, "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "themes.get": {
-      "handler": "opThemesGet", "auth": "member", "risk": "read", "sensitive": true,
+      "handler": "opThemesGet",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
       "summary": "Download every file of a theme to study or change",
       "description": "Admins only. Returns files as path → text (theme.json, templates, partials, CSS) and lists binary assets (fonts, images) with addresses. To make a new design: get a theme, change the files, give it a new id in theme.json, check it with themes.validate, save with themes.save, then preview at <site>?theme=<id> before themes.activate.",
-      "input": { "type": "object", "properties": { "id": { "type": "string", "minLength": 2, "maxLength": 32 } }, "required": ["id"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 32
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "themes.validate": {
-      "handler": "opThemesValidate", "auth": "member", "risk": "read", "sensitive": true,
+      "handler": "opThemesValidate",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
       "summary": "Check a theme without saving it",
       "description": "Send files as path → text; fonts and images as path → { base64 }. Returns ok, errors (each with file, line and message) and warnings. Fix every error before themes.save.",
-      "input": { "type": "object", "properties": { "files": { "type": "object" } }, "required": ["files"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "themes.save": {
-      "handler": "opThemesSave", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "handler": "opThemesSave",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
       "summary": "Save a theme (validated), optionally making it live",
-      "description": "Admins only. Same files as themes.validate. A theme with errors is not saved: the result lists them. Saving under an existing saved id replaces it. activate true makes it live at once; otherwise preview with ?theme=<id> first and call themes.activate.",
-      "input": { "type": "object", "properties": { "files": { "type": "object" }, "activate": { "type": "boolean" } }, "required": ["files"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true }, "APP_INVALID": { "status": 422, "public": true } }
+      "description": "Admins only. Same files as themes.validate. A theme with errors is not saved: the result lists them. Saving under an existing saved id replaces it. activate true makes it live at once; otherwise preview with ?theme=<id> first and call themes.activate. Only Margin's admins add themes; a workspace then picks one with themes_activate.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_INVALID": {
+          "status": 422,
+          "public": true
+        }
+      }
     },
     "themes.activate": {
-      "handler": "opThemesActivate", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "handler": "opThemesActivate",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
       "summary": "Make a theme live, and optionally change its settings",
       "description": "Admins only. id is a theme from themes.list. settings sets that theme's options (as declared in its theme.json, such as accent colour or landing text); omitted ones keep their values.",
-      "input": { "type": "object", "properties": { "id": { "type": "string", "minLength": 2, "maxLength": 32 }, "settings": { "type": "object" } }, "required": ["id"], "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 32
+          },
+          "settings": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "workspace",
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     },
     "invites.create": {
-      "handler": "opInvitesCreate", "auth": "member", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "handler": "opInvitesCreate",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
       "summary": "Invite someone to write on this blog",
-      "description": "Admins only. Returns a single-use link that lasts 14 days. With email, the link only works for someone signed in with that address, and an email is sent when the server can send mail. role writer (default) or admin. personas lists persona handles they may also write as.",
-      "input": { "type": "object", "properties": { "email": { "type": "string", "maxLength": 200 }, "role": { "type": "string", "enum": ["writer", "admin"] }, "personas": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 31 } }, "note": { "type": "string", "maxLength": 200 } }, "additionalProperties": false },
-      "output": { "type": "object" },
-      "errors": { "APP_UNAUTHORIZED": { "status": 401, "public": true }, "APP_FORBIDDEN": { "status": 403, "public": true }, "APP_NOT_FOUND": { "status": 404, "public": true }, "APP_INVALID_INPUT": { "status": 400, "public": true }, "APP_CONFLICT": { "status": 409, "public": true } }
+      "description": "Creates a single-use invite link to write in the workspace (owners and admins). With an email, only that address can use it, and Margin emails it when the node can send mail.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "writer",
+              "admin"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "workspace"
+        ]
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
     }
   }
 }

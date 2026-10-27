@@ -143,3 +143,14 @@
   .ed-handle { display: none; }
   .ed-cover-tools { opacity: 1; }
 }
+
+/* Drawn covers in the editor. */
+.ed-drawn { aspect-ratio: 16 / 9; }
+.ed-drawing { position: absolute; inset: 0; }
+.ed-drawing svg { display: block; width: 100%; height: 100%; }
+.ed-motifs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ed-motif { display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0; background: transparent; color: var(--ink); font: 500 14px/1.3 var(--font); text-align: left; cursor: pointer; }
+.ed-motif-art { display: block; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.ed-motif-art svg { display: block; width: 100%; height: 100%; }
+.ed-motif.on .ed-motif-art { box-shadow: 0 0 0 2px var(--accent); }
+@media (min-width: 640px) { .ed-motifs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

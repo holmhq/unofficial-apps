@@ -2,7 +2,7 @@
   <img class="e-avatar e-profile-avatar" src="{{blog.avatar}}" alt="" width="80" height="80">
   <div class="e-profile-text">
     <h1 class="e-profile-name">{{blog.name}}</h1>
-    <p class="e-meta">@{{blog.handle}}{{#blog.is_persona}} · Team blog{{/blog.is_persona}} · <a href="{{blog.feed_url}}">RSS</a></p>
+    <p class="e-meta">@{{blog.handle}}{{#blog.is_workspace}} · The team{{/blog.is_workspace}} · <a href="{{blog.feed_url}}">RSS</a></p>
     {{#blog.bio}}<p class="e-profile-bio">{{blog.bio}}</p>{{/blog.bio}}
   </div>
 </section>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Margin covers</title>
+<style>
+  :root { color-scheme: light dark; --bg: #ffffff; --ink: #0b0b0f; --muted: #6e6e73; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #000000; --ink: #f5f5f7; --muted: #98989d; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; }
+  main { max-width: 1320px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  p.lead { margin: 0 0 32px; color: var(--muted); }
+  h2 { font-size: 15px; margin: 34px 0 12px; font-weight: 600; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+  figure { margin: 0; }
+  .cover { aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; cursor: crosshair; touch-action: pan-y; }
+  .cover svg { width: 100%; height: 100%; display: block; }
+  figcaption { margin-top: 6px; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Drawn covers</h1>
+  <p class="lead">Every motif in each look. Move the pointer over a cover. Serve the margin folder (for example <code>python3 -m http.server</code> in it) and open /tools/covers-preview.html; module imports don't load from file://.</p>
+  <div id="sheet"></div>
+</main>
+<script type="module">
+import { MOTIFS, LOOKS, TONES, initial, pointer, step, render } from '../api/covers.js';
+
+// Copy the new render onto the old one in place, so running SVG animations keep going.
+// render() keeps the same elements for every state of a cover, so the trees line up.
+function patch(svg, markup) {
+  const next = new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement;
+  const walk = (a, b) => {
+    if (a.nodeType === 3) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return true; }
+    if (a.nodeName !== b.nodeName || a.childNodes.length !== b.childNodes.length) return false;
+    if (/^animate/.test(a.nodeName)) return true;
+    for (const attr of [...b.attributes]) if (a.getAttribute(attr.name) !== attr.value) a.setAttribute(attr.name, attr.value);
+    for (const attr of [...a.attributes]) if (!b.hasAttribute(attr.name)) a.removeAttribute(attr.name);
+    for (let i = 0; i < a.childNodes.length; i++) if (!walk(a.childNodes[i], b.childNodes[i])) return false;
+    return true;
+  };
+  if (!walk(svg, next)) svg.replaceWith(document.importNode(next, true));
+}
+
+// The loop reader.js uses: the pointer sets a target; each frame eases the state toward it
+// and renders. Positions always come from the state, never from CSS transitions.
+function mount(el, spec) {
+  let state = initial(spec);
+  let target = state;
+  let frame = 0;
+  el.innerHTML = render(spec, state);
+  const tick = () => {
+    const r = step(spec, state, target);
+    state = r.state;
+    patch(el.firstElementChild, render(spec, state));
+    frame = r.done ? 0 : requestAnimationFrame(tick);
+  };
+  el.addEventListener('pointermove', (e) => {
+    const box = el.getBoundingClientRect();
+    target = pointer(spec, state, (e.clientX - box.left) / box.width, (e.clientY - box.top) / box.height);
+    if (!frame) frame = requestAnimationFrame(tick);
+  });
+}
+
+const sheet = document.getElementById('sheet');
+const tones = Object.keys(TONES);
+MOTIFS.forEach((motif, i) => {
+  sheet.insertAdjacentHTML('beforeend', `<h2>${motif}</h2><div class="row" data-row="${motif}"></div>`);
+  const row = sheet.querySelector(`[data-row="${motif}"]`);
+  for (const look of LOOKS) {
+    const spec = { motif, look, tone: tones[i % tones.length], seed: 7 + i };
+    row.insertAdjacentHTML('beforeend', `<figure><div class="cover"></div><figcaption>${look}${look === 'paper' ? '' : ' · ' + spec.tone}</figcaption></figure>`);
+    mount(row.lastElementChild.querySelector('.cover'), spec);
+  }
+});
+sheet.insertAdjacentHTML('beforeend', '<h2>flat, every tone</h2><div class="row" data-row="tones"></div>');
+const row = sheet.querySelector('[data-row="tones"]');
+tones.forEach((tone, i) => {
+  const spec = { motif: MOTIFS[i % MOTIFS.length], look: 'flat', tone, seed: 3 + i };
+  row.insertAdjacentHTML('beforeend', `<figure><div class="cover"></div><figcaption>${tone} · ${spec.motif}</figcaption></figure>`);
+  mount(row.lastElementChild.querySelector('.cover'), spec);
+});
+</script>
+</body>
+</html>

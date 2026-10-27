@@ -1,27 +1,43 @@
-// Sample content: Lumen, a made-up team making a calm calendar app. Everyone here is
-// fictional. Covers and avatars are abstract images in web/samples/.
+// Sample content: two made-up teams, each in its own workspace, so a new Margin has
+// something to show on its landing page. Lumen makes a calm calendar; Copperline builds a
+// quiet home battery. Everyone here is fictional. Avatars and logos are in web/samples/.
 
-export const SITE = {
-  name: 'Lumen',
-  tagline: 'Notes from the people building Lumen',
-  description: 'Lumen is a small team making a calm calendar. This is where we write about design, engineering and how we work. (Sample content: the team and posts are made up.)',
-};
+export const WORKSPACES = [
+  {
+    slug: 'lumen', name: 'Lumen', logo: 'logo-lumen.png', theme: 'editorial', home: 'curated', moderation: 'outsiders',
+    cover: { look: 'paper', tone: 'lilac' },
+    tagline: 'A small team making a calm calendar',
+    description: 'Lumen is a small team making a calm calendar. This is where we write about design, engineering and how we work. (Sample content: the team and posts are made up.)',
+    team: ['maya', 'theo', 'ines', 'noah'], owner: 'maya',
+  },
+  {
+    slug: 'copperline', name: 'Copperline', logo: 'logo-copperline.png', theme: 'quiet', home: 'latest', moderation: 'outsiders',
+    cover: { look: 'flat', tone: 'coral' },
+    tagline: 'A small team building a quiet home battery',
+    description: 'Copperline makes a home battery you can forget about. Field notes, hardware and the odd mistake. (Sample content: the team and posts are made up.)',
+    team: ['elena', 'jonah', 'kofi'], owner: 'elena',
+  },
+];
 
+// Readers (no workspace) comment from outside. avatar: web/samples/avatar-<n>.jpg.
 export const PEOPLE = [
-  { handle: 'lumen', name: 'Lumen', bio: 'News and notes from the team behind Lumen, a calm calendar.', avatar: 1 },
-  { handle: 'maya', name: 'Maya Chen', bio: 'Design lead. Thinks in weeks, not days.', avatar: 2 },
-  { handle: 'theo', name: 'Theo Brandt', bio: 'Engineer. Sync, storage and the parts nobody should notice.', avatar: 3 },
-  { handle: 'ines', name: 'Inés Duarte', bio: 'Research. Asks people how they really plan.', avatar: 4 },
-  { handle: 'noah', name: 'Noah Park', bio: 'Support. Reads every message we get.', avatar: 5 },
-  { handle: 'rio', name: 'Rio Tanaka', bio: 'Uses Lumen to plan a small bakery.', avatar: 6 },
+  { handle: 'maya', name: 'Maya Chen', bio: 'Design lead at Lumen. Thinks in weeks, not days.', avatar: 2 },
+  { handle: 'theo', name: 'Theo Brandt', bio: 'Engineer at Lumen. Sync, storage and the parts nobody should notice.', avatar: 3 },
+  { handle: 'ines', name: 'Inés Duarte', bio: 'Research at Lumen. Asks people how they really plan.', avatar: 4 },
+  { handle: 'noah', name: 'Noah Park', bio: 'Support at Lumen. Reads every message we get.', avatar: 5 },
+  { handle: 'elena', name: 'Elena Voss', bio: 'Field engineering at Copperline. Has seen a lot of garages.', avatar: 9 },
+  { handle: 'jonah', name: 'Jonah Reyes', bio: 'Industrial design at Copperline. Fewer parts, fewer lights.', avatar: 10 },
+  { handle: 'kofi', name: 'Kofi Mensah', bio: 'Acoustics and thermal at Copperline. Measures silence for a living.', avatar: 11 },
+  { handle: 'rio', name: 'Rio Tanaka', bio: 'Plans a small bakery around early mornings.', avatar: 6 },
   { handle: 'alex', name: 'Alex Rivera', bio: 'Product designer, early Lumen user.', avatar: 7 },
   { handle: 'june', name: 'June Hale', bio: 'Engineer at a design studio.', avatar: 8 },
 ];
 
-// days: how long ago it was published. cover: web/samples/cover-<n>.jpg.
+// days: how long ago it was published. drawing: the drawn cover (api/covers.js); its look
+// and tone come from the workspace.
 export const POSTS = [
   {
-    key: 'launch', as: 'lumen', days: 2, cover: 1, featured: true, claps: 214,
+    key: 'launch', ws: 'lumen', as: 'lumen', days: 2, drawing: { motif: 'week', seed: 1203 }, featured: true, claps: 214,
     title: 'Introducing Lumen 2: a calendar that leaves room',
     subtitle: 'Fewer boxes, more breathing space, and a week view that finally fits a phone.',
     tags: ['product', 'design'],
@@ -50,7 +66,7 @@ So we started from the empty week and worked backwards. Maya has the story of ho
 Lumen 2 is rolling out today on every platform. Your existing calendars, colors and reminders come across as they are. Tell us what you think: reply here, or write to Noah, who reads every message.`,
   },
   {
-    key: 'empty', as: 'maya', days: 4, cover: 8, claps: 132,
+    key: 'empty', ws: 'lumen', as: 'maya', days: 4, drawing: { motif: 'week', seed: 1204 }, claps: 132,
     title: 'Designing the empty week',
     subtitle: 'We threw away three designs before we learned to draw nothing.',
     tags: ['design'],
@@ -78,7 +94,7 @@ So we tightened the frame instead of filling the picture. Day headers got quiete
 The result is the screen we're proudest of, and the one we hope you never think about.`,
   },
   {
-    key: 'research', as: 'ines', days: 9, cover: 4, claps: 176,
+    key: 'research', ws: 'lumen', as: 'ines', days: 9, drawing: { motif: 'people', seed: 2210 }, claps: 176,
     title: 'What 40 people told us about their weeks',
     subtitle: 'Six weeks of interviews, and the one finding that changed Lumen 2.',
     tags: ['research', 'product'],
@@ -113,7 +129,7 @@ That last one stopped us. If people need to lie to their calendar to protect the
 Thank you to everyone who let us into their week. We learned more from your Tuesdays than from any survey.`,
   },
   {
-    key: 'offline', as: 'theo', days: 6, cover: 3, claps: 98,
+    key: 'offline', ws: 'lumen', as: 'theo', days: 6, drawing: { motif: 'network', seed: 3317 }, claps: 98,
     title: 'Offline first, for real this time',
     subtitle: 'How Lumen 2 keeps working on a plane and never loses a change.',
     tags: ['engineering'],
@@ -152,7 +168,7 @@ Two people moving the same meeting while both on a train is rarer than it sounds
 The sync engine is about 1,400 lines, less than the code it replaced. Most of the work was in the tests: we replay a few thousand random histories on every build and check that every device ends up in the same place. It's the most boring part of Lumen 2, which is exactly what we wanted.`,
   },
   {
-    key: 'reviews', as: 'maya', days: 13, cover: 2, claps: 87,
+    key: 'reviews', ws: 'lumen', as: 'maya', days: 13, drawing: { motif: 'stack', seed: 4421 }, claps: 87,
     title: 'How we run design reviews',
     subtitle: 'Short, written, and always ending in a decision.',
     tags: ['design', 'process'],
@@ -176,7 +192,7 @@ Reviews take about a day less from brief to decision. Quieter people comment mor
 The one thing we miss is the Friday energy, so we kept a monthly show-and-tell with no decisions allowed. That one stays a meeting.`,
   },
   {
-    key: 'support', as: 'noah', days: 18, cover: 5, claps: 64,
+    key: 'support', ws: 'lumen', as: 'noah', days: 18, drawing: { motif: 'inbox', seed: 5533 }, claps: 64,
     title: 'The support inbox is a product',
     subtitle: 'What a year of answering every message taught a small team.',
     tags: ['support', 'process'],
@@ -201,7 +217,7 @@ Every conversation gets one tag, never more: **bug**, **confusing**, **wish**, o
 If you've ever written to us: thank you. You've designed more of this app than you know.`,
   },
   {
-    key: 'builds', as: 'theo', days: 24, cover: 6, claps: 71,
+    key: 'builds', ws: 'lumen', as: 'theo', days: 24, drawing: { motif: 'bars', seed: 6649 }, claps: 71,
     title: 'Keeping our builds under a minute',
     subtitle: 'Small habits that kept a growing app fast to work on.',
     tags: ['engineering', 'process'],
@@ -233,6 +249,104 @@ npm run bundle
 
 It's now 57 seconds on a cold machine. The real win isn't the minute, though: it's that nobody batches changes anymore.`,
   },
+  {
+    key: 'winter', ws: 'copperline', as: 'copperline', days: 3, drawing: { motif: 'energy', seed: 7434 }, featured: true, claps: 156,
+    title: 'Notes from our first winter',
+    subtitle: 'What the cold did to charging, and what we changed in the spring update.',
+    tags: ['field', 'product'],
+    markdown: `Our first batteries went into homes in late autumn, which meant their first real test was a winter. We had modelled it. We had a cold room at the lab. Neither prepared us for a garage at minus eight with the door left open overnight.
+
+## What happened
+
+Lithium cells don't like to charge when they're cold. Below freezing, our firmware slowed charging right down to protect them, exactly as designed. The trouble was the timing: the sun is weakest in winter, and the few good hours of it arrived while the garage was still at its coldest. Batteries sat half empty on clear days, waiting to warm up, while the panels on the roof had power to spare.
+
+> [!NOTE]
+> Nothing was ever unsafe. The cells were doing what they should. They were just being too careful at the wrong hour.
+
+## What we changed
+
+- **Warm before you need to.** The battery now looks at the forecast and the panels' output, and starts warming its cells a little before the sun comes up, using a sliver of what's stored overnight.
+- **Charge in steps.** Instead of waiting for one temperature, it charges gently as the cells warm, faster as they reach their comfortable range.
+- **Say less, mean it.** The app used to show "charging paused: low temperature" all morning. Now it tells you once, in plain words, and only if the battery will end the day lower than usual.
+
+The spring update brings all three to every battery out there. Elena has more on what the installs themselves taught us:
+
+/@elena/what-our-first-installs-taught-us
+
+If your battery lives somewhere cold and you've noticed anything odd, reply here. We read everything, and the winter taught us that the people living with these boxes notice things our sensors don't.`,
+  },
+  {
+    key: 'screen', ws: 'copperline', as: 'jonah', days: 7, drawing: { motif: 'energy', seed: 7101 }, claps: 121,
+    title: 'Why our battery has no screen',
+    subtitle: 'Four small lights, an app you rarely open, and a box you can forget.',
+    tags: ['design', 'hardware'],
+    markdown: `Every early drawing of our battery had a screen on it. A nice one, with a little animation of energy flowing from the roof to the house. We kept drawing it because that's what a modern appliance looks like. Then we asked ourselves when anyone would actually look at it.
+
+The honest answer was: twice. Once on the day it was installed, and once when something went wrong. The rest of the time it would be glowing in a garage or a utility cupboard, using power to show a number nobody was there to read.
+
+## Four lights
+
+So the front of the battery has four small lights instead. They count up as it charges and count down as the house uses it. If one blinks amber, there's something you should know, and the app will tell you what. That's the whole interface on the box.
+
+We tested it with people who had never seen a home battery. Nearly all of them understood it in a few seconds, and nobody asked for more. Several asked if they could turn the lights off.
+
+## The app does less, too
+
+The app opens to one sentence: how long the battery could run the house right now. History, settings and the clever graphs are a swipe away for the people who want them. Most people never swipe.
+
+> [!TIP]
+> Hold the button under the lights for two seconds to dim them for the night. They come back at dawn.
+
+A product you can forget about is the goal, not a failure. The best compliment we've had so far came from a homeowner during a power cut: "I forgot we had it until the lights stayed on."`,
+  },
+  {
+    key: 'installs', ws: 'copperline', as: 'elena', days: 11, drawing: { motif: 'people', seed: 7212 }, claps: 94,
+    title: 'What our first installs taught us',
+    subtitle: 'Garages are colder, walls are weaker and people are kinder than we planned for.',
+    tags: ['field', 'engineering'],
+    markdown: `I spent most of the autumn on installs, with a van, a laser level and a notebook. Here is what went into the notebook that the drawings didn't have.
+
+## Walls are not what the drawings say
+
+We designed the bracket for a solid wall. Fewer than half of the walls we mounted on were solid. We met plasterboard over air, old brick that crumbled under the drill, and one beautiful oak beam that we were not allowed to touch. The bracket now comes with three sets of fixings and a short guide for each, and installers carry a small backing plate for the worst cases.
+
+## People want to watch
+
+We planned installs as a job for the installer alone. In practice, the people who live there want to see where it goes, what the lights mean, and how to switch it off. Now every install ends with ten minutes at the battery together, and a printed card stuck inside the cupboard door.
+
+## The cupboard matters more than the battery
+
+Batteries ended up in garages, hallways, under stairs and once in a wardrobe. Where it goes decides how warm it stays, how quiet it needs to be, and whether anyone sees the lights. We now ask about the space before we ship, not on the day.
+
+> [!IMPORTANT]
+> If you're getting a battery, tell your installer where you hope it will go, and where it absolutely mustn't. It saves everyone a day.
+
+The winter added its own lessons, which the team wrote up here:
+
+/copperline/notes-from-our-first-winter`,
+  },
+  {
+    key: 'quiet', ws: 'copperline', as: 'kofi', days: 16, drawing: { motif: 'rings', seed: 7323 }, claps: 88,
+    title: 'Designing for the quietest room in the house',
+    subtitle: 'A battery lives where people sleep, so it has to be quieter than the fridge.',
+    tags: ['engineering', 'sound'],
+    markdown: `A battery makes two kinds of noise: the hum of its electronics and the fan that keeps them cool. In a garage, nobody minds either. In a hallway outside a child's bedroom, both matter a great deal.
+
+## Measure the room, not the box
+
+Our first target was a number for the battery on its own. It was the wrong target. A quiet hum in a quiet house at night is louder than a noisy fan in a busy kitchen at noon. So we started measuring in real homes, at night, from where people sleep.
+
+## What we changed
+
+- **No fan at night.** The battery plans its heavy work, charging from the grid when that's cheapest, for hours when the house is awake, and coasts silently on its heat sink overnight.
+- **A slower, larger fan.** When it does need air, a bigger fan turning slowly is far quieter than a small fast one, and much less noticeable.
+- **Soft mounts.** The electronics sit on rubber, so the wall doesn't carry the hum into the next room.
+
+> [!NOTE]
+> Sound is personal. If yours is ever noticeable, tell us where it is and when you hear it. We adjust the quiet hours remotely.
+
+The best test we found is the simplest: stand outside the bedroom door at midnight. If you can hear it, we're not done.`,
+  },
 ];
 
 // quote.exact must appear word for word in the post.
@@ -248,4 +362,11 @@ export const COMMENTS = [
   { post: 'reviews', as: 'june', quote: 'The designer decides.', body: `How do you handle it when the decision lands badly with someone senior?` },
   { post: 'reviews', as: 'maya', reply: 8, body: `They write their objection on the page, and it stays there next to the decision. Most of the time that’s enough. If not, that’s when the fifteen minutes happen.` },
   { post: 'empty', as: 'rio', body: `The faint tint on today’s column is such a small thing, and I notice it every morning.` },
+  { post: 'screen', as: 'maya', quote: 'A product you can forget about is the goal, not a failure.', body: `As someone who designs a calendar, I wish more products were brave enough to want to be ignored.` },
+  { post: 'screen', as: 'jonah', reply: 11, body: `Thank you. It took a while to convince ourselves, too. The first prototype without a screen felt broken for about a week.` },
+  { post: 'quiet', as: 'june', body: `How quiet is quiet? Do you publish a number, or just the midnight test?` },
+  { post: 'quiet', as: 'kofi', reply: 13, body: `Both. Under 25 dB a metre away at night, which is quieter than most fridges. But the midnight test is the one we trust.` },
+  { post: 'winter', as: 'rio', quote: 'starts warming its cells a little before the sun comes up', body: `Our bakery runs the ovens from 5 am, so this is exactly when we need it. Does warming the cells eat into that?` },
+  { post: 'winter', as: 'copperline', reply: 15, body: `A little, on the coldest mornings: about what a kettle uses. If you set your early hours in the app, the battery keeps that much aside before it warms anything.` },
+  { post: 'installs', as: 'theo', body: `The printed card inside the cupboard door is a great idea. Software teams could learn from that.` },
 ];

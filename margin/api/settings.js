@@ -1,60 +1,61 @@
-// Site settings: one KV document, read once per request.
-import { reject, text, longText } from './lib/util.js';
+// Margin's own settings, kept by the node's admins: who may join, what the home page is,
+// which workspaces the landing page shows, and the one address links should use.
+import { reject, text } from './lib/util.js';
 import { touch } from './lib/store.js';
 
 export const DEFAULTS = {
   name: 'Margin',
-  tagline: 'Writing from our team',
-  description: 'Notes, essays and updates from our team.',
+  tagline: 'A quiet place for your team to write',
+  signups: 'open',
   home: 'landing',
+  examples: [],
+  primaryHost: '',
   theme: 'quiet',
-  themeSettings: {},
-  moderation: 'outsiders',
-  logo: null,
-  nav: [],
 };
 
-export function siteSettings(env) {
-  const saved = env.holm.app.kv.get('settings');
+// open: anyone signs up and starts workspaces. readers: anyone signs up to read and
+// comment; new workspaces only from admins or by invite. invite: invited people only.
+export const SIGNUPS = ['open', 'readers', 'invite'];
+
+export function marginSettings(env) {
+  const saved = env.holm.app.kv.get('margin:settings');
   return { ...DEFAULTS, ...(saved && typeof saved === 'object' ? saved : {}) };
 }
 
-export const MODERATION = ['off', 'outsiders', 'all'];
+const HOME = /^(landing|ws:[a-z][a-z0-9_-]{0,28}[a-z0-9]|@[a-z][a-z0-9_-]{0,28}[a-z0-9])$/;
 
-export function updateSettings(env, input) {
-  const current = siteSettings(env);
-  const next = { ...current };
-  if (input.name !== undefined) next.name = text(input.name, 60, 'Site name', true);
+export function updateMargin(env, input) {
+  const next = { ...marginSettings(env) };
+  if (input.name !== undefined) next.name = text(input.name, 40, 'Name', true);
   if (input.tagline !== undefined) next.tagline = text(input.tagline, 120, 'Tagline') || '';
-  if (input.description !== undefined) next.description = longText(input.description, 300, 'Description') || '';
+  if (input.signups !== undefined) {
+    if (!SIGNUPS.includes(input.signups)) reject(400, 'invalid_input', 'Sign-ups are open, readers or invite.');
+    next.signups = input.signups;
+  }
   if (input.home !== undefined) {
     const home = String(input.home || '').trim().toLowerCase();
-    if (home !== 'landing' && !/^@[a-z0-9_-]{2,30}$/.test(home)) reject(400, 'invalid_input', 'Home is "landing" or a blog such as "@team".');
-    if (home !== 'landing') {
-      const blog = env.holm.app.ds.find('blogs', { handle: home.slice(1) }, { limit: 1 })[0];
-      if (!blog) reject(404, 'not_found', `There is no blog ${home}.`);
-    }
+    if (!HOME.test(home)) reject(400, 'invalid_input', 'Home is "landing", a workspace such as "ws:lumen", or a writer such as "@maya".');
+    if (home.startsWith('ws:') && !env.holm.app.ds.find('workspaces', { slug: home.slice(3) }, { limit: 1 })[0]) reject(404, 'not_found', `There is no workspace ${home.slice(3)}.`);
+    if (home.startsWith('@') && !env.holm.app.ds.find('blogs', { handle: home.slice(1) }, { limit: 1 })[0]) reject(404, 'not_found', `There is no writer ${home}.`);
     next.home = home;
   }
-  if (input.moderation !== undefined) {
-    if (!MODERATION.includes(input.moderation)) reject(400, 'invalid_input', 'Moderation is off, outsiders or all.');
-    next.moderation = input.moderation;
+  if (input.examples !== undefined) {
+    if (!Array.isArray(input.examples) || input.examples.length > 6) reject(400, 'invalid_input', 'Examples is a list of up to 6 workspace addresses.');
+    const out = [];
+    for (const raw of input.examples) {
+      const slug = String(raw || '').trim().toLowerCase().replace(/^\//, '');
+      if (!env.holm.app.ds.find('workspaces', { slug }, { limit: 1 })[0]) reject(404, 'not_found', `There is no workspace ${slug}.`);
+      if (!out.includes(slug)) out.push(slug);
+    }
+    next.examples = out;
   }
-  if (input.logo !== undefined) next.logo = input.logo ? text(input.logo, 40, 'Logo') : null;
-  if (input.nav !== undefined) {
-    if (!Array.isArray(input.nav) || input.nav.length > 8) reject(400, 'invalid_input', 'Navigation is a list of up to 8 links.');
-    next.nav = input.nav.map((item) => ({
-      label: text(item && item.label, 30, 'Link label', true),
-      url: text(item && item.url, 300, 'Link address', true),
-    }));
+  if (input.primary_host !== undefined || input.primaryHost !== undefined) {
+    const host = String(input.primary_host ?? input.primaryHost ?? '').trim().toLowerCase();
+    if (host && !/^[a-z0-9.-]{3,200}(:\d{2,5})?$/.test(host)) reject(400, 'invalid_input', 'The primary address is a host name such as margin.example.com.');
+    next.primaryHost = host;
   }
   if (input.theme !== undefined) next.theme = text(input.theme, 40, 'Theme', true);
-  if (input.themeSettings !== undefined) next.themeSettings = input.themeSettings;
-  env.holm.app.kv.set('settings', next);
+  env.holm.app.kv.set('margin:settings', next);
   touch(env);
   return next;
-}
-
-export function homeHandle(settings) {
-  return settings.home && settings.home.startsWith('@') ? settings.home.slice(1) : null;
 }

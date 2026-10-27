@@ -28,7 +28,7 @@ export function sniff(bytes) {
 }
 
 export async function upload(env, ctx, request) {
-  if (!ctx.writer) reject(403, 'forbidden', 'Only writers can upload.');
+  if (!ctx.member || !((ctx.person && ctx.person.handle) || ctx.admin)) reject(403, 'forbidden', 'Pick your name on Margin before you upload.');
   let form;
   try { form = await request.formData(); } catch (error) {
     if (/budget|too large|413/i.test(String(error && error.message))) reject(413, 'too_large', 'That file is too large for this server.');
@@ -86,7 +86,7 @@ export function serve(env, request, id) {
 export function mediaById(env, id) { return byId(env, 'media', id); }
 
 export function listMine(env, ctx, limit = 60) {
-  return env.holm.app.ds.find('media', ctx.admin ? {} : { owner: ctx.member.id }, { limit, order: 'desc' })
+  return env.holm.app.ds.find('media', { owner: ctx.member.id }, { limit, order: 'desc' })
     .map((m) => ({ id: m.mediaId, url: mediaPath(m.mediaId, m.mime), mime: m.mime, width: m.width, height: m.height, size: m.size, name: m.name }));
 }
 

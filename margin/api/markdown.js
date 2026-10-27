@@ -40,13 +40,15 @@ function yt(id, url) {
 }
 export const EMBED_ORIGINS = ['https://www.youtube-nocookie.com', 'https://player.vimeo.com', 'https://www.loom.com', 'https://codepen.io', 'https://www.figma.com', 'https://embed.figma.com', 'https://open.spotify.com'];
 
-// A post on this site, by path: /@handle/slug or /slug (when that blog is home).
+// A post on this site, by path: /workspace/@handle/slug, /workspace/slug (the workspace
+// writing as itself) or the short /@handle/slug.
+export const POST_PATH = /^\/(?:[a-z0-9_-]+\/)?@[a-z0-9_-]+\/[a-z0-9-]+\/?$|^\/[a-z0-9_-]+\/[a-z0-9-]+\/?$/;
 export function localPostPath(href, origin) {
   let url;
   try { url = new URL(href, origin || 'http://local.invalid'); } catch { return null; }
   if (origin && url.origin !== new URL(origin).origin) return null;
   if (!origin && !href.startsWith('/')) return null;
-  if (/^\/@[a-z0-9_-]+\/[a-z0-9-]+\/?$/.test(url.pathname) || /^\/[a-z0-9][a-z0-9-]*\/?$/.test(url.pathname)) return url.pathname.replace(/\/$/, '');
+  if (POST_PATH.test(url.pathname) && !/^\/(?:studio|api|media|tag|join|c|a|t)\//.test(url.pathname)) return url.pathname.replace(/\/$/, '');
   return null;
 }
 
@@ -103,7 +105,7 @@ export function render(md, options = {}) {
       paragraph({ tokens }) {
         const items = tokens.filter((t) => !(t.type === 'text' && !t.text.trim()) && t.type !== 'br');
         if (items.length === 1 && items[0].type === 'image') return figure(items[0].href, items[0].title, items[0].text);
-        if (items.length === 1 && items[0].type === 'text' && /^\/@[a-z0-9_-]+\/[a-z0-9-]+\/?$/.test(items[0].text.trim())) {
+        if (items.length === 1 && items[0].type === 'text' && localPostPath(items[0].text.trim(), null)) {
           const local = items[0].text.trim().replace(/\/$/, '');
           cards.push(local);
           return `<!--m-card:${local}--><p><a href="${escapeHTML(local)}">${escapeHTML(local)}</a></p><!--/m-card-->\n`;
