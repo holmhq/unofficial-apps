@@ -21,7 +21,9 @@ Margin is open source and runs on Holm: https://github.com/holmhq/unofficial-app
 Add `/_holm/mcp` on this server as a custom connector in Claude (Settings → Connectors), or
 run `claude mcp add --transport http margin https://<this server>/_holm/mcp` in Claude Code,
 then sign in. Start with `me_get`: it lists your names and your workspaces. Every other tool
-takes a `workspace`. Posts are Markdown; drafts unless the person asks to publish. Readers
+takes a `workspace`. Posts are Markdown; drafts unless the person asks to publish.
+Fence code with its language to have it highlighted; write maths in LaTeX, `$…$` inline
+or `$$` lines around a display formula. Readers
 can't tell a person's personas are the same person, so never say which names belong
 together. Personas: `personas_create`, `personas_update`, `personas_delete`. Owners and
 admins run a workspace with `workspace_get`, `workspace_update`, `themes_activate`,

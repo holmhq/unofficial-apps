@@ -301,6 +301,24 @@ function pulse(button) {
   icon.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.22)', offset: 0.4 }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.34, 1.5, .64, 1)' });
 }
 
+// ---------- code blocks ----------
+// A Copy button on each code block; it says Copied for a moment.
+
+const COPY_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+function codeCopy() {
+  for (const pre of $$('pre.m-code')) {
+    const code = pre.querySelector('code');
+    if (!code || pre.querySelector('.m-code-copy')) continue;
+    const button = h(`<button type="button" class="m-code-copy" aria-label="Copy code">${COPY_ICON}<span>Copy</span></button>`);
+    button.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(code.textContent); } catch { toast('Copying is blocked here. Select the code instead.'); return; }
+      button.querySelector('span').textContent = 'Copied';
+      setTimeout(() => { button.querySelector('span').textContent = 'Copy'; }, 1600);
+    });
+    pre.append(button);
+  }
+}
+
 // ---------- feedback ----------
 // Send feedback opens Margin's form on feedback.zyt.app. Its script (a copy kept in
 // /vendor/feedback/) loads only when someone heads for the button.
@@ -988,6 +1006,7 @@ function live() {
 account();
 share();
 feedback();
+codeCopy();
 if (postId) {
   claps();
   responsesEvents();

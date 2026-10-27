@@ -58,6 +58,11 @@ script is in the folder.
   admins add themes; each workspace picks one.
 - A Notion-like editor: slash menu, a bar for formatting, block handles,
   dropped-in photos (shrunk in the browser) and short videos, autosave.
+- Code and maths that read well: highlight fenced code by its language (name
+  it above the block, with a Copy button) and typeset LaTeX maths ($…$ and
+  $$ blocks) on the server, so pages need no JavaScript; in the editor,
+  formulae show typeset and open to edit. A price like "$5 and $10" stays
+  text.
 - Photos, SVG drawings and short videos from Claude too: a tool that takes a
   drawing or a small photo, and a one-hour upload link the person opens on
   a phone (or Claude sends files to with curl). Keep photos at 2048 px, make
@@ -151,3 +156,9 @@ with placeholders.
 > Yes, proceed
 > - but one more issue: in a chat right side bar the avatar icon looks like there is some text with it but got chopped off
 > - do all fine edits like that
+
+**Margin 0.6.0: code and maths that read well**
+
+> - also, think about code syntax highlighting is possible to add
+> - also latex / maths sign sort of formatting
+> - so that formulae & code will render nicely

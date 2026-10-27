@@ -193,6 +193,7 @@ function head(env, ctx, scope, theme, origin, page, bits, v, ld) {
     page.feed && page.feed !== scope.feed_url ? `<link rel="alternate" type="application/rss+xml" title="${escapeHTML(page.feed_title || '')}" href="${escapeHTML(page.feed)}">` : '',
     icons,
     `<link rel="stylesheet" href="/v/${v}/margin/ui.css">`,
+    ...(page.styles || []).map((href) => `<link rel="stylesheet" href="/v/${v}${href}">`),
     colors ? `<style>:root{${colors}}</style>` : '',
     `<script>${THEME_SCRIPT}</script>`,
     ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : '',
@@ -441,7 +442,7 @@ export async function postPage(env, ctx, request, scope, post, options = {}) {
     page: {
       title: `${post.title} — ${blog ? blog.name : scope.name}`, og_title: post.title,
       description: card.description, path: card.url, image,
-      published: card.date_iso, noindex: !!options.preview, feed: blog ? blogDTO(blog, post.ws).feed_url : null, feed_title: blog ? blog.name : '',
+      published: card.date_iso, noindex: !!options.preview, styles: html.includes('class="katex') ? ['/vendor/katex/katex.css'] : [], feed: blog ? blogDTO(blog, post.ws).feed_url : null, feed_title: blog ? blog.name : '',
     },
     view,
     actions: post.status === 'published' ? actions(card) : '',

@@ -3,7 +3,7 @@
 // video, embeds from a pasted link, callouts, and autosave for drafts.
 import {
   Editor, Node, Extension, mergeAttributes, StarterKit, Placeholder, CharacterCount, TaskList, TaskItem, TableKit,
-  Markdown, Suggestion, BubbleMenu, Image, Plugin, PluginKey, NodeSelection,
+  Markdown, Suggestion, BubbleMenu, Image, Plugin, PluginKey, NodeSelection, nodeInputRule, InputRule,
 } from '/vendor/editor/tiptap.js';
 import { api, esc, h, $, $$, toast, icons, sheet, menu, copy, upload, pickFile, ago } from './lib.js';
 
@@ -30,6 +30,7 @@ const BI = {
   callout: I('<path d="M15 14c.2-1 .7-1.7 1.5-2.5c1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5c.7.7 1.3 1.5 1.5 2.5m0 4h6m-5 4h4"/>'),
   code: I('<path d="m16 18l6-6l-6-6M8 6l-6 6l6 6"/>'),
   divider: I('<path d="M5 12h14"/>'),
+  math: I('<path d="M18 7V5H6l6 7l-6 7h12v-2"/>'),
   table: I('<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>'),
   image: I('<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>'),
   video: I('<path d="m16 13l5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect width="14" height="12" x="2" y="6" rx="2"/>'),
@@ -260,6 +261,139 @@ const Callout = Node.create({
   },
 });
 
+// ---------- maths ----------
+// $…$ and $$ … $$ stay TeX in the Markdown (never escaped); here they show typeset by KaTeX,
+// and a click opens the formula to edit. The same Pandoc rules as the server: "$5 and $10"
+// is text.
+
+const MATH_INLINE_RE = /^\$(?![\s$])((?:\\[\s\S]|[^\\$\n])*?[^\s\\$])\$(?!\d)|^\$([^\s$\\])\$(?!\d)/;
+const MATH_BLOCK_RE = /^ {0,3}\$\$[ \t]*\n?([\s\S]+?)\n?[ \t]*\$\$[ \t]*(?:\n+|$)/;
+let katexReady = null;
+function loadKatex() {
+  if (!katexReady) {
+    document.head.append(h('<link rel="stylesheet" href="/vendor/katex/katex.css">'));
+    katexReady = import('/vendor/katex/katex.mjs').then((m) => m.default);
+  }
+  return katexReady;
+}
+async function typeset(el, tex, display) {
+  const source = String(tex || '').trim();
+  if (!source) { el.innerHTML = `<span class="ed-math-empty">${display ? 'Add a formula' : 'formula'}</span>`; return; }
+  try {
+    const katex = await loadKatex();
+    el.innerHTML = katex.renderToString(source, { displayMode: display, throwOnError: false, output: 'html', strict: 'ignore' });
+  } catch { el.textContent = source; }
+}
+
+// A sheet to write the formula, with the result as you type.
+function mathSheet(tex, display, done) {
+  const box = h(`<div class="ed-math-sheet"><textarea class="ed-math-input" rows="${display ? 4 : 2}" spellcheck="false" autocapitalize="off" placeholder="${display ? '\\int_0^1 x^2\\,dx = \\frac{1}{3}' : 'e^{i\\pi} + 1 = 0'}" aria-label="Formula in LaTeX"></textarea>
+    <div class="ed-math-preview" aria-live="polite"></div>
+    <p class="ed-math-help">LaTeX, as in <code>\\frac{a}{b}</code>, <code>x^2</code>, <code>\\sqrt{x}</code>, <code>\\sum_{i=1}^n</code>. Readers see it typeset.</p>
+    <div class="ed-math-actions"><button type="button" class="btn danger" data-remove>Remove</button><span class="grow"></span><button type="button" class="btn primary" data-done>Done</button></div></div>`);
+  const input = $('textarea', box);
+  const preview = $('.ed-math-preview', box);
+  input.value = tex || '';
+  const paint = () => typeset(preview, input.value, display);
+  input.addEventListener('input', paint);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey || !display)) { e.preventDefault(); finish(); } });
+  paint();
+  let settled = false;
+  const s2 = sheet(display ? 'Formula' : 'Inline formula', box);
+  const finish = (value = input.value.trim()) => { settled = true; s2.close(); done(value); };
+  $('[data-done]', box).addEventListener('click', () => finish());
+  $('[data-remove]', box).addEventListener('click', () => finish(''));
+  s2.onClose = () => { if (!settled) done(String(tex || '').trim() || input.value.trim()); };
+  setTimeout(() => input.focus(), 60);
+}
+
+function mathView(display) {
+  return ({ node, editor, getPos }) => {
+    const dom = display ? h('<div class="ed-math-block" contenteditable="false" role="button" tabindex="0"></div>') : h('<span class="ed-math-inline" contenteditable="false" role="button" tabindex="0"></span>');
+    let current = node;
+    const open = () => {
+      if (!editor.isEditable) return;
+      mathSheet(current.attrs.tex, display, (tex) => {
+        const pos = getPos();
+        if (typeof pos !== 'number') return;
+        if (!tex) { editor.chain().focus().deleteRange({ from: pos, to: pos + current.nodeSize }).run(); return; }
+        editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, { ...current.attrs, tex }));
+      });
+    };
+    dom.addEventListener('click', open);
+    dom.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); open(); } });
+    typeset(dom, node.attrs.tex, display);
+    if (!node.attrs.tex) setTimeout(open, 0);
+    return {
+      dom,
+      update(next) { if (next.type !== current.type) return false; if (next.attrs.tex !== current.attrs.tex) typeset(dom, next.attrs.tex, display); current = next; return true; },
+      stopEvent: () => false,
+      ignoreMutation: () => true,
+    };
+  };
+}
+
+const MathBlock = Node.create({
+  name: 'mathBlock',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  selectable: true,
+  addAttributes() { return { tex: { default: '' } }; },
+  parseHTML() { return [{ tag: 'div[data-math-block]', getAttrs: (el) => ({ tex: el.getAttribute('data-tex') || '' }) }]; },
+  renderHTML({ HTMLAttributes }) { return ['div', { 'data-math-block': '', 'data-tex': HTMLAttributes.tex }]; },
+  markdownTokenName: 'mathBlock',
+  markdownTokenizer: {
+    name: 'mathBlock', level: 'block', start: () => -1,
+    tokenize(src) {
+      const m = MATH_BLOCK_RE.exec(src);
+      return m ? { type: 'mathBlock', raw: m[0], text: m[1] } : undefined;
+    },
+  },
+  parseMarkdown(token, helpers) { return helpers.createNode('mathBlock', { tex: String(token.text || '').trim() }); },
+  renderMarkdown(node) { const tex = String(node.attrs.tex || '').trim(); return tex ? `$$\n${tex}\n$$` : ''; },
+  addNodeView() { return mathView(true); },
+  addInputRules() {
+    // $$ and a space on an empty line starts a formula.
+    return [nodeInputRule({ find: /^\$\$\s$/, type: this.type, getAttributes: () => ({ tex: '' }) })];
+  },
+});
+
+const MathInline = Node.create({
+  name: 'mathInline',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
+  addAttributes() { return { tex: { default: '' } }; },
+  parseHTML() { return [{ tag: 'span[data-math]', getAttrs: (el) => ({ tex: el.getAttribute('data-tex') || '' }) }]; },
+  renderHTML({ HTMLAttributes }) { return ['span', { 'data-math': '', 'data-tex': HTMLAttributes.tex }]; },
+  markdownTokenName: 'mathInline',
+  markdownTokenizer: {
+    name: 'mathInline', level: 'inline',
+    start(src) { const i = src.indexOf('$'); return i; },
+    tokenize(src) {
+      const m = MATH_INLINE_RE.exec(src);
+      return m ? { type: 'mathInline', raw: m[0], text: m[1] || m[2] } : undefined;
+    },
+  },
+  parseMarkdown(token, helpers) { return helpers.createNode('mathInline', { tex: token.text || '' }); },
+  renderMarkdown(node) { const tex = String(node.attrs.tex || '').trim(); return tex ? `$${tex}$` : ''; },
+  addNodeView() { return mathView(false); },
+  addInputRules() {
+    // Typing $x^2$ turns into a formula once the closing $ is in.
+    // The closing $ is being typed, so it isn't in the document yet: replace from the opening one.
+    const type = this.type;
+    return [new InputRule({
+      find: /(?:^|\s)(\$([^\s$](?:[^$]*[^\s$])?)\$)$/,
+      handler: ({ state, range, match }) => {
+        const from = range.from + match[0].indexOf(match[1]);
+        state.tr.replaceWith(from, range.to, type.create({ tex: match[2] }));
+      },
+    })];
+  },
+});
+
 // ---------- slash menu ----------
 
 const BLOCKS = [
@@ -271,7 +405,9 @@ const BLOCKS = [
   { group: 'Basic', key: 'todo', label: 'To-do list', hint: '[]', icon: BI.todo, run: (c) => c.toggleTaskList() },
   { group: 'Basic', key: 'quote', label: 'Quote', hint: '>', icon: BI.quote, run: (c) => c.toggleBlockquote() },
   { group: 'Basic', key: 'callout', label: 'Callout', hint: '', icon: BI.callout, run: (c) => c.wrapIn('callout', { kind: 'note' }) },
-  { group: 'Basic', key: 'code', label: 'Code', hint: '```', icon: BI.code, run: (c) => c.toggleCodeBlock() },
+  { group: 'Basic', key: 'code', label: 'Code', hint: '```js', icon: BI.code, run: (c) => c.toggleCodeBlock() },
+  { group: 'Basic', key: 'math', label: 'Formula', hint: '$$', icon: BI.math, run: (c) => c.insertContent({ type: 'mathBlock', attrs: { tex: '' } }) },
+  { group: 'Basic', key: 'mathinline', label: 'Inline formula', hint: '$x$', icon: BI.math, run: (c) => c.insertContent({ type: 'mathInline', attrs: { tex: '' } }) },
   { group: 'Basic', key: 'divider', label: 'Divider', hint: '---', icon: BI.divider, run: (c) => c.setHorizontalRule() },
   { group: 'Basic', key: 'table', label: 'Table', hint: '', icon: BI.table, run: (c) => c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }) },
   { group: 'Media', key: 'image', label: 'Photo', hint: 'Upload', icon: BI.image, media: 'image/*' },
@@ -512,7 +648,7 @@ export async function editorView(root, { me, id, go }) {
     extensions: [
       StarterKit.configure({ heading: { levels: [2, 3, 4] }, underline: false, link: { openOnClick: false, autolink: true, defaultProtocol: 'https' }, trailingNode: true }),
       Image.configure({ inline: true }),
-      Figure, Embed, Callout,
+      Figure, Embed, Callout, MathBlock, MathInline,
       TaskList, TaskItem.configure({ nested: true }),
       TableKit.configure({ table: { resizable: false } }),
       Placeholder.configure({ placeholder: ({ node }) => (node.type.name === 'heading' ? 'Heading' : 'Write, or press / for blocks…'), includeChildren: false }),

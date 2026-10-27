@@ -70,8 +70,6 @@
 .m-table table { border-collapse: collapse; width: 100%; font-size: .9em; }
 .m-table th, .m-table td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--m-line); vertical-align: top; }
 .m-table th { font-weight: 650; }
-.m-code { position: relative; }
-.m-code[data-lang]::after { content: attr(data-lang); position: absolute; top: 8px; right: 12px; font: 600 11px/1 var(--m-font); letter-spacing: .04em; text-transform: uppercase; color: var(--m-muted); opacity: .7; }
 
 /* ---------- account ---------- */
 .m-account { position: relative; flex: none; }
@@ -137,6 +135,53 @@
 @keyframes m-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes m-rise { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes m-slide { from { transform: translateX(100%); } to { transform: none; } }
+
+/* ---------- code and maths in posts ---------- */
+/* Token colours only; each theme owns the block's background, font and spacing. */
+:root {
+  --m-hl-keyword: #cf222e; --m-hl-string: #0a3069; --m-hl-comment: #6e7781; --m-hl-number: #0550ae;
+  --m-hl-title: #8250df; --m-hl-type: #953800; --m-hl-tag: #116329; --m-hl-meta: #57606a;
+  --m-hl-add: #116329; --m-hl-add-bg: #dafbe1; --m-hl-del: #82071e; --m-hl-del-bg: #ffebe9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --m-hl-keyword: #ff7b72; --m-hl-string: #a5d6ff; --m-hl-comment: #8b949e; --m-hl-number: #79c0ff;
+    --m-hl-title: #d2a8ff; --m-hl-type: #ffa657; --m-hl-tag: #7ee787; --m-hl-meta: #8b949e;
+    --m-hl-add: #aff5b4; --m-hl-add-bg: rgba(46, 160, 67, .18); --m-hl-del: #ffdcd7; --m-hl-del-bg: rgba(248, 81, 73, .18);
+  }
+}
+:root[data-theme="dark"] {
+  --m-hl-keyword: #ff7b72; --m-hl-string: #a5d6ff; --m-hl-comment: #8b949e; --m-hl-number: #79c0ff;
+  --m-hl-title: #d2a8ff; --m-hl-type: #ffa657; --m-hl-tag: #7ee787; --m-hl-meta: #8b949e;
+  --m-hl-add: #aff5b4; --m-hl-add-bg: rgba(46, 160, 67, .18); --m-hl-del: #ffdcd7; --m-hl-del-bg: rgba(248, 81, 73, .18);
+}
+pre.m-code { position: relative; tab-size: 2; }
+pre.m-code[data-lang]::before { content: attr(data-lang); display: block; margin: -2px 0 10px; font: 600 11.5px/1 var(--m-font); letter-spacing: .02em; color: var(--m-muted); }
+.m-code-copy {
+  position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px;
+  border: 0; border-radius: 8px; background: var(--m-surface); box-shadow: 0 0 0 1px var(--m-line); color: var(--m-muted);
+  font: 500 12px var(--m-font); cursor: pointer; opacity: 0; transition: opacity .15s, color .15s;
+}
+.m-code-copy svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+pre.m-code:hover .m-code-copy, .m-code-copy:focus-visible { opacity: 1; }
+.m-code-copy:hover { color: var(--m-ink); }
+@media (hover: none) { .m-code-copy { opacity: 1; } }
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-doctag, .hljs-template-tag, .hljs-type.hljs-keyword { color: var(--m-hl-keyword); }
+.hljs-string, .hljs-regexp, .hljs-char.escape_, .hljs-template-variable { color: var(--m-hl-string); }
+.hljs-comment, .hljs-quote { color: var(--m-hl-comment); font-style: italic; }
+.hljs-number, .hljs-attr, .hljs-attribute, .hljs-variable.language_, .hljs-symbol, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-property { color: var(--m-hl-number); }
+.hljs-title, .hljs-title.function_, .hljs-title.class_, .hljs-section { color: var(--m-hl-title); }
+.hljs-type, .hljs-built_in, .hljs-params .hljs-type, .hljs-variable, .hljs-selector-pseudo { color: var(--m-hl-type); }
+.hljs-name, .hljs-tag, .hljs-bullet { color: var(--m-hl-tag); }
+.hljs-meta, .hljs-meta .hljs-keyword, .hljs-subst { color: var(--m-hl-meta); }
+.hljs-section, .hljs-strong { font-weight: 600; }
+.hljs-emphasis { font-style: italic; }
+.hljs-addition { color: var(--m-hl-add); background: var(--m-hl-add-bg); }
+.hljs-deletion { color: var(--m-hl-del); background: var(--m-hl-del-bg); }
+.m-math { margin: 1.6em 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; -webkit-overflow-scrolling: touch; }
+.m-math .katex-display { margin: 0; }
+.katex { font-size: 1.08em; }
+.m-math-source { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: .9em; white-space: pre-wrap; }
 
 /* ---------- the footer's credit line ({{{margin.credit}}}) and the landing footer ---------- */
 .m-credit { display: contents; }

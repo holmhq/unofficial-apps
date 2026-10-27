@@ -152,6 +152,13 @@ You can also restyle any `.m-` class: `.m-figure`, `.m-wide`, `.m-full`, `.m-emb
 `.m-clap`, `.m-responses`, `.m-response`, `mark.m-hl` (highlighted passages),
 `.m-panel`, `.m-msg`, `.m-bubble`, `.m-note-card`, `.m-menu`, `.m-pop` (link previews).
 
+Code blocks are `pre.m-code` with `data-lang` (the language's name, shown above the code)
+and highlight.js token classes (`.hljs-keyword`, `.hljs-string`, `.hljs-comment`, …),
+coloured from `--m-hl-keyword`, `--m-hl-string`, `--m-hl-comment`, `--m-hl-number`,
+`--m-hl-title`, `--m-hl-type`, `--m-hl-tag` and `--m-hl-meta`; the theme styles the block
+itself. Display maths is `div.m-math` around KaTeX's `.katex-display`; inline maths is
+KaTeX's `.katex`. Pages with maths load KaTeX's own stylesheet.
+
 Readers pick Light, Dark or System in the account menu. Margin sets
 `data-theme="light"` or `"dark"` on `<html>`; System leaves it off. Write dark styles for
 both `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { … } }` and

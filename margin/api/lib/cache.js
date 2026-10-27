@@ -4,12 +4,12 @@
 import { sha256 } from './util.js';
 import { siteRev } from './store.js';
 
-export const VERSION = '0.5.0';
+export const VERSION = '0.6.0';
 
 const LOCAL = /^(127\.|localhost|\[::1\]|[a-z0-9-]+\.localhost)(:\d+)?$/;
 // Addresses that may be a rendered page (no file extension, not one of Margin's own areas).
 const PAGE = /^\/(?!(?:api|media|t|v|margin|themes|vendor|studio|_holm|auth|c|a|new|join|upload)(?:\/|$))[^.]*$/;
-const VERSIONED = /^\/v\/([a-f0-9]{10})(\/(?:margin|themes)\/[a-z0-9][a-z0-9/._-]*)$/i;
+const VERSIONED = /^\/v\/([a-f0-9]{10})(\/(?:margin|themes|vendor\/katex)\/[a-z0-9][a-z0-9/._-]*)$/i;
 // Chrome and Edge fetch a page while the pointer rests on its link (or as a finger goes down).
 const SPECULATION = JSON.stringify({
   prefetch: [{

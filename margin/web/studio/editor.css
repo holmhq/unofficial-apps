@@ -158,3 +158,20 @@
 .ed-motif-art svg { display: block; width: 100%; height: 100%; }
 .ed-motif.on .ed-motif-art { box-shadow: 0 0 0 2px var(--accent); }
 @media (min-width: 640px) { .ed-motifs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* ---------- maths ---------- */
+.ed-math-block { margin: 1.1em 0; padding: 14px 12px; border-radius: 12px; text-align: center; cursor: pointer; overflow-x: auto; overflow-y: hidden; transition: background .15s; }
+.ed-math-block .katex-display { margin: 0; }
+.ed-math-inline { padding: 1px 3px; margin: 0 1px; border-radius: 5px; cursor: pointer; transition: background .15s; }
+.ed-math-block:hover, .ed-math-inline:hover, .ed-math-block:focus-visible, .ed-math-inline:focus-visible { background: var(--fill-2); outline: none; }
+.ProseMirror-selectednode.ed-math-block, .ProseMirror-selectednode.ed-math-inline { box-shadow: 0 0 0 2px var(--accent); }
+.ed-math-empty { color: var(--faint); font-size: 14px; }
+.ed-math-sheet { display: flex; flex-direction: column; gap: 12px; }
+.ed-math-input { width: 100%; resize: vertical; min-height: 64px; border: 0; outline: 0; border-radius: 12px; background: var(--fill-2); padding: 12px 14px; font: 14.5px/1.5 var(--mono); color: var(--ink); }
+.ed-math-input:focus { box-shadow: 0 0 0 2px var(--accent); }
+.ed-math-preview { min-height: 56px; display: grid; place-items: center; padding: 12px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line); overflow-x: auto; }
+.ed-math-preview .katex-display { margin: 0; }
+.ed-math-help { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.ed-math-help code { font: 12.5px var(--mono); background: var(--fill-2); padding: 1px 5px; border-radius: 5px; }
+.ed-math-actions { display: flex; gap: 8px; align-items: center; }
+.ed-math-actions .grow { flex: 1; }

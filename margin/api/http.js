@@ -13,6 +13,7 @@ import { createInvite, previewInvite, acceptInvite, listInvites, revokeInvite } 
 import { listThemes, loadTheme, validate, saveTheme, deleteTheme, themeFiles, serveAsset, settingValues } from './themes.js';
 import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, teamList, setRole, leave, allWorkspaces, setSuspended, wsDTO } from './workspaces.js';
 import { page, errorPage, cards } from './pages.js';
+import { prepare } from './markdown.js';
 import { loadSamples, removeSamples } from './samples.js';
 import { me, activateTheme } from './ops.js';
 
@@ -212,14 +213,14 @@ async function api(request, env, url) {
       list = list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 300);
       return json({ posts: list.map((p) => ({ ...cardDTO(env, ctx, p), status: p.status, pending: p.pending || 0, updated_at: new Date(p.updatedAt).toISOString() })) });
     }
-    if (!id && method === 'POST') { requireWriter(ctx); return json(editorDTO(env, ctx, createPost(env, ctx, await body(), o)), 201); }
+    if (!id && method === 'POST') { requireWriter(ctx); const input = await body(); await prepare(input.markdown ?? input.body); return json(editorDTO(env, ctx, createPost(env, ctx, input, o)), 201); }
     if (id && !sub) {
       const post = withPost(env, ctx, id);
       if (method === 'GET') {
         if (!canEdit(env, ctx, post)) reject(404, 'not_found', 'No such post.');
         return json(editorDTO(env, ctx, post));
       }
-      if (method === 'PATCH') { requireMember(ctx); return json(editorDTO(env, ctx, updatePost(env, ctx, id, await body(), o))); }
+      if (method === 'PATCH') { requireMember(ctx); const input = await body(); await prepare(input.markdown ?? input.body); return json(editorDTO(env, ctx, updatePost(env, ctx, id, input, o))); }
       if (method === 'DELETE') { requireMember(ctx); return json(deletePost(env, ctx, id)); }
     }
     if (id && sub === 'comments') {

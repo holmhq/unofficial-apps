@@ -11,6 +11,7 @@ import { listMine, storeMedia, createUploadLink, requireUploader } from './media
 import { createInvite, listInvites, revokeInvite } from './invites.js';
 import { listThemes, loadTheme, validate, saveTheme, themeFiles, settingValues, cleanSetting } from './themes.js';
 import { postAtPath } from './pages.js';
+import { prepare } from './markdown.js';
 import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, wsDTO, canCreateWorkspace, teamList, setRole, leave } from './workspaces.js';
 
 // ---------- named operations (MCP tools) ----------
@@ -148,10 +149,13 @@ function postResult(env, ctx, post) {
   };
 }
 
-export function opPostsCreate(input, env) {
+// Code and maths need their libraries loaded before the (synchronous) save renders.
+export async function opPostsCreate(input, env) {
+  await prepare(input.markdown ?? input.body);
   return op(env, input, (ctx) => { requireWriter(ctx); return postResult(env, ctx, createPost(env, ctx, input, origin(env))); });
 }
-export function opPostsUpdate(input, env) {
+export async function opPostsUpdate(input, env) {
+  await prepare(input.markdown ?? input.body);
   return op(env, input, (ctx) => { requireMember(ctx); onPost(env, ctx, input.id); return postResult(env, ctx, updatePost(env, ctx, input.id, input, origin(env))); });
 }
 export function opPostsDelete(input, env) {

@@ -5,8 +5,32 @@
 //                           a card for another post on this blog, or a bookmark
 //   ![alt](src "caption")   a figure; add #wide or #full to the address for width
 //   ![alt](clip.mp4)        a video (by extension, or an uploaded video)
+//   ```js … ```             code, highlighted by language (highlight.js)
+//   $x^2$, $$ … $$, ```math  maths, typeset by KaTeX (inline, and as a block)
 import { Marked } from './vendor/marked/marked.js';
 import { escapeHTML, slugify } from './lib/util.js';
+
+// Highlighting and maths are big libraries: prepare() loads each only for Markdown that uses
+// it, before render(). Without them code shows plain and maths shows as its source.
+let hljs = null;
+let katex = null;
+const FENCE = /(^|\n) {0,3}(```|~~~)/;
+export async function prepare(md) {
+  const text = String(md || '');
+  if (!hljs && FENCE.test(text)) hljs = (await import('./vendor/highlight/highlight.mjs')).default;
+  if (!katex && /\$|```math/.test(text)) katex = (await import('./vendor/katex/katex.mjs')).default;
+}
+
+// Maths, Pandoc's way: $…$ inline when the dollars hug the formula and the closing one isn't
+// followed by a digit (so "$5 and $10" stays text); $$ … $$ on lines of their own is a block.
+const MATH_INLINE = /^\$(?![\s$])((?:\\[\s\S]|[^\\$\n])*?[^\s\\$])\$(?!\d)|^\$([^\s$\\])\$(?!\d)/;
+const MATH_BLOCK = /^ {0,3}\$\$[ \t]*\n?([\s\S]+?)\n?[ \t]*\$\$[ \t]*(?:\n+|$)/;
+function typeset(tex, display) {
+  const source = String(tex || '').trim();
+  if (!katex) return display ? `<pre class="m-math-source">${escapeHTML(source)}</pre>` : `<code class="m-math-source">${escapeHTML(source)}</code>`;
+  const html = katex.renderToString(source, { displayMode: display, throwOnError: false, output: 'htmlAndMathml', trust: false, strict: 'ignore', maxSize: 40, maxExpand: 500 });
+  return display ? `<div class="m-math" role="math">${html}</div>` : html;
+}
 
 const CALLOUT = /^\s*\[!(note|tip|important|warning|caution)\][ \t]*\n?/i;
 const VIDEO = /\.(mp4|webm|mov|m4v)(\?|#|$)/i;
@@ -89,8 +113,25 @@ export function render(md, options = {}) {
     return `<figure class="m-figure${width}"><img src="${escapeHTML(src)}" alt="${escapeHTML(alt || '')}" loading="lazy" decoding="async"${size}>${caption}</figure>\n`;
   }
 
+  // Typeset maths waits in placeholders until the words are counted, so formulae count once.
+  const formulas = [];
+  const hold = (html) => `\u0000${formulas.push(html) - 1}\u0000`;
   const marked = new Marked({ gfm: true, breaks: false });
   marked.use({
+    extensions: [
+      {
+        name: 'mathBlock', level: 'block',
+        start(src) { const i = src.search(/(^|\n) {0,3}\$\$/); return i < 0 ? undefined : i + (src[i] === '\n' ? 1 : 0); },
+        tokenizer(src) { const m = MATH_BLOCK.exec(src); return m ? { type: 'mathBlock', raw: m[0], text: m[1] } : undefined; },
+        renderer(token) { return hold(typeset(token.text, true)) + '\n'; },
+      },
+      {
+        name: 'mathInline', level: 'inline',
+        start(src) { const i = src.indexOf('$'); return i < 0 ? undefined : i; },
+        tokenizer(src) { const m = MATH_INLINE.exec(src); return m ? { type: 'mathInline', raw: m[0], text: m[1] || m[2] } : undefined; },
+        renderer(token) { return hold(typeset(token.text, false)); },
+      },
+    ],
     renderer: {
       html({ text }) { return escapeHTML(text); },
       heading({ tokens, depth }) {
@@ -169,8 +210,12 @@ export function render(md, options = {}) {
       },
       code({ text, lang }) {
         const language = String(lang || '').trim().split(/\s+/)[0].replace(/[^\w+#.-]/g, '').slice(0, 20);
-        const cls = language ? ` class="language-${escapeHTML(language)}"` : '';
-        return `<pre class="m-code"${language ? ` data-lang="${escapeHTML(language)}"` : ''}><code${cls}>${escapeHTML(text)}</code></pre>\n`;
+        if (language.toLowerCase() === 'math') return hold(typeset(text, true)) + '\n';
+        const known = hljs && language ? hljs.getLanguage(language) : null;
+        const cls = language ? ` class="${known ? 'hljs ' : ''}language-${escapeHTML(language)}"` : '';
+        const label = known && known.name ? known.name : language;
+        const body = known ? hljs.highlight(text, { language, ignoreIllegals: true }).value : escapeHTML(text);
+        return `<pre class="m-code"${label ? ` data-lang="${escapeHTML(label)}"` : ''}><code${cls}>${body}</code></pre>\n`;
       },
       table(token) {
         let head = '';
@@ -195,8 +240,9 @@ export function render(md, options = {}) {
       if (value.length > 40 && !CALLOUT.test(t.raw)) { excerpt = value; break; }
     }
   }
-  const html = marked.parser(tokens);
-  const textOnly = decode(html.replace(/<!--[\s\S]*?-->/g, ' ').replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+  const held = marked.parser(tokens);
+  const html = held.replace(/\u0000(\d+)\u0000/g, (_, n) => formulas[Number(n)] || '');
+  const textOnly = decode(held.replace(/\u0000\d+\u0000/g, ' x ').replace(/<!--[\s\S]*?-->/g, ' ').replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
   const words = textOnly ? textOnly.split(' ').length : 0;
   if (excerpt.length > 240) excerpt = excerpt.slice(0, 237).replace(/\s+\S*$/, '') + '…';
   return { html, excerpt, words, minutes: Math.max(1, Math.round(words / 230)), images, cards };

@@ -71,6 +71,13 @@ are not public URLs.
   short videos; paste a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link
   to embed it, or another post's address to show it as a card. Drafts save
   themselves; published posts change only when you press Update.
+- **Code and maths.** Code fenced with its language (```` ```python ````) is
+  highlighted, with the language named above it and a Copy button. Maths is
+  LaTeX: `$…$` inline and `$$` lines around a display formula, typeset on the
+  server with KaTeX, so it reads without JavaScript and keeps its MathML for
+  screen readers. In the editor, type `$x^2$` or pick Formula from the `/`
+  menu; formulae show typeset and open to edit with a live preview. A dollar
+  amount such as "$5 and $10" stays text.
 - **Photos, drawings and video from anywhere.** Claude can add an SVG drawing
   or a small photo itself, or hand out an upload link: open it on a phone
   or computer to add up to ten photos, drawings or videos in the next hour,
@@ -159,7 +166,12 @@ field and hook; Claude reads it through `themes_reference`, and
 - **Markdown.** `api/markdown.js` renders posts with
   [marked](https://github.com/markedjs/marked) when they're saved, shows raw
   HTML as text, checks every link, and adds Margin's blocks. The HTML is kept
-  beside the Markdown, so reading a post renders nothing.
+  beside the Markdown, so reading a post renders nothing. Code is highlighted
+  with [highlight.js](https://highlightjs.org) and maths typeset with
+  [KaTeX](https://katex.org), each loaded only when a post being saved has
+  some (`prepare()` before the synchronous render). Pages with maths add
+  KaTeX's stylesheet; its fonts load from `web/vendor/katex/`. The editor's
+  formula nodes keep the TeX exactly as written.
 - **Drawn covers.** `api/covers.js` is one plain module that draws every
   cover as SVG from a motif, a look, a tone and a seed, the same in Holm's
   runtime and in browsers. The server serves it at `/c/<motif>-<look>-<tone>-<seed>.svg`
@@ -228,7 +240,7 @@ api/workspaces.js, blogs.js, people.js   workspaces and members, names and perso
 api/posts.js, comments.js, claps.js, invites.js, media.js, settings.js
 api/samples.js, samples/  the two sample teams and their posts
 api/reference.md          the theme reference
-api/vendor/               marked and mustache.js, with their licences
+api/vendor/               marked, mustache.js, highlight.js and KaTeX, with their licences
 web/shell.html            where Holm's head tags come from
 web/llms.txt              Margin explained to agents
 web/studio.html, studio/  Studio, starting out, invites and the editor
@@ -238,7 +250,9 @@ web/themes/               the built-in themes' CSS and fonts
 web/samples/              sample avatars, logos and cover images (made up)
 web/vendor/editor/        the Tiptap bundle and its licences
 web/vendor/feedback/      the feedback form's embed script
+web/vendor/katex/         KaTeX for the editor, its stylesheet and fonts
 tools/editor/             how the bundle is built (not deployed)
+tools/maths-and-code/     how the KaTeX and highlight.js files are built (not deployed)
 tools/theme-check.mjs     checks a theme folder locally (not deployed)
 tools/sample-images.py    draws the sample avatars (not deployed)
 tools/cover-pngs.mjs      lists the sample covers to screenshot as PNGs (not deployed)
@@ -316,6 +330,11 @@ Then:
 
 ## Licences
 
+- [highlight.js](https://highlightjs.org) 11.12.0: BSD-3-Clause, in
+  `api/vendor/highlight/LICENSE`. [KaTeX](https://katex.org) 0.19.0, with its
+  fonts: MIT, in `api/vendor/katex/LICENSE` and `web/vendor/katex/LICENSE`.
+  Both are built by `tools/maths-and-code/` (`npm install && npm run build`),
+  which also rewrites one highlight.js pattern Holm's engine can't read.
 - [marked](https://github.com/markedjs/marked) 18.1.2 and
   [mustache.js](https://github.com/janl/mustache.js) 4.2.0: MIT, in
   `api/vendor/*/LICENSE`. marked's source-map comment is removed.
