@@ -3,24 +3,23 @@
 // complete HTML; /margin/reader.js only adds comments, claps, the account menu, live
 // drawn covers and link previews.
 import { escapeHTML, dates, rfc822, int } from './lib/util.js';
-import { siteRev } from './lib/store.js';
+import { assetVersion, pageTag, pageHeaders, storePage } from './lib/cache.js';
 import { marginSettings } from './settings.js';
 import { blogByHandle, blogDTO, avatarSVG, HANDLE } from './blogs.js';
 import { published, findByPath, postById, bodyOf, cardDTO, canEdit, postPath, wsCached } from './posts.js';
 import { publicComments } from './comments.js';
 import { loadTheme, renderPage, settingValues } from './themes.js';
 import { EMBED_ORIGINS } from './markdown.js';
-import { workspaceBySlug, logoURL, teamHandles } from './workspaces.js';
+import { workspaceBySlug, useWorkspace, logoURL, teamHandles } from './workspaces.js';
 import { render as renderDrawing, normalize as normalizeDrawing, MOTIFS, LOOKS, TONES } from './covers.js';
 import { landingPage } from './landing.js';
 
-export const VERSION = '0.2.0';
 const PAGE_SIZE = 12;
 const SLUG = /^[a-z0-9][a-z0-9-]{0,99}$/;
 
 // ---------- Holm's injected head (icons, manifest, analytics, sign-in sync) ----------
 
-export async function holmBits(env, origin, nonce) {
+export async function holmBits(env, origin) {
   let html = '';
   try {
     const res = await env.holm.web.fetch(new Request(origin + '/shell', { headers: { accept: 'text/html' } }));
@@ -28,34 +27,49 @@ export async function holmBits(env, origin, nonce) {
   } catch { html = ''; }
   const head = [];
   const foot = [];
+  const scripts = [];
   for (const m of html.matchAll(/<link\b[^>]*\brel=["']?(icon|apple-touch-icon|manifest|mask-icon)["']?[^>]*>/gi)) head.push(m[0]);
   for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
     if (/\bsrc=/.test(m[1])) continue;
-    foot.push(`<script nonce="${nonce}"${m[1].replace(/\snonce=["'][^"']*["']/i, '')}>${m[2]}</script>`);
+    foot.push(`<script${m[1].replace(/\snonce=["'][^"']*["']/i, '')}>${m[2]}</script>`);
+    scripts.push(m[2]);
   }
   // Holm may point icons and the analytics beacon at the node's admin host; allow its origin.
   const origins = new Set();
   for (const m of (head.join(' ') + foot.join(' ')).matchAll(/https?:\/\/[a-z0-9.:-]+/gi)) origins.add(m[0]);
-  return { head: head.join('\n'), foot: foot.join('\n'), origins: [...origins] };
+  return { head: head.join('\n'), foot: foot.join('\n'), scripts, origins: [...origins] };
 }
 
-export function nonceValue() {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, '');
+// Pages allow their inline scripts by hash, not a per-response nonce, so one rendering can be
+// cached and answered with 304s.
+export const THEME_SCRIPT = "try{var t=localStorage.getItem('margin.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}";
+const hashes = new Map();
+export async function scriptHashes(codes) {
+  const out = [];
+  for (const code of codes) {
+    if (!hashes.has(code)) {
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(code));
+      hashes.set(code, `'sha256-${btoa(String.fromCharCode(...new Uint8Array(digest)))}'`);
+    }
+    out.push(hashes.get(code));
+  }
+  return out;
 }
 
-export function csp(nonce, host, extra = []) {
+// The feedback form (feedback.zyt.app): Margin keeps a copy of its embed.js, loaded on demand.
+export const FEEDBACK_ORIGIN = 'https://feedback.zyt.app';
+
+export function csp(hashList, host, extra = []) {
   const more = extra.length ? ' ' + extra.join(' ') : '';
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'`,
+    `script-src 'self' ${hashList.join(' ')}`.trim(),
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: blob: https:${more}`,
     "media-src 'self' https:",
     "font-src 'self' data:",
-    `frame-src ${EMBED_ORIGINS.join(' ')}`,
-    `connect-src 'self' wss://${host} ws://${host}${more}`,
+    `frame-src ${EMBED_ORIGINS.join(' ')} ${FEEDBACK_ORIGIN}`,
+    `connect-src 'self' wss://${host} ws://${host} ${FEEDBACK_ORIGIN}${more}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -154,7 +168,7 @@ function baseView(env, ctx, scope, theme, origin, template, extra) {
 
 export function absolute(origin, url) { return !url ? '' : /^https?:/.test(url) ? url : origin + url; }
 
-function head(env, ctx, scope, theme, origin, page, bits, nonce, ld) {
+function head(env, ctx, scope, theme, origin, page, bits, v, ld) {
   const values = settingValues(theme, (scope.themeSettings || {})[theme.id]);
   const colors = theme.settings.filter((s) => s.type === 'color').map((s) => `--${s.key.replace(/_/g, '-')}:${values[s.key]}`).join(';');
   // A workspace with a logo uses it as the tab icon.
@@ -177,20 +191,29 @@ function head(env, ctx, scope, theme, origin, page, bits, nonce, ld) {
     scope.feed_url ? `<link rel="alternate" type="application/rss+xml" title="${escapeHTML(scope.name)}" href="${escapeHTML(scope.feed_url)}">` : '',
     page.feed && page.feed !== scope.feed_url ? `<link rel="alternate" type="application/rss+xml" title="${escapeHTML(page.feed_title || '')}" href="${escapeHTML(page.feed)}">` : '',
     icons,
-    `<link rel="stylesheet" href="/margin/ui.css?v=${VERSION}">`,
+    `<link rel="stylesheet" href="/v/${v}/margin/ui.css">`,
     colors ? `<style>:root{${colors}}</style>` : '',
-    `<script nonce="${nonce}">try{var t=localStorage.getItem('margin.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>`,
-    ld ? `<script type="application/ld+json" nonce="${nonce}">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : '',
+    `<script>${THEME_SCRIPT}</script>`,
+    ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : '',
   ];
   return tags.filter(Boolean).join('\n');
 }
 
-export function foot(boot, bits, nonce) {
+export function foot(boot, bits, v) {
   return [
     `<script type="application/json" id="m-boot">${JSON.stringify(boot).replace(/</g, '\\u003c')}</script>`,
-    `<script type="module" src="/margin/reader.js?v=${VERSION}" nonce="${nonce}"></script>`,
+    `<script type="module" src="/v/${v}/margin/reader.js"></script>`,
     bits.foot,
   ].join('\n');
+}
+
+const HOLM_MARK = '<svg viewBox="0 0 32 32" width="12" height="12" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0ZM6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>';
+export const HOLM_LINK = `<a class="m-holm" href="https://holmhq.com" target="_blank" rel="noopener">${HOLM_MARK}<span>A Holm app</span></a>`;
+export const FEEDBACK_BUTTON = '<button type="button" class="m-feedback" data-m-feedback aria-label="Send feedback"><span class="m-long">Send feedback</span><span class="m-short">Feedback</span></button>';
+
+// {{{margin.credit}}}: the line every theme's footer carries.
+function credit(margin) {
+  return `<span class="m-credit"><a href="/">Written on ${escapeHTML(margin.name)}</a>${HOLM_LINK}${FEEDBACK_BUTTON}</span>`;
 }
 
 export const ACCOUNT = '<div class="m-account" data-m-account><a class="m-avatar-button" href="/auth/login" aria-label="Sign in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></a></div>';
@@ -273,19 +296,28 @@ async function respond(env, ctx, request, scope, template, data) {
   const origin = url.origin;
   let themeId = scope.theme;
   const preview = url.searchParams.get('theme');
+  // Studio's Preview links here; the workspace's owners and admins may try any theme.
+  if (preview && !ctx.admin && ctx.member && scope.slug && !ctx.ws) {
+    const ws = workspaceBySlug(env, scope.slug);
+    if (ws) useWorkspace(env, ctx, ws);
+  }
   if (preview && (ctx.admin || ctx.wsAdmin)) themeId = preview;
   const theme = loadTheme(env, ctx, themeId);
-  const nonce = nonceValue();
-  const bits = await holmBits(env, origin, nonce);
+  const v = await assetVersion(env, origin);
+  const tag = preview || data.private ? null : await pageTag(env, url);
+  const bits = await holmBits(env, origin);
   const signin = env.holm.auth.getLoginURL(url.pathname + url.search);
   const page = { type: template, ...data.page, url: url.pathname, canonical: origin + (data.page.path || url.pathname) };
   const boot = { page: template, layout: theme.comments, signin, ws: scope.slug, ...(data.boot || {}) };
   const view = baseView(env, ctx, scope, theme, origin, template, data.view);
+  const assets = (t) => (t.builtIn ? `/v/${v}${t.assets}` : t.assets);
+  view.theme.assets = assets(theme);
   view.page = page;
   view.margin = {
-    head: head(env, ctx, scope, theme, origin, page, bits, nonce, data.ld),
-    foot: foot(boot, bits, nonce),
+    head: head(env, ctx, scope, theme, origin, page, bits, v, data.ld),
+    foot: foot(boot, bits, v),
     account: ACCOUNT,
+    credit: credit(marginSettings(env)),
     actions: data.actions || '',
     comments: data.comments || '',
   };
@@ -293,20 +325,17 @@ async function respond(env, ctx, request, scope, template, data) {
   try { html = renderPage(theme, template, view); } catch (error) {
     console.error('theme render failed', theme.id, template, String(error && error.message || error).slice(0, 300));
     const fallback = loadTheme(env, ctx, 'quiet');
-    view.theme = { ...view.theme, id: fallback.id, assets: fallback.assets };
+    view.theme = { ...view.theme, id: fallback.id, assets: assets(fallback) };
     html = renderPage(fallback, template, view);
   }
-  return new Response(html, {
-    status: data.status || 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': preview || data.private ? 'private, no-store' : 'public, max-age=0, must-revalidate',
-      'Content-Security-Policy': csp(nonce, url.host, bits.origins),
-      'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': 'strict-origin-when-cross-origin',
-      'X-Margin-Rev': String(siteRev(env)),
-    },
-  });
+  const policy = csp(await scriptHashes([THEME_SCRIPT, ...bits.scripts]), url.host, bits.origins);
+  const status = data.status || 200;
+  if (!tag) {
+    return new Response(html, { status, headers: { ...pageHeaders(null, policy), 'Cache-Control': 'private, no-store' } });
+  }
+  // Margin's admins also see suspended workspaces, so their pages never fill the cache.
+  if (status === 200 && !ctx.admin && request.method === 'GET') storePage(env, tag, html, policy);
+  return new Response(html, { status, headers: pageHeaders(status === 200 ? tag : null, policy, 'miss') });
 }
 
 function paginate(list, url) {
@@ -518,7 +547,7 @@ export async function page(request, env, ctx) {
       const blog = blogByHandle(env, margin.home.slice(1));
       if (blog) return blogPage(env, ctx, request, marginScope(env), blog);
     }
-    return landingPage(env, ctx, request, { holmBits, nonceValue, csp, foot, ACCOUNT, VERSION });
+    return landingPage(env, ctx, request, { holmBits, scriptHashes, THEME_SCRIPT, assetVersion, pageHeaders, csp, foot, ACCOUNT, HOLM_LINK, FEEDBACK_BUTTON });
   }
   if (path === '/sitemap.xml') return sitemap(env, ctx, request);
   if (path === '/robots.txt') return robots(request);

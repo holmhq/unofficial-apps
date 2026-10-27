@@ -2,7 +2,7 @@
 // (the same module the server draws them with). The pointer sets a target; every frame
 // eases the drawing's state toward it and patches the SVG in place, so positions always
 // come from the state and the small looping animations keep running.
-import { normalize, initial, pointer, step, render } from '/margin/covers.js';
+import { normalize, initial, pointer, step, render } from './covers.js';
 
 const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 

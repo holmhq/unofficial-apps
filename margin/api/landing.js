@@ -52,8 +52,8 @@ function example(env, ctx, ws, host) {
 export async function landingPage(env, ctx, request, html) {
   const url = new URL(request.url);
   const margin = marginSettings(env);
-  const nonce = html.nonceValue();
-  const bits = await html.holmBits(env, url.origin, nonce);
+  const v = await html.assetVersion(env, url.origin);
+  const bits = await html.holmBits(env, url.origin);
   const mine = myWorkspaces(env, ctx);
   const canStart = !ctx.member || canCreateWorkspace(env, ctx);
   const spaces = exampleWorkspaces(env, ctx);
@@ -83,10 +83,10 @@ export async function landingPage(env, ctx, request, html) {
 <meta property="og:image" content="${escapeHTML(url.origin)}/social_preview.png">
 <meta name="twitter:card" content="summary_large_image">
 ${bits.head}
-<link rel="preload" href="/themes/editorial/newsreader-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/margin/ui.css?v=${html.VERSION}">
-<link rel="stylesheet" href="/margin/landing.css?v=${html.VERSION}">
-<script nonce="${nonce}">try{var t=localStorage.getItem('margin.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preload" href="/v/${v}/themes/editorial/newsreader-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/v/${v}/margin/ui.css">
+<link rel="stylesheet" href="/v/${v}/margin/landing.css">
+<script>${html.THEME_SCRIPT}</script>
 </head>
 <body class="l-page">
 <header class="l-bar">
@@ -115,17 +115,11 @@ ${bits.head}
     ${mine.length ? '<a class="l-btn l-primary" href="/studio">Open Studio</a>' : canStart ? '<a class="l-btn l-primary" href="/new">Start a workspace</a>' : ''}
   </section>
 </main>
-<footer class="l-foot"><span>${escapeHTML(margin.name)} is open source and runs on Holm.</span><span class="l-foot-links"><a href="https://github.com/holmhq/unofficial-apps/tree/main/margin">Source</a><a href="/llms.txt">For agents</a><a href="https://holmhq.com">Holm</a></span></footer>
-${html.foot({ page: 'landing', signin: env.holm.auth.getLoginURL('/'), ws: null }, bits, nonce)}
+<footer class="l-foot">${html.HOLM_LINK}<a href="https://github.com/holmhq/unofficial-apps/tree/main/margin" target="_blank" rel="noopener">Source</a><a href="/llms.txt">For agents</a>${html.FEEDBACK_BUTTON}</footer>
+${html.foot({ page: 'landing', signin: env.holm.auth.getLoginURL('/'), ws: null }, bits, v)}
 </body>
 </html>`;
-  return new Response(page, {
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=0, must-revalidate',
-      'Content-Security-Policy': html.csp(nonce, url.host, bits.origins),
-      'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': 'strict-origin-when-cross-origin',
-    },
-  });
+  // The landing page knows who is reading (Open Studio or Start writing), so it is never cached.
+  const policy = html.csp(await html.scriptHashes([html.THEME_SCRIPT, ...bits.scripts]), url.host, bits.origins);
+  return new Response(page, { headers: { ...html.pageHeaders(null, policy), 'Cache-Control': 'private, no-cache' } });
 }

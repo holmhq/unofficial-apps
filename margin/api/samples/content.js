@@ -80,7 +80,7 @@ The fourth design drew nothing at all, and it made people uneasy in a different 
 
 So we tightened the frame instead of filling the picture. Day headers got quieter. The hour lines faded to a hairline. Today's column picked up the faintest tint, so the eye always knows where it is, and then we left the rest alone.
 
-![The week view with two quiet days](/samples/cover-1.jpg "A week with room in it")
+![The week view with two quiet days](/c/week-paper-lilac-77.svg "A week with room in it")
 
 ## What we kept
 

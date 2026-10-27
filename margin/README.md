@@ -90,11 +90,12 @@ Studio, in the workspace it names:
 | Tools | What for |
 | --- | --- |
 | `me_get`, `identities_list` | Who you are, your names, your workspaces |
-| `workspaces_create`, `workspace_update`, `invites_create` | Start and run a workspace |
+| `workspaces_create`, `workspace_get`, `workspace_update`, `workspace_leave` | Start a workspace, see and change its settings, leave it |
+| `team_list`, `team_update`, `invites_create`, `invites_revoke` | The team and its open invites; change roles or remove someone; invite and cancel invites |
 | `posts_list`, `posts_get`, `posts_create`, `posts_update`, `posts_delete`, `media_list` | Write in Markdown, pick the drawn cover, draft or publish, edit, take down |
 | `comments_inbox`, `comments_list`, `comments_reply`, `comments_moderate` | Answer ordinary comments; the descriptions tell Claude to leave anything sensitive, critical, legal, personal or about money to the writer |
 | `comments_create` | Comment under any of your names; `sample: true` keeps example discussion visible to the team only, for screenshots |
-| `personas_create`, `personas_update` | Your other names |
+| `personas_create`, `personas_update`, `personas_delete` | Your other names (`identities_list` lists them) |
 | `themes_list`, `themes_reference`, `themes_get`, `themes_validate`, `themes_save`, `themes_activate` | Study, change and check themes; Margin's admins add them, a workspace switches |
 
 Replies Claude posts are marked "Claude" in the inbox. The tool descriptions
@@ -126,8 +127,26 @@ field and hook; Claude reads it through `themes_reference`, and
   through `api/themes.js`, in the workspace's theme. `api/landing.js` draws
   Margin's own front page. Holm adds icons, analytics and sign-in sync only
   to static files, so Margin fetches `web/shell.html` with
-  `env.holm.web.fetch` and copies those tags into each page, with a fresh CSP
-  nonce for its scripts.
+  `env.holm.web.fetch` and copies those tags into each page; the page's CSP
+  allows its inline scripts by hash.
+- **Speed.** Holm loads an app's modules afresh for every request, which
+  costs more than most pages take to render, so `api/main.js` asks
+  `api/lib/cache.js` first and loads the rest only when it must. Each page
+  gets an ETag made of the asset fingerprint, a site revision that every
+  visible change bumps, and the address: browsers revalidate and get a 304,
+  and one rendering (kept in `env.holm.app.kv` for six hours) serves every
+  reader until something changes. Pages carry nothing about who is reading,
+  except Margin's front page, which is never cached. Margin's CSS, scripts
+  and the built-in themes' files load under `/v/<fingerprint>/` and stay in
+  the browser for a year; the fingerprint follows the version and those
+  files' ETags, and is worked out at most every two minutes. A
+  `Speculation-Rules` header lets Chrome and Edge fetch a page while the
+  pointer rests on its link. A clap count on a cached page can trail
+  until the next visible change; signed-in readers see the live count.
+- **Footer.** Each theme's footer prints `{{{margin.credit}}}`: Written on
+  Margin, a Holm mark and Send feedback. The form comes from the owner's
+  [feedback](../feedback/) app through a local copy of its `embed.js`,
+  loaded only when someone points at or taps the button.
 - **Markdown.** `api/markdown.js` renders posts with
   [marked](https://github.com/markedjs/marked) when they're saved, shows raw
   HTML as text, checks every link, and adds Margin's blocks. The HTML is kept
@@ -135,7 +154,7 @@ field and hook; Claude reads it through `themes_reference`, and
 - **Drawn covers.** `api/covers.js` is one plain module that draws every
   cover as SVG from a motif, a look, a tone and a seed, the same in Holm's
   runtime and in browsers. The server serves it at `/c/<motif>-<look>-<tone>-<seed>.svg`
-  and as `/margin/covers.js`; `web/margin/live-covers.js` patches the SVG in
+  and as `/v/<fingerprint>/margin/covers.js`; `web/margin/live-covers.js` patches the SVG in
   place on each animation frame as the pointer moves, and does nothing for
   readers who prefer less motion. Margin never stores uploaded SVG.
 - **Storage.** Shared `env.holm.app.ds` collections: `people` (accounts),
@@ -154,9 +173,9 @@ field and hook; Claude reads it through `themes_reference`, and
   in.
 - **Tools for Claude.** `api/contract.json` declares member operations, which
   Holm serves as MCP tools at `/_holm/mcp` behind its own sign-in and consent.
-  `api/main.js` loads `http.js` and `ops.js` with `import()` and exports thin
-  wrappers, because Holm's contract scan stops at a budget on regex-heavy
-  modules (`CONTRACT_RESOURCE_LIMIT`).
+  `api/main.js` loads `ops.js` with `import()` only when a tool is called and
+  exports thin wrappers, because Holm's contract scan stops at a budget on
+  regex-heavy modules (`CONTRACT_RESOURCE_LIMIT`).
 - **Realtime.** A new comment broadcasts on `post:<id>`; readers refresh.
 - **Reader script.** `web/margin/reader.js` adds the account menu, claps,
   highlights (re-anchored from the quote and the words around it), the
@@ -173,6 +192,7 @@ field and hook; Claude reads it through `themes_reference`, and
 holm.json                 identity, web settings, publish excludes
 holm.symbol.svg           the app icon: lines of text with a note beside them
 api/main.js               entry: fetch and the operation handlers
+api/lib/cache.js          the fast path: cached pages, 304s, versioned files
 api/contract.json         the operations (MCP tools)
 api/http.js, ops.js       the JSON API, and the operations' bodies
 api/pages.js, landing.js  reading pages, feeds, sitemap, link previews; Margin's front page
@@ -192,6 +212,7 @@ web/margin/               the reader script, live covers, the front page's style
 web/themes/               the built-in themes' CSS and fonts
 web/samples/              sample avatars, logos and cover images (made up)
 web/vendor/editor/        the Tiptap bundle and its licences
+web/vendor/feedback/      the feedback form's embed script
 tools/editor/             how the bundle is built (not deployed)
 tools/theme-check.mjs     checks a theme folder locally (not deployed)
 tools/sample-images.py    draws the sample avatars (not deployed)
@@ -235,6 +256,10 @@ Then:
   ```
 - **More than one address.** Add hosts with `holm @<peer> host add`, and set
   the primary address in Studio → Margin; the others redirect to it.
+- **Feedback.** Send feedback goes to the owner's feedback app. Set
+  `project` and `origin` in `loadFeedback()` in `web/margin/reader.js` to
+  your own project, and `FEEDBACK_ORIGIN` in `api/pages.js` (the pages' CSP
+  lets it frame the form), or remove `{{{margin.credit}}}`'s button.
 - **Invite emails** need the node's email sending (section 12 of the guide).
   Without it, Margin shows the link to send yourself.
 - **Uploads** follow the node's request body limit (1 MiB by default):
@@ -271,6 +296,8 @@ Then:
 - [Inter](https://rsms.me/inter/) and
   [Newsreader](https://github.com/productiontype/Newsreader): SIL Open Font
   License 1.1, beside the fonts in `web/themes/`.
+- The feedback embed is this repository's own [feedback](../feedback/) app
+  (MIT).
 - Icons and cover drawings are drawn for Margin, or adapted from
   [Lucide](https://lucide.dev) (ISC, `web/vendor/lucide/LICENSE`) and
   [Phosphor](https://phosphoricons.com)'s clapping hands (MIT,

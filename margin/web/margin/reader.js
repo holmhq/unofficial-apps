@@ -248,9 +248,7 @@ function claps() {
     paint();
     mine = Math.max(mine, 0);
     burst(button, `+${mine + queued}`);
-    button.classList.remove('m-pulse');
-    void button.offsetWidth;
-    button.classList.add('m-pulse');
+    pulse(button);
     if (navigator.vibrate) navigator.vibrate(4);
     clearTimeout(timer);
     timer = setTimeout(flush, 650);
@@ -282,12 +280,53 @@ function claps() {
   window.addEventListener('pagehide', () => { if (queued) navigator.sendBeacon?.(`/api/posts/${postId}/claps`, new Blob([JSON.stringify({ add: queued })], { type: 'application/json' })); });
 }
 
+// The count floats above the hands from the row, not from the icon, so the pulse never tilts or
+// shifts it; a pulse still running is left to finish rather than restarted mid-way.
 function burst(button, text) {
   const icon = button.querySelector('.m-clap-icon') || button;
-  icon.querySelector('.m-burst')?.remove();
+  const row = button.parentElement;
+  row.querySelector(':scope > .m-burst')?.remove();
   const el = h(`<span class="m-burst">${esc(text)}</span>`);
-  icon.append(el);
+  const a = icon.getBoundingClientRect();
+  const b = row.getBoundingClientRect();
+  el.style.left = `${a.left - b.left + a.width / 2}px`;
+  el.style.bottom = `${b.bottom - a.top + 6}px`;
+  row.append(el);
   setTimeout(() => el.remove(), 720);
+}
+
+function pulse(button) {
+  const icon = button.querySelector('.m-clap-icon');
+  if (!icon || reduced() || !icon.animate || icon.getAnimations().length) return;
+  icon.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.22)', offset: 0.4 }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.34, 1.5, .64, 1)' });
+}
+
+// ---------- feedback ----------
+// Send feedback opens Margin's form on feedback.zyt.app. Its script (a copy kept in
+// /vendor/feedback/) loads only when someone heads for the button.
+
+let feedbackScript = null;
+function loadFeedback() {
+  if (!feedbackScript) {
+    feedbackScript = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/vendor/feedback/embed.js';
+      Object.assign(s.dataset, { project: 'arj5vnyf', origin: 'https://feedback.zyt.app', color: '#1a7f64', button: 'none', preload: 'hover' });
+      s.onload = () => (window.HolmFeedback ? resolve(window.HolmFeedback) : reject(new Error('Feedback is not available right now.')));
+      s.onerror = () => { feedbackScript = null; reject(new Error('Feedback is not available right now.')); };
+      document.head.append(s);
+    });
+  }
+  return feedbackScript;
+}
+
+function feedback() {
+  for (const button of $$('[data-m-feedback]')) {
+    const warm = () => loadFeedback().then((f) => f.preload && f.preload()).catch(() => {});
+    button.addEventListener('pointerenter', warm, { once: true });
+    button.addEventListener('focus', warm, { once: true });
+    button.addEventListener('click', () => loadFeedback().then((f) => f.open()).catch((error) => toast(error.message)));
+  }
 }
 
 // ---------- share ----------
@@ -948,6 +987,7 @@ function live() {
 
 account();
 share();
+feedback();
 if (postId) {
   claps();
   responsesEvents();
@@ -962,4 +1002,4 @@ if (postId) {
   window.addEventListener('load', () => notes.paint());
 }
 previews();
-if (document.querySelector('img[src*="/c/"], [data-m-drawing]')) import('/margin/live-covers.js').then((m) => m.upgrade()).catch(() => {});
+if (document.querySelector('img[src*="/c/"], [data-m-drawing]')) import('./live-covers.js').then((m) => m.upgrade()).catch(() => {});

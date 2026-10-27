@@ -964,6 +964,53 @@
         }
       }
     },
+    "personas.delete": {
+      "handler": "opPersonasDelete",
+      "auth": "member",
+      "risk": "destructive",
+      "sensitive": true,
+      "summary": "Remove one of your personas",
+      "description": "Removes a persona of yours that has no posts (delete or move its posts first). Comments written under it stay, shown as @handle. Confirm with the person before calling.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 31
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
     "media.list": {
       "handler": "opMediaList",
       "auth": "member",
@@ -980,6 +1027,52 @@
             "maximum": 100
           }
         },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
+    "workspace.get": {
+      "handler": "opWorkspaceGet",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "See a workspace's settings (owners and admins)",
+      "description": "Returns the workspace's name, tagline, description, home, moderation, cover style, theme, menu links and pinned posts, with your role. Change them with workspace.update, the theme with themes.activate, and the team with team.list and team.update.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          }
+        },
+        "required": [
+          "workspace"
+        ],
         "additionalProperties": false
       },
       "output": {
@@ -1097,6 +1190,161 @@
         },
         "required": [
           "workspace"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
+    "workspace.leave": {
+      "handler": "opWorkspaceLeave",
+      "auth": "member",
+      "risk": "destructive",
+      "sensitive": true,
+      "summary": "Leave a workspace",
+      "description": "Takes you off the workspace. Your posts there stay up under your names. The last owner can't leave; make someone else an owner first with team.update. Confirm with the person before calling.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          }
+        },
+        "required": [
+          "workspace"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
+    "team.list": {
+      "handler": "opTeamList",
+      "auth": "member",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "List a workspace's team and open invites (owners and admins)",
+      "description": "Returns each member (account id, role, name, picture, email, the names they write under, when they joined; you is true for the caller) and every invite not revoked (id, email, role, who sent it, expiry, used). Pass an account to team.update and an invite id to invites.revoke.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          }
+        },
+        "required": [
+          "workspace"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
+    "team.update": {
+      "handler": "opTeamUpdate",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
+      "summary": "Change someone's role, or remove them (owners and admins)",
+      "description": "role is owner, admin, writer, or remove to take them off the workspace (their posts stay). Only owners add or remove owners, and a workspace keeps at least one owner. Confirm removals with the person first.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "account": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "writer",
+              "remove"
+            ]
+          }
+        },
+        "required": [
+          "workspace",
+          "account",
+          "role"
         ],
         "additionalProperties": false
       },
@@ -1443,6 +1691,59 @@
         "required": [
           "workspace"
         ]
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
+    "invites.revoke": {
+      "handler": "opInvitesRevoke",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
+      "summary": "Cancel an invite link (owners and admins)",
+      "description": "Pass the invite's id (from invites.create or team.list). The link stops working; anyone who already joined stays.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "workspace",
+          "id"
+        ],
+        "additionalProperties": false
       },
       "output": {
         "type": "object"

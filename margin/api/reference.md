@@ -76,6 +76,7 @@ Triple braces print HTML. Only these may use them:
 | `{{{margin.foot}}}` | layout, before `</body>` | Margin's scripts |
 | `{{{body}}}` | layout | the page template's output |
 | `{{{margin.account}}}` | layout, in the header | the round avatar button and account menu |
+| `{{{margin.credit}}}` | layout, in the footer | "Written on Margin", the Holm mark and Send feedback; its three parts join the footer's own row |
 | `{{{post.body}}}` | post.html | the post |
 | `{{{margin.actions}}}` | post.html | clap, comment count, share (print it once or twice) |
 | `{{{margin.comments}}}` | post.html | responses and the comment box |

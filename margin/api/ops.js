@@ -4,14 +4,14 @@
 import { reject, int } from './lib/util.js';
 import { context, requireMember, requireJoined, requireWriter, requireWsAdmin, requireAdmin } from './people.js';
 import { marginSettings } from './settings.js';
-import { blogByHandle, ownDTO, myIdentities, writableBlogs, createPersona, updateBlog } from './blogs.js';
+import { blogByHandle, ownDTO, myIdentities, writableBlogs, createPersona, updateBlog, deletePersona } from './blogs.js';
 import { createPost, updatePost, deletePost, postById, editorDTO, cardDTO, canEdit, postsOf, published, wsCached } from './posts.js';
 import { listForPost, createComment, moderate, inbox } from './comments.js';
 import { listMine } from './media.js';
-import { createInvite } from './invites.js';
+import { createInvite, listInvites, revokeInvite } from './invites.js';
 import { listThemes, loadTheme, validate, saveTheme, themeFiles, settingValues, cleanSetting } from './themes.js';
 import { postAtPath } from './pages.js';
-import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, wsDTO, canCreateWorkspace } from './workspaces.js';
+import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, wsDTO, canCreateWorkspace, teamList, setRole, leave } from './workspaces.js';
 
 // ---------- named operations (MCP tools) ----------
 
@@ -69,7 +69,7 @@ export function opMe(input, env) {
     out.guide = out.needs_handle
       ? 'This person has not picked a name on Margin yet. Ask them for a handle and do that in Studio first; you cannot pick it for them.'
       : out.workspaces.length
-        ? 'Pass `workspace` (an address from workspaces) to the other tools. Write posts in Markdown with posts_create (draft unless asked to publish) and share the preview link. Check comments_inbox for comments that need approval or a reply; answer only ordinary ones and ask about anything sensitive. Use `as` for one of their names; never reveal which names belong to the same person.'
+        ? 'Pass `workspace` (an address from workspaces) to the other tools. Write posts in Markdown with posts_create (draft unless asked to publish) and share the preview link. Check comments_inbox for comments that need approval or a reply; answer only ordinary ones and ask about anything sensitive. Use `as` for one of their names; never reveal which names belong to the same person. Their names: personas_create, personas_update, personas_delete. Owners and admins run the workspace with workspace_get, workspace_update, themes_activate, team_list, team_update, invites_create and invites_revoke; confirm removals first.'
         : 'They are not on a workspace yet. Offer to start one with workspaces_create (ask for its name), or they can open an invite link. They can comment on any post meanwhile.';
     return out;
   }, true);
@@ -198,6 +198,15 @@ export function opPersonasUpdate(input, env) {
     return ownDTO(updateBlog(env, ctx, blog, input));
   });
 }
+export function opPersonasDelete(input, env) {
+  return op(env, input, (ctx) => {
+    requireMember(ctx);
+    const blog = blogByHandle(env, String(input.handle).replace(/^@/, '').toLowerCase());
+    if (!blog) reject(404, 'not_found', `There is no @${input.handle}.`);
+    deletePersona(env, ctx, blog);
+    return { deleted: true, handle: blog.handle };
+  });
+}
 export function opMediaList(input, env) {
   return op(env, input, (ctx) => { requireMember(ctx); return { media: listMine(env, ctx, int(input.limit, 40, 1, 100)) }; }, true);
 }
@@ -208,6 +217,28 @@ export function opWorkspaceUpdate(input, env) {
     const ws = updateWorkspace(env, ctx, change);
     return { ...wsDTO(ws), home: ws.home, moderation: ws.moderation, cover: ws.cover, theme: ws.theme, url: absolute(env, `/${ws.slug}`) };
   });
+}
+export function opWorkspaceGet(input, env) {
+  return op(env, input, (ctx) => {
+    requireWsAdmin(ctx);
+    const ws = ctx.ws;
+    return {
+      ...wsDTO(ws), role: ctx.wsRole, description: ws.description || '', home: ws.home, moderation: ws.moderation,
+      cover: ws.cover, theme: ws.theme, nav: ws.nav || [], featured: ws.featured || [], url: absolute(env, `/${ws.slug}`),
+    };
+  }, true);
+}
+export function opWorkspaceLeave(input, env) {
+  return op(env, input, (ctx) => { requireMember(ctx); if (!ctx.ws) reject(400, 'invalid_input', 'Say which workspace to leave.'); return leave(env, ctx); });
+}
+export function opTeamList(input, env) {
+  return op(env, input, (ctx) => { requireWsAdmin(ctx); return { members: teamList(env, ctx), invites: listInvites(env, ctx) }; }, true);
+}
+export function opTeamUpdate(input, env) {
+  return op(env, input, (ctx) => { requireWsAdmin(ctx); return setRole(env, ctx, String(input.account || ''), input.role); });
+}
+export function opInvitesRevoke(input, env) {
+  return op(env, input, (ctx) => { requireWsAdmin(ctx); return revokeInvite(env, ctx, String(input.id || '')); });
 }
 export function opThemesList(input, env) {
   return op(env, input, (ctx) => { requireWsAdmin(ctx); return { active: ctx.ws.theme, themes: listThemes(env) }; }, true);

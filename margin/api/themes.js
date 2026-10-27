@@ -12,7 +12,7 @@ export const TEMPLATES = ['layout', 'home', 'blog', 'list', 'post', 'error'];
 export const LAYOUTS = ['panel', 'margin'];
 const TEXT_TYPES = { css: 'text/css', html: 'text/html', json: 'application/json', svg: 'image/svg+xml', txt: 'text/plain', md: 'text/markdown' };
 const BINARY_TYPES = { woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif', ico: 'image/x-icon' };
-const RAW_ALLOWED = new Set(['body', 'margin.head', 'margin.foot', 'margin.account', 'margin.actions', 'margin.comments', 'post.body']);
+const RAW_ALLOWED = new Set(['body', 'margin.head', 'margin.foot', 'margin.account', 'margin.credit', 'margin.actions', 'margin.comments', 'post.body']);
 const SETTING_TYPES = ['text', 'textarea', 'color', 'boolean', 'select', 'url'];
 const LIMITS = { files: 80, text: 200000, asset: 1500000, total: 6000000 };
 

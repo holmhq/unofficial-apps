@@ -34,7 +34,12 @@ script is in the folder.
   workspaces. A workspace's owners make its home the latest posts, a curated
   set of pinned posts, or one writer's page.
 - Reading pages are rendered on the server, readable with no JavaScript,
-  with feeds, a sitemap and social cards. Posts are Markdown underneath, with
+  with feeds, a sitemap and social cards. They must feel instant: keep each
+  rendered page until something visible changes, answer revalidations with
+  a 304 before loading the rest of the app, keep Margin's own CSS and
+  scripts in the browser under versioned addresses, and prefetch links on
+  hover. Every footer has a small Holm mark ("A Holm app") and Send
+  feedback, from this repository's feedback app. Posts are Markdown underneath, with
   callouts, embeds from a bare link, cards for other posts, and figures.
 - Every post without a photo gets a drawn cover: an isometric technical line
   drawing (one projection, three line weights, flat colour, small labels) in
@@ -56,8 +61,8 @@ script is in the folder.
   workspace settings, your names and personas, Claude, and Margin's settings
   for its admins. MCP tools for Claude that take a workspace: write and edit
   posts, answer only ordinary comments (asking about anything sensitive),
-  comment under any of your names, manage personas, start and run workspaces,
-  and work on themes. A short /llms.txt for agents.
+  comment under any of your names, manage personas, start and run workspaces
+  (settings, the team and its roles, invites, leaving), and work on themes. A short /llms.txt for agents.
 - Sample content: two fictional teams with their own logos (made with
   holm app identity), writers, posts and comments, loaded from Studio.
 - UI refined like Apple's apps: Inter, one accent, frosted bars, sheets on
@@ -105,3 +110,12 @@ with placeholders.
 > use proper icons for the companies; may be use our logo generation stack or similar to get good ones […] I hope the blog will also get images of this? as we need that as cover images for each blog
 
 > I like paper the best; but i think the two companies should have different styles: paper for lumen & coral for copper
+
+**Margin 0.3.0: a footer like the other apps, faster pages, more for Claude**
+
+> Lets refine margin:
+> - make the footer like other apps, with tiny holm logo & feedback
+> - the clap button had an orientation bug on click; it took a jerk to be centered
+> - i hope proper page caching is done so that the pages feel super fast?
+> - i hope personas can be managed via claude?
+> - and also workspace and everything about it?

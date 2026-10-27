@@ -126,19 +126,31 @@
 .m-count { font-variant-numeric: tabular-nums; min-width: 1ch; }
 .m-clap-icon { display: grid; place-items: center; position: relative; }
 .m-clap.m-clapped { color: var(--m-accent-text); }
-.m-clap.m-pulse .m-clap-icon { animation: m-clap .32s var(--m-spring); }
 .m-burst {
-  position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%);
+  position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); z-index: 2;
   min-width: 38px; height: 38px; padding: 0 8px; border-radius: 19px; background: var(--m-accent); color: #fff;
   display: grid; place-items: center; font: 700 14px/1 var(--m-font); font-variant-numeric: tabular-nums;
   pointer-events: none; animation: m-burst .7s var(--m-ease) forwards; white-space: nowrap;
 }
-@keyframes m-clap { 0% { transform: scale(1); } 40% { transform: scale(1.28) rotate(-8deg); } 100% { transform: scale(1); } }
 @keyframes m-burst { 0% { opacity: 0; transform: translate(-50%, 8px) scale(.6); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -18px) scale(.96); } }
 @keyframes m-pop { from { opacity: 0; transform: scale(.94) translateY(-4px); } to { opacity: 1; transform: none; } }
 @keyframes m-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes m-rise { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes m-slide { from { transform: translateX(100%); } to { transform: none; } }
+
+/* ---------- the footer's credit line ({{{margin.credit}}}) and the landing footer ---------- */
+.m-credit { display: contents; }
+.m-holm { display: inline-flex; align-items: center; gap: 6px; color: inherit; text-decoration: none; white-space: nowrap; }
+.m-holm svg { width: 12px; height: 12px; flex: none; }
+.m-feedback { appearance: none; -webkit-appearance: none; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; transition: color .2s; }
+.m-feedback:focus-visible { outline: 2px solid var(--m-accent); outline-offset: 3px; border-radius: 3px; }
+@media (hover: hover) { .m-holm:hover, .m-feedback:hover { color: var(--m-ink); } }
+.m-short { display: none; }
+@media (max-width: 560px) {
+  .m-credit { display: flex; flex-basis: 100%; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+  .m-long { display: none; }
+  .m-short { display: inline; }
+}
 
 /* ---------- highlights and the selection bar ---------- */
 mark.m-hl { background: var(--m-highlight); color: inherit; border-radius: 2px; box-shadow: 0 2px 0 -0.5px color-mix(in srgb, var(--m-accent) 55%, transparent); cursor: pointer; transition: background .2s; }

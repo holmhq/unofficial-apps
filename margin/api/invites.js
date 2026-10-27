@@ -16,7 +16,7 @@ export async function createInvite(env, ctx, input, origin) {
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) reject(400, 'invalid_input', 'That email address looks wrong.');
   const code = randomId(22);
   const now = Date.now();
-  env.holm.app.ds.insert('invites', {
+  const id = env.holm.app.ds.insert('invites', {
     ws: ctx.ws.slug, codeHash: await sha256(code), email: email ? email.toLowerCase() : null, role, note: text(input.note, 200, 'Note') || '',
     createdBy: ctx.member.id, createdByName: ctx.member.name || '', createdAt: now, expiresAt: now + DAYS_14, usedBy: null, usedAt: null, revoked: false,
   });
@@ -34,7 +34,7 @@ export async function createInvite(env, ctx, input, origin) {
       emailed = { ok: false, code: 'EMAIL_FAILED', message: String(error && error.message || error).slice(0, 200) };
     }
   }
-  return { link, role, workspace: ctx.ws.slug, email: email || null, expires_at: new Date(now + DAYS_14).toISOString(), emailed };
+  return { id, link, role, workspace: ctx.ws.slug, email: email || null, expires_at: new Date(now + DAYS_14).toISOString(), emailed };
 }
 
 async function find(env, code) {
