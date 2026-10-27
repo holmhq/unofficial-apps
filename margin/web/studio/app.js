@@ -276,8 +276,8 @@ async function inviteStep(ws) {
 
 function connectBlock() {
   const url = `${location.origin}/_holm/mcp`;
-  return `<div class="group"><div class="field"><label>In Claude</label><small style="margin:0 0 8px">Settings → Connectors → Add custom connector, then paste:</small><div class="code-box"><span>${esc(url)}</span><button class="btn small primary" data-copy-url>${icons.copy}Copy</button></div></div>
-    <div class="field"><label>In Claude Code</label><div class="code-box"><span>claude mcp add --transport http margin ${esc(url)}</span><button class="btn small" data-copy-cli aria-label="Copy">${icons.copy}</button></div></div></div>
+  return `<div class="group"><div class="field"><label>In Claude</label><small style="margin:0 0 8px">Settings → Connectors → Add custom connector, then paste:</small><div class="code-box wrap"><span>${esc(url)}</span><button class="btn small" data-copy-url>${icons.copy}Copy</button></div></div>
+    <div class="field"><label>In Claude Code</label><div class="code-box wrap"><span>claude mcp add --transport http margin ${esc(url)}</span><button class="btn small" data-copy-cli>${icons.copy}Copy</button></div></div></div>
     ${me.admin ? '' : '<p class="ob-note">For now, Holm opens these tools only to this server’s admins. Everyone can write in Studio until it opens them to all.</p>'}`;
 }
 function wireConnect(scope) {
@@ -545,7 +545,7 @@ let inboxTab = 'pending';
 async function commentsView(panel, top) {
   setTop(top, 'Comments');
   panel.innerHTML = `<div class="page"><h2 class="page-title">Comments</h2>
-    <div class="toolbar"><div class="seg" data-tab>${[['pending', 'Waiting'], ['unanswered', 'Unanswered'], ['recent', 'Recent']].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${inboxTab === v}">${l}<span data-n="${v}"></span></button>`).join('')}</div></div>
+    <div class="toolbar"><div class="seg" data-tab>${[['pending', 'Waiting'], ['unanswered', 'Unanswered'], ['recent', 'Recent']].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${inboxTab === v}">${l}<span class="seg-count" data-n="${v}"></span></button>`).join('')}</div></div>
     <div data-list><div class="spinner"></div></div></div>`;
   const load = () => {
     const list = $('[data-list]', panel);
@@ -556,8 +556,8 @@ async function commentsView(panel, top) {
   const paintInbox = (list, data) => {
     counts.pending = data.pending_count;
     paintNavCounts();
-    $('[data-n="pending"]', panel).textContent = data.pending_count ? ` ${data.pending_count}` : '';
-    $('[data-n="unanswered"]', panel).textContent = data.unanswered_count ? ` ${data.unanswered_count}` : '';
+    $('[data-n="pending"]', panel).textContent = data.pending_count ? String(data.pending_count) : '';
+    $('[data-n="unanswered"]', panel).textContent = data.unanswered_count ? String(data.unanswered_count) : '';
     const items = data[inboxTab] || [];
     if (!items.length) {
       const text = { pending: ['Nothing waiting', 'Comments that need approval show up here.'], unanswered: ['All caught up', 'Threads where a reader is waiting on you show up here.'], recent: ['No comments yet', 'Comments on your posts show up here.'] }[inboxTab];
@@ -621,6 +621,16 @@ async function commentsView(panel, top) {
 // ---------- team ----------
 
 const ROLE_LABEL = { owner: 'Owner', admin: 'Admin', writer: 'Writer' };
+// "expires in 13 days", "expires tomorrow", "expires in 5 hours".
+function expiresIn(iso) {
+  const left = Date.parse(iso) - Date.now();
+  if (left <= 0) return 'expired';
+  const hours = Math.round(left / 3600000);
+  if (hours < 1) return 'expires within the hour';
+  if (hours < 24) return `expires in ${hours} hour${hours === 1 ? '' : 's'}`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? 'expires tomorrow' : `expires in ${days} days`;
+}
 
 async function teamView(panel, top) {
   const w = me.workspace;
@@ -638,7 +648,7 @@ async function teamView(panel, top) {
       <div class="group-title">Members</div><div class="group">${data.members.map((m) => `<div class="row"><img class="avatar" src="${esc(m.picture || (m.names[0] && m.names[0].avatar) || '')}" alt=""><span class="row-main"><span class="row-title">${esc(m.name)}${m.you ? ' (you)' : ''}</span><span class="row-sub">${m.names.length ? 'Writes as ' + m.names.map((n) => '@' + esc(n.handle)).join(', ') : 'Hasn’t written yet'}${m.email ? ` · ${esc(m.email)}` : ''}</span></span>
         <select class="select boxed" style="width:auto" data-role="${esc(m.account)}"${m.you || (m.role === 'owner' && !owner) || m.account.startsWith('sample:') ? ' disabled' : ''}>${['owner', 'admin', 'writer'].filter((r) => r !== 'owner' || owner || m.role === 'owner').map((r) => `<option value="${r}"${m.role === r ? ' selected' : ''}>${ROLE_LABEL[r]}</option>`).join('')}<option value="remove">Remove</option></select></div>`).join('')}</div>
       <p class="group-note">Only ${esc(w.name)}’s owners and admins see which names a member writes under here. Readers never do.</p>
-      <div class="group-title">Open invites</div>${open.length ? `<div class="group">${open.map((i) => `<div class="row"><span class="row-main"><span class="row-title">${esc(i.email || 'Anyone with the link')}</span><span class="row-sub">${ROLE_LABEL[i.role]} · expires ${esc(ago(i.expires_at).replace(' ago', ''))}</span></span><button class="btn small" data-revoke="${esc(i.id)}">Revoke</button></div>`).join('')}</div>` : '<div class="group"><div class="row"><span class="row-sub">No open invites.</span></div></div>'}
+      <div class="group-title">Open invites</div>${open.length ? `<div class="group">${open.map((i) => `<div class="row"><span class="row-main"><span class="row-title">${esc(i.email || 'Anyone with the link')}</span><span class="row-sub">${ROLE_LABEL[i.role]} · ${esc(expiresIn(i.expires_at))}</span></span><button class="btn small" data-revoke="${esc(i.id)}">Revoke</button></div>`).join('')}</div>` : '<div class="group"><div class="row"><span class="row-sub">No open invites.</span></div></div>'}
       ${w.role !== 'owner' ? '<div style="margin-top:28px"><button class="btn danger" data-leave>Leave this workspace</button></div>' : ''}`;
     for (const sel of $$('[data-role]', panel)) {
       sel.addEventListener('change', async () => {

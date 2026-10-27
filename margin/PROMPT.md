@@ -162,3 +162,9 @@ with placeholders.
 > - also, think about code syntax highlighting is possible to add
 > - also latex / maths sign sort of formatting
 > - so that formulae & code will render nicely
+
+**Margin 0.6.1: an attention-to-detail pass**
+
+> and do a "attention to detail pass" which will take the app to proper refinement
+
+> - do all fine edits like that

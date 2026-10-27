@@ -226,6 +226,12 @@ svg { flex: none; }
 
 .code-box { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 14px; border-radius: 12px; background: var(--fill-2); font-family: var(--mono); font-size: 13.5px; }
 .code-box span { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; }
+.code-box.wrap { align-items: flex-start; }
+.code-box.wrap span { white-space: normal; overflow-wrap: anywhere; padding-top: 5px; line-height: 1.45; }
+.code-box .btn { flex: none; }
+.seg-count:not(:empty) { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+h1, h2, h3, .row-title { text-wrap: balance; }
+p, .row-sub, small { text-wrap: pretty; }
 .steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; color: var(--ink-2); }
 .prompt-list { display: flex; flex-direction: column; gap: 8px; margin: 0 0 24px; }
 .prompt { padding: 12px 14px; border-radius: 12px; background: var(--fill-2); font-size: 14.5px; color: var(--ink-2); }

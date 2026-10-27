@@ -233,13 +233,22 @@ export function render(md, options = {}) {
 
   const source = String(md || '');
   const tokens = marked.lexer(source);
+  // The excerpt is the first real paragraph, preferring one without maths (TeX reads badly
+  // as plain text); failing that, the first one with its formulae left out.
   let excerpt = '';
+  let fallback = '';
+  const hasMath = (list) => (list || []).some((t) => t.type === 'mathInline' || hasMath(t.tokens));
+  const withoutMath = (list) => (list || []).filter((t) => t.type !== 'mathInline').map((t) => (t.tokens ? { ...t, tokens: withoutMath(t.tokens) } : t));
   for (const t of tokens) {
-    if (t.type === 'paragraph' && !(t.tokens.length === 1 && (t.tokens[0].type === 'image' || t.tokens[0].type === 'link'))) {
-      const value = decode(plain(t.tokens)).replace(/\s+/g, ' ').trim();
-      if (value.length > 40 && !CALLOUT.test(t.raw)) { excerpt = value; break; }
+    if (t.type === 'paragraph' && !(t.tokens.length === 1 && (t.tokens[0].type === 'image' || t.tokens[0].type === 'link')) && !CALLOUT.test(t.raw)) {
+      const math = hasMath(t.tokens);
+      const value = decode(plain(math ? withoutMath(t.tokens) : t.tokens)).replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').trim();
+      if (value.length <= 40) continue;
+      if (!math) { excerpt = value; break; }
+      if (!fallback) fallback = value;
     }
   }
+  if (!excerpt) excerpt = fallback;
   const held = marked.parser(tokens);
   const html = held.replace(/\u0000(\d+)\u0000/g, (_, n) => formulas[Number(n)] || '');
   const textOnly = decode(held.replace(/\u0000\d+\u0000/g, ' x ').replace(/<!--[\s\S]*?-->/g, ' ').replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();

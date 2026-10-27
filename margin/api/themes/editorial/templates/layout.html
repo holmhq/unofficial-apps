@@ -29,7 +29,7 @@
     <span class="e-foot-name">{{site.name}}</span>
     {{#site.tagline}}<span>{{site.tagline}}</span>{{/site.tagline}}
     <span class="e-gap"></span>
-    <a href="{{site.feed_url}}">RSS</a>
+    {{#site.feed_url}}<a href="{{site.feed_url}}">RSS</a>{{/site.feed_url}}
     {{{margin.credit}}}
   </div>
 </footer>

@@ -4,7 +4,7 @@
     <h1 class="q-title">{{post.title}}</h1>
     {{#post.subtitle}}<p class="q-subtitle">{{post.subtitle}}</p>{{/post.subtitle}}
     <div class="q-byline">
-      <a href="{{blog.url}}"><img class="q-avatar" src="{{blog.avatar}}" alt="" width="40" height="40"></a>
+      <a href="{{blog.url}}" aria-label="{{blog.name}}"><img class="q-avatar" src="{{blog.avatar}}" alt="" width="40" height="40"></a>
       <div class="q-byline-text">
         <a class="q-byline-name" href="{{blog.url}}">{{blog.name}}</a>
         <span class="q-byline-meta"><time datetime="{{post.date_iso}}">{{post.date}}</time> · {{post.reading_time}}</span>

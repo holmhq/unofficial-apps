@@ -5,14 +5,14 @@
 export const WORKSPACES = [
   {
     slug: 'lumen', name: 'Lumen', logo: 'logo-lumen.png', theme: 'editorial', home: 'curated', moderation: 'outsiders',
-    cover: { look: 'paper', tone: 'lilac' },
+    cover: { look: 'paper', tone: 'lilac' }, themeSettings: { editorial: { accent: '#5b4bd5' } },
     tagline: 'A small team making a calm calendar',
     description: 'Lumen is a small team making a calm calendar. This is where we write about design, engineering and how we work. (Sample content: the team and posts are made up.)',
     team: ['maya', 'theo', 'ines', 'noah'], owner: 'maya',
   },
   {
     slug: 'copperline', name: 'Copperline', logo: 'logo-copperline.png', theme: 'quiet', home: 'latest', moderation: 'outsiders',
-    cover: { look: 'flat', tone: 'coral' },
+    cover: { look: 'flat', tone: 'coral' }, themeSettings: { quiet: { accent: '#c8492f' } },
     tagline: 'A small team building a quiet home battery',
     description: 'Copperline makes a home battery you can forget about. Field notes, hardware and the odd mistake. (Sample content: the team and posts are made up.)',
     team: ['elena', 'jonah', 'kofi'], owner: 'elena',

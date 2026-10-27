@@ -50,7 +50,7 @@ async function run(env, ctx, origin, job, [kind, key]) {
     if (!blogByHandle(env, w.slug)) claimHandle(env, w.slug, { kind: 'workspace', ws: w.slug, ownerId: null, name: w.name, bio: w.tagline, avatar: logo, picture: '', sample: true });
     env.holm.app.ds.insert('workspaces', {
       ...WS_DEFAULTS, slug: w.slug, name: w.name, tagline: w.tagline, description: w.description, logo, theme: w.theme,
-      home: w.home, moderation: w.moderation, cover: w.cover, createdBy: ctx.member.id, createdAt: Date.now(), sample: true,
+      home: w.home, moderation: w.moderation, cover: w.cover, themeSettings: w.themeSettings || {}, createdBy: ctx.member.id, createdAt: Date.now(), sample: true,
     });
     for (const h of w.team) env.holm.app.ds.insert('members', { ws: w.slug, account: `sample:${h}`, role: h === w.owner ? 'owner' : 'writer', identities: [h], joinedAt: Date.now(), sample: true });
   } else if (kind === 'post') {

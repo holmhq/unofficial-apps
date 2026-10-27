@@ -5,7 +5,7 @@
       <h1 class="e-title">{{post.title}}</h1>
       {{#post.subtitle}}<p class="e-subtitle">{{post.subtitle}}</p>{{/post.subtitle}}
       <div class="e-byline">
-        <a href="{{blog.url}}"><img class="e-avatar" src="{{blog.avatar}}" alt="" width="44" height="44"></a>
+        <a href="{{blog.url}}" aria-label="{{blog.name}}"><img class="e-avatar" src="{{blog.avatar}}" alt="" width="44" height="44"></a>
         <div>
           <a class="e-byline-name" href="{{blog.url}}">{{blog.name}}</a> <span class="e-byline-handle">@{{blog.handle}}</span>
           <div class="e-meta">{{post.reading_time}} · <time datetime="{{post.date_iso}}">{{post.date}}</time></div>

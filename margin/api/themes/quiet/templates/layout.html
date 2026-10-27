@@ -27,7 +27,7 @@
 <footer class="q-foot">
   <div class="q-foot-inner">
     <span>© {{year}} {{site.name}}</span>
-    <a href="{{site.feed_url}}">RSS</a>
+    {{#site.feed_url}}<a href="{{site.feed_url}}">RSS</a>{{/site.feed_url}}
     <span class="q-bar-gap"></span>
     {{{margin.credit}}}
   </div>

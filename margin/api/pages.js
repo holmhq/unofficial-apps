@@ -135,7 +135,7 @@ function baseView(env, ctx, scope, theme, origin, template, extra) {
   const view = {
     site: {
       name: scope.name, initial: (scope.name || '?').trim().charAt(0).toUpperCase(), tagline: scope.tagline, description: scope.description,
-      url: origin + scope.home_url, home_url: scope.home_url, latest_url: scope.latest_url, feed_url: scope.feed_url || '/sitemap.xml', locale: 'en',
+      url: origin + scope.home_url, home_url: scope.home_url, latest_url: scope.latest_url, feed_url: scope.feed_url || null, locale: 'en',
       home_is_blog: scope.home_is_blog, logo: scope.logo, slug: scope.slug,
       nav: (scope.nav || []).map((n) => ({ label: n.label, url: n.url })), has_nav: !!(scope.nav && scope.nav.length),
     },
