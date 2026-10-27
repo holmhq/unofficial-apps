@@ -15,7 +15,7 @@ export const RESERVED = new Set([
   'explore', 'feed', 'feeds', 'help', 'holm', 'home', 'join', 'latest', 'llms', 'login', 'logout', 'margin', 'me', 'media',
   'new', 'null', 'p', 'post', 'posts', 'preview', 'robots', 'root', 'rss', 'samples', 'search', 'settings', 'signin',
   'signup', 'sitemap', 'static', 'studio', 'support', 'system', 't', 'tag', 'tags', 'undefined', 'workspace',
-  'workspaces', 'write', 'www', 'you',
+  'themes', 'upload', 'uploads', 'v', 'vendor', 'workspaces', 'write', 'www', 'you',
 ]);
 const MAX_PERSONAS = 12;
 

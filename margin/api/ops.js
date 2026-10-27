@@ -7,7 +7,7 @@ import { marginSettings } from './settings.js';
 import { blogByHandle, ownDTO, myIdentities, writableBlogs, createPersona, updateBlog, deletePersona } from './blogs.js';
 import { createPost, updatePost, deletePost, postById, editorDTO, cardDTO, canEdit, postsOf, published, wsCached } from './posts.js';
 import { listForPost, createComment, moderate, inbox } from './comments.js';
-import { listMine } from './media.js';
+import { listMine, storeMedia, createUploadLink, requireUploader } from './media.js';
 import { createInvite, listInvites, revokeInvite } from './invites.js';
 import { listThemes, loadTheme, validate, saveTheme, themeFiles, settingValues, cleanSetting } from './themes.js';
 import { postAtPath } from './pages.js';
@@ -15,7 +15,7 @@ import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWork
 
 // ---------- named operations (MCP tools) ----------
 
-const CODES = { 400: 'APP_INVALID_INPUT', 401: 'APP_UNAUTHORIZED', 403: 'APP_FORBIDDEN', 404: 'APP_NOT_FOUND', 409: 'APP_CONFLICT', 410: 'APP_CONFLICT', 413: 'APP_INVALID_INPUT', 422: 'APP_INVALID', 429: 'APP_RATE_LIMITED' };
+const CODES = { 400: 'APP_INVALID_INPUT', 401: 'APP_UNAUTHORIZED', 403: 'APP_FORBIDDEN', 404: 'APP_NOT_FOUND', 409: 'APP_CONFLICT', 410: 'APP_CONFLICT', 413: 'APP_INVALID_INPUT', 415: 'APP_INVALID_INPUT', 422: 'APP_INVALID', 429: 'APP_RATE_LIMITED' };
 const fail = (error) => { if (error && error.public) error.code = CODES[error.status] || 'APP_INVALID_INPUT'; throw error; };
 
 function scoped(env, input, readOnly) {
@@ -206,6 +206,28 @@ export function opPersonasDelete(input, env) {
     deletePersona(env, ctx, blog);
     return { deleted: true, handle: blog.handle };
   });
+}
+export function opMediaUpload(input, env) {
+  return op(env, input, (ctx) => {
+    requireUploader(ctx);
+    let bytes;
+    if (typeof input.svg === 'string' && input.svg.trim()) bytes = new TextEncoder().encode(input.svg).buffer;
+    else if (typeof input.data === 'string' && input.data.trim()) bytes = fromBase64(input.data);
+    else reject(400, 'invalid_input', 'Send svg (a drawing as text) or data (a small file in base64). For larger files and video, use media_link.');
+    const out = storeMedia(env, { id: ctx.member.id }, bytes, { name: input.name, alt: input.alt, via: 'claude' });
+    delete out.docId;
+    return out;
+  });
+}
+function fromBase64(value) {
+  let bin;
+  try { bin = atob(value.replace(/^data:[^,]*,/, '').replace(/\s+/g, '')); } catch { reject(400, 'invalid_input', 'data is not valid base64.'); }
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+export async function opMediaUploadLink(input, env) {
+  try { return await createUploadLink(env, scoped(env, input, false), origin(env)); } catch (error) { return fail(error); }
 }
 export function opMediaList(input, env) {
   return op(env, input, (ctx) => { requireMember(ctx); return { media: listMine(env, ctx, int(input.limit, 40, 1, 100)) }; }, true);

@@ -254,7 +254,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Write a new post (draft by default) in Markdown",
-      "description": "Writers only. Body is Markdown (GitHub style): headings, lists, tables, code, links, images. Extras: a line `> [!NOTE]` (or TIP, IMPORTANT, WARNING, CAUTION) starts a callout; a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link alone on a line becomes an embed; a link to another post on Margin alone on a line becomes a card; `![alt](/media/<id> \"caption\")` is a figure, add #wide or #full to the address for width; .mp4 or uploaded videos play inline. Leave the H1 out: the title is shown above the body. The address is made from the title unless you pass slug. Use `as` to post under one of your names, or as the workspace itself (its address) if you own or run it. Without a photo `cover`, the post gets a drawn cover in the workspace's style; `drawing` picks its subject. Status draft keeps it private; published puts it live at once. Unless the person asked to publish, create a draft and give them the preview link. Drawn covers: week (calendars, time), energy (power, hardware), people (research), network (sync, devices), stack (layers, documents, process), inbox (messages, support), bars (numbers, speed), rings (sound, quiet, focus). Pass `workspace` (its address, from me_get). `featured` pins it on the workspace home (owners and admins).",
+      "description": "Writers only. Body is Markdown (GitHub style): headings, lists, tables, code, links, images. Extras: a line `> [!NOTE]` (or TIP, IMPORTANT, WARNING, CAUTION) starts a callout; a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link alone on a line becomes an embed; a link to another post on Margin alone on a line becomes a card; `![alt](/media/<id>.<ext> \"caption\")` on its own line is a figure (add photos, drawings and videos with media_upload or media_link; pages pick the right size themselves), add #wide or #full to the address for width; .mp4 or uploaded videos play inline. Leave the H1 out: the title is shown above the body. The address is made from the title unless you pass slug. Use `as` to post under one of your names, or as the workspace itself (its address) if you own or run it. `cover` takes a photo's /media address; without one, the post gets a drawn cover in the workspace's style; `drawing` picks its subject. Status draft keeps it private; published puts it live at once. Unless the person asked to publish, create a draft and give them the preview link. Drawn covers: week (calendars, time), energy (power, hardware), people (research), network (sync, devices), stack (layers, documents, process), inbox (messages, support), bars (numbers, speed), rings (sound, quiet, focus). Pass `workspace` (its address, from me_get). `featured` pins it on the workspace home (owners and admins).",
       "input": {
         "type": "object",
         "properties": {
@@ -1016,8 +1016,8 @@
       "auth": "member",
       "risk": "read",
       "sensitive": true,
-      "summary": "List uploaded photos and videos to use in posts",
-      "description": "Writers only: your uploads (admins see everyone's), newest first, with the /media/<id> address to put in Markdown and the pixel size. Upload new files in Studio.",
+      "summary": "List your photos, drawings and videos to use in posts",
+      "description": "Your uploads (admins see everyone's), newest first. Each has its /media address, the Markdown to put on a line of its own in a post, its pixel size, and sizes: smaller copies (w640 … w2048, and og, the 1200 × 630 crop link previews use) that Margin makes on first request. Pages pick the right copy themselves; use a size's address only where you need a small file. Add files with media_upload or media_link.",
       "input": {
         "type": "object",
         "properties": {
@@ -1051,6 +1051,113 @@
         },
         "APP_CONFLICT": {
           "status": 409,
+          "public": true
+        }
+      }
+    },
+    "media.upload": {
+      "handler": "opMediaUpload",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
+      "summary": "Add a drawing (SVG) or a small photo to your library",
+      "description": "Returns the file's address and the Markdown to put on a line of its own in a post (![alt](/media/…)). svg: a drawing as SVG text with a viewBox, plain shapes and text and inline styles; scripts, embedded images and links to other files are refused (512 KB at most). data: a small photo (JPEG, PNG, WebP, GIF or AVIF) in base64, up to about 1.5 MB; for anything bigger, a photo the person has, or a video, use media_link. Always give alt: what the image shows. Photos larger than 2048 px are shrunk.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "svg": {
+            "type": "string",
+            "maxLength": 524288
+          },
+          "data": {
+            "type": "string",
+            "maxLength": 2100000
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "alt": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_INVALID": {
+          "status": 422,
+          "public": true
+        }
+      }
+    },
+    "media.link": {
+      "handler": "opMediaUploadLink",
+      "auth": "member",
+      "risk": "write",
+      "sensitive": true,
+      "summary": "Get a link that adds photos and videos to your library",
+      "description": "For an hour, the link takes up to 10 files into the person's library: photos (JPEG, PNG, WebP, GIF, AVIF; 12 MB each), SVG drawings and videos (MP4, WebM or MOV; 20 MB each). Give it to the person to open on their phone or computer; the page shrinks photos before sending. With a shell, send files yourself, one per request: curl -sS -F file=@photo.jpg -F alt=\"what it shows\" <url>. Each answer has the address and Markdown; media_list shows them too. Margin shrinks photos larger than 2048 px but can't turn them, so send photos upright, and video as H.264 MP4 so every browser plays it.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_INVALID": {
+          "status": 422,
           "public": true
         }
       }

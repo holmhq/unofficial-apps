@@ -57,6 +57,11 @@ script is in the folder.
   admins add themes; each workspace picks one.
 - A Notion-like editor: slash menu, a bar for formatting, block handles,
   dropped-in photos (shrunk in the browser) and short videos, autosave.
+- Photos, SVG drawings and short videos from Claude too: a tool that takes a
+  drawing or a small photo, and a one-hour upload link the person opens on
+  a phone (or Claude sends files to with curl). Keep photos at 2048 px, make
+  smaller copies and a link-preview crop on first request, and give every
+  photo on a page a srcset. Refuse SVG that can run code or load anything.
 - Studio with a workspace switcher: posts, a comment inbox, team and invites,
   workspace settings, your names and personas, Claude, and Margin's settings
   for its admins. MCP tools for Claude that take a workspace: write and edit
@@ -119,3 +124,10 @@ with placeholders.
 > - i hope proper page caching is done so that the pages feel super fast?
 > - i hope personas can be managed via claude?
 > - and also workspace and everything about it?
+
+**Margin 0.4.0: photos, drawings and video from Claude, in the right sizes**
+
+> Lets park skills app, but before that lets perfect margin
+> - lets do the image upload
+> - perhaps we will need video too?
+> - and may be request for optimised versions

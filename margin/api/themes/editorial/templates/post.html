@@ -14,7 +14,7 @@
       <div class="e-actions">{{{margin.actions}}}</div>
     </header>
 
-    {{#post.cover}}<figure class="e-cover"><img src="{{url}}" alt="{{alt}}"{{#width}} width="{{width}}" height="{{height}}"{{/width}}></figure>{{/post.cover}}
+    {{#post.cover}}<figure class="e-cover"><img src="{{url}}" alt="{{alt}}"{{#srcset}} srcset="{{srcset}}" sizes="(min-width: 1100px) 1080px, 100vw"{{/srcset}}{{#width}} width="{{width}}" height="{{height}}"{{/width}}></figure>{{/post.cover}}
 
     <div class="e-prose">
       {{{post.body}}}

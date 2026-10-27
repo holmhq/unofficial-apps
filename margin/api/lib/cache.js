@@ -1,14 +1,14 @@
 // The fast path: main.js asks here first, before loading the rest of Margin. It answers what
-// needs no rendering: Margin's versioned CSS, scripts and theme files, the prefetch rules, and
-// reading pages that are already rendered (or that the browser already holds: a 304).
+// needs no rendering: Margin's versioned CSS, scripts and theme files, the prefetch rules,
+// photos, and reading pages that are already rendered (or that the browser already holds: a 304).
 import { sha256 } from './util.js';
 import { siteRev } from './store.js';
 
-export const VERSION = '0.3.0';
+export const VERSION = '0.4.0';
 
 const LOCAL = /^(127\.|localhost|\[::1\]|[a-z0-9-]+\.localhost)(:\d+)?$/;
 // Addresses that may be a rendered page (no file extension, not one of Margin's own areas).
-const PAGE = /^\/(?!(?:api|media|t|v|margin|themes|vendor|studio|_holm|auth|c|a|new|join)(?:\/|$))[^.]*$/;
+const PAGE = /^\/(?!(?:api|media|t|v|margin|themes|vendor|studio|_holm|auth|c|a|new|join|upload)(?:\/|$))[^.]*$/;
 const VERSIONED = /^\/v\/([a-f0-9]{10})(\/(?:margin|themes)\/[a-z0-9][a-z0-9/._-]*)$/i;
 // Chrome and Edge fetch a page while the pointer rests on its link (or as a finger goes down).
 const SPECULATION = JSON.stringify({
@@ -25,6 +25,9 @@ export async function quick(request, env) {
   const path = url.pathname;
   const m = VERSIONED.exec(path);
   if (m && !m[2].includes('..')) return versioned(request, env, url, m[1], m[2]);
+  // Photos and their smaller copies: no need for the rest of Margin.
+  const media = /^\/media\/([a-z0-9]+)(?:-(w\d{3,4}|og))?(?:\.[a-z0-9]{2,5})?$/.exec(path);
+  if (media) return (await import('../media.js')).serve(env, request, media[1], media[2]);
   if (path === '/margin/speculation.json') return new Response(SPECULATION, { headers: { 'Content-Type': 'application/speculationrules+json', 'Cache-Control': 'public, max-age=3600' } });
   if (!PAGE.test(path)) return null;
   // Other addresses redirect to the primary one; the full handler does that.

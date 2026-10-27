@@ -70,6 +70,13 @@ are not public URLs.
   short videos; paste a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link
   to embed it, or another post's address to show it as a card. Drafts save
   themselves; published posts change only when you press Update.
+- **Photos, drawings and video from anywhere.** Claude can add an SVG drawing
+  or a small photo itself, or hand out an upload link: open it on a phone
+  or computer to add up to ten photos, drawings or videos in the next hour,
+  or send files to it with curl. Margin keeps photos at 2048 px at most and
+  makes smaller copies when a page first asks for one (640 to 1600 px, and
+  a 1200 × 630 crop for link previews), so every page picks the size it
+  shows at.
 - **Studio** at `/studio`, with a workspace switcher: posts, the comment
   inbox, the team and invites, the workspace's settings (home page, comments,
   cover style, theme, menu), your names and personas, and how to connect
@@ -92,7 +99,8 @@ Studio, in the workspace it names:
 | `me_get`, `identities_list` | Who you are, your names, your workspaces |
 | `workspaces_create`, `workspace_get`, `workspace_update`, `workspace_leave` | Start a workspace, see and change its settings, leave it |
 | `team_list`, `team_update`, `invites_create`, `invites_revoke` | The team and its open invites; change roles or remove someone; invite and cancel invites |
-| `posts_list`, `posts_get`, `posts_create`, `posts_update`, `posts_delete`, `media_list` | Write in Markdown, pick the drawn cover, draft or publish, edit, take down |
+| `posts_list`, `posts_get`, `posts_create`, `posts_update`, `posts_delete` | Write in Markdown, pick the drawn cover or a photo, draft or publish, edit, take down |
+| `media_upload`, `media_link`, `media_list` | Add an SVG drawing or a small photo; get a one-hour link that takes photos and videos from a browser or curl; list your files with their Markdown and smaller sizes |
 | `comments_inbox`, `comments_list`, `comments_reply`, `comments_moderate` | Answer ordinary comments; the descriptions tell Claude to leave anything sensitive, critical, legal, personal or about money to the writer |
 | `comments_create` | Comment under any of your names; `sample: true` keeps example discussion visible to the team only, for screenshots |
 | `personas_create`, `personas_update`, `personas_delete` | Your other names (`identities_list` lists them) |
@@ -156,7 +164,19 @@ field and hook; Claude reads it through `themes_reference`, and
   runtime and in browsers. The server serves it at `/c/<motif>-<look>-<tone>-<seed>.svg`
   and as `/v/<fingerprint>/margin/covers.js`; `web/margin/live-covers.js` patches the SVG in
   place on each animation frame as the pointer moves, and does nothing for
-  readers who prefer less motion. Margin never stores uploaded SVG.
+  readers who prefer less motion.
+- **Media.** `api/media.js` reads each file's type from its first bytes and
+  its pixel size from its header (and a video's from its MP4 or MOV track
+  header), shrinks photos over 2048 px with `env.holm.image.resize`, and
+  stores them in `env.holm.app.s3`. `/media/<id>-w640.jpg`, `-w1600` and
+  the others, and `-og` (1200 × 630), are made on first request and kept;
+  pages add `srcset` from them, in posts saved before them too. Holm's
+  resize ignores EXIF rotation, so a turned JPEG is kept as it came and
+  gets no smaller copies. SVG drawings are refused if they hold scripts,
+  event handlers, embedded images or links to other files, and every file
+  under `/media` is served with a sandboxing CSP. Upload links are hashed
+  into `env.holm.app.kv` for an hour; `web/upload.html` and
+  `web/margin/upload.js` are their page.
 - **Storage.** Shared `env.holm.app.ds` collections: `people` (accounts),
   `blogs` (every name: people's, personas and workspaces' own, in one
   namespace with workspace addresses), `workspaces`, `members` (account,
@@ -208,6 +228,7 @@ api/vendor/               marked and mustache.js, with their licences
 web/shell.html            where Holm's head tags come from
 web/llms.txt              Margin explained to agents
 web/studio.html, studio/  Studio, starting out, invites and the editor
+web/upload.html           the upload link's page (web/margin/upload.js, upload.css)
 web/margin/               the reader script, live covers, the front page's styles
 web/themes/               the built-in themes' CSS and fonts
 web/samples/              sample avatars, logos and cover images (made up)
@@ -273,6 +294,10 @@ Then:
   admins. Everyone else writes in Studio and can't connect Claude yet; Margin
   says so where it shows the connector.
 - **A redeploy ends Claude's sign-in**; connect again afterwards.
+- Video is stored as it is sent: Holm has no video processing, so send
+  H.264 MP4 (or MOV) for every browser, 20 MB at most. Claude's
+  `media_upload` takes photos up to about 1.5 MB as base64; larger files
+  and video go through an upload link.
 - A drawn cover's PNG (for link previews and feeds) is made in the browser
   when a post is published. Posts written only through Claude get one the next
   time someone opens them in Studio; until then their social card is Margin's.

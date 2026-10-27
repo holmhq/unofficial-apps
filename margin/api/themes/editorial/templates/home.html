@@ -10,7 +10,7 @@
     {{#q.lead}}
     <article class="e-lead">
       <a class="e-lead-link" href="{{url}}">
-        {{#cover}}<span class="e-lead-cover"><img src="{{url}}" alt="{{alt}}"{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
+        {{#cover}}<span class="e-lead-cover"><img src="{{url}}" alt="{{alt}}"{{#srcset}} srcset="{{srcset}}" sizes="(min-width: 1100px) 760px, 100vw"{{/srcset}}{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
         <span class="e-kicker">Featured</span>
         <span class="e-lead-title">{{title}}</span>
         {{#description}}<span class="e-lead-desc">{{description}}</span>{{/description}}

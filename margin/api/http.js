@@ -8,7 +8,7 @@ import { blogByHandle, blogDTO, ownDTO, myIdentities, createPersonBlog, createPe
 import { createPost, updatePost, deletePost, postById, editorDTO, cardDTO, canEdit, postsOf, published, wsCached } from './posts.js';
 import { listForPost, createComment, moderate, editComment, inbox, clearSamples } from './comments.js';
 import { clap, myClaps } from './claps.js';
-import { upload, serve, listMine } from './media.js';
+import { upload, serve, listMine, uploadWithLink, uploadLinkStatus } from './media.js';
 import { createInvite, previewInvite, acceptInvite, listInvites, revokeInvite } from './invites.js';
 import { listThemes, loadTheme, validate, saveTheme, deleteTheme, themeFiles, serveAsset, settingValues } from './themes.js';
 import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, teamList, setRole, leave, allWorkspaces, setSuspended, wsDTO } from './workspaces.js';
@@ -32,9 +32,16 @@ const handler = {
       const origin = primary && !LOCAL.test(url.host) ? `https://${primary}` : url.origin;
       if (env.holm.app.kv.get('site:origin') !== origin && !/^(127\.|localhost)/.test(url.host)) env.holm.app.kv.set('site:origin', origin);
       if (path.startsWith('/api/')) return await api(request, env, url);
+      // An upload link: the page in a browser, files by POST (from that page or curl).
+      let m = /^\/upload\/([a-z0-9]{24})$/.exec(path);
+      if (m && request.method === 'POST') {
+        try { return json(await uploadWithLink(env, m[1], request), 201); } catch (error) { return errorResponse(error); }
+      }
+      if (m && url.searchParams.has('status')) return json(await uploadLinkStatus(env, m[1]), 200, { 'Cache-Control': 'no-store' });
+      if (m) return uploadPage(request, env, url);
       if (request.method !== 'GET' && request.method !== 'HEAD') return env.holm.web.fetch(request);
-      let m = /^\/media\/([a-z0-9]+)(?:\.[a-z0-9]{2,5})?$/.exec(path);
-      if (m) return serve(env, request, m[1]);
+      m = /^\/media\/([a-z0-9]+)(?:-(w\d{3,4}|og))?(?:\.[a-z0-9]{2,5})?$/.exec(path);
+      if (m) return serve(env, request, m[1], m[2]);
       m = /^\/t\/([a-z0-9.-]+)\/(.+)$/.exec(path);
       if (m) return serveAsset(env, m[1], m[2]);
       if (path === '/margin/covers.js') {
@@ -74,6 +81,17 @@ async function studioShell(request, env, url) {
   out.delete('etag');
   out.set('Cache-Control', 'no-cache');
   return new Response(await shell.text(), { status: shell.status, headers: out });
+}
+
+// The upload page is a static file; links never go stale in a cache.
+async function uploadPage(request, env, url) {
+  const page = await env.holm.web.fetch(new Request(url.origin + '/upload', { headers: { accept: 'text/html' } }));
+  const out = new Headers(page.headers);
+  out.delete('content-length');
+  out.delete('etag');
+  out.set('Cache-Control', 'no-store');
+  out.set('Referrer-Policy', 'no-referrer');
+  return new Response(await page.text(), { status: page.status, headers: out });
 }
 
 function originOf(env, url) { return env.holm.app.kv.get('site:origin') || url.origin; }

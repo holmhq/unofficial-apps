@@ -13,6 +13,7 @@ import { EMBED_ORIGINS } from './markdown.js';
 import { workspaceBySlug, useWorkspace, logoURL, teamHandles } from './workspaces.js';
 import { render as renderDrawing, normalize as normalizeDrawing, MOTIFS, LOOKS, TONES } from './covers.js';
 import { landingPage } from './landing.js';
+import { srcsetFor } from './media.js';
 
 const PAGE_SIZE = 12;
 const SLUG = /^[a-z0-9][a-z0-9-]{0,99}$/;
@@ -258,7 +259,7 @@ function commentsSection(list, card, signin) {
 
 function cardHTML(card) {
   return `<a class="m-postcard" href="${escapeHTML(card.url)}">`
-    + (card.cover ? `<span class="m-postcard-cover"><img src="${escapeHTML(card.cover.url)}" alt="" loading="lazy"></span>` : '')
+    + (card.cover ? `<span class="m-postcard-cover"><img src="${escapeHTML(card.cover.url)}"${card.cover.srcset ? ` srcset="${escapeHTML(card.cover.srcset)}" sizes="160px"` : ''} alt="" loading="lazy"></span>` : '')
     + `<span class="m-postcard-text"><span class="m-postcard-blog">${escapeHTML(card.blog.name)}</span>`
     + `<span class="m-postcard-title">${escapeHTML(card.title)}</span>`
     + `<span class="m-postcard-desc">${escapeHTML(card.description)}</span>`
@@ -406,12 +407,22 @@ async function listPage(env, ctx, request, scope, kind, value) {
   });
 }
 
+// Photos in a post choose from their smaller copies, however long ago the post was saved.
+const FIGURE_IMG = /<figure class="m-figure( m-wide| m-full)?"><img src="\/media\/([a-z0-9]{6,20})\.(jpg|png|webp)" ([^>]*?)width="(\d+)" height="(\d+)">/g;
+const SIZES = { '': '(min-width: 760px) 720px, 100vw', ' m-wide': '(min-width: 1100px) 1080px, 100vw', ' m-full': '100vw' };
+function responsive(html) {
+  return html.replace(FIGURE_IMG, (all, wide = '', id, ext, rest, w) => {
+    const srcset = /srcset=/.test(rest) ? '' : srcsetFor(id, { width: Number(w), mime: ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg' });
+    return srcset ? all.replace(' width=', ` srcset="${srcset}" sizes="${SIZES[wide]}" width=`) : all;
+  });
+}
+
 export async function postPage(env, ctx, request, scope, post, options = {}) {
   const url = new URL(request.url);
   const blog = blogByHandle(env, post.blog);
   const card = cardDTO(env, ctx, post);
   const body = bodyOf(env, post);
-  const html = fillCards(env, ctx, body ? body.html : '');
+  const html = responsive(fillCards(env, ctx, body ? body.html : ''));
   const comments = post.status === 'published' ? publicComments(env, ctx, post) : [];
   const signin = env.holm.auth.getLoginURL(url.pathname);
   const list = published(env, ctx, post.ws).filter((p) => p.blog === post.blog);
@@ -425,7 +436,7 @@ export async function postPage(env, ctx, request, scope, post, options = {}) {
     comments: { count: card.comments, list: comments },
     __current: post,
   };
-  const image = card.cover.drawn ? card.cover.image : card.cover.url;
+  const image = card.cover.image;
   const out = {
     page: {
       title: `${post.title} — ${blog ? blog.name : scope.name}`, og_title: post.title,

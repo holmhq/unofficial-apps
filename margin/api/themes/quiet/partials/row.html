@@ -6,6 +6,6 @@
       {{#description}}<span class="q-row-desc">{{description}}</span>{{/description}}
       <span class="q-card-meta">{{date}} · {{reading_time}}{{#claps}} · {{claps_label}}{{/claps}}{{#comments}} · {{comments_label}}{{/comments}}</span>
     </span>
-    {{#cover}}<span class="q-row-cover"><img src="{{url}}" alt="{{alt}}" loading="lazy"{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
+    {{#cover}}<span class="q-row-cover"><img src="{{url}}" alt="{{alt}}" loading="lazy"{{#srcset}} srcset="{{srcset}}" sizes="200px"{{/srcset}}{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
   </a>
 </article>

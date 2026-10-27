@@ -25,7 +25,11 @@ takes a `workspace`. Posts are Markdown; drafts unless the person asks to publis
 can't tell a person's personas are the same person, so never say which names belong
 together. Personas: `personas_create`, `personas_update`, `personas_delete`. Owners and
 admins run a workspace with `workspace_get`, `workspace_update`, `themes_activate`,
-`team_list`, `team_update` (roles, or remove), `invites_create` and `invites_revoke`.
+`team_list`, `team_update` (roles, or remove), `invites_create` and `invites_revoke`. Photos
+and drawings: `media_upload` takes an SVG drawing as text or a small photo as base64;
+`media_link` returns a one-hour link the person opens to add photos and videos, or that you
+send files to with `curl -F file=@photo.jpg <link>`. Put the Markdown each returns on a line
+of its own; pages pick the right size of a photo themselves.
 
 Today Holm lets only the server's admins use these tools; everyone can write in Studio.
 

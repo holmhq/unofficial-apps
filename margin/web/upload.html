@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Add photos and videos — Margin</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Add photos, drawings and videos to your Margin library.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<script src="/studio/boot.js"></script>
+<link rel="preload" href="/themes/quiet/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/margin/upload.css">
+</head>
+<body>
+<header class="u-bar">
+  <a class="u-brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M1.42 5.45h10.25a1.42 1.42 0 0 1 0 2.84H1.42a1.42 1.42 0 0 1 0-2.84Zm0 6.22h10.25a1.42 1.42 0 0 1 0 2.84H1.42a1.42 1.42 0 0 1 0-2.84Zm0 6.22h5.89a1.42 1.42 0 0 1 0 2.84H1.42a1.42 1.42 0 0 1 0-2.84ZM18 3.27h3.82Q24 3.27 24 5.45v5.46q0 2.18-2.18 2.18H19.2l-3.49 2.84.22-3.49q-.11-.44-.11-1.53V5.45q0-2.18 2.18-2.18Z"/></svg><span>Margin</span></a>
+</header>
+<main class="u-main">
+  <h1>Add photos and videos</h1>
+  <p class="u-lead" id="lead">Checking the link…</p>
+
+  <div class="u-drop" id="drop" hidden>
+    <input type="file" id="files" multiple accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/heic,image/heif,image/svg+xml,.svg,.heic,video/mp4,video/webm,video/quicktime">
+    <label for="files" class="u-pick">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+      <span class="u-pick-title">Choose photos or a video</span>
+      <span class="u-pick-note">Photos up to 12 MB · SVG drawings · MP4 or MOV up to 20 MB</span>
+    </label>
+  </div>
+
+  <ul class="u-list" id="list" aria-live="polite"></ul>
+  <p class="u-done" id="done" hidden>That's it. Go back to Claude and say they're added.</p>
+  <p class="u-left" id="left"></p>
+</main>
+<footer class="u-foot">Files go to your own library on Margin. Only posts you publish show them to anyone.</footer>
+<script type="module" src="/margin/upload.js"></script>
+</body>
+</html>

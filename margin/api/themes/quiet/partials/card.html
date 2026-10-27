@@ -1,6 +1,6 @@
 <article class="q-card{{#cover}} q-card-has-cover{{/cover}}">
   <a class="q-card-link" href="{{url}}">
-    {{#cover}}<span class="q-card-cover"><img src="{{url}}" alt="{{alt}}" loading="lazy"{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
+    {{#cover}}<span class="q-card-cover"><img src="{{url}}" alt="{{alt}}" loading="lazy"{{#srcset}} srcset="{{srcset}}" sizes="(min-width: 760px) 380px, 100vw"{{/srcset}}{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
     <span class="q-card-text">
       <span class="q-card-blog"><img class="q-avatar" src="{{blog.avatar}}" alt="" width="20" height="20" loading="lazy">{{blog.name}}</span>
       <span class="q-card-title">{{title}}</span>

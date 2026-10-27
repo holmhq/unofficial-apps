@@ -32,6 +32,8 @@ export async function opPersonasCreate(input, env) { return (await import('./ops
 export async function opPersonasUpdate(input, env) { return (await import('./ops.js')).opPersonasUpdate(input, env); }
 export async function opPersonasDelete(input, env) { return (await import('./ops.js')).opPersonasDelete(input, env); }
 export async function opMediaList(input, env) { return (await import('./ops.js')).opMediaList(input, env); }
+export async function opMediaUpload(input, env) { return (await import('./ops.js')).opMediaUpload(input, env); }
+export async function opMediaUploadLink(input, env) { return (await import('./ops.js')).opMediaUploadLink(input, env); }
 export async function opWorkspaceGet(input, env) { return (await import('./ops.js')).opWorkspaceGet(input, env); }
 export async function opWorkspaceUpdate(input, env) { return (await import('./ops.js')).opWorkspaceUpdate(input, env); }
 export async function opWorkspaceLeave(input, env) { return (await import('./ops.js')).opWorkspaceLeave(input, env); }

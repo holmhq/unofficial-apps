@@ -118,7 +118,9 @@ Lists are computed only when a template reads them.
 
 `id`, `url`, `slug`, `title`, `subtitle`, `description` (for cards and search),
 `excerpt` (the first real paragraph), `cover` (`url`, `alt`, `width`, `height`, `drawn`:
-every post has one, a photo or a drawing in the workspace's style), `has_cover`, `date` ("October 16, 2026"), `date_short` ("Oct 16"), `date_iso`,
+every post has one, a photo or a drawing in the workspace's style; a photo also has
+`srcset`, its smaller copies, so print `{{#srcset}} srcset="{{srcset}}" sizes="…"{{/srcset}}`
+with the width it shows at), `has_cover`, `date` ("October 16, 2026"), `date_short` ("Oct 16"), `date_iso`,
 `year`, `updated`, `updated_iso`, `reading_time` ("6 min read"), `minutes`, `words`,
 `tags` (each `name`, `url`, `first`), `has_tags`, `blog`, `claps`, `comments`,
 `claps_label` ("214 claps"), `comments_label` ("1 response"), `featured`, `workspace`
