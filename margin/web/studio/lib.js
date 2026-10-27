@@ -15,6 +15,8 @@ export async function api(path, options = {}) {
   if (workspace && options.workspace !== false) init.headers['x-margin-workspace'] = workspace;
   if (options.form) init.body = options.form;
   else if (options.body !== undefined) { init.headers['content-type'] = 'application/json'; init.body = JSON.stringify(options.body); }
+  // Any change may show anywhere, so a write forgets every remembered answer.
+  if (init.method !== 'GET') memory.clear();
   let res;
   try { res = await fetch(path, init); } catch { throw Object.assign(new Error('You seem to be offline.'), { status: 0 }); }
   if (res.status === 413) throw Object.assign(new Error('That is too large for this server.'), { status: 413 });
@@ -23,6 +25,30 @@ export async function api(path, options = {}) {
   if (!res.ok) throw Object.assign(new Error((data && data.error && data.error.message) || 'Something went wrong. Try again.'), { status: res.status, code: data && data.error && data.error.code, details: data && data.error && data.error.details });
   return data;
 }
+
+// Studio's views ask again every time they open, but paint the last answer at once and then
+// again only if the server has news. Each view passes alive(), so a late answer never paints
+// over a view that was left.
+const memory = new Map();
+export async function remembered(paths, paint, alive = () => true) {
+  const many = Array.isArray(paths);
+  const asks = (many ? paths : [paths]).map((p) => (typeof p === 'string' ? { path: p } : p));
+  const keys = asks.map((a) => `${a.options && a.options.workspace === false ? '' : workspace || ''} ${a.path}`);
+  const kept = keys.map((k) => memory.get(k));
+  const shape = (list) => (many ? list : list[0]);
+  const whole = kept.every(Boolean);
+  if (whole) paint(shape(kept.map((k) => k.data)), true);
+  let fresh;
+  try { fresh = await Promise.all(asks.map((a) => api(a.path, a.options))); } catch (error) { if (whole) return; throw error; }
+  let changed = !whole;
+  fresh.forEach((data, n) => {
+    const text = JSON.stringify(data);
+    if (!kept[n] || kept[n].text !== text) changed = true;
+    memory.set(keys[n], { data, text });
+  });
+  if (changed && alive()) paint(shape(fresh), false);
+}
+export function forget() { memory.clear(); }
 
 export function toast(text) {
   $('.toast')?.remove();
@@ -75,6 +101,8 @@ export const icons = {
   out: P('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14l5-5l-5-5m5 5H9"/>'),
   upload: P('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5l-5 5M12 3v12"/>'),
   download: P('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5l5-5M12 15V3"/>'),
+  moon: P('<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'),
+  monitor: P('<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8m-4-4v4"/>'),
   sun: P('<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>'),
   chart: P('<path d="M3 3v18h18M18 17V9M13 17V5M8 17v-3"/>'),
   feedback: P('<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/>'),
@@ -85,41 +113,69 @@ export function sheet(title, content, options = {}) {
   const box = h(`<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-head"><h2>${esc(title)}</h2><button type="button" class="icon-btn filled" data-close aria-label="Close">${icons.close}</button></div><div class="sheet-body"></div></div>`);
   const body = box.querySelector('.sheet-body');
   if (typeof content === 'string') body.innerHTML = content; else body.append(content);
-  const close = () => { scrim.remove(); box.remove(); document.removeEventListener('keydown', onKey); options.onClose?.(); };
+  const close = () => { scrim.remove(); box.remove(); document.removeEventListener('keydown', onKey); options.onClose?.(); handle.onClose?.(); };
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   scrim.addEventListener('click', close);
   box.querySelector('[data-close]').addEventListener('click', close);
   document.addEventListener('keydown', onKey);
   document.body.append(scrim, box);
   setTimeout(() => box.querySelector('input, textarea, select')?.focus(), 80);
-  return { body, close, box };
+  const handle = { body, close, box };
+  return handle;
 }
 
+// A popup menu under its button. The same button closes it again; so do Escape, a click
+// outside and choosing an item. Arrow keys move between items. An item with checked: true
+// carries a tick on the right.
 export function menu(anchor, items) {
-  $$('.menu').forEach((m) => m.remove());
+  const open = $('.menu');
+  if (open) { open._close(); if (open._anchor === anchor) return null; }
   const el = h('<div class="menu" role="menu"></div>');
+  el._anchor = anchor;
   for (const item of items) {
-    if (item === '-') { el.append(h('<div class="sep"></div>')); continue; }
-    const b = h(item.href ? `<a role="menuitem" href="${esc(item.href)}"${item.blank ? ' target="_blank" rel="noopener"' : ''}></a>` : '<button type="button" role="menuitem"></button>');
-    b.innerHTML = `${item.icon || ''}<span>${esc(item.label)}</span>`;
+    if (item === '-') { el.append(h('<div class="sep" role="separator"></div>')); continue; }
+    const b = h(item.href ? `<a role="menuitem" href="${esc(item.href)}"${item.blank ? ' target="_blank" rel="noopener"' : ''}></a>` : `<button type="button" role="${item.checked !== undefined ? 'menuitemradio' : 'menuitem'}"></button>`);
+    b.innerHTML = `${item.icon || ''}<span class="menu-label">${esc(item.label)}</span>${item.note ? `<span class="menu-note">${esc(item.note)}</span>` : ''}${item.checked ? `<span class="menu-check">${icons.check}</span>` : ''}`;
+    if (item.checked !== undefined) b.setAttribute('aria-checked', String(!!item.checked));
     if (item.danger) b.classList.add('danger');
-    if (item.run) b.addEventListener('click', () => { el.remove(); item.run(); });
+    b.addEventListener('click', () => { close(); if (item.run) item.run(); });
     el.append(b);
   }
   document.body.append(el);
   const r = anchor.getBoundingClientRect();
   const w = el.offsetWidth;
   const hgt = el.offsetHeight;
-  let x = Math.min(r.right - w, window.innerWidth - w - 10);
+  let x = Math.min(r.left, window.innerWidth - w - 10);
+  if (r.left > window.innerWidth / 2) x = Math.min(r.right - w, window.innerWidth - w - 10);
   x = Math.max(10, x);
   let y = r.bottom + 6;
   if (y + hgt > window.innerHeight - 10) y = Math.max(10, r.top - hgt - 6);
   el.style.left = x + 'px';
   el.style.top = y + 'px';
-  setTimeout(() => {
-    const off = (e) => { if (!el.contains(e.target)) { el.remove(); document.removeEventListener('pointerdown', off); } };
-    document.addEventListener('pointerdown', off);
-  });
+  anchor.setAttribute('aria-expanded', 'true');
+  const entries = () => $$('[role^="menuitem"]', el);
+  const off = (e) => { if (!el.contains(e.target) && !anchor.contains(e.target)) close(); };
+  const keys = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); close(); anchor.focus(); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const list = entries();
+      const at = list.indexOf(document.activeElement);
+      list[(at + (e.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length]?.focus();
+    }
+    if (e.key === 'Tab') close();
+  };
+  function close() {
+    el.remove();
+    anchor.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('pointerdown', off, true);
+    document.removeEventListener('keydown', keys, true);
+    window.removeEventListener('resize', close);
+  }
+  el._close = close;
+  document.addEventListener('pointerdown', off, true);
+  document.addEventListener('keydown', keys, true);
+  window.addEventListener('resize', close);
   return el;
 }
 

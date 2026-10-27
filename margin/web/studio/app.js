@@ -1,7 +1,7 @@
 // Margin Studio: a workspace's posts, comments, team and settings; your names and personas;
 // Claude; and, for Margin's admins, Margin itself. Starting out (/new) and invites
 // (/join/<code>) live here too.
-import { api, esc, h, $, $$, toast, ago, icons, sheet, menu, copy, upload, pickFile, setTheme, currentTheme, setWorkspace, currentWorkspace } from './lib.js';
+import { api, remembered, esc, h, $, $$, toast, ago, icons, sheet, menu, copy, upload, pickFile, setTheme, currentTheme, setWorkspace, currentWorkspace } from './lib.js';
 import { makeZip, readZip } from './zip.js';
 
 const root = document.getElementById('app');
@@ -21,6 +21,10 @@ document.addEventListener('click', (e) => {
   e.preventDefault();
   go(a.getAttribute('href'));
 });
+
+// Each load takes a ticket; an answer paints only while its ticket is the latest one.
+let tickets = 0;
+function ticket() { const mine = ++tickets; return () => mine === tickets; }
 
 const remember = (slug) => { try { if (slug) localStorage.setItem(LAST, slug); } catch { /* fine */ } };
 const recalled = () => { try { return localStorage.getItem(LAST); } catch { return null; } };
@@ -59,7 +63,8 @@ async function refreshCounts() {
 }
 
 async function route() {
-  $$('.menu, .scrim, .sheet').forEach((el) => el.remove());
+  $$('.menu').forEach((el) => (el._close ? el._close() : el.remove()));
+  $$('.scrim, .sheet').forEach((el) => el.remove());
   const url = new URL(location.href);
   const path = url.pathname.replace(/\/+$/, '') || '/studio';
   const join = /^\/join\/([a-z0-9]+)$/.exec(path);
@@ -208,6 +213,7 @@ function workspaceStep(first) {
   root.innerHTML = `<div class="center"><form class="welcome ob" novalidate>${first ? steps(1) : `<a class="ob-back" href="/studio" data-nav>${icons.back}Studio</a>`}
     <h1>Name your workspace</h1><p>One for your team. You can be in as many as you like.</p>
     <div class="group">
+      <div class="profile-edit"><button type="button" class="avatar-pick logo-pick" data-new-logo aria-label="Add a logo"><span class="ws-logo ws-logo-empty" style="width:56px;height:56px">${icons.image}</span></button><div class="row-main"><span class="row-title">Logo</span><span class="row-sub">Optional. A square image; you can change it later.</span></div></div>
       <div class="field"><label for="wn">Name</label><input id="wn" class="input" maxlength="60" placeholder="Lumen"></div>
       <div class="field"><label for="ws">Address</label><div class="handle-input"><span>${esc(location.host)}/</span><input id="ws" class="input" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="30" placeholder="lumen"></div><small class="ob-hint" data-hint>Lowercase letters, numbers and dashes.</small></div>
       <div class="field"><label for="wt">Tagline (optional)</label><input id="wt" class="input" maxlength="120" placeholder="A small team making a calm calendar"></div>
@@ -218,6 +224,14 @@ function workspaceStep(first) {
   const slug = $('#ws', root);
   const hint = $('[data-hint]', root);
   let touched = false;
+  let logo = null;
+  $('[data-new-logo]', root).addEventListener('click', async (e) => {
+    const pick = e.currentTarget;
+    const file = await pickFile('image/*');
+    if (!file) return;
+    pick.innerHTML = '<span class="ws-logo ws-logo-empty" style="width:56px;height:56px"><span class="spinner"></span></span>';
+    try { const media = await upload(file, 512); logo = media.id; pick.innerHTML = `<img class="ws-logo" src="${esc(media.url)}" alt="" style="width:56px;height:56px">`; } catch (error) { toast(error.message); pick.innerHTML = `<span class="ws-logo ws-logo-empty" style="width:56px;height:56px">${icons.image}</span>`; }
+  });
   const paint = () => { $('[data-addr]', root).textContent = `/${slug.value || 'yourteam'}/@${me.handle}`; };
   name.addEventListener('input', () => { if (!touched) { slug.value = slugOf(name.value); slug.dispatchEvent(new Event('input')); } });
   slug.addEventListener('input', (e) => { if (e.isTrusted) touched = true; slug.value = slug.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); paint(); });
@@ -227,7 +241,7 @@ function workspaceStep(first) {
     e.preventDefault();
     if (!name.value.trim()) { name.focus(); return; }
     try {
-      const ws = await api('/api/workspaces', { method: 'POST', body: { name: name.value, slug: slug.value || undefined, tagline: $('#wt', root).value || undefined }, workspace: false });
+      const ws = await api('/api/workspaces', { method: 'POST', body: { name: name.value, slug: slug.value || undefined, tagline: $('#wt', root).value || undefined, logo: logo || undefined }, workspace: false });
       await loadMe(ws.slug);
       first ? inviteStep(ws) : go(`/studio/${ws.slug}`, true);
     } catch (error) { hint.textContent = error.message; hint.className = 'ob-hint bad'; }
@@ -401,10 +415,10 @@ function shell(pane) {
 
 function switcher(anchor) {
   const items = (me.workspaces || []).map((w) => ({
-    label: `${w.name}${me.workspace && w.slug === me.workspace.slug ? ' ✓' : ''}`,
+    label: w.name, checked: !!(me.workspace && w.slug === me.workspace.slug),
     icon: wsLogo(w, 22), run: () => go(`/studio/${w.slug}`),
   }));
-  if (me.workspace && !(me.workspaces || []).some((w) => w.slug === me.workspace.slug)) items.unshift({ label: `${me.workspace.name} ✓ (visiting)`, icon: wsLogo(me.workspace, 22), run: () => {} });
+  if (me.workspace && !(me.workspaces || []).some((w) => w.slug === me.workspace.slug)) items.unshift({ label: me.workspace.name, note: 'Visiting', checked: true, icon: wsLogo(me.workspace, 22), run: () => {} });
   if (items.length) items.push('-');
   if (me.margin.can_create) items.push({ label: 'New workspace', icon: icons.plus, run: () => go('/new') });
   items.push({ label: 'View Margin', icon: icons.external, href: '/', blank: true });
@@ -431,7 +445,7 @@ function accountMenu(anchor) {
   if (me.handle) items.push({ label: 'Your page', icon: icons.user, href: `/@${me.handle}`, blank: true });
   if (me.admin && analytics) items.push({ label: 'Analytics', icon: icons.chart, href: analytics, blank: true });
   if (items.length) items.push('-');
-  for (const t of ['light', 'dark', 'system']) items.push({ label: `${t[0].toUpperCase() + t.slice(1)}${theme === t ? ' ✓' : ''}`, icon: icons.sun, run: () => setTheme(t) });
+  for (const [t, label, icon] of [['light', 'Light', icons.sun], ['dark', 'Dark', icons.moon], ['system', 'Match device', icons.monitor]]) items.push({ label, icon, checked: theme === t, run: () => setTheme(t) });
   items.push('-', { label: 'Sign out', icon: icons.out, danger: true, run: signOut });
   menu(anchor, items);
 }
@@ -441,7 +455,8 @@ function moreMenu(anchor) {
   items.push({ label: 'Switch workspace', icon: icons.updown, run: () => switcher(anchor) });
   items.push('-');
   const theme = currentTheme();
-  items.push({ label: `Appearance: ${theme[0].toUpperCase() + theme.slice(1)}`, icon: icons.sun, run: () => { const next = { system: 'light', light: 'dark', dark: 'system' }[theme]; setTheme(next); toast(`Appearance: ${next}`); } });
+  const NAME = { light: 'Light', dark: 'Dark', system: 'Match device' };
+  items.push({ label: 'Appearance', note: NAME[theme], icon: { light: icons.sun, dark: icons.moon, system: icons.monitor }[theme], run: () => { const next = { system: 'light', light: 'dark', dark: 'system' }[theme]; setTheme(next); toast(`Appearance: ${NAME[next]}`); } });
   items.push({ label: 'Sign out', icon: icons.out, danger: true, run: signOut });
   menu(anchor, items);
 }
@@ -472,10 +487,13 @@ async function postsView(panel, top) {
     <div class="toolbar"><div class="seg" data-status>${['all', 'draft', 'published'].map((s) => `<button type="button" data-v="${s}" aria-pressed="${postsFilter.status === s}">${{ all: 'All', draft: 'Drafts', published: 'Published' }[s]}</button>`).join('')}</div>
     <span class="grow"></span>${w.admin ? `<div class="seg" data-scope>${['mine', 'all'].map((s) => `<button type="button" data-v="${s}" aria-pressed="${postsFilter.scope === s}">${s === 'mine' ? 'Mine' : 'Everyone'}</button>`).join('')}</div>` : ''}</div>
     <div data-list>${skeletonRows()}</div></div>`;
-  const load = async () => {
+  const load = () => {
     const list = $('[data-list]', panel);
-    let data;
-    try { data = await api(`/api/posts?scope=${postsFilter.scope}&status=${postsFilter.status}`); } catch (error) { list.innerHTML = `<p class="group-note">${esc(error.message)}</p>`; return; }
+    const alive = ticket();
+    return remembered(`/api/posts?scope=${postsFilter.scope}&status=${postsFilter.status}`, (data) => paintPosts(list, data), alive)
+      .catch((error) => { if (alive()) list.innerHTML = `<p class="group-note">${esc(error.message)}</p>`; });
+  };
+  const paintPosts = (list, data) => {
     if (!data.posts.length) {
       list.innerHTML = `<div class="empty"><div class="empty-icon">${icons.pen}</div><h2>${postsFilter.status === 'published' ? 'Nothing published yet' : postsFilter.status === 'draft' ? 'No drafts' : 'Write your first post'}</h2>
         <p>Start in the editor, or ask Claude to draft one for you.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${w.writer ? '<button class="btn primary" data-start>New post</button>' : ''}<a class="btn" href="/studio/claude" data-nav>${icons.claude}Write with Claude</a></div></div>`;
@@ -483,7 +501,7 @@ async function postsView(panel, top) {
       return;
     }
     list.innerHTML = `<div class="group">${data.posts.map((p) => `<div class="post-row" data-id="${p.id}">
-      <img class="thumb" src="${esc(p.cover.url)}" alt="" loading="lazy">
+      ${p.cover ? `<img class="thumb" src="${esc(p.cover.thumb || p.cover.url)}" alt="" loading="lazy">` : `<span class="thumb thumb-empty">${icons.pen}</span>`}
       <span class="row-main"><span class="row-title">${esc(p.title)}</span>
       <span class="row-sub">${p.status === 'draft' ? '<span class="chip amber">Draft</span>' : '<span class="chip green">Published</span>'}${p.featured ? '<span class="chip">Pinned</span>' : ''}<span>@${esc(p.blog.handle)}</span><span>${esc(ago(p.updated_at))}</span>${p.pending ? `<span class="chip amber">${p.pending} to approve</span>` : ''}</span></span>
       <span class="stats"><span>${icons.clap}${p.claps}</span><span>${icons.comments.replace('class="ic"', 'class="ic ic-s"')}${p.comments}</span></span>
@@ -529,10 +547,13 @@ async function commentsView(panel, top) {
   panel.innerHTML = `<div class="page"><h2 class="page-title">Comments</h2>
     <div class="toolbar"><div class="seg" data-tab>${[['pending', 'Waiting'], ['unanswered', 'Unanswered'], ['recent', 'Recent']].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${inboxTab === v}">${l}<span data-n="${v}"></span></button>`).join('')}</div></div>
     <div data-list><div class="spinner"></div></div></div>`;
-  const load = async () => {
+  const load = () => {
     const list = $('[data-list]', panel);
-    let data;
-    try { data = await api(`/api/inbox?status=${inboxTab}&limit=60`); } catch (error) { list.innerHTML = `<p class="group-note">${esc(error.message)}</p>`; return; }
+    const alive = ticket();
+    return remembered(`/api/inbox?status=${inboxTab}&limit=60`, (data) => paintInbox(list, data), alive)
+      .catch((error) => { if (alive()) list.innerHTML = `<p class="group-note">${esc(error.message)}</p>`; });
+  };
+  const paintInbox = (list, data) => {
     counts.pending = data.pending_count;
     paintNavCounts();
     $('[data-n="pending"]', panel).textContent = data.pending_count ? ` ${data.pending_count}` : '';
@@ -605,9 +626,12 @@ async function teamView(panel, top) {
   const w = me.workspace;
   setTop(top, 'Team', `<button class="btn primary small" data-invite>${icons.plus}<span>Invite</span></button>`);
   panel.innerHTML = '<div class="page"><h2 class="page-title">Team</h2><div class="spinner"></div></div>';
-  const render = async () => {
-    let data;
-    try { data = await api('/api/team'); } catch (error) { $('.page', panel).innerHTML = `<p class="group-note">${esc(error.message)}</p>`; return; }
+  const render = () => {
+    const alive = ticket();
+    return remembered('/api/team', paintTeam, alive)
+      .catch((error) => { if (alive()) $('.page', panel).innerHTML = `<p class="group-note">${esc(error.message)}</p>`; });
+  };
+  const paintTeam = (data) => {
     const open = data.invites.filter((i) => !i.used && !i.expired);
     const owner = w.role === 'owner' || me.admin;
     $('.page', panel).innerHTML = `<h2 class="page-title">Team</h2><p class="page-lead">Only people you invite write in ${esc(w.name)}. Anyone signed in can read, clap and comment.</p>
@@ -663,139 +687,154 @@ const TONES = { lilac: '#b9adff', tangerine: '#ff8a4c', mint: '#86e3c3', butter:
 async function workspaceView(panel, top) {
   setTop(top, 'Workspace');
   panel.innerHTML = '<div class="page"><h2 class="page-title">Workspace</h2><div class="spinner"></div></div>';
-  let ws;
-  let posts;
-  let team;
-  let themes;
-  try {
-    [ws, posts, team, themes] = await Promise.all([api('/api/workspace'), api('/api/posts?scope=all&status=published'), api('/api/team'), api('/api/themes')]);
-  } catch (error) { $('.page', panel).innerHTML = `<p class="group-note">${esc(error.message)}</p>`; return; }
-  const nav = [...(ws.nav || [])];
-  let featured = [...(ws.featured || [])];
-  let logo = ws.logo;
-  let cover = { ...ws.cover };
-  const home = ws.home.startsWith('@') ? 'writer' : ws.home;
-  const names = team.members.flatMap((m) => m.names);
-  const page = $('.page', panel);
-  page.innerHTML = `<h2 class="page-title">${esc(ws.name)}</h2>
-    <p class="page-lead"><a href="/${esc(ws.slug)}" target="_blank" rel="noopener">${esc(location.host)}/${esc(ws.slug)}</a></p>
-    <div class="group-title">Identity</div><div class="group">
-      <div class="profile-edit"><button type="button" class="avatar-pick" data-logo aria-label="Change logo">${wsLogo({ ...ws, logo: ws.logo ? `/media/${ws.logo}` : null, initial: ws.initial, color: ws.color }, 56)}</button><div class="row-main"><span class="row-title">Logo</span><span class="row-sub">A square image, shown in the bar, the tab and the landing page.</span></div></div>
-      <div class="field"><label for="sn">Name</label><input id="sn" class="input" maxlength="60" value="${esc(ws.name)}"></div>
-      <div class="field"><label for="st">Tagline</label><input id="st" class="input" maxlength="120" value="${esc(ws.tagline)}"></div>
-      <div class="field"><label for="sd">Description</label><textarea id="sd" class="textarea" maxlength="300" rows="2">${esc(ws.description)}</textarea><small>Shown to search engines and on the home page.</small></div>
-    </div>
-    <div class="group-title">Home page</div><div class="group"><div class="field">
-      <div class="seg wide" data-home>${[['latest', 'Latest posts'], ['curated', 'Curated'], ['writer', 'One writer']].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${home === v}">${l}</button>`).join('')}</div>
-      <div data-home-detail style="margin-top:14px"></div></div></div>
-    <div class="group-title">Comments</div><div class="group" data-mod>${Object.entries(MOD_LABEL).map(([v, [l, n]]) => `<button type="button" class="row link choice" data-v="${v}" aria-pressed="${ws.moderation === v}"><span class="row-main"><span class="row-title" style="font-weight:500">${l}</span><span class="row-sub">${n}</span></span><span class="choice-check">${icons.check}</span></button>`).join('')}</div>
-    <div class="group-title">Covers</div><div class="group"><div class="field">
-      <p class="row-sub" style="margin:0 0 12px">Posts without a photo get a drawn cover in this style. Writers pick each drawing’s subject.</p>
-      <div class="seg wide" data-look>${Object.entries(LOOKS).map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${cover.look === v}">${l}</button>`).join('')}</div>
-      <div class="swatches" data-tones>${Object.entries(TONES).map(([v, c]) => `<button type="button" class="swatch" data-v="${v}" aria-label="${v}" aria-pressed="${cover.tone === v}" style="background:${c}"></button>`).join('')}</div>
-      <div class="cover-preview" data-preview></div></div></div>
-    <div class="group-title">Theme</div>
-    <div class="themes">${themes.themes.map((t) => `<div class="theme-card${t.id === themes.active ? ' on' : ''}" data-theme-id="${esc(t.id)}"><div class="theme-shot ${esc(t.id)}">Aa</div>
-      <div class="theme-body"><b>${esc(t.name)} ${t.id === themes.active ? '<span class="chip green">Live</span>' : ''}</b><p>${esc(t.description)}</p>
-      <div class="theme-actions">${t.id === themes.active ? '' : '<button class="btn small primary" data-use>Use</button>'}<a class="btn small" href="/${esc(ws.slug)}?theme=${esc(t.id)}" target="_blank" rel="noopener">Preview</a></div></div></div>`).join('')}</div>
-    <div data-theme-settings></div>
-    <div class="group-title">Menu links</div><div class="group" data-nav-links></div>
-    <div style="display:flex;gap:8px;margin:-12px 0 24px"><button class="btn small" data-add-link>${icons.plus}Add link</button></div>
-    <div class="save-bar"><button class="btn primary" data-save>Save changes</button></div>
-    ${ws.role !== 'owner' && !me.admin ? '' : ''}`;
-  // home page
-  const detail = $('[data-home-detail]', page);
-  let homeMode = home;
-  let homeWriter = ws.home.startsWith('@') ? ws.home.slice(1) : (names[0] || {}).handle || '';
-  const byId = new Map(posts.posts.map((p) => [p.id, p]));
-  const paintHome = () => {
-    if (homeMode === 'latest') detail.innerHTML = '<p class="row-sub" style="margin:0">Newest posts first, the latest featured at the top.</p>';
-    else if (homeMode === 'writer') detail.innerHTML = `<select class="select" data-writer>${names.map((n) => `<option value="${esc(n.handle)}"${n.handle === homeWriter ? ' selected' : ''}>${esc(n.name)} (@${esc(n.handle)})</option>`).join('')}</select><p class="row-sub" style="margin:8px 0 0">That writer’s page becomes ${esc(ws.name)}’s home.</p>`;
-    else {
-      const pinned = featured.map((id) => byId.get(id)).filter(Boolean);
-      detail.innerHTML = `<div class="pins">${pinned.map((p, i) => `<div class="pin"><img src="${esc(p.cover.url)}" alt=""><span class="row-main"><span class="row-title">${esc(p.title)}</span><span class="row-sub">${esc(p.blog.name)}</span></span><button type="button" class="icon-btn" data-up="${i}" aria-label="Move up"${i === 0 ? ' disabled' : ''}>${icons.back.replace('<svg', '<svg style="transform:rotate(90deg)"')}</button><button type="button" class="icon-btn" data-rm-pin="${i}" aria-label="Unpin">${icons.close}</button></div>`).join('') || '<p class="row-sub" style="margin:0 0 8px">Nothing pinned yet.</p>'}</div>
-        <select class="select" data-pin><option value="">Pin a post from anyone on the team…</option>${posts.posts.filter((p) => !featured.includes(p.id)).map((p) => `<option value="${esc(p.id)}">${esc(p.title)} — ${esc(p.blog.name)}</option>`).join('')}</select>
-        <p class="row-sub" style="margin:8px 0 0">Pinned posts come first, in this order. The rest follow, newest first.</p>`;
-      $$('[data-up]', detail).forEach((b) => b.addEventListener('click', () => { const i = Number(b.dataset.up); [featured[i - 1], featured[i]] = [featured[i], featured[i - 1]]; paintHome(); }));
-      $$('[data-rm-pin]', detail).forEach((b) => b.addEventListener('click', () => { featured.splice(Number(b.dataset.rmPin), 1); paintHome(); }));
-      $('[data-pin]', detail).addEventListener('change', (e) => { if (e.target.value) { featured.push(e.target.value); paintHome(); } });
-    }
-    $('[data-writer]', detail)?.addEventListener('change', (e) => { homeWriter = e.target.value; });
-  };
-  paintHome();
-  const seg = (sel, onPick) => $(sel, page).addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-v]');
-    if (!b) return;
-    $$('button', $(sel, page)).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    onPick(b.dataset.v);
-  });
-  seg('[data-home]', (v) => { homeMode = v; paintHome(); });
-  let moderation = ws.moderation;
-  seg('[data-mod]', (v) => { moderation = v; });
-  // covers, previewed with a real drawing
-  const covers = await import('/margin/covers.js');
-  const live = await import('/margin/live-covers.js');
-  const preview = $('[data-preview]', page);
-  const paintPreview = () => {
-    const spec = covers.normalize({ motif: covers.MOTIFS[(ws.slug.length + (cover.look === 'paper' ? 0 : 3)) % covers.MOTIFS.length], look: cover.look, tone: cover.tone, seed: 1203 });
-    preview.innerHTML = '';
-    const box = document.createElement('div');
-    box.className = 'cover-live';
-    preview.append(box);
-    live.mount(box, spec);
-  };
-  paintPreview();
-  seg('[data-look]', (v) => { cover.look = v; paintPreview(); });
-  $('[data-tones]', page).addEventListener('click', (e) => {
-    const b = e.target.closest('[data-v]');
-    if (!b) return;
-    $$('[data-tones] button', page).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    cover.tone = b.dataset.v;
-    paintPreview();
-  });
-  // logo
-  $('[data-logo]', page).addEventListener('click', async () => {
-    const file = await pickFile('image/*');
-    if (!file) return;
-    try { const media = await upload(file, 512); logo = media.id; $('[data-logo]', page).innerHTML = `<img class="ws-logo" src="${esc(media.url)}" alt="" style="width:56px;height:56px">`; } catch (error) { toast(error.message); }
-  });
-  // theme
-  const active = themes.themes.find((t) => t.id === themes.active) || themes.themes[0];
-  if (active && active.settings.length) {
-    $('[data-theme-settings]', page).innerHTML = `<div class="group-title">${esc(active.name)} settings</div><div class="group">${active.settings.map((s) => settingField(s, active.values[s.key])).join('')}</div>`;
-  }
-  for (const card of $$('[data-theme-id]', page)) {
-    $('[data-use]', card)?.addEventListener('click', async () => { try { await api(`/api/themes/${card.dataset.themeId}/activate`, { method: 'POST', body: {} }); toast('Theme is live'); workspaceView(panel, top); } catch (error) { toast(error.message); } });
-  }
-  // nav links
-  const paintNav = () => {
-    const box = $('[data-nav-links]', page);
-    box.innerHTML = nav.length ? nav.map((n, i) => `<div class="row"><input class="input" data-l="${i}" maxlength="30" placeholder="Label" value="${esc(n.label)}" style="flex:1"><input class="input" data-u="${i}" maxlength="300" placeholder="/about or https://…" value="${esc(n.url)}" style="flex:2"><button class="icon-btn" data-rm="${i}" aria-label="Remove">${icons.close}</button></div>`).join('') : '<div class="row"><span class="row-sub">No extra links. Themes show Latest and your writers.</span></div>';
-    for (const b of $$('[data-rm]', box)) b.addEventListener('click', () => { nav.splice(Number(b.dataset.rm), 1); paintNav(); });
-    for (const i of $$('[data-l]', box)) i.addEventListener('input', () => { nav[i.dataset.l].label = i.value; });
-    for (const i of $$('[data-u]', box)) i.addEventListener('input', () => { nav[i.dataset.u].url = i.value; });
-  };
-  paintNav();
-  $('[data-add-link]', page).addEventListener('click', () => { if (nav.length < 8) { nav.push({ label: '', url: '' }); paintNav(); } });
-  $('[data-save]', page).addEventListener('click', async () => {
-    const body = {
-      name: $('#sn', page).value, tagline: $('#st', page).value, description: $('#sd', page).value,
-      home: homeMode === 'writer' ? '@' + homeWriter : homeMode, featured, moderation, cover, logo: logo || null,
-      nav: nav.filter((n) => n.label.trim() && n.url.trim()),
-    };
-    try {
-      if (active && active.settings.length) {
-        const values = {};
-        for (const s of active.settings) { const el = $(`[data-setting="${s.key}"]`, page); values[s.key] = s.type === 'boolean' ? el.checked : el.value; }
-        await api(`/api/themes/${active.id}/activate`, { method: 'POST', body: { settings: values } });
+  // A settings form: repaint from fresher data only until the person starts changing things.
+  const alive = ticket();
+  let touched = false;
+  for (const type of ['input', 'pointerdown']) $('.page', panel).addEventListener(type, () => { touched = true; }, { once: true });
+  const paint = async ([ws, posts, team, themes]) => {
+    const nav = [...(ws.nav || [])];
+    let featured = [...(ws.featured || [])];
+    let logo = ws.logo;
+    let cover = { ...ws.cover };
+    const home = ws.home.startsWith('@') ? 'writer' : ws.home;
+    const names = team.members.flatMap((m) => m.names);
+    const page = $('.page', panel);
+    page.innerHTML = `<h2 class="page-title">${esc(ws.name)}</h2>
+      <p class="page-lead"><a href="/${esc(ws.slug)}" target="_blank" rel="noopener">${esc(location.host)}/${esc(ws.slug)}</a></p>
+      <div class="group-title">Identity</div><div class="group">
+        <div class="profile-edit"><button type="button" class="avatar-pick logo-pick" data-logo aria-label="Upload a logo">${wsLogo({ ...ws, logo: ws.logo ? `/media/${ws.logo}` : null, initial: ws.initial, color: ws.color }, 56)}</button><div class="row-main"><span class="row-title">Logo</span><span class="row-sub">A square image, shown in the bar, the tab and the landing page.</span></div><div class="row-actions"><button type="button" class="btn small" data-logo>${ws.logo ? 'Change' : 'Upload'}</button>${ws.logo ? '<button type="button" class="btn small" data-logo-remove>Remove</button>' : ''}</div></div>
+        <div class="field"><label for="sn">Name</label><input id="sn" class="input" maxlength="60" value="${esc(ws.name)}"></div>
+        <div class="field"><label for="st">Tagline</label><input id="st" class="input" maxlength="120" value="${esc(ws.tagline)}"></div>
+        <div class="field"><label for="sd">Description</label><textarea id="sd" class="textarea" maxlength="300" rows="2">${esc(ws.description)}</textarea><small>Shown to search engines and on the home page.</small></div>
+      </div>
+      <div class="group-title">Home page</div><div class="group"><div class="field">
+        <div class="seg wide" data-home>${[['latest', 'Latest posts'], ['curated', 'Curated'], ['writer', 'One writer']].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${home === v}">${l}</button>`).join('')}</div>
+        <div data-home-detail style="margin-top:14px"></div></div></div>
+      <div class="group-title">Comments</div><div class="group" data-mod>${Object.entries(MOD_LABEL).map(([v, [l, n]]) => `<button type="button" class="row link choice" data-v="${v}" aria-pressed="${ws.moderation === v}"><span class="row-main"><span class="row-title" style="font-weight:500">${l}</span><span class="row-sub">${n}</span></span><span class="choice-check">${icons.check}</span></button>`).join('')}</div>
+      <div class="group-title">Covers</div><div class="group"><div class="field">
+        <p class="row-sub" style="margin:0 0 12px">Posts without a photo get a drawn cover in this style. Writers pick each drawing’s subject.</p>
+        <div class="seg wide" data-look>${Object.entries(LOOKS).map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${cover.look === v}">${l}</button>`).join('')}</div>
+        <div class="swatches" data-tones>${Object.entries(TONES).map(([v, c]) => `<button type="button" class="swatch" data-v="${v}" aria-label="${v}" aria-pressed="${cover.tone === v}" style="background:${c}"></button>`).join('')}</div>
+        <div class="cover-preview" data-preview></div></div></div>
+      <div class="group-title">Theme</div>
+      <div class="themes">${themes.themes.map((t) => `<div class="theme-card${t.id === themes.active ? ' on' : ''}" data-theme-id="${esc(t.id)}"><div class="theme-shot ${esc(t.id)}">Aa</div>
+        <div class="theme-body"><b>${esc(t.name)} ${t.id === themes.active ? '<span class="chip green">Live</span>' : ''}</b><p>${esc(t.description)}</p>
+        <div class="theme-actions">${t.id === themes.active ? '' : '<button class="btn small primary" data-use>Use</button>'}<a class="btn small" href="/${esc(ws.slug)}?theme=${esc(t.id)}" target="_blank" rel="noopener">Preview</a></div></div></div>`).join('')}</div>
+      <div data-theme-settings></div>
+      <div class="group-title">Menu links</div><div class="group" data-nav-links></div>
+      <div style="display:flex;gap:8px;margin:-12px 0 24px"><button class="btn small" data-add-link>${icons.plus}Add link</button></div>
+      <div class="save-bar"><button class="btn primary" data-save>Save changes</button></div>
+      ${ws.role !== 'owner' && !me.admin ? '' : ''}`;
+    // home page
+    const detail = $('[data-home-detail]', page);
+    let homeMode = home;
+    let homeWriter = ws.home.startsWith('@') ? ws.home.slice(1) : (names[0] || {}).handle || '';
+    const byId = new Map(posts.posts.map((p) => [p.id, p]));
+    const paintHome = () => {
+      if (homeMode === 'latest') detail.innerHTML = '<p class="row-sub" style="margin:0">Newest posts first, the latest featured at the top.</p>';
+      else if (homeMode === 'writer') detail.innerHTML = `<select class="select" data-writer>${names.map((n) => `<option value="${esc(n.handle)}"${n.handle === homeWriter ? ' selected' : ''}>${esc(n.name)} (@${esc(n.handle)})</option>`).join('')}</select><p class="row-sub" style="margin:8px 0 0">That writer’s page becomes ${esc(ws.name)}’s home.</p>`;
+      else {
+        const pinned = featured.map((id) => byId.get(id)).filter(Boolean);
+        detail.innerHTML = `<div class="pins">${pinned.map((p, i) => `<div class="pin">${p.cover ? `<img src="${esc(p.cover.thumb || p.cover.url)}" alt="">` : '<span class="pin-empty"></span>'}<span class="row-main"><span class="row-title">${esc(p.title)}</span><span class="row-sub">${esc(p.blog.name)}</span></span><button type="button" class="icon-btn" data-up="${i}" aria-label="Move up"${i === 0 ? ' disabled' : ''}>${icons.back.replace('<svg', '<svg style="transform:rotate(90deg)"')}</button><button type="button" class="icon-btn" data-rm-pin="${i}" aria-label="Unpin">${icons.close}</button></div>`).join('') || '<p class="row-sub" style="margin:0 0 8px">Nothing pinned yet.</p>'}</div>
+          <select class="select" data-pin><option value="">Pin a post from anyone on the team…</option>${posts.posts.filter((p) => !featured.includes(p.id)).map((p) => `<option value="${esc(p.id)}">${esc(p.title)} — ${esc(p.blog.name)}</option>`).join('')}</select>
+          <p class="row-sub" style="margin:8px 0 0">Pinned posts come first, in this order. The rest follow, newest first.</p>`;
+        $$('[data-up]', detail).forEach((b) => b.addEventListener('click', () => { const i = Number(b.dataset.up); [featured[i - 1], featured[i]] = [featured[i], featured[i - 1]]; paintHome(); }));
+        $$('[data-rm-pin]', detail).forEach((b) => b.addEventListener('click', () => { featured.splice(Number(b.dataset.rmPin), 1); paintHome(); }));
+        $('[data-pin]', detail).addEventListener('change', (e) => { if (e.target.value) { featured.push(e.target.value); paintHome(); } });
       }
-      await api('/api/workspace', { method: 'PATCH', body });
-      await loadMe(ws.slug);
-      root.dataset.shell = '';
-      toast('Saved');
-      shell('workspace');
-    } catch (error) { toast(error.message); }
-  });
+      $('[data-writer]', detail)?.addEventListener('change', (e) => { homeWriter = e.target.value; });
+    };
+    paintHome();
+    const seg = (sel, onPick) => $(sel, page).addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-v]');
+      if (!b) return;
+      $$('button', $(sel, page)).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      onPick(b.dataset.v);
+    });
+    seg('[data-home]', (v) => { homeMode = v; paintHome(); });
+    let moderation = ws.moderation;
+    seg('[data-mod]', (v) => { moderation = v; });
+    // covers, previewed with a real drawing
+    const covers = await import('/margin/covers.js');
+    const live = await import('/margin/live-covers.js');
+    const preview = $('[data-preview]', page);
+    const paintPreview = () => {
+      const spec = covers.normalize({ motif: covers.MOTIFS[(ws.slug.length + (cover.look === 'paper' ? 0 : 3)) % covers.MOTIFS.length], look: cover.look, tone: cover.tone, seed: 1203 });
+      preview.innerHTML = '';
+      const box = document.createElement('div');
+      box.className = 'cover-live';
+      preview.append(box);
+      live.mount(box, spec);
+    };
+    paintPreview();
+    seg('[data-look]', (v) => { cover.look = v; paintPreview(); });
+    $('[data-tones]', page).addEventListener('click', (e) => {
+      const b = e.target.closest('[data-v]');
+      if (!b) return;
+      $$('[data-tones] button', page).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      cover.tone = b.dataset.v;
+      paintPreview();
+    });
+    // logo
+    // A logo saves at once, like a photo anywhere else in Studio.
+    const saveLogo = async (next) => {
+      try {
+        await api('/api/workspace', { method: 'PATCH', body: { logo: next } });
+        logo = next;
+        await loadMe(ws.slug);
+        root.dataset.shell = '';
+        toast(next ? 'Logo updated' : 'Logo removed');
+        shell('workspace');
+      } catch (error) { toast(error.message); }
+    };
+    for (const b of $$('[data-logo]', page)) b.addEventListener('click', async () => {
+      const file = await pickFile('image/*');
+      if (!file) return;
+      try { const media = await upload(file, 512); await saveLogo(media.id); } catch (error) { toast(error.message); }
+    });
+    $('[data-logo-remove]', page)?.addEventListener('click', () => saveLogo(null));
+    // theme
+    const active = themes.themes.find((t) => t.id === themes.active) || themes.themes[0];
+    if (active && active.settings.length) {
+      $('[data-theme-settings]', page).innerHTML = `<div class="group-title">${esc(active.name)} settings</div><div class="group">${active.settings.map((s) => settingField(s, active.values[s.key])).join('')}</div>`;
+    }
+    for (const card of $$('[data-theme-id]', page)) {
+      $('[data-use]', card)?.addEventListener('click', async () => { try { await api(`/api/themes/${card.dataset.themeId}/activate`, { method: 'POST', body: {} }); toast('Theme is live'); workspaceView(panel, top); } catch (error) { toast(error.message); } });
+    }
+    // nav links
+    const paintNav = () => {
+      const box = $('[data-nav-links]', page);
+      box.innerHTML = nav.length ? nav.map((n, i) => `<div class="row"><input class="input" data-l="${i}" maxlength="30" placeholder="Label" value="${esc(n.label)}" style="flex:1"><input class="input" data-u="${i}" maxlength="300" placeholder="/about or https://…" value="${esc(n.url)}" style="flex:2"><button class="icon-btn" data-rm="${i}" aria-label="Remove">${icons.close}</button></div>`).join('') : '<div class="row"><span class="row-sub">No extra links. Themes show Latest and your writers.</span></div>';
+      for (const b of $$('[data-rm]', box)) b.addEventListener('click', () => { nav.splice(Number(b.dataset.rm), 1); paintNav(); });
+      for (const i of $$('[data-l]', box)) i.addEventListener('input', () => { nav[i.dataset.l].label = i.value; });
+      for (const i of $$('[data-u]', box)) i.addEventListener('input', () => { nav[i.dataset.u].url = i.value; });
+    };
+    paintNav();
+    $('[data-add-link]', page).addEventListener('click', () => { if (nav.length < 8) { nav.push({ label: '', url: '' }); paintNav(); } });
+    $('[data-save]', page).addEventListener('click', async () => {
+      const body = {
+        name: $('#sn', page).value, tagline: $('#st', page).value, description: $('#sd', page).value,
+        home: homeMode === 'writer' ? '@' + homeWriter : homeMode, featured, moderation, cover, logo: logo || null,
+        nav: nav.filter((n) => n.label.trim() && n.url.trim()),
+      };
+      try {
+        if (active && active.settings.length) {
+          const values = {};
+          for (const s of active.settings) { const el = $(`[data-setting="${s.key}"]`, page); values[s.key] = s.type === 'boolean' ? el.checked : el.value; }
+          await api(`/api/themes/${active.id}/activate`, { method: 'POST', body: { settings: values } });
+        }
+        await api('/api/workspace', { method: 'PATCH', body });
+        await loadMe(ws.slug);
+        root.dataset.shell = '';
+        toast('Saved');
+        shell('workspace');
+      } catch (error) { toast(error.message); }
+    });
+
+  };
+  try {
+    await remembered(['/api/workspace', '/api/posts?scope=all&status=published', '/api/team', '/api/themes'], paint, () => alive() && !touched);
+  } catch (error) { if (alive()) $('.page', panel).innerHTML = `<p class="group-note">${esc(error.message)}</p>`; }
 }
 
 function settingField(s, value) {
@@ -815,19 +854,26 @@ async function youView(panel, top) {
   setTop(top, 'You', `<button class="btn small" data-new-persona>${icons.plus}<span>New persona</span></button>`);
   $('[data-new-persona]', top).addEventListener('click', () => identitySheet(null, () => youView(panel, top)));
   panel.innerHTML = '<div class="page"><h2 class="page-title">You</h2><div class="spinner"></div></div>';
-  let data;
-  try { data = await api('/api/identities'); } catch (error) { $('.page', panel).innerHTML = `<p class="group-note">${esc(error.message)}</p>`; return; }
-  const page = $('.page', panel);
-  page.innerHTML = `<h2 class="page-title">You</h2>
-    <div class="group-title">Your names</div><div class="group">${data.identities.map((b) => `<div class="row link" data-handle="${esc(b.handle)}"><img class="avatar" src="${esc(b.avatar)}" alt=""><span class="row-main"><span class="row-title">${esc(b.name)}</span><span class="row-sub">@${esc(b.handle)} · ${b.own ? 'your name' : 'persona'} · ${b.posts} post${b.posts === 1 ? '' : 's'}</span></span><span class="chev">${icons.chev}</span></div>`).join('')}
-      <button type="button" class="row link add-row" data-add>${icons.plus}<span>New persona</span></button></div>
-    <p class="group-note">Write and comment as any of these. Readers can’t tell they’re the same person.</p>
-    <div class="group-title">Workspaces</div>${me.workspaces.length ? `<div class="group">${me.workspaces.map((w) => `<a class="row link" href="/studio/${esc(w.slug)}" data-nav>${wsLogo(w)}<span class="row-main"><span class="row-title">${esc(w.name)}</span><span class="row-sub">${esc(ROLE_LABEL[w.role] || w.role)}${w.identities.length ? ' · writes as ' + w.identities.map((h) => '@' + esc(h)).join(', ') : ''}</span></span><span class="chev">${icons.chev}</span></a>`).join('')}</div>` : '<div class="group"><div class="row"><span class="row-sub">You’re not on a workspace yet.</span></div></div>'}
-    ${me.margin.can_create ? '<div style="margin:-8px 0 24px"><a class="btn small" href="/new" data-nav>Start a workspace</a></div>' : ''}
-    <div class="group-title">Claude</div>${connectBlock()}`;
-  wireConnect(page);
-  for (const row of $$('[data-handle]', page)) row.addEventListener('click', () => identitySheet(data.identities.find((b) => b.handle === row.dataset.handle), () => youView(panel, top)));
-  $('[data-add]', page).addEventListener('click', () => identitySheet(null, () => youView(panel, top)));
+  const alive = ticket();
+  let touched = false;
+  for (const type of ['input', 'pointerdown']) $('.page', panel).addEventListener(type, () => { touched = true; }, { once: true });
+  const paint = async (data) => {
+    const page = $('.page', panel);
+    page.innerHTML = `<h2 class="page-title">You</h2>
+      <div class="group-title">Your names</div><div class="group">${data.identities.map((b) => `<div class="row link" data-handle="${esc(b.handle)}"><img class="avatar" src="${esc(b.avatar)}" alt=""><span class="row-main"><span class="row-title">${esc(b.name)}</span><span class="row-sub">@${esc(b.handle)} · ${b.own ? 'your name' : 'persona'} · ${b.posts} post${b.posts === 1 ? '' : 's'}</span></span><span class="chev">${icons.chev}</span></div>`).join('')}
+        <button type="button" class="row link add-row" data-add>${icons.plus}<span>New persona</span></button></div>
+      <p class="group-note">Write and comment as any of these. Readers can’t tell they’re the same person.</p>
+      <div class="group-title">Workspaces</div>${me.workspaces.length ? `<div class="group">${me.workspaces.map((w) => `<a class="row link" href="/studio/${esc(w.slug)}" data-nav>${wsLogo(w)}<span class="row-main"><span class="row-title">${esc(w.name)}</span><span class="row-sub">${esc(ROLE_LABEL[w.role] || w.role)}${w.identities.length ? ' · writes as ' + w.identities.map((h) => '@' + esc(h)).join(', ') : ''}</span></span><span class="chev">${icons.chev}</span></a>`).join('')}</div>` : '<div class="group"><div class="row"><span class="row-sub">You’re not on a workspace yet.</span></div></div>'}
+      ${me.margin.can_create ? '<div style="margin:-8px 0 24px"><a class="btn small" href="/new" data-nav>Start a workspace</a></div>' : ''}
+      <div class="group-title">Claude</div>${connectBlock()}`;
+    wireConnect(page);
+    for (const row of $$('[data-handle]', page)) row.addEventListener('click', () => identitySheet(data.identities.find((b) => b.handle === row.dataset.handle), () => youView(panel, top)));
+    $('[data-add]', page).addEventListener('click', () => identitySheet(null, () => youView(panel, top)));
+
+  };
+  try {
+    await remembered('/api/identities', paint, () => alive() && !touched);
+  } catch (error) { if (alive()) $('.page', panel).innerHTML = `<p class="group-note">${esc(error.message)}</p>`; }
 }
 
 function identitySheet(identity, done) {
@@ -905,93 +951,98 @@ const SIGNUP_LABEL = { open: ['Anyone', 'Anyone can sign up and start a workspac
 async function marginView(panel, top) {
   setTop(top, 'Margin', `<button class="btn small" data-upload>${icons.upload}<span>Upload theme</span></button>`);
   panel.innerHTML = '<div class="page"><h2 class="page-title">Margin</h2><div class="spinner"></div></div>';
-  let settings;
-  let spaces;
-  let themes;
-  try { [settings, spaces, themes] = await Promise.all([api('/api/margin', { workspace: false }), api('/api/margin/workspaces', { workspace: false }), api('/api/themes', { workspace: false })]); } catch (error) { $('.page', panel).innerHTML = `<p class="group-note">${esc(error.message)}</p>`; return; }
-  const list = spaces.workspaces;
-  let signups = settings.signups;
-  let homeMode = settings.home.startsWith('ws:') ? 'workspace' : settings.home.startsWith('@') ? 'writer' : 'landing';
-  const examples = [...(settings.examples || [])];
-  const page = $('.page', panel);
-  page.innerHTML = `<h2 class="page-title">Margin</h2><p class="page-lead">Settings for all of ${esc(location.host)}. Only this server’s admins see this.</p>
-    <div class="group-title">Who can join</div><div class="group" data-signups>${Object.entries(SIGNUP_LABEL).map(([v, [l, n]]) => `<button type="button" class="row link choice" data-v="${v}" aria-pressed="${signups === v}"><span class="row-main"><span class="row-title" style="font-weight:500">${l}</span><span class="row-sub">${n}</span></span><span class="choice-check">${icons.check}</span></button>`).join('')}</div>
-    <div class="group-title">Home page</div><div class="group"><div class="field">
-      <div class="seg wide" data-home>${[['landing', 'Margin’s landing'], ['workspace', 'A workspace'], ['writer', 'A writer']].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${homeMode === v}">${l}</button>`).join('')}</div>
-      <div style="margin-top:12px" data-home-detail></div></div></div>
-    <div class="group-title">On the landing</div><div class="group">${list.map((w) => `<label class="row link">${wsLogo(w)}<span class="row-main"><span class="row-title">${esc(w.name)}</span><span class="row-sub">/${esc(w.slug)} · ${w.posts} post${w.posts === 1 ? '' : 's'}</span></span><span class="switch"><input type="checkbox" data-example="${esc(w.slug)}"${examples.includes(w.slug) ? ' checked' : ''}><span></span></span></label>`).join('') || '<div class="row"><span class="row-sub">No workspaces yet.</span></div>'}</div>
-    <p class="group-note">The landing page shows these as examples, in the order you switch them on.</p>
-    <div class="group-title">Address</div><div class="group"><div class="field"><label for="ph">Primary address</label><input id="ph" class="input" maxlength="200" placeholder="${esc(location.host)}" value="${esc(settings.primaryHost || '')}" autocapitalize="none" spellcheck="false"><small>Other addresses of this app send readers here, and links use it.</small></div></div>
-    <div class="save-bar"><button class="btn primary" data-save>Save changes</button></div>
-    <div class="group-title">Workspaces</div><div class="group">${list.map((w) => `<div class="row">${wsLogo(w)}<span class="row-main"><span class="row-title">${esc(w.name)}${w.suspended ? ' <span class="chip amber">Suspended</span>' : ''}${w.sample ? ' <span class="chip">Sample</span>' : ''}</span><span class="row-sub">/${esc(w.slug)} · started ${esc(ago(w.created_at))}</span></span><a class="btn small" href="/studio/${esc(w.slug)}" data-nav>Open</a><button class="btn small${w.suspended ? '' : ' danger'}" data-suspend="${esc(w.slug)}" data-on="${w.suspended ? '0' : '1'}">${w.suspended ? 'Restore' : 'Suspend'}</button></div>`).join('') || '<div class="row"><span class="row-sub">No workspaces yet.</span></div>'}</div>
-    <div class="group-title">Theme library</div>
-    <div class="themes">${themes.themes.map((t) => `<div class="theme-card" data-id="${esc(t.id)}"><div class="theme-shot ${esc(t.id)}">Aa</div>
-      <div class="theme-body"><b>${esc(t.name)}${t.built_in ? '' : ' <span class="chip">Added</span>'}</b><p>${esc(t.description)}</p>
-      <div class="theme-actions"><button class="btn small" data-download>${icons.download}Download</button>${t.built_in ? '' : `<button class="btn small danger" data-delete aria-label="Delete">${icons.trash}</button>`}</div></div></div>`).join('')}</div>
-    <p class="group-note">A theme is a few HTML templates and a stylesheet. Download one, change it by hand or with Claude, and upload it; every workspace can then pick it. <a href="/api/reference" target="_blank" rel="noopener">Reference</a></p>
-    <div class="group-title">Sample content</div><div class="group">
-      <div class="row"><span class="row-main"><span class="row-title">Load the samples</span><span class="row-sub">Adds two made-up teams, Lumen and Copperline, with writers, posts and a few comments, and shows them on the landing.</span></span><button class="btn small" data-samples>Load</button></div>
-      <div class="row"><span class="row-main"><span class="row-title">Remove the samples</span><span class="row-sub">Deletes the sample workspaces, writers, posts and their comments.</span></span><button class="btn small danger" data-remove-samples>Remove</button></div>
-    </div>`;
-  const detail = $('[data-home-detail]', page);
-  let homeWs = settings.home.startsWith('ws:') ? settings.home.slice(3) : (list[0] || {}).slug || '';
-  let homeWriter = settings.home.startsWith('@') ? settings.home.slice(1) : '';
-  const paintHome = () => {
-    if (homeMode === 'landing') detail.innerHTML = '<p class="row-sub" style="margin:0">Margin’s own front page, with the examples below.</p>';
-    else if (homeMode === 'workspace') detail.innerHTML = `<select class="select" data-home-ws>${list.map((w) => `<option value="${esc(w.slug)}"${w.slug === homeWs ? ' selected' : ''}>${esc(w.name)}</option>`).join('')}</select><p class="row-sub" style="margin:8px 0 0">That workspace’s home becomes ${esc(location.host)}.</p>`;
-    else detail.innerHTML = `<div class="handle-input"><span>@</span><input class="input" data-home-writer maxlength="30" value="${esc(homeWriter)}" placeholder="maya" autocapitalize="none" spellcheck="false"></div><p class="row-sub" style="margin:8px 0 0">That writer’s page becomes ${esc(location.host)}.</p>`;
-    $('[data-home-ws]', detail)?.addEventListener('change', (e) => { homeWs = e.target.value; });
-    $('[data-home-writer]', detail)?.addEventListener('input', (e) => { homeWriter = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); });
+  const alive = ticket();
+  let touched = false;
+  for (const type of ['input', 'pointerdown']) $('.page', panel).addEventListener(type, () => { touched = true; }, { once: true });
+  const paint = async ([settings, spaces, themes]) => {
+    const list = spaces.workspaces;
+    let signups = settings.signups;
+    let homeMode = settings.home.startsWith('ws:') ? 'workspace' : settings.home.startsWith('@') ? 'writer' : 'landing';
+    const examples = [...(settings.examples || [])];
+    const page = $('.page', panel);
+    page.innerHTML = `<h2 class="page-title">Margin</h2><p class="page-lead">Settings for all of ${esc(location.host)}. Only this server’s admins see this.</p>
+      <div class="group-title">Who can join</div><div class="group" data-signups>${Object.entries(SIGNUP_LABEL).map(([v, [l, n]]) => `<button type="button" class="row link choice" data-v="${v}" aria-pressed="${signups === v}"><span class="row-main"><span class="row-title" style="font-weight:500">${l}</span><span class="row-sub">${n}</span></span><span class="choice-check">${icons.check}</span></button>`).join('')}</div>
+      <div class="group-title">Home page</div><div class="group"><div class="field">
+        <div class="seg wide" data-home>${[['landing', 'Margin’s landing'], ['workspace', 'A workspace'], ['writer', 'A writer']].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${homeMode === v}">${l}</button>`).join('')}</div>
+        <div style="margin-top:12px" data-home-detail></div></div></div>
+      <div class="group-title">On the landing</div><div class="group">${list.map((w) => `<label class="row link">${wsLogo(w)}<span class="row-main"><span class="row-title">${esc(w.name)}</span><span class="row-sub">/${esc(w.slug)} · ${w.posts} post${w.posts === 1 ? '' : 's'}</span></span><span class="switch"><input type="checkbox" data-example="${esc(w.slug)}"${examples.includes(w.slug) ? ' checked' : ''}><span></span></span></label>`).join('') || '<div class="row"><span class="row-sub">No workspaces yet.</span></div>'}</div>
+      <p class="group-note">The landing page shows these as examples, in the order you switch them on.</p>
+      <div class="group-title">Address</div><div class="group"><div class="field"><label for="ph">Primary address</label><input id="ph" class="input" maxlength="200" placeholder="${esc(location.host)}" value="${esc(settings.primaryHost || '')}" autocapitalize="none" spellcheck="false"><small>Other addresses of this app send readers here, and links use it.</small></div></div>
+      <div class="save-bar"><button class="btn primary" data-save>Save changes</button></div>
+      <div class="group-title">Workspaces</div><div class="group">${list.map((w) => `<div class="row">${wsLogo(w)}<span class="row-main"><span class="row-title">${esc(w.name)}${w.suspended ? ' <span class="chip amber">Suspended</span>' : ''}${w.sample ? ' <span class="chip">Sample</span>' : ''}</span><span class="row-sub">/${esc(w.slug)} · started ${esc(ago(w.created_at))}</span></span><a class="btn small" href="/studio/${esc(w.slug)}" data-nav>Open</a><button class="btn small${w.suspended ? '' : ' danger'}" data-suspend="${esc(w.slug)}" data-on="${w.suspended ? '0' : '1'}">${w.suspended ? 'Restore' : 'Suspend'}</button></div>`).join('') || '<div class="row"><span class="row-sub">No workspaces yet.</span></div>'}</div>
+      <div class="group-title">Theme library</div>
+      <div class="themes">${themes.themes.map((t) => `<div class="theme-card" data-id="${esc(t.id)}"><div class="theme-shot ${esc(t.id)}">Aa</div>
+        <div class="theme-body"><b>${esc(t.name)}${t.built_in ? '' : ' <span class="chip">Added</span>'}</b><p>${esc(t.description)}</p>
+        <div class="theme-actions"><button class="btn small" data-download>${icons.download}Download</button>${t.built_in ? '' : `<button class="btn small danger" data-delete aria-label="Delete">${icons.trash}</button>`}</div></div></div>`).join('')}</div>
+      <p class="group-note">A theme is a few HTML templates and a stylesheet. Download one, change it by hand or with Claude, and upload it; every workspace can then pick it. <a href="/api/reference" target="_blank" rel="noopener">Reference</a></p>
+      <div class="group-title">Sample content</div><div class="group">
+        <div class="row"><span class="row-main"><span class="row-title">Load the samples</span><span class="row-sub">Adds two made-up teams, Lumen and Copperline, with writers, posts and a few comments, and shows them on the landing.</span></span><button class="btn small" data-samples>Load</button></div>
+        <div class="row"><span class="row-main"><span class="row-title">Remove the samples</span><span class="row-sub">Deletes the sample workspaces, writers, posts and their comments.</span></span><button class="btn small danger" data-remove-samples>Remove</button></div>
+      </div>`;
+    const detail = $('[data-home-detail]', page);
+    let homeWs = settings.home.startsWith('ws:') ? settings.home.slice(3) : (list[0] || {}).slug || '';
+    let homeWriter = settings.home.startsWith('@') ? settings.home.slice(1) : '';
+    const paintHome = () => {
+      if (homeMode === 'landing') detail.innerHTML = '<p class="row-sub" style="margin:0">Margin’s own front page, with the examples below.</p>';
+      else if (homeMode === 'workspace') detail.innerHTML = `<select class="select" data-home-ws>${list.map((w) => `<option value="${esc(w.slug)}"${w.slug === homeWs ? ' selected' : ''}>${esc(w.name)}</option>`).join('')}</select><p class="row-sub" style="margin:8px 0 0">That workspace’s home becomes ${esc(location.host)}.</p>`;
+      else detail.innerHTML = `<div class="handle-input"><span>@</span><input class="input" data-home-writer maxlength="30" value="${esc(homeWriter)}" placeholder="maya" autocapitalize="none" spellcheck="false"></div><p class="row-sub" style="margin:8px 0 0">That writer’s page becomes ${esc(location.host)}.</p>`;
+      $('[data-home-ws]', detail)?.addEventListener('change', (e) => { homeWs = e.target.value; });
+      $('[data-home-writer]', detail)?.addEventListener('input', (e) => { homeWriter = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); });
+    };
+    paintHome();
+    const seg = (sel, onPick) => $(sel, page).addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-v]');
+      if (!b) return;
+      $$('button', $(sel, page)).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      onPick(b.dataset.v);
+    });
+    seg('[data-signups]', (v) => { signups = v; });
+    seg('[data-home]', (v) => { homeMode = v; paintHome(); });
+    for (const box of $$('[data-example]', page)) box.addEventListener('change', () => {
+      const i = examples.indexOf(box.dataset.example);
+      if (box.checked && i < 0) examples.push(box.dataset.example);
+      if (!box.checked && i >= 0) examples.splice(i, 1);
+    });
+    $('[data-save]', page).addEventListener('click', async () => {
+      const body = { signups, examples, primary_host: $('#ph', page).value.trim(), home: homeMode === 'workspace' ? 'ws:' + homeWs : homeMode === 'writer' ? '@' + homeWriter : 'landing' };
+      try { await api('/api/margin', { method: 'PATCH', body, workspace: false }); await loadMe(currentWorkspace()); toast('Saved'); } catch (error) { toast(error.message); }
+    });
+    for (const b of $$('[data-suspend]', page)) b.addEventListener('click', async () => {
+      const on = b.dataset.on === '1';
+      if (on && !confirm(`Suspend ${b.dataset.suspend}? Its pages stop showing to everyone but Margin’s admins.`)) return;
+      try { await api(`/api/margin/workspaces/${b.dataset.suspend}`, { method: 'PATCH', body: { suspended: on }, workspace: false }); toast(on ? 'Suspended' : 'Restored'); marginView(panel, top); } catch (error) { toast(error.message); }
+    });
+    for (const card of $$('.theme-card', page)) {
+      const id = card.dataset.id;
+      $('[data-download]', card).addEventListener('click', () => downloadTheme(id));
+      $('[data-delete]', card)?.addEventListener('click', async () => { if (!confirm(`Delete the theme ${id}?`)) return; try { await api(`/api/themes/${id}`, { method: 'DELETE', workspace: false }); toast('Deleted'); marginView(panel, top); } catch (error) { toast(error.message); } });
+    }
+    top.querySelector('[data-upload]').onclick = () => uploadTheme(() => marginView(panel, top));
+    $('[data-samples]', page).addEventListener('click', async (e) => {
+      if (!confirm('Add the sample workspaces, writers, posts and comments?')) return;
+      e.target.disabled = true;
+      try {
+        let r;
+        do { r = await api('/api/samples/load', { method: 'POST', body: {}, workspace: false }); toast(r.message); } while (!r.done);
+        await loadMe(currentWorkspace());
+        marginView(panel, top);
+      } catch (error) { toast(error.message); e.target.disabled = false; }
+    });
+    $('[data-remove-samples]', page).addEventListener('click', async () => {
+      if (!confirm('Delete all sample workspaces, posts and comments?')) return;
+      try {
+        let r;
+        do { r = await api('/api/samples', { method: 'DELETE', workspace: false }); toast(r.message); } while (!r.done);
+        await loadMe(null);
+        root.dataset.shell = '';
+        go('/studio/margin', true);
+      } catch (error) { toast(error.message); }
+    });
+
   };
-  paintHome();
-  const seg = (sel, onPick) => $(sel, page).addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-v]');
-    if (!b) return;
-    $$('button', $(sel, page)).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    onPick(b.dataset.v);
-  });
-  seg('[data-signups]', (v) => { signups = v; });
-  seg('[data-home]', (v) => { homeMode = v; paintHome(); });
-  for (const box of $$('[data-example]', page)) box.addEventListener('change', () => {
-    const i = examples.indexOf(box.dataset.example);
-    if (box.checked && i < 0) examples.push(box.dataset.example);
-    if (!box.checked && i >= 0) examples.splice(i, 1);
-  });
-  $('[data-save]', page).addEventListener('click', async () => {
-    const body = { signups, examples, primary_host: $('#ph', page).value.trim(), home: homeMode === 'workspace' ? 'ws:' + homeWs : homeMode === 'writer' ? '@' + homeWriter : 'landing' };
-    try { await api('/api/margin', { method: 'PATCH', body, workspace: false }); await loadMe(currentWorkspace()); toast('Saved'); } catch (error) { toast(error.message); }
-  });
-  for (const b of $$('[data-suspend]', page)) b.addEventListener('click', async () => {
-    const on = b.dataset.on === '1';
-    if (on && !confirm(`Suspend ${b.dataset.suspend}? Its pages stop showing to everyone but Margin’s admins.`)) return;
-    try { await api(`/api/margin/workspaces/${b.dataset.suspend}`, { method: 'PATCH', body: { suspended: on }, workspace: false }); toast(on ? 'Suspended' : 'Restored'); marginView(panel, top); } catch (error) { toast(error.message); }
-  });
-  for (const card of $$('.theme-card', page)) {
-    const id = card.dataset.id;
-    $('[data-download]', card).addEventListener('click', () => downloadTheme(id));
-    $('[data-delete]', card)?.addEventListener('click', async () => { if (!confirm(`Delete the theme ${id}?`)) return; try { await api(`/api/themes/${id}`, { method: 'DELETE', workspace: false }); toast('Deleted'); marginView(panel, top); } catch (error) { toast(error.message); } });
-  }
-  top.querySelector('[data-upload]').onclick = () => uploadTheme(() => marginView(panel, top));
-  $('[data-samples]', page).addEventListener('click', async (e) => {
-    if (!confirm('Add the sample workspaces, writers, posts and comments?')) return;
-    e.target.disabled = true;
-    try {
-      let r;
-      do { r = await api('/api/samples/load', { method: 'POST', body: {}, workspace: false }); toast(r.message); } while (!r.done);
-      await loadMe(currentWorkspace());
-      marginView(panel, top);
-    } catch (error) { toast(error.message); e.target.disabled = false; }
-  });
-  $('[data-remove-samples]', page).addEventListener('click', async () => {
-    if (!confirm('Delete all sample workspaces, posts and comments?')) return;
-    try {
-      let r;
-      do { r = await api('/api/samples', { method: 'DELETE', workspace: false }); toast(r.message); } while (!r.done);
-      await loadMe(null);
-      root.dataset.shell = '';
-      go('/studio/margin', true);
-    } catch (error) { toast(error.message); }
-  });
+  try {
+    await remembered([{ path: '/api/margin', options: { workspace: false } }, { path: '/api/margin/workspaces', options: { workspace: false } }, { path: '/api/themes', options: { workspace: false } }], paint, () => alive() && !touched);
+  } catch (error) { if (alive()) $('.page', panel).innerHTML = `<p class="group-note">${esc(error.message)}</p>`; }
 }
 
 async function downloadTheme(id) {

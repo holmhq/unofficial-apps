@@ -149,6 +149,9 @@ export function createPost(env, ctx, input, origin) {
   const title = text(input.title, 160, 'Title', true);
   const md = longText(input.markdown ?? input.body ?? '', MAX_MARKDOWN, 'Text') || '';
   const now = Date.now();
+  // A post has a cover only when someone gives it one: a photo or a drawing.
+  const photo = cover(input.cover) || null;
+  const drawn = drawing(input.drawing ?? input.cover_drawing) || null;
   const rendered = renderBody(env, md, origin);
   const bodyId = env.holm.app.ds.insert('bodies', { md, html: rendered.html, cards: rendered.cards, updatedAt: now });
   const status = input.status === 'published' ? 'published' : 'draft';
@@ -157,8 +160,8 @@ export function createPost(env, ctx, input, origin) {
   const id = env.holm.app.ds.insert('posts', {
     ws: ctx.ws.slug, blog: blog.handle, writer: ctx.member.id, lastEditor: ctx.member.id, bodyId,
     title, subtitle: text(input.subtitle, 280, 'Subtitle') || '', description: text(input.description, 300, 'Description') || '',
-    slug: null, customSlug: !!input.slug, cover: cover(input.cover) || null, coverAlt: text(input.cover_alt, 200, 'Cover description') || '',
-    drawn: drawing(input.drawing ?? input.cover_drawing) || null, coverPng: mediaId(input.cover_png) || null,
+    slug: null, customSlug: !!input.slug, cover: photo, coverAlt: text(input.cover_alt, 200, 'Cover description') || '',
+    drawn, bare: !photo && !drawn, coverPng: mediaId(input.cover_png) || null,
     tags: tags(input.tags) || [], status, publishedAt, updatedAt: now,
     excerpt: rendered.excerpt, words: rendered.words, minutes: rendered.minutes,
     claps: 0, clappers: 0, comments: 0, pending: 0,
@@ -193,8 +196,14 @@ export function updatePost(env, ctx, id, input, origin) {
   if (input.description !== undefined) set.description = text(input.description, 300, 'Description') || '';
   if (input.cover !== undefined) set.cover = cover(input.cover);
   if (input.cover_alt !== undefined) set.coverAlt = text(input.cover_alt, 200, 'Cover description') || '';
-  if ((input.drawing ?? input.cover_drawing) !== undefined) { set.drawn = drawing(input.drawing ?? input.cover_drawing); set.coverPng = null; }
+  // drawing: null removes the drawing, so look for the key rather than a value.
+  const drawingInput = 'drawing' in input ? input.drawing : input.cover_drawing;
+  if (drawingInput !== undefined) { set.drawn = drawing(drawingInput); set.coverPng = null; }
   if (input.cover_png !== undefined) set.coverPng = mediaId(input.cover_png);
+  const nextPhoto = 'cover' in set ? set.cover : post.cover;
+  const nextDrawing = 'drawn' in set ? set.drawn : post.drawn;
+  if (nextPhoto || nextDrawing) set.bare = false;
+  else if ('drawn' in set) set.bare = true;
   if (input.tags !== undefined) set.tags = tags(input.tags);
   const md = input.markdown ?? input.body;
   if (md !== undefined) {
@@ -302,19 +311,21 @@ const thousands = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
 export function coverDTO(env, ctx, post) {
   const photo = coverURL(post);
+  if (!photo && post.bare && !post.drawn) return null;
   if (photo) {
     const info = /^\/media\//.test(photo) ? mediaInfo(env, post.cover) : null;
     // Pages choose from the smaller copies (srcset); link previews get the 1200 × 630 crop.
     const srcset = info ? srcsetFor(post.cover, info) : '';
     const url = srcset && info.width > 1600 ? variantPath(post.cover, info.mime, 'w1600') : photo;
     const og = srcset ? variantPath(post.cover, info.mime, 'og') : photo;
-    return { url, srcset, alt: post.coverAlt || '', width: info ? info.width : 0, height: info ? info.height : 0, drawn: false, image: og };
+    const thumb = srcset && info.width > 320 ? variantPath(post.cover, info.mime, 'w320') : photo;
+    return { url, srcset, thumb, alt: post.coverAlt || '', width: info ? info.width : 0, height: info ? info.height : 0, drawn: false, image: og };
   }
   const ws = wsCached(env, ctx, post.ws);
   const d = drawingFor(post, ws);
   // Lists crop covers to their own shapes, so their drawings leave out the corner labels.
   const fresh = post.coverPng && post.coverPngFor === drawingURL(d);
-  return { url: `${drawingURL(d)}?labels=0`, full_url: drawingURL(d), alt: post.coverAlt || '', width: 1280, height: 720, drawn: true, drawing: d, image: fresh ? `/media/${post.coverPng}` : null, stale_image: !!post.coverPng && !fresh };
+  return { url: `${drawingURL(d)}?labels=0`, thumb: `${drawingURL(d)}?labels=0`, full_url: drawingURL(d), alt: post.coverAlt || '', width: 1280, height: 720, drawn: true, drawing: d, image: fresh ? `/media/${post.coverPng}` : null, stale_image: !!post.coverPng && !fresh };
 }
 
 // What a theme sees for a post in any list.
@@ -333,7 +344,7 @@ export function cardDTO(env, ctx, post) {
     description: post.description || post.subtitle || post.excerpt || '',
     excerpt: post.excerpt || '',
     cover: coverInfo,
-    has_cover: true,
+    has_cover: !!coverInfo,
     date: d.long, date_short: d.short, date_iso: d.iso, year: d.year,
     updated: u.long, updated_iso: u.iso,
     reading_time: `${post.minutes || 1} min read`,
@@ -364,7 +375,8 @@ export function editorDTO(env, ctx, post) {
     markdown: body ? body.md : '',
     cover_id: post.cover && !/^https:/.test(post.cover) ? post.cover : null,
     cover_url: coverURL(post),
-    drawing: card.cover.drawn ? card.cover.drawing : null,
+    drawing: card.cover && card.cover.drawn ? card.cover.drawing : null,
+    bare: !card.cover,
     own_drawing: post.drawn || null,
     cover_png: post.coverPng || null,
     published_at: post.publishedAt ? new Date(post.publishedAt).toISOString() : null,

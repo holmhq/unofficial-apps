@@ -4,7 +4,7 @@
 import { sha256 } from './util.js';
 import { siteRev } from './store.js';
 
-export const VERSION = '0.4.0';
+export const VERSION = '0.5.0';
 
 const LOCAL = /^(127\.|localhost|\[::1\]|[a-z0-9-]+\.localhost)(:\d+)?$/;
 // Addresses that may be a rendered page (no file extension, not one of Margin's own areas).

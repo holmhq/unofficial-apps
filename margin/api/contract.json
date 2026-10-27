@@ -88,7 +88,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Start a new workspace for a team",
-      "description": "Creates a workspace at /<slug> with you as its owner, and returns it. Ask the person for the name first; the address defaults to the name.",
+      "description": "Creates a workspace at /<slug> with you as its owner, and returns it. Ask the person for the name first; the address defaults to the name. logo: optional, a square image's /media address from media_upload or media_list.",
       "input": {
         "type": "object",
         "properties": {
@@ -104,6 +104,10 @@
           "tagline": {
             "type": "string",
             "maxLength": 120
+          },
+          "logo": {
+            "type": "string",
+            "maxLength": 80
           }
         },
         "required": [
@@ -254,7 +258,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Write a new post (draft by default) in Markdown",
-      "description": "Writers only. Body is Markdown (GitHub style): headings, lists, tables, code, links, images. Extras: a line `> [!NOTE]` (or TIP, IMPORTANT, WARNING, CAUTION) starts a callout; a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link alone on a line becomes an embed; a link to another post on Margin alone on a line becomes a card; `![alt](/media/<id>.<ext> \"caption\")` on its own line is a figure (add photos, drawings and videos with media_upload or media_link; pages pick the right size themselves), add #wide or #full to the address for width; .mp4 or uploaded videos play inline. Leave the H1 out: the title is shown above the body. The address is made from the title unless you pass slug. Use `as` to post under one of your names, or as the workspace itself (its address) if you own or run it. `cover` takes a photo's /media address; without one, the post gets a drawn cover in the workspace's style; `drawing` picks its subject. Status draft keeps it private; published puts it live at once. Unless the person asked to publish, create a draft and give them the preview link. Drawn covers: week (calendars, time), energy (power, hardware), people (research), network (sync, devices), stack (layers, documents, process), inbox (messages, support), bars (numbers, speed), rings (sound, quiet, focus). Pass `workspace` (its address, from me_get). `featured` pins it on the workspace home (owners and admins).",
+      "description": "Writers only. Body is Markdown (GitHub style): headings, lists, tables, code, links, images. Extras: a line `> [!NOTE]` (or TIP, IMPORTANT, WARNING, CAUTION) starts a callout; a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link alone on a line becomes an embed; a link to another post on Margin alone on a line becomes a card; `![alt](/media/<id>.<ext> \"caption\")` on its own line is a figure (add photos, drawings and videos with media_upload or media_link; pages pick the right size themselves), add #wide or #full to the address for width; .mp4 or uploaded videos play inline. Leave the H1 out: the title is shown above the body. The address is made from the title unless you pass slug. Use `as` to post under one of your names, or as the workspace itself (its address) if you own or run it. `cover` takes a photo's /media address, or `drawing` gives the post a drawn cover in the workspace's style (pick its subject); with neither, the post has no cover. Status draft keeps it private; published puts it live at once. Unless the person asked to publish, create a draft and give them the preview link. Drawn covers: week (calendars, time), energy (power, hardware), people (research), network (sync, devices), stack (layers, documents, process), inbox (messages, support), bars (numbers, speed), rings (sound, quiet, focus). Pass `workspace` (its address, from me_get). `featured` pins it on the workspace home (owners and admins).",
       "input": {
         "type": "object",
         "properties": {
@@ -370,7 +374,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Edit, publish or unpublish a post",
-      "description": "Pass the post id and only the fields to change; the rest stay. markdown replaces the whole body, so read the post first with posts.get and send back the edited text. status published puts it live (drafts) and draft takes it down. A draft's address follows its title until first published; after that it changes only when you pass slug, and the old address redirects. `as` moves the post to another blog you can write as. `drawing` changes the drawn cover (week, energy, people, network, stack, inbox, bars, rings, or none for a random one).",
+      "description": "Pass the post id and only the fields to change; the rest stay. markdown replaces the whole body, so read the post first with posts.get and send back the edited text. status published puts it live (drafts) and draft takes it down. A draft's address follows its title until first published; after that it changes only when you pass slug, and the old address redirects. `as` moves the post to another blog you can write as. `drawing` changes the drawn cover (week, energy, people, network, stack, inbox, bars, rings, or none to remove the cover).",
       "input": {
         "type": "object",
         "properties": {
@@ -1215,7 +1219,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Change a workspace's settings (owners and admins)",
-      "description": "Updates the workspace: name, tagline, description, home (\"latest\", \"curated\" for pinned posts first, or \"@handle\" to make one writer's page the home), moderation (\"off\", \"outsiders\": hold comments from names not on the team, \"all\"), cover style (look paper|flat|blocks, tone lilac|tangerine|mint|butter|sky|coral) and menu links.",
+      "description": "Updates the workspace: name, tagline, description, home (\"latest\", \"curated\" for pinned posts first, or \"@handle\" to make one writer's page the home), moderation (\"off\", \"outsiders\": hold comments from names not on the team, \"all\"), cover style (look paper|flat|blocks, tone lilac|tangerine|mint|butter|sky|coral) and menu links. logo: a square image's /media address (from media_upload, media_list or an upload link); an empty string removes it.",
       "input": {
         "type": "object",
         "properties": {
@@ -1293,6 +1297,10 @@
               ],
               "additionalProperties": false
             }
+          },
+          "logo": {
+            "type": "string",
+            "maxLength": 80
           }
         },
         "required": [

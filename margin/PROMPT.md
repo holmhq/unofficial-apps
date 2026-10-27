@@ -41,7 +41,8 @@ script is in the folder.
   hover. Every footer has a small Holm mark ("A Holm app") and Send
   feedback, from this repository's feedback app. Posts are Markdown underneath, with
   callouts, embeds from a bare link, cards for other posts, and figures.
-- Every post without a photo gets a drawn cover: an isometric technical line
+- A post can have a photo or a drawn cover, chosen by the writer (none until
+  then): an isometric technical line
   drawing (one projection, three line weights, flat colour, small labels) in
   the workspace's style (paper, a flat tone, or blocks), with a subject the
   writer picks, that reacts to the pointer. Save a PNG of it for link previews.
@@ -63,7 +64,8 @@ script is in the folder.
   smaller copies and a link-preview crop on first request, and give every
   photo on a page a srcset. Refuse SVG that can run code or load anything.
 - Studio with a workspace switcher: posts, a comment inbox, team and invites,
-  workspace settings, your names and personas, Claude, and Margin's settings
+  workspace settings (a logo too, also when starting one), your names and
+  personas, Claude, and Margin's settings
   for its admins. MCP tools for Claude that take a workspace: write and edit
   posts, answer only ordinary comments (asking about anything sensitive),
   comment under any of your names, manage personas, start and run workspaces
@@ -131,3 +133,21 @@ with placeholders.
 > - lets do the image upload
 > - perhaps we will need video too?
 > - and may be request for optimised versions
+
+**Margin 0.5.0: covers you choose, logos, and a Studio that remembers**
+
+> Issues:
+> - my page doesn't have margin logo
+> - workspace should get logo? during creating? no way to edit logo
+> - clicking the workspace button opens the popup but clicking doesnt close it
+> - tabbing across the side bar buttons: posts/comments etc seems to reload content without any semblance of cache
+> - new posts' first field: "Title" is clipped
+> - when creating a post there is an image as cover already hows that possible
+> - it shouldnt be there
+> - the notion like popup: "/<something>", should auto complete on tab
+> - perhaps its better to take on these after /close
+> - and do a "attention to detail pass" which will take the app to proper refinement
+
+> Yes, proceed
+> - but one more issue: in a chat right side bar the avatar icon looks like there is some text with it but got chopped off
+> - do all fine edits like that

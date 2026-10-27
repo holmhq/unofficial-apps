@@ -249,8 +249,11 @@ mark.m-hl-draft { background: color-mix(in srgb, var(--m-accent) 24%, transparen
 .m-send svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .m-send:disabled { opacity: .35; cursor: default; }
 .m-send:not(:disabled):active { transform: scale(.9); }
-.m-compose-as { flex: none; width: 36px; height: 36px; margin-bottom: 2px; border-radius: 50%; border: 0; padding: 0; overflow: hidden; cursor: pointer; background: var(--m-soft); }
-.m-compose-as img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.m-compose-who { flex: none; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 12px 0; background: var(--m-glass); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: 1px solid var(--m-line); font: 500 12.5px var(--m-font); color: var(--m-muted); }
+.m-compose-who + .m-compose { border-top: 0; }
+.m-compose-who .m-as { min-width: 0; background: transparent; padding-left: 2px; }
+.m-compose-who .m-as:hover { background: var(--m-soft); }
+.m-as > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .m-signin-card { flex: none; padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--m-glass); border-top: 1px solid var(--m-line); display: flex; align-items: center; gap: 12px; font-size: 14.5px; color: var(--m-muted); }
 .m-signin-card span { flex: 1; }
 .m-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 20px; border: 0; background: var(--m-accent); color: #fff !important; font: 600 15px var(--m-font); cursor: pointer; text-decoration: none !important; white-space: nowrap; }
@@ -275,6 +278,7 @@ mark.m-hl-draft { background: color-mix(in srgb, var(--m-accent) 24%, transparen
 .m-note-text p { margin: 0; }
 .m-note-more { font-size: 13px; color: var(--m-muted); }
 .m-note-card .m-compose { padding: 6px 0 0; background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.m-note-card .m-compose-who { padding: 6px 0 0; background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
 
 /* ---------- responses at the end of a post ---------- */
 .m-responses { margin: 56px 0 0; font-family: var(--m-font); color: var(--m-ink); }

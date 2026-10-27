@@ -35,9 +35,9 @@ function example(env, ctx, ws, host) {
   const faces = writers.slice(0, 4).map((h) => blogByHandle(env, h)).filter(Boolean);
   const dto = wsDTO(ws);
   let cover = '';
-  if (card && card.cover.drawn) {
+  if (card && card.cover && card.cover.drawn) {
     cover = `<div class="l-cover" data-m-drawing="${escapeHTML(JSON.stringify(card.cover.drawing))}" role="img" aria-label="${escapeHTML(describe(card.cover.drawing))}">${renderDrawing(card.cover.drawing, null, {})}</div>`;
-  } else if (card) {
+  } else if (card && card.cover) {
     cover = `<div class="l-cover"><img src="${escapeHTML(card.cover.url)}" alt="" loading="lazy"></div>`;
   }
   const logo = dto.logo ? `<img class="l-logo" src="${escapeHTML(dto.logo)}" alt="" width="36" height="36">` : `<span class="l-logo l-logo-letter" style="background:${dto.color}">${escapeHTML(dto.initial)}</span>`;

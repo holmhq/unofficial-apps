@@ -103,7 +103,7 @@ function paintAs() {
   const b = currentAs();
   for (const chip of $$('[data-m-as]')) {
     chip.hidden = !b;
-    chip.innerHTML = b ? `<img src="${esc(b.avatar)}" alt="">${esc(b.name)}${ICON.down}` : '';
+    chip.innerHTML = b ? `<img src="${esc(b.avatar)}" alt=""><span>${esc(b.name)}</span>${ICON.down}` : '';
   }
   for (const hint of $$('[data-m-held]')) hint.textContent = held() ? 'Waiting for approval before it appears.' : '';
 }
@@ -669,7 +669,7 @@ const panel = (() => {
     if (!me || !me.signed_in) return `<div class="m-signin-card"><span>Sign in to join the conversation.</span><a class="m-button" href="${esc(signinURL())}">Sign in</a></div>`;
     const reply = view.replyTo ? state.comments.find((c) => c.id === view.replyTo) : null;
     const hint = held() ? ' (approved before it shows)' : '';
-    return `<div class="m-compose-as">${asChip()}</div><div class="m-compose"><div class="m-compose-field">
+    return `${asChip() ? `<div class="m-compose-who"><span>Commenting as</span>${asChip()}</div>` : ''}<div class="m-compose"><div class="m-compose-field">
       ${reply ? `<div class="m-compose-reply"><span>Replying to ${esc(reply.author.name)}</span><button type="button" data-cancel-reply aria-label="Cancel reply">×</button></div>` : ''}
       <textarea rows="1" placeholder="${view.draft ? 'Add a comment' : reply ? 'Reply' : view.group ? 'Reply' : 'Respond to the post'}${esc(hint)}" aria-label="Comment"></textarea></div>
       <button type="button" class="m-send" aria-label="Send" disabled>${ICON.up}</button></div>`;

@@ -6,7 +6,7 @@ in, pick a name and start a workspace for their team at its own address
 (`/lumen/@maya`) and can keep personas: other names to write and comment
 under, which readers can't link back to them. Readers comment on a passage or
 on the whole post, and clap. Pages are rendered on the server through each
-workspace's theme, every post gets a drawn cover that moves under the pointer,
+workspace's theme, any post can have a drawn cover that moves under the pointer,
 and Claude can write and answer comments through the tools Margin gives it.
 
 It was built from the requests quoted in [`PROMPT.md`](PROMPT.md), which also
@@ -45,8 +45,9 @@ are not public URLs.
   `/<workspace>/latest`, `/<workspace>/tag/<topic>`, `/@<handle>` a writer
   across Margin, and `/@<handle>/<post>` as a short link that redirects. A
   post's earlier address keeps redirecting when its slug changes.
-- **Drawn covers.** A post without a photo gets an isometric line drawing in
-  its workspace's style: on paper, in a flat colour (six tones), or bold
+- **Drawn covers.** A post can have a photo, an isometric line drawing in its
+  workspace's style, or no cover at all; the editor adds none until the writer
+  picks one. Drawings come on paper, in a flat colour (six tones), or in bold
   blocks. Writers pick the subject: a week, energy, people, sync, layers, an
   inbox, numbers or quiet. Each drawing reacts to the pointer (the day you
   point at lifts out of the calendar; the sun crosses the sky and the battery
@@ -202,7 +203,10 @@ field and hook; Claude reads it through `themes_reference`, and
   selection bar, the comment panel or sheet, the name you comment as,
   responses, link previews and live covers. `web/margin/ui.css` styles them
   from `--m-*` variables each theme sets.
-- **Studio and the editor.** Plain modules in `web/studio/`. The editor uses
+- **Studio and the editor.** Plain modules in `web/studio/`. Each view paints
+  its last answer at once and again only if the server has news (`remembered`
+  in `lib.js`); any change clears that memory, and a settings form stops
+  repainting once you touch it. The editor uses
   [Tiptap](https://tiptap.dev) 3 with its Markdown extension, built into one
   file, `web/vendor/editor/tiptap.js`, from `tools/editor/` (`npm install &&
   npm run build`), plus Margin's own figure, embed and callout blocks that

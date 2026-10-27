@@ -111,12 +111,21 @@ export function createWorkspace(env, ctx, input) {
   const slug = handle(input.slug || slugify(name, 30), 'An address');
   const tagline = text(input.tagline, 120, 'Tagline') || '';
   const cover = cleanCover(input.cover) || { look: 'paper', tone: Object.keys(TONES)[Math.floor(Math.random() * Object.keys(TONES).length)] };
-  claimHandle(env, slug, { kind: 'workspace', ws: slug, ownerId: null, name, bio: tagline, avatar: null, picture: '' });
-  const doc = { ...WS_DEFAULTS, slug, name, tagline, cover, createdBy: ctx.member.id, createdAt: Date.now() };
+  const logo = logoId(input.logo);
+  claimHandle(env, slug, { kind: 'workspace', ws: slug, ownerId: null, name, bio: tagline, avatar: logo, picture: '' });
+  const doc = { ...WS_DEFAULTS, slug, name, tagline, cover, logo, createdBy: ctx.member.id, createdAt: Date.now() };
   env.holm.app.ds.insert('workspaces', doc);
   addMember(env, slug, ctx.member.id, 'owner', [ctx.person.handle]);
   touch(env);
   return workspaceBySlug(env, slug);
+}
+
+// A logo is an uploaded image: its media id, or its /media address as the media tools give it.
+function logoId(value) {
+  if (!value) return null;
+  const m = /^(?:\/media\/)?([a-z0-9]{6,20})(?:\.[a-z0-9]{2,5})?$/.exec(String(value).trim());
+  if (!m) reject(400, 'invalid_input', 'A logo is an uploaded image: its /media address.');
+  return m[1];
 }
 
 function cleanCover(value) {
@@ -134,7 +143,7 @@ export function updateWorkspace(env, ctx, input) {
   if (input.name !== undefined) set.name = text(input.name, 60, 'Name', true);
   if (input.tagline !== undefined) set.tagline = text(input.tagline, 120, 'Tagline') || '';
   if (input.description !== undefined) set.description = longText(input.description, 300, 'Description') || '';
-  if (input.logo !== undefined) set.logo = input.logo ? text(input.logo, 40, 'Logo') : null;
+  if (input.logo !== undefined) set.logo = logoId(input.logo);
   if (input.home !== undefined) {
     const home = String(input.home || '').trim().toLowerCase();
     if (!HOMES.includes(home) && !/^@[a-z][a-z0-9_-]{0,28}[a-z0-9]$/.test(home)) reject(400, 'invalid_input', 'Home is latest, curated or a writer here such as "@maya".');

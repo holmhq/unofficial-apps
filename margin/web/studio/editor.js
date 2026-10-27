@@ -337,7 +337,8 @@ function slashMenu(editorRef) {
         if (!el) return false;
         if (event.key === 'ArrowDown') { index = (index + 1) % Math.max(1, items.length); paint(); return true; }
         if (event.key === 'ArrowUp') { index = (index - 1 + items.length) % Math.max(1, items.length); paint(); return true; }
-        if (event.key === 'Enter') { choose(items[index]); return true; }
+        // Enter or Tab takes the highlighted block, as in Notion.
+        if (event.key === 'Enter' || event.key === 'Tab') { if (items[index]) choose(items[index]); return true; }
         if (event.key === 'Escape') { el.remove(); el = null; return true; }
         return false;
       },
@@ -462,8 +463,9 @@ export async function editorView(root, { me, id, go }) {
   let as = post ? post.as : (blogs.find((b) => b.own) || blogs[0] || {}).handle;
   const covers = await import('/margin/covers.js');
   const live = await import('/margin/live-covers.js');
-  // Without a photo a post shows a drawing: its own, or a new one in the workspace's style.
-  let drawing = post && post.drawing ? post.drawing : covers.normalize({ motif: covers.MOTIFS[Math.floor(Math.random() * covers.MOTIFS.length)], look: ws.cover.look, tone: ws.cover.tone, seed: Math.floor(Math.random() * 10000) });
+  // A cover is the writer's choice: a photo, a drawing in the workspace's style, or none.
+  const freshDrawing = () => covers.normalize({ motif: covers.MOTIFS[Math.floor(Math.random() * covers.MOTIFS.length)], look: ws.cover.look, tone: ws.cover.tone, seed: Math.floor(Math.random() * 10000) });
+  let drawing = post && !post.bare && post.drawing ? post.drawing : null;
   const published = () => post && post.status === 'published';
   document.title = `${post ? post.title : 'New post'} — Studio`;
 
@@ -577,7 +579,7 @@ export async function editorView(root, { me, id, go }) {
     paintStatus();
     try {
       if (!post) {
-        if (!coverURL && !('drawing' in extra)) extra.drawing = { motif: drawing.motif, seed: drawing.seed };
+        if (!coverURL && drawing && !('drawing' in extra)) extra.drawing = { motif: drawing.motif, seed: drawing.seed };
         post = await api('/api/posts', { method: 'POST', body: { ...now, ...extra } });
         history.replaceState({}, '', `/studio/write/${post.id}`);
       } else {
@@ -630,24 +632,37 @@ export async function editorView(root, { me, id, go }) {
   const coverBox = $('[data-cover]', root);
   const paintCover = () => {
     if (coverURL) {
-      coverBox.innerHTML = `<div class="ed-cover-img"><img src="${esc(coverURL)}" alt=""><div class="ed-cover-tools"><button type="button" class="ed-chip" data-cover-change>Change photo</button><button type="button" class="ed-chip" data-cover-remove>Use a drawing</button></div></div>`;
+      coverBox.innerHTML = `<div class="ed-cover-img"><img src="${esc(coverURL)}" alt=""><div class="ed-cover-tools"><button type="button" class="ed-chip" data-cover-change>Change photo</button><button type="button" class="ed-chip" data-use-drawing>Use a drawing</button><button type="button" class="ed-chip" data-cover-none>Remove</button></div></div>`;
       return;
     }
-    coverBox.innerHTML = `<div class="ed-cover-img ed-drawn"><div class="ed-drawing"></div><div class="ed-cover-tools"><button type="button" class="ed-chip" data-drawing>Change drawing</button><button type="button" class="ed-chip" data-cover-add>Use a photo</button></div></div>`;
+    if (!drawing) {
+      coverBox.innerHTML = `<div class="ed-cover-add"><button type="button" class="ed-ghost" data-cover-add>${icons.image}<span>Add a photo</span></button><button type="button" class="ed-ghost" data-drawing>${icons.drawing}<span>Add a drawing</span></button></div>`;
+      return;
+    }
+    coverBox.innerHTML = `<div class="ed-cover-img ed-drawn"><div class="ed-drawing"></div><div class="ed-cover-tools"><button type="button" class="ed-chip" data-drawing>Change drawing</button><button type="button" class="ed-chip" data-cover-add>Use a photo</button><button type="button" class="ed-chip" data-cover-none>Remove</button></div></div>`;
     live.mount($('.ed-drawing', coverBox), drawing);
   };
   paintCover();
   const drawingSheet = () => {
+    const first = !drawing;
+    if (first) drawing = freshDrawing();
     const box = h(`<div><p style="margin:0 4px 14px;color:var(--muted)">Pick what the cover draws. Move over it to see it work. ${esc(ws.name)} draws in its ${esc(ws.cover.look)} style; owners change that in Workspace.</p>
       <div class="ed-motifs">${covers.MOTIFS.map((m) => `<button type="button" class="ed-motif${m === drawing.motif ? ' on' : ''}" data-motif="${m}" aria-pressed="${m === drawing.motif}"><span class="ed-motif-art">${covers.render(covers.normalize({ ...drawing, motif: m }), null, { labels: false })}</span><span>${esc(MOTIF_LABEL[m] || m)}</span></button>`).join('')}</div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button type="button" class="btn" data-shuffle>New variation</button></div></div>`);
     const s2 = sheet('Cover drawing', box);
+    let picked = false;
     const pick = async (next) => {
+      picked = true;
       drawing = covers.normalize(next);
       paintCover();
       $$('.ed-motif', box).forEach((b) => { const on = b.dataset.motif === drawing.motif; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
-      if (post) await save({ drawing: { motif: drawing.motif, seed: drawing.seed } }).catch(() => {});
+      await save({ drawing: { motif: drawing.motif, seed: drawing.seed } }).catch(() => {});
     };
+    // Opening the sheet with no cover yet shows the drawing it would add; closing without a pick keeps none.
+    if (first) {
+      s2.onClose = () => { if (!picked) { drawing = null; paintCover(); } };
+      paintCover();
+    }
     box.addEventListener('click', (e) => {
       const b = e.target.closest('[data-motif]');
       if (b) { pick({ ...drawing, motif: b.dataset.motif }); s2.close(); }
@@ -656,7 +671,8 @@ export async function editorView(root, { me, id, go }) {
   };
   coverBox.addEventListener('click', async (e) => {
     if (e.target.closest('[data-drawing]')) { drawingSheet(); return; }
-    if (e.target.closest('[data-cover-remove]')) { coverId = null; coverURL = null; paintCover(); await save({ cover: null, drawing: { motif: drawing.motif, seed: drawing.seed } }).catch(() => {}); return; }
+    if (e.target.closest('[data-use-drawing]')) { coverId = null; coverURL = null; drawing = drawing || freshDrawing(); paintCover(); await save({ cover: null, drawing: { motif: drawing.motif, seed: drawing.seed } }).catch(() => {}); return; }
+    if (e.target.closest('[data-cover-none]')) { coverId = null; coverURL = null; drawing = null; paintCover(); if (post) await save({ cover: null, drawing: null }).catch(() => {}); return; }
     if (!e.target.closest('[data-cover-add], [data-cover-change]')) return;
     const file = await pickFile('image/*');
     if (!file) return;
@@ -674,7 +690,7 @@ export async function editorView(root, { me, id, go }) {
   paintAs();
   $('[data-as]', root).addEventListener('click', (e) => {
     if (blogs.length < 2) return;
-    menu(e.currentTarget, blogs.map((b) => ({ label: `${b.name} (@${b.handle})${b.handle === as ? ' ✓' : ''}`, icon: `<img src="${esc(b.avatar)}" alt="" style="width:22px;height:22px;border-radius:50%">`, run: () => { as = b.handle; paintAs(); changed(); } })));
+    menu(e.currentTarget, blogs.map((b) => ({ label: b.name, note: `@${b.handle}`, checked: b.handle === as, icon: `<img src="${esc(b.avatar)}" alt="" style="width:22px;height:22px;border-radius:50%">`, run: () => { as = b.handle; paintAs(); changed(); } })));
   });
 
   // ---------- formatting bar ----------
@@ -827,7 +843,7 @@ export async function editorView(root, { me, id, go }) {
       try {
         const was = published();
         // Link previews need a plain image: save the drawing as one.
-        if (!coverURL) {
+        if (!coverURL && drawing) {
           const png = await drawingPNG(covers, drawing).catch((error) => { console.warn('cover image', error); return null; });
           if (png) extra.cover_png = png.id;
           extra.drawing = { motif: drawing.motif, seed: drawing.seed };
@@ -848,7 +864,7 @@ export async function editorView(root, { me, id, go }) {
 
   paintStatus();
   // The workspace's style changed since this post's image was saved: make a fresh one.
-  if (published() && !coverURL && post.cover && post.cover.stale_image) {
+  if (published() && !coverURL && drawing && post.cover && post.cover.stale_image) {
     drawingPNG(covers, drawing).then((png) => png && api(`/api/posts/${post.id}`, { method: 'PATCH', body: { cover_png: png.id } })).catch((error) => console.warn('cover image', error));
   }
   window.marginEditor = editor;

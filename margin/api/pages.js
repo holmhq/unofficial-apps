@@ -92,7 +92,7 @@ function marginScope(env) {
   const m = marginSettings(env);
   return {
     ws: null, slug: null, name: m.name, tagline: m.tagline || '', description: m.tagline || '',
-    theme: m.theme || 'quiet', themeSettings: {}, logo: null, nav: [], home_url: '/', latest_url: '/', feed_url: null, home_is_blog: false,
+    theme: m.theme || 'quiet', themeSettings: {}, logo: '/favicon.svg', nav: [], home_url: '/', latest_url: '/', feed_url: null, home_is_blog: false,
   };
 }
 
@@ -429,14 +429,14 @@ export async function postPage(env, ctx, request, scope, post, options = {}) {
   const index = list.findIndex((p) => p.id === post.id);
   const neighbour = (p) => (p ? cardDTO(env, ctx, p) : null);
   const view = {
-    post: { ...card, cover: card.cover.drawn ? { ...card.cover, url: card.cover.full_url } : card.cover, body: `<div class="m-body" data-m-body>${html}</div>`, is_updated: post.updatedAt - (post.publishedAt || 0) > 86400000 },
+    post: { ...card, cover: card.cover && card.cover.drawn ? { ...card.cover, url: card.cover.full_url } : card.cover, body: `<div class="m-body" data-m-body>${html}</div>`, is_updated: post.updatedAt - (post.publishedAt || 0) > 86400000 },
     blog: blog ? blogDTO(blog, post.ws) : card.blog,
     newer: index > 0 ? neighbour(list[index - 1]) : null,
     older: index >= 0 ? neighbour(list[index + 1]) : null,
     comments: { count: card.comments, list: comments },
     __current: post,
   };
-  const image = card.cover.image;
+  const image = card.cover ? card.cover.image : null;
   const out = {
     page: {
       title: `${post.title} — ${blog ? blog.name : scope.name}`, og_title: post.title,
@@ -446,7 +446,7 @@ export async function postPage(env, ctx, request, scope, post, options = {}) {
     view,
     actions: post.status === 'published' ? actions(card) : '',
     comments: post.status === 'published' ? commentsSection(comments, card, signin) : '',
-    boot: { post: post.id, blog: post.blog, title: post.title, draft: post.status !== 'published', drawing: card.cover.drawn ? card.cover.drawing : null },
+    boot: { post: post.id, blog: post.blog, title: post.title, draft: post.status !== 'published', drawing: card.cover && card.cover.drawn ? card.cover.drawing : null },
     private: !!options.preview,
     ld: {
       '@context': 'https://schema.org', '@type': 'BlogPosting', headline: post.title, description: card.description,
@@ -498,7 +498,7 @@ function feed(env, ctx, request, scope, blog) {
     const card = cardDTO(env, ctx, p);
     const body = bodyOf(env, p);
     const content = absolutize(fillCards(env, ctx, body ? body.html : ''), origin);
-    const img = card.cover.drawn ? card.cover.image || card.cover.url : card.cover.url;
+    const img = !card.cover ? null : card.cover.drawn ? card.cover.image || card.cover.url : card.cover.url;
     const coverTag = img ? `<p><img src="${escapeHTML(absolute(origin, img))}" alt=""></p>` : '';
     return `<item><title>${escapeHTML(p.title)}</title><link>${origin}${card.url}</link><guid isPermaLink="false">${p.id}</guid>`
       + `<pubDate>${rfc822(p.publishedAt)}</pubDate><dc:creator>${escapeHTML(card.blog.name)}</dc:creator>`
