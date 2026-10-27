@@ -1,0 +1,62 @@
+{
+  "operations": {
+    "bookings.create": {
+      "handler": "opBook", "auth": "public", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "summary": "Book a time with a Kalendar host, no account needed",
+      "description": "Read the open times first (GET /api/u/<handle>/<event>/slots?from=<ms>&to=<ms>), then send one of them as start (Unix ms) with the invitee's name and email, their IANA time zone, its offset in minutes at that time and its long name. Emails a calendar invitation to the invitee and a note to the host. Pass reschedule { id, token } from a booking's link to move it instead. Solve the Holm challenge first; six a minute from one address.",
+      "limits": { "rate": { "requests": 6, "per": "1m" }, "challenge": { "work": "1s" } },
+      "input": {
+        "type": "object",
+        "properties": {
+          "handle": { "type": "string", "maxLength": 40 },
+          "event": { "type": "string", "maxLength": 60 },
+          "start": { "type": "number" },
+          "name": { "type": "string", "maxLength": 200 },
+          "email": { "type": "string", "maxLength": 300 },
+          "phone": { "type": "string", "maxLength": 60 },
+          "notes": { "type": "string", "maxLength": 2000 },
+          "tz": { "type": "string", "maxLength": 80 },
+          "tzLabel": { "type": "string", "maxLength": 120 },
+          "offset": { "type": "number" },
+          "h24": { "type": "boolean" },
+          "reschedule": {
+            "type": "object",
+            "properties": { "id": { "type": "string", "maxLength": 60 }, "token": { "type": "string", "maxLength": 80 } },
+            "required": ["id", "token"], "additionalProperties": false
+          }
+        },
+        "required": ["handle", "event", "start", "name", "email", "tz", "offset"],
+        "additionalProperties": false
+      },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_INVALID_INPUT": { "status": 400, "public": true },
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_CONFLICT": { "status": 409, "public": true },
+        "APP_GONE": { "status": 410, "public": true },
+        "APP_RATE_LIMITED": { "status": 429, "public": true }
+      }
+    },
+    "bookings.cancel": {
+      "handler": "opCancel", "auth": "public", "risk": "write", "sensitive": true,
+      "summary": "Cancel a Kalendar booking with the link from its email",
+      "description": "Send the booking id and the token from the link (?t=) with an optional note to the host. Emails both sides. Ten a minute from one address.",
+      "limits": { "rate": { "requests": 10, "per": "1m" } },
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "maxLength": 60 },
+          "token": { "type": "string", "maxLength": 80 },
+          "reason": { "type": "string", "maxLength": 1000 }
+        },
+        "required": ["id", "token"],
+        "additionalProperties": false
+      },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_INVALID_INPUT": { "status": 400, "public": true },
+        "APP_NOT_FOUND": { "status": 404, "public": true }
+      }
+    }
+  }
+}

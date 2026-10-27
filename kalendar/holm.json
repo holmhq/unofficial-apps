@@ -1,0 +1,31 @@
+{
+  "name": "kalendar",
+  "version": "0.1.0",
+  "title": "Kalendar",
+  "shortName": "Kalendar",
+  "description": "Share one link and let people book time with you. No sign-up for them, a calendar invite for both of you.",
+  "themeColor": "#e0352b",
+  "iconStyle": "soft",
+  "surfaces": {
+    "web": {
+      "renderer": "off"
+    }
+  },
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    }
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://kalendar.zyt.app"
+    }
+  }
+}

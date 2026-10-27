@@ -1,0 +1,29 @@
+{
+  "subtitle": "Let people book you, no sign-up for them",
+  "category": "Productivity",
+  "featured": false,
+  "description": "Share one link and let people book time with you. Your page lives at your own address, like /@avery, with a link for each kind of meeting you offer: a 15-minute chat, a 30-minute meeting, an hour in person. People open it, pick a day and a time, type their name and email, and they're booked. No account, no app, no back-and-forth.\n\nBoth of you get an email with the details and Add to Calendar buttons for Google, Apple and Outlook. The person who booked can move or cancel with the link in their email, and you hear about it either way. Subscribe to your private calendar feed and every booking shows up in your own calendar too.\n\nSet your weekly hours once, in your time zone, with as many ranges a day as you like and days off when you need them. Guests see open times in their own zone, with daylight saving handled on both sides. Each kind of meeting can ask for notice, look only so far ahead, start on the quarter hour or the hour, and keep free time before or after. A time that's taken disappears for everyone.\n\nIt's built to feel like an Apple app: a calendar that springs to life, times that split into a Next button when you pick one, quiet sounds, light and dark, and a layout made for a phone and for a desk.",
+  "whatsNew": "Kalendar is here: a booking page at your own link, open times in every guest's time zone, email invites with calendar buttons, rescheduling and cancelling from the email, and a calendar feed of your bookings.",
+  "screenshots": [
+    {
+      "file": "calendar.webp",
+      "alt": "Booking a 30-minute meeting on a phone: the host's name, the month with open days in red circles, and the guest's time zone below"
+    },
+    {
+      "file": "times.webp",
+      "alt": "Thursday's open times from 9:00 AM, with 10:30 AM picked and a red Next button beside it"
+    },
+    {
+      "file": "booked.webp",
+      "alt": "You're booked: a green check, the meeting's day and time, and Add to Calendar buttons for Google, Apple and Outlook"
+    },
+    {
+      "file": "bookings.webp",
+      "alt": "The host's bookings: their link to share, the next meeting in 15 hours, and the week's bookings grouped by day"
+    },
+    {
+      "file": "hours-dark.webp",
+      "alt": "Weekly hours in dark mode: the time zone, and each day switched on with its hours from 9:00 AM to 5:00 PM"
+    }
+  ]
+}

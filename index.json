@@ -466,6 +466,72 @@
       ]
     },
     {
+      "name": "kalendar",
+      "path": "kalendar",
+      "version": "0.1.0",
+      "tag": "kalendar/v0.1.0",
+      "h1": "h1:y3gJXcC2VJyvK1a+oUAh22cFpGG37OYwGiONbIsUPPM=",
+      "files": 52,
+      "size": 503984,
+      "title": "Kalendar",
+      "description": "Share one link and let people book time with you. No sign-up for them, a calendar invite for both of you.",
+      "themeColor": "#e0352b",
+      "symbol": "M 5.4 3 L 18.6 3 A 4.8 4.8 0 0 1 23.4 7.8 L 23.4 19.2 A 4.8 4.8 0 0 1 18.6 24 L 5.4 24 A 4.8 4.8 0 0 1 0.6 19.2 L 0.6 7.8 A 4.8 4.8 0 0 1 5.4 3 Z M 5.4 10.8 A 2.4 2.4 0 0 0 3 13.2 L 3 19.2 A 2.4 2.4 0 0 0 5.4 21.6 L 18.6 21.6 A 2.4 2.4 0 0 0 21 19.2 L 21 13.2 A 2.4 2.4 0 0 0 18.6 10.8 Z M 6.36 0 A 1.56 1.56 0 0 1 7.92 1.56 L 7.92 3.84 A 1.56 1.56 0 0 1 4.8 3.84 L 4.8 1.56 A 1.56 1.56 0 0 1 6.36 0 Z M 17.64 0 A 1.56 1.56 0 0 1 19.2 1.56 L 19.2 3.84 A 1.56 1.56 0 0 1 16.08 3.84 L 16.08 1.56 A 1.56 1.56 0 0 1 17.64 0 Z M 16.2 13.68 A 2.52 2.52 0 1 1 16.2 18.72 A 2.52 2.52 0 0 1 16.2 13.68 Z",
+      "demo": "https://kalendar.zyt.app",
+      "listing": {
+        "subtitle": "Let people book you, no sign-up for them",
+        "category": "Productivity",
+        "description": "Share one link and let people book time with you. Your page lives at your own address, like /@avery, with a link for each kind of meeting you offer: a 15-minute chat, a 30-minute meeting, an hour in person. People open it, pick a day and a time, type their name and email, and they're booked. No account, no app, no back-and-forth.\n\nBoth of you get an email with the details and Add to Calendar buttons for Google, Apple and Outlook. The person who booked can move or cancel with the link in their email, and you hear about it either way. Subscribe to your private calendar feed and every booking shows up in your own calendar too.\n\nSet your weekly hours once, in your time zone, with as many ranges a day as you like and days off when you need them. Guests see open times in their own zone, with daylight saving handled on both sides. Each kind of meeting can ask for notice, look only so far ahead, start on the quarter hour or the hour, and keep free time before or after. A time that's taken disappears for everyone.\n\nIt's built to feel like an Apple app: a calendar that springs to life, times that split into a Next button when you pick one, quiet sounds, light and dark, and a layout made for a phone and for a desk.",
+        "whatsNew": "Kalendar is here: a booking page at your own link, open times in every guest's time zone, email invites with calendar buttons, rescheduling and cancelling from the email, and a calendar feed of your bookings.",
+        "featured": false,
+        "screenshots": [
+          {
+            "path": "listing/calendar.webp",
+            "alt": "Booking a 30-minute meeting on a phone: the host's name, the month with open days in red circles, and the guest's time zone below",
+            "width": 780,
+            "height": 1688,
+            "hash": "ae55f7fb0db1"
+          },
+          {
+            "path": "listing/times.webp",
+            "alt": "Thursday's open times from 9:00 AM, with 10:30 AM picked and a red Next button beside it",
+            "width": 780,
+            "height": 1688,
+            "hash": "1a702a012182"
+          },
+          {
+            "path": "listing/booked.webp",
+            "alt": "You're booked: a green check, the meeting's day and time, and Add to Calendar buttons for Google, Apple and Outlook",
+            "width": 780,
+            "height": 1688,
+            "hash": "3956729c3d08"
+          },
+          {
+            "path": "listing/bookings.webp",
+            "alt": "The host's bookings: their link to share, the next meeting in 15 hours, and the week's bookings grouped by day",
+            "width": 780,
+            "height": 1688,
+            "hash": "f94cb12bd7b8"
+          },
+          {
+            "path": "listing/hours-dark.webp",
+            "alt": "Weekly hours in dark mode: the time zone, and each day switched on with its hours from 9:00 AM to 5:00 PM",
+            "width": 780,
+            "height": 1688,
+            "hash": "2385c5edb7ab"
+          }
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "7da818a0481e"
+        }
+      },
+      "prompt": "Build \"Kalendar\", a Calendly-like booking app, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json\n(web.spa true), public web/ files and api/main.js exporting default\n{ fetch(request, env) }, with booking and cancelling as public named\noperations behind Holm's challenge and rate limits. No build step or\nthird-party runtime CDN; vendor Inter and Lucide icons with their licences.\n\n- A signed-in person chooses a link (/@handle), their time zone and weekly\n  hours (several ranges a day, days off), and event types (title, link,\n  length, where: video link, phone, address or other; notice, how far\n  ahead, start-time step, free time before and after, colour, on/off).\n- Anyone opens /@handle or /@handle/event and books without an account:\n  pick a day, a time in their own time zone (12- or 24-hour), then name,\n  email and notes. Never double-book; a taken time disappears.\n- The server has no Intl, so have the host's browser send its zone's UTC\n  offsets for the next year and turn hours into real times on the server.\n- Email both sides with env.holm.email: beautifully designed HTML (tables,\n  inline styles, dark mode) plus plain text, with Add to Calendar links for\n  Google, Outlook.com and a hosted .ics. Emailed links let the guest move or\n  cancel; the host can cancel from their list. Give the host a private\n  calendar feed.\n- An Apple-quality UI on phone and desktop: a round avatar button top right\n  (signed out too) with light/dark/auto, sounds and 24-hour time; fine\n  motion, quiet Web Audio sounds, and Inter weights that mean something.\n  Installable, with a network-first service worker.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 kalendar. With my approval, deploy with\nholm @<peer> app deploy kalendar --spec-v1 --host kalendar.<my-domain>, then\nask before enabling email for the app. Test booking, double-booking,\nrescheduling, cancelling, time zones across daylight saving, phone and\ndesktop, light and dark, and sign in and out as a real person would.",
+      "history": []
+    },
+    {
       "name": "margin",
       "path": "margin",
       "version": "0.1.0",
