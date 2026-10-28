@@ -58,6 +58,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 | [`snake`](snake/) | [snake.zyt.app](https://snake.zyt.app) | A calm snake game on a wrapping field: smooth canvas drawing, swipe and keys, resume after a reload, a replayed leaderboard |
 | [`zend`](zend/) | [zend.zyt.app](https://zend.zyt.app) | Texts from your own Android phone: outbound HTTP to SMSGate, an encrypted vault, signed webhooks, realtime receipts, API keys, India's SMS rules |
 | [`margin`](margin/) | [margin.zyt.app](https://margin.zyt.app) | A writing platform for teams: workspaces at their own address, personas, quote comments, claps, drawn covers that move, swappable themes, a block editor, and MCP tools for Claude |
+| [`deck`](deck/) | [deck-staging.zyt.app](https://deck-staging.zyt.app) | Decks you make with Claude: workspaces and invites, MCP tools with `auth: "user"`, live saves over realtime, seven layouts edited in place, revisions, share links and embeds |
 | [`kalendar`](kalendar/) | [kalendar.zyt.app](https://kalendar.zyt.app) | Booking without sign-up: a page at your own link, open times in every guest's zone, double-booking-proof transactions, public operations behind Holm's challenge, HTML emails with calendar links, an .ics feed |
 
 ## Layout of an app

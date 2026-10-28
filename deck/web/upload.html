@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en" data-accent="cobalt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Add pictures — Deck</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Add screenshots and photos to a Deck library.">
+<meta name="theme-color" content="#ecedf0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1013" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<script src="/src/theme.js"></script>
+<link rel="stylesheet" href="/deck/deck.css?v=0.1.0">
+<link rel="stylesheet" href="/src/app.css?v=0.1.0">
+<link rel="stylesheet" href="/src/upload.css?v=0.1.0">
+</head>
+<body>
+<header class="bar"><div class="bar-in"><a class="brand" href="/"><span class="mark" style="font-size:26px"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7.5" y="4.5" width="12" height="9" rx="1.8" fill="currentColor" opacity=".5"/><rect x="4.5" y="9" width="12" height="10" rx="1.8" fill="currentColor"/></svg></span><span>Deck</span></a></div></header>
+<main class="u-main">
+  <h1>Add pictures</h1>
+  <p class="u-lead" id="lead">Checking the link…</p>
+  <div class="u-drop" id="drop" hidden>
+    <input type="file" id="files" multiple accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/heic,image/heif,image/svg+xml,.svg,.heic">
+    <label for="files" class="u-pick">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+      <span class="u-pick-title">Choose screenshots or photos</span>
+      <span class="u-pick-note">Up to 12 MB each · PNG, JPEG, WebP, GIF, HEIC or SVG</span>
+    </label>
+  </div>
+  <ul class="u-list" id="list" aria-live="polite"></ul>
+  <p class="u-done" id="done" hidden>That’s it. Go back to Claude and say they’re added.</p>
+  <p class="u-left" id="left"></p>
+</main>
+<footer class="credit">Pictures go to the workspace’s private library on Deck.</footer>
+<script type="module" src="/src/upload.js?v=0.1.0"></script>
+</body>
+</html>

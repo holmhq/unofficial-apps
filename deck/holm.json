@@ -1,0 +1,47 @@
+{
+  "name": "deck",
+  "version": "0.1.0",
+  "title": "Deck",
+  "shortName": "Deck",
+  "description": "Decks you make with Claude, in workspaces for your team. Seven layouts that always look right, live edits, presenting and share links.",
+  "themeColor": "#2f5bd8",
+  "iconStyle": "soft",
+  "surfaces": {
+    "web": {
+      "renderer": "off"
+    }
+  },
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    },
+    "headers": [
+      {
+        "path": "/*",
+        "set": {
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "strict-origin-when-cross-origin"
+        }
+      },
+      {
+        "path": "/fonts/*",
+        "set": {
+          "Cache-Control": "public, max-age=31536000, immutable",
+          "Access-Control-Allow-Origin": "*"
+        }
+      }
+    ]
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://deck-staging.zyt.app"
+    }
+  }
+}

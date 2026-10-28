@@ -1,0 +1,1011 @@
+{
+ "operations": {
+  "guide.get": {
+   "handler": "opGuide",
+   "auth": "public",
+   "risk": "read",
+   "summary": "Read Deck's format, layouts and workflow (call this first)",
+   "description": "Returns {guide}: the deck JSON format, the seven layouts with examples, how to write a good deck, and the save/review loop. Read it before writing or editing your first deck.",
+   "input": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   }
+  },
+  "me.get": {
+   "handler": "opMe",
+   "auth": "user",
+   "risk": "read",
+   "summary": "Who you are on Deck and your workspaces",
+   "description": "Returns your name and every workspace you are on, with its id and your role (owner, admin or editor). Pass a workspace id to decks_list, decks_create and assets_*.",
+   "input": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "workspaces.create": {
+   "handler": "opWorkspacesCreate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Start a workspace for a team",
+   "description": "Creates a workspace with you as its owner. Ask the person for its name first. Teammates join from invite links the owner makes in the app.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true,
+   "idempotency": "optional"
+  },
+  "decks.list": {
+   "handler": "opDecksList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "List the decks in your workspaces, newest change first",
+   "description": "Returns {decks}: id, title, slide count, revision, who changed it last, its studio url and its share link if shared. Without workspace, lists every workspace you are on.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "workspace": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{10}$",
+      "description": "A workspace id from me_get."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "decks.create": {
+   "handler": "opDecksCreate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Make a new deck in a workspace",
+   "description": "Creates a deck and returns it with its url (open it to watch your saves arrive) and the base to pass to the next save. content is the whole deck (see guide_get); without it you get a cover slide titled title. Content with errors is refused (422) with the list.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "workspace": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{10}$",
+      "description": "A workspace id from me_get."
+     },
+     "title": {
+      "type": "string",
+      "maxLength": 120
+     },
+     "content": {
+      "type": "object",
+      "description": "The whole deck: {title, description, brand, accent, lang, slides:[…]}. guide_get describes every layout."
+     },
+     "message": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "One line for the history, e.g. 'First draft from the brief'."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "workspace"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true,
+   "idempotency": "optional"
+  },
+  "deck.get": {
+   "handler": "opDeckGet",
+   "auth": "user",
+   "risk": "read",
+   "summary": "Read a deck: its slides, notes and check",
+   "description": "Returns the deck, its content (the whole deck JSON) at the latest revision or the one you name, an outline (one line per slide), the check (errors and warnings), and base: the version to pass to deck_save or slides_edit.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     },
+     "revision": {
+      "type": "integer",
+      "minimum": 1
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "deck"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "deck.save": {
+   "handler": "opDeckSave",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Replace a deck's content with a new revision",
+   "description": "Saves the whole deck as a new revision and shows it at once to anyone with the deck open. base is the version you read (deck_get); if someone changed the deck since, you get 409 and must read it again. Errors in content are refused (422) with the list; warnings come back for you to consider. For small changes prefer slides_edit.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     },
+     "base": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "content": {
+      "type": "object",
+      "description": "The whole deck: {title, description, brand, accent, lang, slides:[…]}. guide_get describes every layout."
+     },
+     "message": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "One line for the history: what changed and why."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "deck",
+     "base",
+     "content"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true,
+   "idempotency": "optional"
+  },
+  "slides.edit": {
+   "handler": "opSlidesEdit",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Change a few slides without resending the deck",
+   "description": "Applies edits in order and saves one revision. Slides are numbered from 1 (as in the deck's #n links). ops: insert {at?, slide} (before slide at; omit at to append), replace {at, slide}, update {at, set} (merge fields into a slide; null removes a field), move {at, to}, delete {at}, deck {set} (title, description, brand, accent, lang). base is the version from deck_get.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     },
+     "base": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "edits": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "items": {
+       "type": "object",
+       "properties": {
+        "op": {
+         "type": "string",
+         "enum": [
+          "insert",
+          "replace",
+          "update",
+          "move",
+          "delete",
+          "deck"
+         ]
+        },
+        "at": {
+         "type": "integer",
+         "minimum": 1
+        },
+        "to": {
+         "type": "integer",
+         "minimum": 1
+        },
+        "slide": {
+         "type": "object"
+        },
+        "set": {
+         "type": "object"
+        }
+       },
+       "required": [
+        "op"
+       ],
+       "additionalProperties": false
+      }
+     },
+     "message": {
+      "type": "string",
+      "maxLength": 200
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "deck",
+     "base",
+     "edits"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true,
+   "idempotency": "optional"
+  },
+  "deck.check": {
+   "handler": "opDeckCheck",
+   "auth": "user",
+   "risk": "read",
+   "summary": "Check deck content without saving it",
+   "description": "Returns {ok, errors, warnings} for content as deck_save would judge it, including whether its pictures are in the workspace's library. Pass the workspace, or the deck it is for.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "workspace": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{10}$",
+      "description": "A workspace id from me_get."
+     },
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     },
+     "content": {
+      "type": "object",
+      "description": "The whole deck: {title, description, brand, accent, lang, slides:[…]}. guide_get describes every layout."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "content"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "revisions.list": {
+   "handler": "opRevisionsList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "List a deck's revisions, newest first",
+   "description": "Each revision has its number, who made it (a person or Claude), the history line and when. A person's edits in one sitting share one revision.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "deck"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "revisions.restore": {
+   "handler": "opRevisionsRestore",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Bring back an earlier revision as the latest",
+   "description": "Saves a new revision with the content of revision; nothing is lost. Ask the person before restoring over their work.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     },
+     "revision": {
+      "type": "integer",
+      "minimum": 1
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "deck",
+     "revision"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true,
+   "idempotency": "optional"
+  },
+  "assets.list": {
+   "handler": "opAssetsList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "List the pictures in a workspace's library",
+   "description": "Pictures for shot slides: each has its /media address (use it as a shot slide's image), pixel size, name and alt text.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "workspace": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{10}$",
+      "description": "A workspace id from me_get."
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "workspace"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "assets.put": {
+   "handler": "opAssetsPut",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Add a drawing (SVG) or a small picture to a workspace's library",
+   "description": "svg: a drawing as SVG text with a viewBox; plain shapes and text with inline styles (scripts, embedded images and links to other files are refused; 512 KB at most). data: a small JPEG, PNG, WebP, GIF or AVIF in base64, up to about 1.5 MB; for screenshots the person has, use assets_link. Always give alt. Returns the asset with its /media address.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "workspace": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{10}$",
+      "description": "A workspace id from me_get."
+     },
+     "svg": {
+      "type": "string",
+      "maxLength": 524288
+     },
+     "data": {
+      "type": "string",
+      "maxLength": 2100000
+     },
+     "name": {
+      "type": "string",
+      "maxLength": 120
+     },
+     "alt": {
+      "type": "string",
+      "maxLength": 300
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "workspace"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true,
+   "idempotency": "optional"
+  },
+  "assets.link": {
+   "handler": "opAssetsLink",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Get a link that adds screenshots and photos to a workspace's library",
+   "description": "For an hour, the link takes up to 10 pictures (12 MB each) into the library: give it to the person to open on their phone or computer, or, with a shell, send files yourself one per request with curl -F file=@shot.png -F alt=\"…\" <url>. Then assets_list shows their /media addresses.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "workspace": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{10}$",
+      "description": "A workspace id from me_get."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "workspace"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "share.set": {
+   "handler": "opShareSet",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Share a deck by link, or stop sharing it",
+   "description": "mode latest: anyone with the link sees every save as it happens; pinned: the link shows one revision (default the latest) until you change it; off: the link stops working, and sharing again makes a new one. Returns the link and an embed address for an iframe. Decks are private to their workspace until shared; ask the person before sharing.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     },
+     "mode": {
+      "type": "string",
+      "enum": [
+       "off",
+       "latest",
+       "pinned"
+      ]
+     },
+     "revision": {
+      "type": "integer",
+      "minimum": 1
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "deck",
+     "mode"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true,
+   "idempotency": "optional"
+  },
+  "studio.show": {
+   "handler": "opStudioShow",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Point the person's open deck at a slide, with a short message",
+   "description": "Jumps every open copy of the deck (studio or presenting) to slide and shows message beside it, e.g. 'Tightened this headline; does it still say enough?'. Returns delivered: how many are open (0 means nobody has it open).",
+   "input": {
+    "type": "object",
+    "properties": {
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     },
+     "slide": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "message": {
+      "type": "string",
+      "maxLength": 200
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "deck"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  }
+ }
+}

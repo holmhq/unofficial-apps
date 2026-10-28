@@ -1,0 +1,32 @@
+/* The upload link's page: one column, made for a phone first. */
+.u-main { width: 100%; max-width: 560px; margin: 0 auto; padding: clamp(20px, 6vh, 60px) 20px 24px; }
+.u-main h1 { margin: 0 0 8px; font-size: clamp(28px, 6vw, 34px); line-height: 1.15; font-weight: 700; letter-spacing: -0.03em; }
+.u-lead { margin: 0 0 24px; color: var(--text-2); }
+.u-lead.u-bad { color: var(--text); }
+.u-drop { position: relative; }
+.u-drop input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.u-pick {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 34px 20px 30px; border-radius: 16px;
+  background: var(--panel); box-shadow: var(--sheet); text-align: center; cursor: pointer; transition: box-shadow var(--slow), background var(--slow);
+}
+[data-theme='dark'] .u-pick { background: var(--panel-2); }
+.u-pick svg { width: 34px; height: 34px; margin-bottom: 6px; fill: none; stroke: var(--accent-text); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.u-pick-title { font-weight: 600; font-size: 16.5px; }
+.u-pick-note { color: var(--text-3); font-size: 13px; }
+.u-drop.u-over .u-pick, .u-drop input:focus-visible + .u-pick { box-shadow: 0 0 0 2px var(--accent), var(--sheet); background: var(--accent-tint); }
+.u-list { list-style: none; margin: 16px 0 0; padding: 0; border-radius: 14px; overflow: hidden; background: var(--panel); box-shadow: var(--sheet); }
+[data-theme='dark'] .u-list { background: var(--panel-2); }
+.u-list:empty { display: none; }
+.u-item { display: grid; grid-template-columns: 46px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; }
+.u-item + .u-item { border-top: 1px solid var(--line); }
+.u-thumb { width: 46px; height: 46px; border-radius: 8px; background: var(--sunken) center / cover no-repeat; }
+.u-name { min-width: 0; }
+.u-name b { display: block; font-weight: 550; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-name small { display: block; color: var(--text-3); font-size: 12.5px; }
+.u-track { height: 4px; margin-top: 6px; border-radius: 2px; background: var(--hover); overflow: hidden; }
+.u-fill { height: 100%; width: 0; background: var(--accent); border-radius: 2px; transition: width 0.2s; }
+.u-state { font-size: 13px; color: var(--text-3); white-space: nowrap; }
+.u-state.u-ok { color: var(--accent-text); font-weight: 600; }
+.u-state.u-err { color: #c33b2f; white-space: normal; max-width: 9rem; text-align: right; }
+.u-done { margin: 16px 0 0; font-weight: 550; }
+.u-left { margin: 10px 0 0; color: var(--text-3); font-size: 13.5px; }

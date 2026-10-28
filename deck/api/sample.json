@@ -1,0 +1,178 @@
+{
+  "title": "Write the story before the slides",
+  "description": "A sample deck about writing decks, built from every layout Deck offers.",
+  "lang": "en",
+  "brand": "Sample deck",
+  "slides": [
+    {
+      "layout": "title",
+      "kicker": "How to write a deck",
+      "title": "Write the story before the slides",
+      "subtitle": "A short guide to this format, written in the format itself. Replace every word when you write the real one.",
+      "byline": "For whoever presents next",
+      "date": "October 2026",
+      "notes": "Open with the one thing you want the room to remember.\nPress N to hide these notes, F for full screen."
+    },
+    {
+      "layout": "statement",
+      "text": "A deck is one argument told in order, and every slide earns its place by moving it forward.",
+      "emphasis": "one argument told in order",
+      "source": "The rule this sample follows",
+      "notes": "Say the sentence, then stop. Let it land before you move on."
+    },
+    {
+      "layout": "three",
+      "kicker": "Structure",
+      "title": "Three parts carry most stories",
+      "lead": "Name each part by the job it does for the audience, not by what you built.",
+      "cards": [
+        {
+          "name": "Setup",
+          "role": "Where things stand today",
+          "bullets": [
+            "Describe the situation in the audience’s own words",
+            "Give one number or example that makes it real"
+          ]
+        },
+        {
+          "name": "Turn",
+          "role": "What changes it",
+          "bullets": [
+            "Show the moment the old way stops working",
+            "Introduce what you offer as the answer to that moment",
+            "Keep it to what they can see, not how it works"
+          ],
+          "accent": "#0f8a76"
+        },
+        {
+          "name": "Ask",
+          "role": "What you want them to do",
+          "bullets": [
+            "One decision, with a name and a date beside it",
+            "Make the first step small enough to say yes to"
+          ],
+          "accent": "#b7791f",
+          "link": {
+            "href": "#7",
+            "label": "Jump to the ask"
+          }
+        }
+      ],
+      "notes": "Point at each card in turn. The accent colours are optional; one colour per idea works well."
+    },
+    {
+      "layout": "flow",
+      "kicker": "Process",
+      "title": "From draft to the room in five steps",
+      "steps": [
+        {
+          "label": "Write the sentence",
+          "detail": "One line the whole deck defends."
+        },
+        {
+          "label": "Outline the turns",
+          "detail": "A slide for each step of the argument, nothing else."
+        },
+        {
+          "label": "Choose layouts",
+          "detail": "Pick the layout that fits each slide’s job."
+        },
+        {
+          "label": "Rehearse aloud",
+          "detail": "Present with notes open and cut what you skip."
+        },
+        {
+          "label": "Share the link",
+          "detail": "It opens on any screen and prints one slide per page."
+        }
+      ],
+      "notes": "Flows read left to right. Three to five steps; the last one is the destination."
+    },
+    {
+      "layout": "shot",
+      "kicker": "Evidence",
+      "title": "Show the product, then point at it",
+      "image": "/img/sample-shot.webp",
+      "alt": "The three-card slide from this sample deck",
+      "caption": "Use a real screenshot and mark only the places you will talk about.",
+      "callouts": [
+        {
+          "x": 7.9,
+          "y": 45.4,
+          "w": 17.6,
+          "h": 5.2,
+          "label": "Each card names its role in one line"
+        },
+        {
+          "x": 77.6,
+          "y": 72.9,
+          "label": "A card can link onward, here to the ask"
+        }
+      ],
+      "notes": "Callouts are positioned in percent of the image, so they stay put at any size."
+    },
+    {
+      "layout": "numbers",
+      "kicker": "Measures",
+      "title": "Keep numbers few, round and sourced",
+      "stats": [
+        {
+          "value": "1",
+          "label": "sentence the whole deck defends",
+          "source": "The rule this sample follows"
+        },
+        {
+          "value": "7",
+          "label": "slides in this sample, one per layout",
+          "source": "Press End to count them"
+        },
+        {
+          "value": "3×",
+          "label": "read aloud before the meeting",
+          "source": "A habit worth keeping"
+        },
+        {
+          "value": "60 sec",
+          "label": "per slide at most when presenting",
+          "source": "Guidance, not a timer"
+        }
+      ],
+      "notes": "Big numbers count up when the slide appears. Every number should have a source line."
+    },
+    {
+      "layout": "cta",
+      "kicker": "The ask",
+      "title": "Replace this sample with your story",
+      "lead": "Keep the layouts and change the words, by hand or with Claude.",
+      "steps": [
+        {
+          "text": "Copy the layouts you need from this deck",
+          "owner": "Author",
+          "date": "Today"
+        },
+        {
+          "text": "Write notes for every slide you will present",
+          "owner": "Presenter",
+          "date": "Before 18:00"
+        },
+        {
+          "text": "Ask Claude to check it, then share the link",
+          "owner": "Owner",
+          "date": "Before 19:00"
+        }
+      ],
+      "buttons": [
+        {
+          "label": "Start from the top",
+          "href": "#1"
+        },
+        {
+          "label": "About Holm",
+          "href": "https://holmhq.com"
+        }
+      ],
+      "notes": "End on the decision. Leave this slide up during questions."
+    }
+  ],
+  "accent": "cobalt"
+}
