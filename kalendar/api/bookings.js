@@ -1,7 +1,7 @@
 // Bookings: open times, booking one (no account needed), seeing and
 // cancelling it with the secret link from the email, moving it, and the
 // host's list and calendar feed.
-import { reject, text, longText, email as cleanEmail, int, randomId, sha256, sameHash, MIN, DAY, HOUR } from './lib.js'
+import { reject, text, longText, email as cleanEmail, int, randomId, sha256, hmac, sameHash, MIN, DAY, HOUR } from './lib.js'
 import { offsetAt, cleanZone, cleanZoneLabel } from './tz.js'
 import { slotsFor } from './slots.js'
 import { hostByHandle, publicHost } from './hosts.js'
@@ -52,16 +52,32 @@ async function withToken(env, id, token) {
   return b
 }
 
+// Calendar file links end in /calendar, not .ics: Apple Mail hands a link
+// ending in .ics to Calendar as a calendar to subscribe to, not an event to add.
 function links(env, base, b, host, token) {
   const manage = `${base}/b/${b.id}?t=${token}`
   const entry = calendarEntry(b, host, base, manage, false)
   return {
     manage,
     reschedule: `${base}/@${host.handle}/${b.slug}?reschedule=${b.id}&t=${token}`,
-    ics: `${base}/b/${b.id}/invite.ics?t=${token}`,
+    ics: `${base}/b/${b.id}/calendar?t=${token}`,
     google: googleLink(entry),
     outlook: outlookLink(entry),
     rebook: `${base}/@${host.handle}/${b.slug}`,
+    dashboard: `${base}/`
+  }
+}
+
+// The host's own copy of a booking, titled with the guest's name. Its file
+// link is keyed with the feed secret, so a new feed link retires old ones.
+const hostKey = (host, id) => hmac(host.feed, `booking:${id}`)
+
+async function hostLinks(base, b, host) {
+  const entry = calendarEntry(b, host, base, null, true)
+  return {
+    ics: `${base}/b/${b.id}/calendar?h=${await hostKey(host, b.id)}`,
+    google: googleLink(entry),
+    outlook: outlookLink(entry),
     dashboard: `${base}/`
   }
 }
@@ -87,10 +103,10 @@ function calendarEntry(b, host, base, manage, forHost) {
   }
 }
 
-function mailBoth(env, kind, b, host, base, token, old = null) {
+async function mailBoth(env, kind, b, host, base, token, old = null) {
   const c = { b, host, base, links: links(env, base, b, host, token), hostOffset: offsetAt(host.tzTable, b.start), old }
   const invitee = send(env, b.email, inviteeMail(kind, c))
-  const hostSent = host.notify !== false && host.email ? send(env, host.email, hostMail(kind, c)) : { ok: false, code: 'OFF' }
+  const hostSent = host.notify !== false && host.email ? send(env, host.email, hostMail(kind, { ...c, links: await hostLinks(base, b, host) })) : { ok: false, code: 'OFF' }
   return { invitee: invitee.ok, host: hostSent.ok, code: invitee.ok ? null : invitee.code }
 }
 
@@ -146,7 +162,7 @@ export async function createBooking(env, input, now, base) {
     if (old) tx.update('bookings', { id: old.id }, { $set: { status: 'cancelled', cancelledBy: 'invitee', reason: '', cancelledAt: now, rescheduledTo: id, sequence: (old.sequence || 0) + 1, updatedAt: now } })
   })
   const b = { ...doc, id }
-  const emailed = mailBoth(env, old ? 'rescheduled' : 'confirmed', b, host, base, token, old)
+  const emailed = await mailBoth(env, old ? 'rescheduled' : 'confirmed', b, host, base, token, old)
   return { booking: inviteeDTO(b, host, links(env, base, b, host, token)), token, emailed }
 }
 
@@ -158,7 +174,7 @@ export async function cancelByInvitee(env, input, now, base) {
   const host = ds(env).findOne('hosts', b.host)
   const done = { ...b, status: 'cancelled', cancelledBy: 'invitee', reason, cancelledAt: now, sequence: (b.sequence || 0) + 1, updatedAt: now }
   ds(env).update('bookings', { id: b.id }, { $set: { status: done.status, cancelledBy: done.cancelledBy, reason, cancelledAt: now, sequence: done.sequence, updatedAt: now } })
-  const emailed = host ? mailBoth(env, 'cancelled', done, host, base, input.token) : null
+  const emailed = host ? await mailBoth(env, 'cancelled', done, host, base, input.token) : null
   return { ok: true, emailed }
 }
 
@@ -199,6 +215,13 @@ export async function inviteIcs(env, id, token, base, domain) {
   const host = ds(env).findOne('hosts', b.host)
   if (!host) reject(404, 'not_found', 'This booking’s host has left Kalendar.')
   return calendar([calendarEntry(b, host, base, `${base}/b/${b.id}?t=${token}`, false)], { domain })
+}
+
+export async function hostIcs(env, id, key, base, domain) {
+  const b = typeof id === 'string' && id.length < 40 ? ds(env).findOne('bookings', id) : null
+  const host = b && ds(env).findOne('hosts', b.host)
+  if (!host || typeof key !== 'string' || !sameHash(key, await hostKey(host, b.id))) reject(404, 'not_found', 'This link doesn’t open a booking. Check the email it came in.')
+  return calendar([calendarEntry(b, host, base, null, true)], { domain })
 }
 
 export function hostDTO(b) {

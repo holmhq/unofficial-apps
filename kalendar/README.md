@@ -120,10 +120,15 @@ checks over 140,000 open times against Node's `Intl`.
 ### Calendar invitations
 
 Holm's `email.send` takes `html` and `body` but no attachments, so the emails
-can't carry an `.ics` file or a `text/calendar` part. Instead they link to the
-booking's calendar file (`/b/<id>/invite.ics?t=…`, which Apple Calendar and
-Outlook open), to Google Calendar's and Outlook.com's add-event pages, and to
-the host's feed. Gmail and Outlook therefore won't show their own RSVP card.
+can't carry an `.ics` file or a `text/calendar` part, and Apple Mail, Gmail and
+Outlook won't show their own invite card. Instead they link to the booking's
+calendar file (`/b/<id>/calendar?t=…`), to Google Calendar's and Outlook.com's
+add-event pages, and to the host's feed. The file's link doesn't end in `.ics`
+on purpose: Apple Mail hands such a link to Calendar as a calendar to
+subscribe to, not an event to add. The host's email links to the host's own
+copy (`?h=…`, keyed with the feed secret, so a new feed link retires it),
+named for the guest and with their details. Links from emails sent before
+0.1.1 (`/b/<id>/invite.ics?t=…`) still work.
 
 ## Deploy your own
 

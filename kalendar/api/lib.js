@@ -89,6 +89,15 @@ export async function sha256(value) {
   return out
 }
 
+// A keyed hash (HMAC-SHA-256), as 32 hex characters.
+export async function hmac(key, value) {
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(key)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const sig = await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(String(value)))
+  let out = ''
+  for (const byte of new Uint8Array(sig).slice(0, 16)) out += byte.toString(16).padStart(2, '0')
+  return out
+}
+
 export function sameHash(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false
   let diff = 0

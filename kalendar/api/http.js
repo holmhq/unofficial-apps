@@ -15,7 +15,7 @@
 //   GET    /api/u/:handle/:slug            one event type, for booking
 //   GET    /api/u/:handle/:slug/slots      open times { from, to, skip?, t? }
 //   GET    /api/b/:id?t=                   a booking, from the link in its email
-//   GET    /b/:id/invite.ics?t=            that booking as a calendar file
+//   GET    /b/:id/calendar?t=              that booking as a calendar file (?h= the host's copy)
 //   GET    /feed/:secret.ics               the host's private calendar feed
 //
 // Booking and cancelling with an emailed link are named operations
@@ -24,7 +24,7 @@
 import { json, errorResponse, readJSON, reject, requireMember, member, rememberOrigin, esc, displayName } from './lib.js'
 import { hostOf, hostByHandle, handleFree, createHost, updateHost, privateHost, publicHost } from './hosts.js'
 import { eventsOf, eventDTO, createEvent, updateEvent, deleteEvent } from './events.js'
-import { openSlots, bookingPage, bookingForInvitee, inviteIcs, listForHost, cancelByHost, counts, feedFor } from './bookings.js'
+import { openSlots, bookingPage, bookingForInvitee, inviteIcs, hostIcs, listForHost, cancelByHost, counts, feedFor } from './bookings.js'
 import { icsResponse } from './ics.js'
 
 const match = (path, re) => {
@@ -40,7 +40,15 @@ export default {
       rememberOrigin(env, url)
       if (path.startsWith('/api/')) return await api(request, env, url)
       if (request.method === 'GET' || request.method === 'HEAD') {
-        let m = match(path, /^\/b\/([a-z0-9-]{6,40})\/invite\.ics$/)
+        let m = match(path, /^\/b\/([a-z0-9-]{6,40})\/calendar$/)
+        if (m) {
+          const body = url.searchParams.has('h')
+            ? await hostIcs(env, m[0], url.searchParams.get('h'), url.origin, url.host)
+            : await inviteIcs(env, m[0], url.searchParams.get('t'), url.origin, url.host)
+          return icsResponse(body, 'kalendar.ics')
+        }
+        // Emails sent before 0.1.1 link here.
+        m = match(path, /^\/b\/([a-z0-9-]{6,40})\/invite\.ics$/)
         if (m) return icsResponse(await inviteIcs(env, m[0], url.searchParams.get('t'), url.origin, url.host), 'kalendar.ics')
         m = match(path, /^\/feed\/([a-z0-9]{32})\.ics$/)
         if (m) {

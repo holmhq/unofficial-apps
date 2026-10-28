@@ -27,7 +27,9 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   offsets for the next year and turn hours into real times on the server.
 - Email both sides with env.holm.email: beautifully designed HTML (tables,
   inline styles, dark mode) plus plain text, with Add to Calendar links for
-  Google, Outlook.com and a hosted .ics. Emailed links let the guest move or
+  Google, Outlook.com and a hosted calendar file whose link doesn't end in
+  .ics (Apple Mail offers to subscribe to those). The host's links add the
+  host's own copy, named for the guest. Emailed links let the guest move or
   cancel; the host can cancel from their list. Give the host a private
   calendar feed.
 - An Apple-quality UI on phone and desktop: a round avatar button top right
@@ -46,7 +48,7 @@ rescheduling, cancelling, time zones across daylight saving, phone and
 desktop, light and dark, and sign in and out as a real person would.
 ```
 
-## The original request
+## The original requests
 
 Kalendar was built from this message, passed to a coding agent (the
 handle is replaced here):
@@ -62,3 +64,10 @@ handle is replaced here):
 > - make avatar round& the top right corner
 > - have light/dark/system colors
 > - should be possible to send one's calendar like this: kalendar.zyt.app/@\<handle\>
+
+**Kalendar 0.1.1: calendar links that add the event in Apple Mail**
+
+> Kalendar app's invite came in, but i wasn't able to add it to my iOS calendar app as usual with invites from other apps
+
+> - i use Apple's default Mail app
+> - a susbscription url was seen in a different modal in Calendar app: […]
