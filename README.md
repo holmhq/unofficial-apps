@@ -60,6 +60,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 | [`margin`](margin/) | [margin.zyt.app](https://margin.zyt.app) | A writing platform for teams: workspaces at their own address, personas, quote comments, claps, drawn covers that move, swappable themes, a block editor, and MCP tools for Claude |
 | [`deck`](deck/) | [deck-staging.zyt.app](https://deck-staging.zyt.app) | Decks you make with Claude: workspaces and invites, MCP tools with `auth: "user"`, live saves over realtime, seven layouts edited in place, revisions, share links and embeds |
 | [`kalendar`](kalendar/) | [kalendar.zyt.app](https://kalendar.zyt.app) | Booking without sign-up: a page at your own link, open times in every guest's zone, double-booking-proof transactions, public operations behind Holm's challenge, HTML emails with calendar links, an .ics feed |
+| [`ralk`](ralk/) | [ralk.zyt.app](https://ralk.zyt.app) | Your agents, out loud: MCP tools Claude calls to play a sound, show a browser notification and speak a line on every tab you have open; sounds rendered from code in a worker, text-to-speech through `net.fetch` and a file handle into storage, a per-person realtime channel |
 
 ## Layout of an app
 

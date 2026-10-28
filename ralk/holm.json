@@ -1,0 +1,46 @@
+{
+  "name": "ralk",
+  "version": "0.1.0",
+  "title": "Ralk",
+  "shortName": "Ralk",
+  "description": "Your agents, out loud. Claude tells this tab when a build finished, needs you, or broke: a chime, Olivia's voice, a notification.",
+  "themeColor": "#6d4cf2",
+  "iconStyle": "soft",
+  "surfaces": {
+    "web": {
+      "renderer": "off"
+    }
+  },
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    },
+    "headers": [
+      {
+        "path": "/*",
+        "set": {
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "strict-origin-when-cross-origin"
+        }
+      },
+      {
+        "path": "/fonts/*",
+        "set": {
+          "Cache-Control": "public, max-age=31536000, immutable"
+        }
+      }
+    ]
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://ralk.zyt.app"
+    }
+  }
+}

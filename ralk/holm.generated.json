@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:3547da1be67b3b817197586349c1e3e6b3fec6603d2ce41894867c56be8ab13e",
+  "inputs": {
+    "symbolHash": "sha256:48603d29faee4def182938a81b0dd06e5b16687808ce6958a1d713985bc9d019",
+    "themeColor": "#6d4cf2",
+    "name": "Ralk",
+    "subtitle": "Your agents, out loud. Claude Code tells this tab when a build finished, when it needs you, or when something broke: a chime, Olivia's voice, and a browser notification.",
+    "iconStyle": "soft"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.269.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:59f3514c9a20b9da553bfa6876ef1913770b80e8b9fc04d6f6e378a5e3ec1ef4",
+    "web/apple-touch-icon.png": "sha256:555ea54bca3d298b4459cf0b16ae3ad07f45838d92def1d30cce9210c141b054",
+    "web/favicon.ico": "sha256:85a52917c2bb11f8c54f57d43ca3c6852548161652ef91f1fca455b0b904e1d5",
+    "web/favicon.png": "sha256:3ee3fc3969f8391deb1cce1b80171d50228f6dc057ca1673be461ea046a0bdbb",
+    "web/favicon.svg": "sha256:512624fe0baee324ce46c663372dd49be2e0905ed7c6e8ada8cbede549e1e3f3",
+    "web/icon-192.png": "sha256:4b93dac11bb663699974a4b0e3999c43f337f493b27b22a66b8ae6db27fff673",
+    "web/icon-512.png": "sha256:59a0f8d597d0dd2165cb5b7e12fce35f66d2c739a81513a1288037564e60df8e",
+    "web/icon-maskable-512.png": "sha256:516b6df0646e25ac03ad171759bc4eb0c8f71500c538238bb91c24c94669da6f",
+    "web/manifest.webmanifest": "sha256:3411f1e4ed0ff7d018d275ee24a899dd127dbc19c401c6616ac684251350b653",
+    "web/social_preview.png": "sha256:cd140172a4718db5289ddaf69261d1bbf4838c5b3364fc9ba8fb651fc2ab8f03"
+  }
+}

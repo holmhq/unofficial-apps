@@ -1,0 +1,174 @@
+{
+  "operations": {
+    "guide.get": {
+      "handler": "opGuide",
+      "auth": "public",
+      "risk": "read",
+      "summary": "Read how and when to notify the person through Ralk (call this first)",
+      "description": "Returns {guide}: when a notification helps and when it is noise, how to write titles, bodies and spoken lines, what each tool answers, and what a spoken line costs. Read it before your first notify_send.",
+      "input": { "type": "object", "properties": {}, "additionalProperties": false },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_UNAUTHORIZED": { "status": 401, "public": true },
+        "APP_FORBIDDEN": { "status": 403, "public": true },
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_INVALID_INPUT": { "status": 400, "public": true },
+        "APP_CONFLICT": { "status": 409, "public": true },
+        "APP_INVALID": { "status": 422, "public": true },
+        "APP_RATE_LIMITED": { "status": 429, "public": true },
+        "APP_UNAVAILABLE": { "status": 503, "public": true }
+      }
+    },
+    "me.get": {
+      "handler": "opMe",
+      "auth": "user",
+      "risk": "read",
+      "summary": "Who you are on Ralk, how many devices are listening, and your voice usage",
+      "description": "Returns your name, how many of your devices have Ralk open right now (0 means a notification would not be heard), the voice and the sound chosen for each kind, this month's voice usage, and what to do next.",
+      "input": { "type": "object", "properties": {}, "additionalProperties": false },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_UNAUTHORIZED": { "status": 401, "public": true },
+        "APP_FORBIDDEN": { "status": 403, "public": true },
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_INVALID_INPUT": { "status": 400, "public": true },
+        "APP_CONFLICT": { "status": 409, "public": true },
+        "APP_INVALID": { "status": 422, "public": true },
+        "APP_RATE_LIMITED": { "status": 429, "public": true },
+        "APP_UNAVAILABLE": { "status": 503, "public": true }
+      },
+      "sensitive": true
+    },
+    "notify.send": {
+      "handler": "opNotifySend",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Notify the person: a sound and a browser notification on every device they have Ralk open, with an optional spoken line",
+      "description": "Sends a notification to the person's open Ralk tabs: it plays the kind's sound at once, shows a browser notification with the title and body, and, when say is given, has Olivia speak that line a few seconds later. Kinds: done (a task finished), attention (waiting on them), question, error (something failed), info, start (a long task began). Answers with listening: how many devices played it (0 means nothing was heard; it shows as missed later). Send one when something starts, needs them or ends, not for every step.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 80, "description": "Plain words, the fact first: 'Tests passed: 212 of 212'." },
+          "body": { "type": "string", "maxLength": 300, "description": "Detail they would want before looking: the command, the file, the error's first line." },
+          "kind": { "type": "string", "enum": ["done", "attention", "question", "error", "info", "start"], "description": "Default info. Picks the sound and the colour." },
+          "say": { "type": "string", "maxLength": 600, "description": "A line for the ear, one or two sentences, no code or URLs; spoken by the person's chosen voice after the sound." },
+          "sound": { "type": "string", "maxLength": 40, "description": "A sound id from sounds_list, 'none' for silence, or omit for the kind's default." },
+          "project": { "type": "string", "maxLength": 40, "description": "A short tag such as the repository or app name, shown on the card." }
+        },
+        "additionalProperties": false,
+        "required": ["title"]
+      },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_UNAUTHORIZED": { "status": 401, "public": true },
+        "APP_FORBIDDEN": { "status": 403, "public": true },
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_INVALID_INPUT": { "status": 400, "public": true },
+        "APP_CONFLICT": { "status": 409, "public": true },
+        "APP_INVALID": { "status": 422, "public": true },
+        "APP_RATE_LIMITED": { "status": 429, "public": true },
+        "APP_UNAVAILABLE": { "status": 503, "public": true }
+      },
+      "limits": { "rate": { "requests": 60, "per": "1m" } },
+      "idempotency": "optional"
+    },
+    "say.send": {
+      "handler": "opSaySend",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Speak a line out loud on the person's devices, with no notification sound",
+      "description": "Has the person's chosen voice (Olivia by default) say the text on every device they have Ralk open, a few seconds after you call it. Write for the ear: one or two sentences, present tense, no code or URLs. About $0.01 per thousand characters; a line said before plays at once and is free. Answers with listening: how many devices will play it.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string", "minLength": 1, "maxLength": 600, "description": "What to say, exactly as it should be read." },
+          "project": { "type": "string", "maxLength": 40, "description": "A short tag such as the repository or app name." },
+          "sound": { "type": "string", "maxLength": 40, "description": "A sound id from sounds_list to play before the voice; default none." }
+        },
+        "additionalProperties": false,
+        "required": ["text"]
+      },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_UNAUTHORIZED": { "status": 401, "public": true },
+        "APP_FORBIDDEN": { "status": 403, "public": true },
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_INVALID_INPUT": { "status": 400, "public": true },
+        "APP_CONFLICT": { "status": 409, "public": true },
+        "APP_INVALID": { "status": 422, "public": true },
+        "APP_RATE_LIMITED": { "status": 429, "public": true },
+        "APP_UNAVAILABLE": { "status": 503, "public": true }
+      },
+      "limits": { "rate": { "requests": 30, "per": "1m" } },
+      "idempotency": "optional"
+    },
+    "sounds.list": {
+      "handler": "opSoundsList",
+      "auth": "public",
+      "risk": "read",
+      "summary": "The sounds Ralk can play, by id, with the default for each kind of notification",
+      "description": "Returns the six kinds with their default sound ids, the groups (chimes, pops, ticks, keys, swishes, hits, swells, risers, typing runs), and every sound with its id, name, one-line description and length in seconds. Pass an id as sound to notify_send, say_send or sounds_play.",
+      "input": { "type": "object", "properties": {}, "additionalProperties": false },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_UNAUTHORIZED": { "status": 401, "public": true },
+        "APP_FORBIDDEN": { "status": 403, "public": true },
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_INVALID_INPUT": { "status": 400, "public": true },
+        "APP_CONFLICT": { "status": 409, "public": true },
+        "APP_INVALID": { "status": 422, "public": true },
+        "APP_RATE_LIMITED": { "status": 429, "public": true },
+        "APP_UNAVAILABLE": { "status": 503, "public": true }
+      }
+    },
+    "sounds.play": {
+      "handler": "opSoundsPlay",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Play one sound on the person's devices, with no card or notification",
+      "description": "Plays a sound from sounds_list on every device the person has Ralk open: a tick for a step, a chime for a check, or to let them hear a sound before choosing it. Nothing is kept. Answers with listening.",
+      "input": {
+        "type": "object",
+        "properties": { "sound": { "type": "string", "minLength": 1, "maxLength": 40, "description": "A sound id from sounds_list." } },
+        "additionalProperties": false,
+        "required": ["sound"]
+      },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_UNAUTHORIZED": { "status": 401, "public": true },
+        "APP_FORBIDDEN": { "status": 403, "public": true },
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_INVALID_INPUT": { "status": 400, "public": true },
+        "APP_CONFLICT": { "status": 409, "public": true },
+        "APP_INVALID": { "status": 422, "public": true },
+        "APP_RATE_LIMITED": { "status": 429, "public": true },
+        "APP_UNAVAILABLE": { "status": 503, "public": true }
+      },
+      "limits": { "rate": { "requests": 60, "per": "1m" } }
+    },
+    "history.list": {
+      "handler": "opHistoryList",
+      "auth": "user",
+      "risk": "read",
+      "summary": "Your recent notifications and which devices heard them",
+      "description": "Returns the newest notifications first (default 20, up to 100): kind, title, body, spoken line, project, who sent it, when, the devices that heard it, and the state of its voice. Use it after a reconnect so you do not repeat yourself.",
+      "input": {
+        "type": "object",
+        "properties": { "limit": { "type": "integer", "minimum": 1, "maximum": 100 } },
+        "additionalProperties": false
+      },
+      "output": { "type": "object" },
+      "errors": {
+        "APP_UNAUTHORIZED": { "status": 401, "public": true },
+        "APP_FORBIDDEN": { "status": 403, "public": true },
+        "APP_NOT_FOUND": { "status": 404, "public": true },
+        "APP_INVALID_INPUT": { "status": 400, "public": true },
+        "APP_CONFLICT": { "status": 409, "public": true },
+        "APP_INVALID": { "status": 422, "public": true },
+        "APP_RATE_LIMITED": { "status": 429, "public": true },
+        "APP_UNAVAILABLE": { "status": 503, "public": true }
+      },
+      "sensitive": true
+    }
+  }
+}

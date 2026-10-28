@@ -882,6 +882,72 @@
       ]
     },
     {
+      "name": "ralk",
+      "path": "ralk",
+      "version": "0.1.0",
+      "tag": "ralk/v0.1.0",
+      "h1": "h1:CfKko9x9hQ6gI4EXMrB2+I7H3F2RkjxgshiQfNXN4Sw=",
+      "files": 51,
+      "size": 766378,
+      "title": "Ralk",
+      "description": "Your agents, out loud. Claude tells this tab when a build finished, needs you, or broke: a chime, Olivia's voice, a notification.",
+      "themeColor": "#6d4cf2",
+      "symbol": "M 1.6 7.733333 L 1.6 7.733333 C 2.483656 7.733333 3.2 8.449678 3.2 9.333333 L 3.2 14.666667 C 3.2 15.550322 2.483656 16.266667 1.6 16.266667 L 1.6 16.266667 C 0.716344 16.266667 0 15.550322 0 14.666667 L 0 9.333333 C 0 8.449678 0.716344 7.733333 1.6 7.733333 Z M 6.8 4 L 6.8 4 C 7.683656 4 8.4 4.716344 8.4 5.6 L 8.4 18.4 C 8.4 19.283656 7.683656 20 6.8 20 L 6.8 20 C 5.916344 20 5.2 19.283656 5.2 18.4 L 5.2 5.6 C 5.2 4.716344 5.916344 4 6.8 4 Z M 12 0.266667 L 12 0.266667 C 12.883656 0.266667 13.6 0.983011 13.6 1.866667 L 13.6 22.133333 C 13.6 23.016989 12.883656 23.733333 12 23.733333 L 12 23.733333 C 11.116344 23.733333 10.4 23.016989 10.4 22.133333 L 10.4 1.866667 C 10.4 0.983011 11.116344 0.266667 12 0.266667 Z M 17.2 4 L 17.2 4 C 18.083656 4 18.8 4.716344 18.8 5.6 L 18.8 18.4 C 18.8 19.283656 18.083656 20 17.2 20 L 17.2 20 C 16.316344 20 15.6 19.283656 15.6 18.4 L 15.6 5.6 C 15.6 4.716344 16.316344 4 17.2 4 Z M 22.4 7.733333 L 22.4 7.733333 C 23.283656 7.733333 24 8.449678 24 9.333333 L 24 14.666667 C 24 15.550322 23.283656 16.266667 22.4 16.266667 L 22.4 16.266667 C 21.516344 16.266667 20.8 15.550322 20.8 14.666667 L 20.8 9.333333 C 20.8 8.449678 21.516344 7.733333 22.4 7.733333 Z",
+      "demo": "https://ralk.zyt.app",
+      "listing": {
+        "subtitle": "Your agents, out loud",
+        "category": "Productivity",
+        "description": "Claude Code runs in a VM, a container or a server with no speaker. Ralk is the tab on the machine in front of you: a chime when the build finishes, Olivia's voice when something needs you, a browser notification when you're in another window.\n\nConnect Claude, Claude Code or ChatGPT once. From then on Claude can tell you a task is done, that it needs your approval, that something broke, or ask a question: each kind has its own sound, and a spoken line follows a few seconds later. Every device you have open plays it; the card says which one heard it.\n\nThe 52 sounds are made from code in your browser, nothing to download, and you pick which one goes with each kind. The voice is Inworld TTS on fal.ai, Olivia by default, any of its voices with a sample; a line said before plays again at once and costs nothing.\n\nIt feels like an app: a bar that stays put, one panel that scrolls, a tab bar on your phone, light and dark, and sounds you can try before you sign in.",
+        "whatsNew": "First release: six kinds of notification with sounds made from code, Olivia's voice from fal.ai, browser notifications, a live feed across every device you have open, and seven MCP tools for Claude.",
+        "featured": true,
+        "screenshots": [
+          {
+            "path": "listing/live.webp",
+            "alt": "The Live tab on a phone: listening on this device, and notifications from Claude with their sounds and a spoken line",
+            "width": 780,
+            "height": 1688,
+            "hash": "f7026b95c004"
+          },
+          {
+            "path": "listing/sounds.webp",
+            "alt": "The Sounds tab: the volume, the sound for each kind of notification, and the library",
+            "width": 780,
+            "height": 1688,
+            "hash": "5f024330be10"
+          },
+          {
+            "path": "listing/voice.webp",
+            "alt": "The Voice tab: Olivia with a sample, a line to say yourself, and this month's usage",
+            "width": 780,
+            "height": 1688,
+            "hash": "d55a3fea076f"
+          },
+          {
+            "path": "listing/connect.webp",
+            "alt": "The Connect tab: the address for Claude, Claude Code and ChatGPT, and prompts to try",
+            "width": 780,
+            "height": 1688,
+            "hash": "16490f895537"
+          },
+          {
+            "path": "listing/landing-dark.webp",
+            "alt": "Signed out in dark mode: your agents, out loud, with four sounds to try",
+            "width": 780,
+            "height": 1688,
+            "hash": "99aa96f07e70"
+          }
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "e0b17394aefe"
+        }
+      },
+      "prompt": "Build \"Ralk\" (Remote Talk), an app that lets Claude reach the person out loud,\nusing only https://holmhq.com/llms-full.txt for Holm. Read its v1 sections\n9–12, \"Use your app from ChatGPT or Claude\", \"Realtime\", \"Make an app feel\nfinished\" and \"Make it feel native\" first. Make holm.json (web.spa true),\npublic web/ files and api/main.js exporting default { fetch(request, env) },\nplus named operations that Holm projects as MCP tools. No build step or\nthird-party runtime CDN; vendor Inter with its licence.\n\nWhy: Claude Code runs in a VM or a container with no speaker. The person keeps\na Ralk tab open on the machine in front of them; what Claude sends plays\nthere.\n\n- Sign in with the node's accounts. Each person gets a secret realtime channel\n  that every tab they have open subscribes to, with reconnects.\n- Claude's tools (auth \"user\", each acting only on the caller's own data):\n  a guide on when to notify and how to write for the ear; notify_send with a\n  kind (done, attention, question, error, info, start), a title, a body, an\n  optional spoken line and a project tag; say_send for a spoken line alone;\n  sounds_play; sounds_list; me_get (listening devices, voice, usage);\n  history_list. Every send answers with how many devices are listening.\n- Sounds are made from code in the browser, not downloaded: vendor earshotjs\n  (MIT) and render in a worker. Six kinds with default sounds the person can\n  change; a library with a play button on every row; a volume for the device.\n- Voice: fal.ai's Inworld TTS through env.holm.net.fetch with an app-scoped\n  runtime secret, Olivia by default, any built-in voice with a sample. Queue\n  the line, let the browser poll once a second, play the finished file as\n  soon as fal.ai has it, then copy it into storage keyed by text and voice so\n  a repeated line is instant and free. A monthly allowance per person.\n- When a note arrives: the kind's sound plays at once, a browser notification\n  shows if the tab is not in front, the voice follows, and the card records\n  which device heard it. Tabs in one browser elect one to play.\n- Apple-quality UI on phone and desktop, light and dark, with a round avatar\n  button top right (signed out too). Native-like: the window never scrolls,\n  bars stay fixed, panels scroll with no scroll bars, a tab bar on phones and\n  a sidebar on desks, meaningful motion. Signed out, a landing page that plays\n  the sounds without an account.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/listing.json with sample screenshots. These are repo conventions,\n  not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 ralk. With my approval, deploy with\nholm @<peer> app deploy ralk --spec-v1 --host ralk.<my-domain>, set the FAL_KEY\nsecret and allow queue.fal.run and fal.media for the app. Test every tool\nover HTTP, a note landing in an open tab with its sound and voice, two people\nseeing only their own, phone and desktop, light and dark.",
+      "history": []
+    },
+    {
       "name": "relay",
       "path": "relay",
       "version": "0.2.0",
