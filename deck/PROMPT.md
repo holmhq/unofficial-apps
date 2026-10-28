@@ -28,8 +28,9 @@ third-party runtime CDN; vendor Inter with its licence.
 - Claude's tools (auth "user", each checking the caller's membership): a
   format guide, list/create decks, read a deck with an outline and a check,
   save the whole deck or apply small slide edits, revisions and restore,
-  pictures (SVG, small base64, or an upload link), share, and point the
-  person's open deck at a slide with a message. Every save names the version
+  pictures (SVG, small base64, or an upload link), a workspace's name and
+  logo from its library, share, and point the person's open deck at a slide
+  with a message. Every save names the version
   it was made from; a stale one gets 409.
 - Live loop: each save pings the deck's secret realtime channel; the open
   studio reloads in place on the same slide and says what changed, or asks
@@ -55,8 +56,8 @@ desktop, light and dark.
 
 ## The original request
 
-Deck was built from this message, passed to a coding agent (a folder path and
-the name of a private app are replaced here):
+Deck was built from these messages, passed to a coding agent (folder paths, a
+company and the name of a private app are replaced here):
 
 > We built deck app. I think we should hand it over to [this repository] to
 > build it as a proper Claude-controlled (via MCP), workspace-based deck
@@ -69,4 +70,10 @@ the name of a private app are replaced here):
 
 and, later:
 
-> please review & try to build it end to end, and deploy to a staging host
+> I hope you have seen a new app's suggestion from a different repo: deck
+> - please review & try to build it end to end
+> - and deploy to deck-staging.zyt.app (we will finally deploy to deck.zyt once its all stable)
+
+and, once Claude had used the tools:
+
+> Also, can you place the [company's] logo [from a folder path] in the workspace

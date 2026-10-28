@@ -1,6 +1,6 @@
 {
   "name": "deck",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "title": "Deck",
   "shortName": "Deck",
   "description": "Decks you make with Claude, in workspaces for your team. Seven layouts that always look right, live edits, presenting and share links.",

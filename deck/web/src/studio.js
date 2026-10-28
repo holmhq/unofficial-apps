@@ -3,10 +3,10 @@
 // including lists, links, colours and pictures. Edits save a moment after typing stops.
 // Saves from Claude (or a teammate) arrive over realtime and reload the deck in place on
 // the same slide; if you were mid-edit, a banner asks which version to keep.
-import { api, esc, $, $$, html, toast, ago, icons, sheet, menu, copy, confirmSheet, uploadTo, pickFiles, chime, kb } from './lib.js?v=0.1.0';
-import { renderSlide, thumb, slideTitle } from '/deck/render.js?v=0.1.0';
-import { LAYOUTS, TEMPLATES, switchLayout, ACCENT_NAMES, CARD_COLORS } from './schema.js?v=0.1.0';
-import { subscribe } from './live.js?v=0.1.0';
+import { api, esc, $, $$, html, toast, ago, icons, sheet, menu, copy, confirmSheet, uploadTo, pickFiles, chime, kb } from './lib.js?v=0.1.1';
+import { renderSlide, thumb, slideTitle } from '/deck/render.js?v=0.1.1';
+import { LAYOUTS, TEMPLATES, switchLayout, ACCENT_NAMES, CARD_COLORS } from './schema.js?v=0.1.1';
+import { subscribe } from './live.js?v=0.1.1';
 
 const CLIENT = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
 const clone = (v) => JSON.parse(JSON.stringify(v));

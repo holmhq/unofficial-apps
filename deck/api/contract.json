@@ -147,6 +147,72 @@
    "sensitive": true,
    "idempotency": "optional"
   },
+  "workspaces.update": {
+   "handler": "opWorkspacesUpdate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Rename a workspace or set its logo",
+   "description": "Owners and admins only. name renames it; logo is a picture from its library (an asset id or /media address from assets_list or assets_put), shown beside its name in the app and on its invite links; \"\" removes it. Ask the person before changing either.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "workspace": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{10}$",
+      "description": "A workspace id from me_get."
+     },
+     "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+     },
+     "logo": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "An asset id or /media address from this workspace's library; an empty string removes the logo."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "workspace"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true,
+   "idempotency": "optional"
+  },
   "decks.list": {
    "handler": "opDecksList",
    "auth": "user",

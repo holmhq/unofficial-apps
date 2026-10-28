@@ -14,6 +14,7 @@ const ops = () => import('./ops.js');
 export async function opGuide(input, env) { return (await ops()).opGuide(input, env); }
 export async function opMe(input, env) { return (await ops()).opMe(input, env); }
 export async function opWorkspacesCreate(input, env) { return (await ops()).opWorkspacesCreate(input, env); }
+export async function opWorkspacesUpdate(input, env) { return (await ops()).opWorkspacesUpdate(input, env); }
 export async function opDecksList(input, env) { return (await ops()).opDecksList(input, env); }
 export async function opDecksCreate(input, env) { return (await ops()).opDecksCreate(input, env); }
 export async function opDeckGet(input, env) { return (await ops()).opDeckGet(input, env); }

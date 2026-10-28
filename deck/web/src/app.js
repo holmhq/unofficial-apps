@@ -1,9 +1,9 @@
 // Deck's web app: the landing page, a workspace's decks, library, team and Claude page,
 // invites and the first workspace. The studio (studio.js) loads when a deck opens.
-import { api, esc, $, $$, html, toast, ago, kb, icons, MARK, sheet, menu, copy, confirmSheet, currentTheme, setTheme, applyTheme, uploadTo, pickFiles, avatar, wsLogo } from './lib.js?v=0.1.0';
-import { thumb } from '/deck/render.js?v=0.1.0';
-import { LAYOUTS } from './schema.js?v=0.1.0';
-import { subscribe } from './live.js?v=0.1.0';
+import { api, esc, $, $$, html, toast, ago, kb, icons, MARK, sheet, menu, copy, confirmSheet, currentTheme, setTheme, applyTheme, uploadTo, pickFiles, avatar, wsLogo } from './lib.js?v=0.1.1';
+import { thumb } from '/deck/render.js?v=0.1.1';
+import { LAYOUTS } from './schema.js?v=0.1.1';
+import { subscribe } from './live.js?v=0.1.1';
 
 const root = document.getElementById('app');
 let me = null;
@@ -56,7 +56,7 @@ async function route() {
     if (!me.signed_in) return signIn();
     document.title = 'Deck';
     root.innerHTML = '<div class="boot"><div class="spinner"></div></div>';
-    const studio = await import('./studio.js?v=0.1.0');
+    const studio = await import('./studio.js?v=0.1.1');
     return studio.open(root, m[1], { me, go, onLeave, accountButton, rememberWorkspace });
   }
   if ((m = /^\/join\/([a-z0-9]{10,40})$/.exec(path))) return joinPage(m[1]);
@@ -321,6 +321,37 @@ async function libraryView(page, ws) {
   await load().catch((error) => { grid.innerHTML = `<p class="muted">${esc(error.message)}</p>`; });
 }
 
+// A workspace's logo: any picture already in its library, or a new one (which joins it).
+async function logoSheet(ws, current) {
+  const box = html(`<div><div style="display:flex;gap:8px;margin-bottom:14px"><button type="button" class="btn primary" data-upload>${icons.upload}Upload</button><span class="uploading" hidden style="margin:0"><span class="spinner"></span><span></span></span></div><div class="media-grid"><div class="spinner"></div></div></div>`);
+  const s = sheet('Choose a logo', box, { wide: true, focus: false });
+  const grid = $('.media-grid', box);
+  const choose = async (m) => {
+    await api(`/api/w/${ws.id}`, { method: 'PATCH', body: { logo: m.id } });
+    s.close();
+    await loadMe();
+    toast('Logo updated');
+    workspacePage(ws.id, 'team');
+  };
+  $('[data-upload]', box).addEventListener('click', async () => {
+    const [file] = await pickFiles('image/*,.svg', false);
+    if (!file) return;
+    const status = $('.uploading', box);
+    status.hidden = false;
+    $('span:last-child', status).textContent = `Uploading ${file.name}…`;
+    try { await choose(await uploadTo(`/api/w/${ws.id}/media`, file)); } catch (error) { status.hidden = true; toast(error.message); }
+  });
+  try {
+    const { media } = await api(`/api/w/${ws.id}/media`);
+    if (!media.length) { grid.replaceChildren(html(`<p class="muted" style="grid-column:1/-1">Nothing in the library yet. Upload a logo and it joins the library too.</p>`)); return; }
+    grid.replaceChildren(...media.map((m) => {
+      const card = html(`<button type="button" class="media-card pickable${current === `/media/${m.id}` ? ' on' : ''}" style="padding:0;border:0;text-align:left"><span class="pic"><img src="${esc(m.sizes && m.sizes.w320 ? m.sizes.w320 : m.url)}" alt="" loading="lazy"></span><span class="cap"><span class="cap-main"><b>${esc(m.name || m.alt || 'Picture')}</b><small>${m.width ? `${m.width} × ${m.height} · ` : ''}${kb(m.size)}</small></span></span></button>`);
+      card.addEventListener('click', () => choose(m).catch((error) => toast(error.message)));
+      return card;
+    }));
+  } catch (error) { grid.innerHTML = `<p class="muted">${esc(error.message)}</p>`; }
+}
+
 function mediaCard(m, ws, reload) {
   const card = html(`<div class="media-card"><div class="pic"><img src="${esc(m.sizes && m.sizes.w320 ? m.sizes.w320 : m.url)}" alt="${esc(m.alt)}" loading="lazy"></div><div class="cap"><div class="cap-main"><b>${esc(m.name || m.alt || 'Picture')}</b><small>${m.width && m.height ? `${m.width} × ${m.height} · ` : ''}${kb(m.size)}</small></div><button type="button" class="icon-btn" aria-label="More" aria-haspopup="menu">${icons.more}</button></div></div>`);
   $('.icon-btn', card).addEventListener('click', (e) => menu(e.currentTarget, [
@@ -379,11 +410,7 @@ async function teamView(page, ws) {
     nameInput.addEventListener('change', async () => {
       try { await api(`/api/w/${ws.id}`, { method: 'PATCH', body: { name: nameInput.value } }); await loadMe(); toast('Renamed'); workspacePage(ws.id, 'team'); } catch (error) { toast(error.message); }
     });
-    $('[data-logo]', settings).addEventListener('click', async () => {
-      const [file] = await pickFiles('image/*,.svg', false);
-      if (!file) return;
-      try { const m = await uploadTo(`/api/w/${ws.id}/media`, file); await api(`/api/w/${ws.id}`, { method: 'PATCH', body: { logo: m.id } }); await loadMe(); toast('Logo updated'); workspacePage(ws.id, 'team'); } catch (error) { toast(error.message); }
-    });
+    $('[data-logo]', settings).addEventListener('click', () => logoSheet(ws, data.workspace.logo));
     $('[data-logo-remove]', settings)?.addEventListener('click', async () => {
       try { await api(`/api/w/${ws.id}`, { method: 'PATCH', body: { logo: null } }); await loadMe(); workspacePage(ws.id, 'team'); } catch (error) { toast(error.message); }
     });

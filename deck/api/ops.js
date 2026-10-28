@@ -3,12 +3,12 @@
 // membership of the workspace it touches, so a stranger's Claude sees nothing.
 import { reject, int } from './lib/util.js';
 import { context, requireMember } from './people.js';
-import { access, myWorkspaces, createWorkspace, wsDTO } from './workspaces.js';
+import { access, myWorkspaces, createWorkspace, updateWorkspace, wsDTO } from './workspaces.js';
 import {
   listDecks, createDeck, getDeck, saveDeck, editSlides, checkDeck, listRevisions, restoreRevision,
   setShare, showStudio, summary, deckAccess,
 } from './decks.js';
-import { listMedia, storeMedia, createUploadLink } from './media.js';
+import { listMedia, storeMedia, createUploadLink, inLibrary } from './media.js';
 
 const CODES = { 400: 'APP_INVALID_INPUT', 401: 'APP_UNAUTHORIZED', 403: 'APP_FORBIDDEN', 404: 'APP_NOT_FOUND', 409: 'APP_CONFLICT', 410: 'APP_CONFLICT', 413: 'APP_INVALID_INPUT', 415: 'APP_INVALID_INPUT', 422: 'APP_INVALID', 429: 'APP_RATE_LIMITED' };
 // The contract declares no error details, so what they carry is already in the message.
@@ -44,6 +44,14 @@ export function opMe(input, env) {
 
 export function opWorkspacesCreate(input, env) {
   return op(env, (ctx) => ({ workspace: wsDTO(createWorkspace(env, ctx, input), 'owner') }));
+}
+
+// Rename a workspace or make a picture from its library its logo (owners and admins).
+export function opWorkspacesUpdate(input, env) {
+  return op(env, (ctx) => {
+    const wid = input.workspace;
+    return { workspace: updateWorkspace(env, ctx, wid, { name: input.name, logo: input.logo }, (id) => inLibrary(env, wid, id)) };
+  });
 }
 
 export function opDecksList(input, env) {

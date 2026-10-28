@@ -33,7 +33,8 @@ needs `--spec-v1`; the node runs no build. Only `web/` is served as files:
   tools read the format guide, list and create decks, read a deck with an
   outline and a check, save the whole deck or apply small slide edits (insert,
   replace, update, move, delete), list and restore revisions, add pictures,
-  share, and point your open deck at a slide with a short message.
+  rename the workspace or make a library picture its logo, share, and point
+  your open deck at a slide with a short message.
 - **The live loop.** Every save pings the deck's private realtime channel. An
   open studio reloads in place, keeps your slide, flashes the slides that
   changed and says who changed what. If you were typing, a banner lets you see
@@ -73,7 +74,7 @@ short stagger; numbers count up; a quiet chime marks Claude's saves.
 
 ```text
 api/main.js        tiny entry: loads http.js and ops.js with import()
-api/contract.json  Claude's 16 tools (auth "user"; each checks workspace membership)
+api/contract.json  Claude's 17 tools (auth "user"; each checks workspace membership)
 api/http.js        the web app's JSON API, shared and embedded pages with their link previews
 api/ops.js         the named operations
 api/workspaces.js  workspaces, members, roles, invites

@@ -1,6 +1,6 @@
 // The upload link's page: pick pictures; photos are shrunk here first, then each goes to this
 // same address, one at a time. They land in the workspace's library for Claude to use.
-import { shrinkPhoto, measure, kb, esc, applyTheme } from './lib.js?v=0.1.0';
+import { shrinkPhoto, measure, kb, esc, applyTheme } from './lib.js?v=0.1.1';
 
 applyTheme();
 const $ = (s) => document.querySelector(s);

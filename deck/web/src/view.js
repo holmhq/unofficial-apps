@@ -1,8 +1,8 @@
 // The viewer. /s/<sid> shows a shared deck, /e/<sid> the same inside another site's iframe,
 // and /p/<did> lets a workspace member present (from the studio's Present button). A deck
 // that follows its latest save reloads in place when it changes, on the same slide.
-import { h, text, mark, renderSlide, slideTitle, countUp, finishCounters, accentOf } from '/deck/render.js?v=0.1.0';
-import { subscribe } from '/src/live.js?v=0.1.0';
+import { h, text, mark, renderSlide, slideTitle, countUp, finishCounters, accentOf } from '/deck/render.js?v=0.1.1';
+import { subscribe } from '/src/live.js?v=0.1.1';
 
 const root = document.documentElement;
 const deckEl = document.getElementById('deck');

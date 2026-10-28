@@ -17,6 +17,7 @@ at once if they have the deck open.
 6. `studio_show` points their open deck at a slide with a question or a note.
 7. Pictures: `assets_list` for the workspace's library; `assets_put` for a drawing (SVG) or a
    small picture; `assets_link` gives the person a link to add screenshots from their phone.
+   A library picture can become the workspace's logo with `workspaces_update`, when asked.
 8. Share only when asked: `share_set` with `latest` (the link follows every save) or `pinned`.
 
 ## Writing well
