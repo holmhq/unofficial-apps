@@ -243,9 +243,9 @@
       "path": "deck",
       "version": "0.2.0",
       "tag": "deck/v0.2.0",
-      "h1": "h1:PqXz2MXID3fLMmhRIQej/6GxGWwIC8NNEymfB3OZBBo=",
+      "h1": "h1:+seF+juWYvw32oTBNOMG39LokYUTrDquAI4s4j2V8/s=",
       "files": 49,
-      "size": 870536,
+      "size": 870537,
       "title": "Deck",
       "description": "Decks you make with Claude, in workspaces for your team. Seven layouts that always look right, live edits, presenting and share links.",
       "themeColor": "#2f5bd8",
@@ -297,6 +297,11 @@
       },
       "prompt": "Build \"Deck\", a deck-making app that people drive with Claude, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12,\n\"Use your app from ChatGPT or Claude\", \"Realtime\", \"Make an app feel\nfinished\" and \"Make it feel native\" first. Make holm.json (web.spa true),\npublic web/ files and api/main.js exporting default { fetch(request, env) },\nplus named operations that Holm projects as MCP tools. No build step or\nthird-party runtime CDN; vendor Inter with its licence.\n\n- A deck is one JSON object with seven layouts: a cover (with a fan of the\n  next three slides), a statement with a highlighted phrase, 2–4 cards, a\n  flow of steps, a screenshot with boxes and numbered pins in percent of the\n  picture, 1–4 numbers that count up with sources, and the ask (steps with\n  owner and date, two buttons). Slides are 16:9 and sized in container units,\n  so one renderer serves presenting, editing and thumbnails. No free canvas.\n- Workspaces: anyone signed in makes one, invites teammates by single-use\n  link (owner, admin, editor), and shares one picture library. Decks are\n  private to their workspace.\n- Claude's tools (auth \"user\", each checking the caller's membership): a\n  format guide, list/create decks, read a deck with an outline and a check,\n  save the whole deck or apply small slide edits, revisions and restore,\n  pictures (SVG, small base64, or an upload link), a workspace's name and\n  logo from its library, share, the deck's stats, and point the person's open\n  deck at a slide with a message. Every save names the version\n  it was made from; a stale one gets 409.\n- Live loop: each save pings the deck's secret realtime channel; the open\n  studio reloads in place on the same slide and says what changed, or asks\n  which version to keep if the person was typing.\n- A studio: words editable in place on the slide, an inspector for every\n  field and list, drag to reorder slides, change layout, notes, history,\n  six deck accents. A viewer with keys, swipes, notes and a clock, stacked\n  slides on portrait phones, print to one slide per page.\n- Sharing: a link that follows every save or pins a revision, an iframe\n  embed, server-written link previews, and turning it off retires the link.\n- Stats for shared links and embeds: opens, readers, reads, read to the end,\n  opens per day, slide-by-slide reach and time, latest opens. Count only\n  visible, active time; skip the workspace's own people; store no IP, browser\n  string or name, just a random id from the reader's browser.\n- Apple-quality UI on phone and desktop, light and dark, with a round avatar\n  button top right (signed out too). Native-like: the window never scrolls,\n  bars stay fixed, panels scroll with no scroll bars, and the Holm credit with\n  Send feedback (the owner's feedback.zyt.app form) sits at the foot.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/listing.json with sample screenshots. These are repo conventions,\n  not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 deck. With my approval, deploy with\nholm @<peer> app deploy deck --spec-v1 --host deck.<my-domain>. Test two\npeople in one workspace and a stranger, every tool over HTTP, a Claude save\narriving in an open studio, conflicts, sharing and revoking, phone and\ndesktop, light and dark.",
       "history": [
+        {
+          "version": "0.1.1",
+          "date": "2026-10-28",
+          "whatsNew": "Claude can rename a workspace and set its logo from the library, and Add a logo now offers the library's pictures as well as an upload."
+        },
         {
           "version": "0.1.0",
           "date": "2026-10-28",

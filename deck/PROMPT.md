@@ -60,7 +60,7 @@ arriving in an open studio, conflicts, sharing and revoking, phone and
 desktop, light and dark.
 ```
 
-## The original request
+## The original requests
 
 Deck was built from these messages, passed to a coding agent (folder paths, a
 company and the name of a private app are replaced here):
