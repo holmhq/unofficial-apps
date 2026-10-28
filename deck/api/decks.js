@@ -256,6 +256,7 @@ export function duplicateDeck(env, ctx, did) {
 export function deleteDeck(env, ctx, did) {
   const { deck, ws } = deckAccess(env, ctx, did, 'editor');
   env.holm.app.ds.delete('revisions', { did: deck.did });
+  env.holm.app.ds.delete('views', { did: deck.did });
   env.holm.app.ds.delete('decks', { id: deck.id });
   broadcast(env, ws, { type: 'decks' });
   return { deleted: true };

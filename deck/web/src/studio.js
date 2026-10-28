@@ -3,10 +3,10 @@
 // including lists, links, colours and pictures. Edits save a moment after typing stops.
 // Saves from Claude (or a teammate) arrive over realtime and reload the deck in place on
 // the same slide; if you were mid-edit, a banner asks which version to keep.
-import { api, esc, $, $$, html, toast, ago, icons, sheet, menu, copy, confirmSheet, uploadTo, pickFiles, chime, kb } from './lib.js?v=0.1.1';
-import { renderSlide, thumb, slideTitle } from '/deck/render.js?v=0.1.1';
-import { LAYOUTS, TEMPLATES, switchLayout, ACCENT_NAMES, CARD_COLORS } from './schema.js?v=0.1.1';
-import { subscribe } from './live.js?v=0.1.1';
+import { api, esc, $, $$, html, toast, ago, icons, sheet, menu, copy, confirmSheet, uploadTo, pickFiles, chime, kb } from './lib.js?v=0.2.0';
+import { renderSlide, thumb, slideTitle } from '/deck/render.js?v=0.2.0';
+import { LAYOUTS, TEMPLATES, switchLayout, ACCENT_NAMES, CARD_COLORS } from './schema.js?v=0.2.0';
+import { subscribe } from './live.js?v=0.2.0';
 
 const CLIENT = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -50,6 +50,7 @@ function shell() {
       <span class="st-status saved" role="status"><i class="dot"></i><span>Saved</span></span>
       <div class="st-actions">
         <button type="button" class="btn ghost icon insp-toggle" data-act="inspector" aria-label="Details" title="Details">${icons.sliders}</button>
+        <button type="button" class="btn ghost icon" data-act="stats" aria-label="Stats" title="Stats">${icons.chart}</button>
         <button type="button" class="btn ghost icon" data-act="history" aria-label="History" title="History">${icons.history}</button>
         <button type="button" class="btn" data-act="share">${icons.share}<span class="btn-label">Share</span></button>
         <button type="button" class="btn primary" data-act="present" title="Present (P)">${icons.play}<span class="btn-label">Present</span></button>
@@ -87,6 +88,7 @@ function shell() {
     if (act === 'present') present();
     else if (act === 'share') shareSheet();
     else if (act === 'history') historySheet();
+    else if (act === 'stats') statsSheet();
     else if (act === 'more') moreMenu(e.target.closest('[data-act]'));
     else if (act === 'inspector') $('.studio', root).classList.toggle('insp-open');
   });
@@ -898,8 +900,64 @@ async function historySheet() {
   if (!data.revisions.length) box.innerHTML = '<p class="muted">No history yet.</p>';
 }
 
+// Who opened the shared link and how far they read. One series per chart, in the deck's
+// accent: opens per day for 30 days, then how many reached each slide and how long they stayed.
+const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+const DEVICE = { phone: 'Phone', tablet: 'Tablet', desktop: 'Computer' };
+
+async function statsSheet() {
+  const box = html('<div class="deck-stats"><div class="spinner"></div></div>');
+  const s = sheet('Stats', box, { wide: true, focus: false });
+  let data;
+  try { data = await api(`/api/decks/${S.did}/stats`); } catch (error) { box.innerHTML = `<p class="muted">${esc(error.message)}</p>`; return; }
+  const t = data.totals;
+  if (!t.opens) {
+    box.innerHTML = `<div class="empty" style="padding:30px 10px 16px"><div class="art" style="color:var(--text-3)">${icons.chart.replace('class="ic"', 'class="ic" style="width:44px;height:44px;stroke-width:1.3"')}</div><h2>No opens yet</h2><p>${data.deck.shared ? 'When someone opens the share link or an embed, you’ll see how far they read and how long each slide held them.' : 'Share the deck with a link. When people open it, you’ll see how far they read and how long each slide held them.'}</p>${data.deck.shared ? '' : '<div class="row-actions"><button class="btn primary" data-share>Share…</button></div>'}</div><p class="stats-note">${esc(data.note)}</p>`;
+    $('[data-share]', box)?.addEventListener('click', () => { s.close(); shareSheet(); });
+    return;
+  }
+  const tile = (label, value, sub) => `<div class="stat-tile"><span>${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  const peak = Math.max(1, ...data.days.map((d) => d.opens));
+  const day = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  box.innerHTML = `
+    <div class="stat-tiles">
+      ${tile('Opens', t.opens.toLocaleString(), t.embedded ? `${t.embedded.toLocaleString()} in embeds` : '')}
+      ${tile('Readers', t.readers.toLocaleString(), 'different browsers')}
+      ${tile('Average read', clock(t.average_seconds), `${t.reads.toLocaleString()} read${t.reads === 1 ? '' : 's'} of 10 s or more`)}
+      ${tile('Read to the end', `${t.read_to_end}%`, 'reached the last slide')}
+    </div>
+    <h3 class="stats-h">Opens, last 30 days</h3>
+    <div class="days" role="img" aria-label="Opens per day for the last 30 days, at most ${peak} in a day">
+      <span class="days-peak">${peak}</span>
+      <div class="days-bars">${data.days.map((d) => `<span class="day" tabindex="0" data-tip="${esc(`${day(d.date)} · ${d.opens} open${d.opens === 1 ? '' : 's'} · ${d.reads} read${d.reads === 1 ? '' : 's'}`)}"><i style="height:${d.opens ? Math.max(4, (d.opens / peak) * 100) : 0}%"></i></span>`).join('')}</div>
+      <div class="days-axis"><span>${esc(day(data.days[0].date))}</span><span>Today</span></div>
+      <div class="tip" hidden></div>
+    </div>
+    <h3 class="stats-h">Slide by slide <small>how many got there · average time on it</small></h3>
+    <ol class="reach">${data.slides.map((x) => `<li><span class="n">${x.n}</span><span class="reach-title">${esc(x.title)}</span><span class="reach-bar"><i style="width:${x.reached}%"></i></span><b>${x.reached}%</b><small>${clock(x.average_seconds)}</small></li>`).join('')}</ol>
+    <h3 class="stats-h">Latest opens</h3>
+    <div class="group">${data.recent.map((v) => `<div class="row"><div class="row-main"><span class="row-title">${DEVICE[v.device] || 'Computer'} · ${v.embedded ? `embedded${v.from ? ` on ${esc(v.from)}` : ''}` : v.from ? `from ${esc(v.from)}` : 'direct'}${v.returning ? ' <span class="chip">Returning</span>' : ''}</span><span class="row-sub">${esc(ago(v.at))}</span></div><div class="row-actions stats-seen"><b>${v.reached} of ${v.of}</b><small>${clock(v.seconds)}</small></div></div>`).join('')}</div>
+    <p class="stats-note">${esc(data.note)} Slides are counted by position. Covers ${esc(data.counted)}.</p>`;
+  // One tooltip for the day strip: hover, focus or tap a day.
+  const chart = $('.days', box);
+  const tip = $('.tip', chart);
+  const point = (el) => {
+    if (!el) { tip.hidden = true; return; }
+    tip.textContent = el.dataset.tip;
+    tip.hidden = false;
+    const c = chart.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    tip.style.left = `${Math.min(Math.max(r.left - c.left + r.width / 2, 70), c.width - 70)}px`;
+  };
+  chart.addEventListener('pointerover', (e) => point(e.target.closest('.day')));
+  chart.addEventListener('pointerleave', () => point(null));
+  chart.addEventListener('focusin', (e) => point(e.target.closest('.day')));
+  chart.addEventListener('focusout', () => point(null));
+}
+
 function moreMenu(anchor) {
   menu(anchor, [
+    { label: 'Stats', icon: icons.chart, run: () => statsSheet() },
     { label: 'History', icon: icons.history, run: () => historySheet() },
     { label: 'Duplicate deck', icon: icons.duplicate, run: async () => { if (S.dirty) await save(); try { const r = await api(`/api/decks/${S.did}/duplicate`, { method: 'POST', body: {} }); toast('Duplicated'); S.app.go(`/d/${r.deck.id}`); } catch (error) { toast(error.message); } } },
     { label: 'Print or save as PDF', icon: icons.external, run: async () => { if (S.dirty) await save(); window.open(`/p/${S.did}?print=1`, '_blank', 'noopener'); } },

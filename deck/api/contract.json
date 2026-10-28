@@ -633,6 +633,61 @@
    },
    "sensitive": true
   },
+  "deck.stats": {
+   "handler": "opDeckStats",
+   "auth": "user",
+   "risk": "read",
+   "summary": "See who opened a shared deck and how far they read",
+   "description": "Opens of the deck's share link and embeds, all time: opens, readers (browsers), reads (ten seconds or more), the share that read to the end, average time per read, opens and reads for each of the last 30 days, slide by slide how many got there and how long they stayed, and the latest 25 opens (when, device, the site they came from). The workspace's own people are not counted. Nothing names a reader.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "deck"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
   "revisions.list": {
    "handler": "opRevisionsList",
    "auth": "user",

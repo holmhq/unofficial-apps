@@ -56,6 +56,12 @@ needs `--spec-v1`; the node runs no build. Only `web/` is served as files:
   stops working for good when turned off, and comes with an embed (`/e/<id>`)
   for an iframe on any site. Link previews carry the deck's own title,
   description and first picture.
+- **Stats.** The studio's Stats shows who opened a shared deck: opens,
+  readers (browsers), reads (ten seconds or more), the share that read to the
+  end, opens per day for 30 days, slide by slide how many got there and how
+  long they stayed, and the latest opens with device and the site they came
+  from. Claude reads the same numbers. Your workspace's own people are not
+  counted, and nothing names a reader (see Privacy below).
 - **Presenting.** 16:9 slides that scale to any screen and stack as one scroll
   on a portrait phone. Arrows, space, clicks and swipes; `F` full screen; `N`
   notes with the next slide and a clock; `#4` opens slide 4; print or save as
@@ -63,7 +69,10 @@ needs `--spec-v1`; the node runs no build. Only `web/` is served as files:
 
 ### How it feels
 
-A calm grey canvas with raised white sheets, Inter set at real sizes inside
+Like a native app, the window never scrolls: the bars stay put and frosted,
+one panel scrolls under them with no scroll bars, and on a phone a tab bar sits
+at the bottom with the Holm credit and Send feedback just above it. A calm grey
+canvas with raised white sheets, Inter set at real sizes inside
 each slide (everything is measured in container units, so a slide looks the
 same full screen, in the studio and as a thumbnail), frosted bars, sheets that
 rise on a phone and dialogs on a desk, a round avatar button at the top right,
@@ -74,13 +83,14 @@ short stagger; numbers count up; a quiet chime marks Claude's saves.
 
 ```text
 api/main.js        tiny entry: loads http.js and ops.js with import()
-api/contract.json  Claude's 17 tools (auth "user"; each checks workspace membership)
+api/contract.json  Claude's 18 tools (auth "user"; each checks workspace membership)
 api/http.js        the web app's JSON API, shared and embedded pages with their link previews
 api/ops.js         the named operations
 api/workspaces.js  workspaces, members, roles, invites
 api/decks.js       decks, revisions, slide edits, sharing, the live pings
 api/check.js       the deck format: shape (refused) and check (errors, warnings)
 api/media.js       the library: type sniffing, SVG checks, resized copies, upload links
+api/stats.js       opens and reading time from shared links, and the deck's stats
 api/guide.md       the format and workflow Claude reads (guide_get)
 api/sample.json    the sample deck
 web/deck/          the slide renderer and its styles, shared by every view
@@ -89,10 +99,11 @@ web/src/           the app (app.js, studio.js, schema.js), viewer (view.js), upl
 
 Holm primitives it uses:
 
-- **`env.holm.app.ds`** for workspaces, members, invites, decks, revisions and
-  the library's records, with compare-and-set updates (`ifRevision`) so two
+- **`env.holm.app.ds`** for workspaces, members, invites, decks, revisions,
+  the library's records and shared-link views, with compare-and-set updates (`ifRevision`) so two
   saves can't both win; **`env.holm.app.s3`** for pictures and their resized
-  copies; **`env.holm.app.kv`** for upload links.
+  copies; **`env.holm.app.kv`** for upload links and an hourly cap on counted
+  opens.
 - **`env.holm.auth`** for sign-in and sign-out; accounts are the node's.
 - **Named operations** in `api/contract.json`, projected by Holm as MCP tools
   at `/_holm/mcp`. They use `auth: "user"`, so anyone signed in on the node can
@@ -124,9 +135,30 @@ holm @<peer> settings set settings.apps.<app-id>.brand.social_preview_url /socia
 holm @<peer> settings set settings.apps.<app-id>.theme.accent '#2f5bd8'
 ```
 
+**Feedback:** Send feedback opens a form from the owner's
+[feedback](../feedback/) app through a local copy of its `embed.js`
+(`web/vendor/feedback/`). Set `FEEDBACK_PROJECT` in `web/src/app.js` to your
+own project, or leave it empty to hide the link. The site must be allowed to
+frame the form:
+
+```bash
+holm @<peer> policy set security.csp.frame_src "https://feedback.example.com" --app <app-id>
+```
+
 Sign in, make a workspace, and connect Claude: Settings → Connectors → Add
 custom connector, with `https://deck.<your-domain>/_holm/mcp`. Emailed invites
 need email enabled for the app; invite links work without it.
+
+## Privacy
+
+Stats come from the viewer page of a shared link or embed. It reports an open,
+then, every 20 seconds and when the page is hidden, how long each slide was on
+screen while the page was visible and the reader had moved, tapped, scrolled or
+pressed a key in the last two minutes. Deck keeps a random id from the reader's
+browser (in its storage, not a cookie) to tell returning readers apart, the
+device as phone, tablet or computer, and the referring site's host. It keeps no
+IP address, browser string, name or email. Opens by members of the deck's
+workspace, presenting from the studio and the sample deck are not counted.
 
 ## Known limits
 
@@ -142,12 +174,19 @@ need email enabled for the app; invite links work without it.
 - **Limits:** 60 slides and 200 KB per deck, 300 revisions per deck, 200 decks
   per workspace, 500 pictures (12 MB each) per library, 5 owned workspaces per
   person.
+- **Stats** count slides by position, so a reordered deck mixes old and new
+  answers. They read the latest 2,000 opens of a deck, and stop counting past
+  600 opens an hour. An embed counts time only while someone interacts with it,
+  because it cannot tell whether the host page scrolled it out of view.
+  Third-party cookie blocking can make a teammate's embedded view count.
 - No co-editing inside one slide, comments, themes beyond the six accents,
-  PowerPoint export (use print to PDF), per-workspace domains or view counts.
+  PowerPoint export (use print to PDF) or per-workspace domains.
 
 ## Licences
 
 - [Inter](https://rsms.me/inter/): SIL Open Font License 1.1, in
   `web/fonts/OFL-inter.txt`.
 - Icons from [Lucide](https://lucide.dev): ISC, in `web/vendor/lucide/LICENSE`.
+- `web/vendor/feedback/embed.js` is a copy of the feedback button from this
+  repository's [feedback](../feedback/) app, under this repository's licence.
   Deck's mark is its own.

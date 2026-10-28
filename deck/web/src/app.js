@@ -1,9 +1,9 @@
 // Deck's web app: the landing page, a workspace's decks, library, team and Claude page,
 // invites and the first workspace. The studio (studio.js) loads when a deck opens.
-import { api, esc, $, $$, html, toast, ago, kb, icons, MARK, sheet, menu, copy, confirmSheet, currentTheme, setTheme, applyTheme, uploadTo, pickFiles, avatar, wsLogo } from './lib.js?v=0.1.1';
-import { thumb } from '/deck/render.js?v=0.1.1';
-import { LAYOUTS } from './schema.js?v=0.1.1';
-import { subscribe } from './live.js?v=0.1.1';
+import { api, esc, $, $$, html, toast, ago, kb, icons, MARK, sheet, menu, copy, confirmSheet, currentTheme, setTheme, applyTheme, uploadTo, pickFiles, avatar, wsLogo } from './lib.js?v=0.2.0';
+import { thumb } from '/deck/render.js?v=0.2.0';
+import { LAYOUTS } from './schema.js?v=0.2.0';
+import { subscribe } from './live.js?v=0.2.0';
 
 const root = document.getElementById('app');
 let me = null;
@@ -56,7 +56,7 @@ async function route() {
     if (!me.signed_in) return signIn();
     document.title = 'Deck';
     root.innerHTML = '<div class="boot"><div class="spinner"></div></div>';
-    const studio = await import('./studio.js?v=0.1.1');
+    const studio = await import('./studio.js?v=0.2.0');
     return studio.open(root, m[1], { me, go, onLeave, accountButton, rememberWorkspace });
   }
   if ((m = /^\/join\/([a-z0-9]{10,40})$/.exec(path))) return joinPage(m[1]);
@@ -120,7 +120,21 @@ function feedback() {
   }
   feedbackScript.then(() => (globalThis.HolmFeedback || globalThis.ZytFeedback)?.open?.()).catch((error) => toast(error.message));
 }
-const FEEDBACK_PROJECT = '';
+const FEEDBACK_PROJECT = 'kahhzpst';
+
+// Every page is a fixed shell, like an app: the bar on top, one panel that scrolls under it,
+// and on phones the tab bar below. The window never scrolls, so the bars stay put and the
+// Holm credit sits at the foot of the panel however short the page is.
+function mount(bar, body, tabs) {
+  const panel = html('<div class="panel"></div>');
+  panel.append(body, credit());
+  const shell = html('<div class="shell"></div>');
+  shell.append(bar, panel);
+  if (tabs) shell.append(tabs);
+  root.replaceChildren(shell);
+  panel.addEventListener('scroll', () => bar.classList.toggle('lined', panel.scrollTop > 4), { passive: true });
+  return panel;
+}
 
 function topBar({ ws, tab } = {}) {
   const bar = html(`<header class="bar"><div class="bar-in">
@@ -138,9 +152,6 @@ function topBar({ ws, tab } = {}) {
     $(`[data-tab="${tab}"]`, bar)?.classList.add('on');
     $('.ws-switch', bar).addEventListener('click', (e) => switcher(e.currentTarget, ws));
   }
-  const onScroll = () => bar.classList.toggle('lined', scrollY > 4);
-  addEventListener('scroll', onScroll, { passive: true });
-  onLeave(() => removeEventListener('scroll', onScroll));
   return bar;
 }
 
@@ -162,7 +173,7 @@ function switcher(anchor, ws) {
 }
 
 function notFound() {
-  root.replaceChildren(topBar(), html(`<div class="card-page"><div class="solo"><h1>Nothing here</h1><p>That address isn’t part of Deck.</p><form><a class="btn primary" href="/" data-nav>Go to your decks</a></form></div></div>`));
+  mount(topBar(), html(`<div class="card-page"><div class="solo"><h1>Nothing here</h1><p>That address isn’t part of Deck.</p><form><a class="btn primary" href="/" data-nav>Go to your decks</a></form></div></div>`));
 }
 
 // ---------- landing ----------
@@ -186,8 +197,7 @@ async function landing() {
     </section>
     <section class="layouts-strip"><h2 class="strip-title">Every layout, from the sample deck</h2><p>Text you can edit in place, a fan of what comes next on the cover, numbers that count up.</p><div class="strip"></div></section>
   </div>`);
-  const bar = topBar();
-  root.replaceChildren(bar, page, credit());
+  mount(topBar(), page);
   try {
     const { content } = await api('/api/sample');
     const art = $('.hero-art', page);
@@ -214,8 +224,7 @@ async function workspacePage(wid, tab) {
   const ws = me.workspaces.find((w) => w.id === wid);
   rememberWorkspace(wid);
   const page = html('<main class="page"></main>');
-  root.replaceChildren(topBar({ ws, tab }), page, credit(), tabBar(ws, tab));
-  scrollTo(0, 0);
+  mount(topBar({ ws, tab }), page, tabBar(ws, tab));
   const views = { decks: decksView, library: libraryView, team: teamView, claude: claudeView };
   views[tab](page, ws);
 }
@@ -395,7 +404,7 @@ async function teamView(page, ws) {
   let data;
   try { data = await api(`/api/w/${ws.id}/team`); } catch (error) { $('[data-body]', page).innerHTML = `<p class="muted">${esc(error.message)}</p>`; return; }
   const manage = data.workspace.can_manage;
-  $('.page-head p', page).textContent = `${data.members.length} ${data.members.length === 1 ? 'person' : 'people'} make decks in ${ws.name}.`;
+  $('.page-head p', page).textContent = `${data.members.length} ${data.members.length === 1 ? 'person makes' : 'people make'} decks in ${ws.name}.`;
   if (manage) {
     const b = html(`<button type="button" class="btn primary">${icons.plus}Invite people</button>`);
     b.addEventListener('click', () => inviteSheet(ws, () => teamView(page, ws)));
@@ -405,7 +414,7 @@ async function teamView(page, ws) {
   body.innerHTML = '';
   const ROLE = { owner: 'Owner', admin: 'Admin', editor: 'Editor' };
   if (manage) {
-    const settings = html(`<div><div class="section-title" style="margin-top:0">Workspace</div><div class="group"><div class="row">${wsLogo(data.workspace, 40)}<div class="row-main"><input class="input" data-name value="${esc(data.workspace.name)}" maxlength="60" aria-label="Workspace name" style="max-width:360px"></div><div class="row-actions"><button class="btn" data-logo>${data.workspace.logo ? 'Change logo' : 'Add a logo'}</button>${data.workspace.logo ? '<button class="btn" data-logo-remove>Remove</button>' : ''}</div></div></div></div>`);
+    const settings = html(`<div><div class="section-title" style="margin-top:0">Workspace</div><div class="group"><div class="row ws-row">${wsLogo(data.workspace, 40)}<div class="row-main"><input class="input" data-name value="${esc(data.workspace.name)}" maxlength="60" aria-label="Workspace name" style="max-width:360px"></div><div class="row-actions"><button class="btn" data-logo>${data.workspace.logo ? 'Change logo' : 'Add a logo'}</button>${data.workspace.logo ? '<button class="btn" data-logo-remove>Remove</button>' : ''}</div></div></div></div>`);
     const nameInput = $('[data-name]', settings);
     nameInput.addEventListener('change', async () => {
       try { await api(`/api/w/${ws.id}`, { method: 'PATCH', body: { name: nameInput.value } }); await loadMe(); toast('Renamed'); workspacePage(ws.id, 'team'); } catch (error) { toast(error.message); }
@@ -515,7 +524,7 @@ function newWorkspacePage() {
   const page = html(`<div class="card-page"><div class="solo">${markTile(40)}<h1 style="margin-top:18px">${isFirst ? `Welcome${first ? `, ${esc(first)}` : ''}` : 'A new workspace'}</h1><p>${isFirst ? 'Decks live in a workspace you can share with your team. Name yours; you can change it later.' : 'A workspace has its own decks, library and people.'}</p>
     <form><label class="field"><span>Workspace name</span><input class="input" name="name" maxlength="60" required value="${esc(isFirst && first ? `${first}’s team` : '')}" placeholder="Acme"></label><button class="btn primary" type="submit">Create workspace</button></form>
     ${isFirst ? '<p class="hint" style="margin-top:14px">We’ll add a sample deck to show what Deck can do.</p>' : ''}</div></div>`);
-  root.replaceChildren(topBar(), page);
+  mount(topBar(), page);
   const form = $('form', page);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -533,7 +542,7 @@ function newWorkspacePage() {
 
 async function joinPage(code) {
   document.title = 'Join — Deck';
-  root.replaceChildren(topBar(), html('<div class="card-page"><div class="spinner"></div></div>'));
+  mount(topBar(), html('<div class="card-page"><div class="spinner"></div></div>'));
   let info;
   try { info = await api(`/api/join/${code}`); } catch (error) { info = { valid: false, reason: error.message }; }
   const logo = info.workspace ? wsLogo({ logo: info.logo, initial: info.initial }, 48) : markTile(44);
@@ -543,7 +552,7 @@ async function joinPage(code) {
   else if (!me.signed_in) body = `<p>${esc(info.invited_by || 'Someone')} invited you to make decks with ${esc(info.workspace)} as ${info.role === 'admin' ? 'an admin' : 'an editor'}.${info.email ? ` The invite is for ${esc(info.email)}.` : ''}</p><form><a class="btn primary" href="${esc(me.login_url)}">Sign in to join</a></form>`;
   else body = `<p>${esc(info.invited_by || 'Someone')} invited you to make decks with ${esc(info.workspace)} as ${info.role === 'admin' ? 'an admin' : 'an editor'}.</p><form><button class="btn primary" type="submit">Join ${esc(info.workspace)}</button></form>`;
   const page = html(`<div class="card-page"><div class="solo">${logo}<h1>${esc(info.workspace ? `Join ${info.workspace}` : 'Invite')}</h1>${body}</div></div>`);
-  root.replaceChildren(topBar(), page);
+  mount(topBar(), page);
   $('form', page)?.addEventListener('submit', async (e) => {
     e.preventDefault();
     try {

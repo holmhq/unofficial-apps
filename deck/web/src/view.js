@@ -1,8 +1,8 @@
 // The viewer. /s/<sid> shows a shared deck, /e/<sid> the same inside another site's iframe,
 // and /p/<did> lets a workspace member present (from the studio's Present button). A deck
 // that follows its latest save reloads in place when it changes, on the same slide.
-import { h, text, mark, renderSlide, slideTitle, countUp, finishCounters, accentOf } from '/deck/render.js?v=0.1.1';
-import { subscribe } from '/src/live.js?v=0.1.1';
+import { h, text, mark, renderSlide, slideTitle, countUp, finishCounters, accentOf } from '/deck/render.js?v=0.2.0';
+import { subscribe } from '/src/live.js?v=0.2.0';
 
 const root = document.documentElement;
 const deckEl = document.getElementById('deck');
@@ -72,6 +72,7 @@ async function load(again = false) {
   if (!data || !data.content || !Array.isArray(data.content.slides) || !data.content.slides.length) { message('This deck is empty', 'It has no slides yet.'); return; }
   start(data.content, again);
   if (data.live && data.channel && !live) live = subscribe(data.channel, onLive);
+  if (!again && source.kind === 's' && !new URLSearchParams(location.search).has('print')) startReading();
 }
 
 let reloadTimer = 0;
@@ -187,6 +188,7 @@ const next = () => go(current + 1);
 const prev = () => go(current - 1);
 
 function sync() {
+  reading?.on(current);
   const n = slides.length;
   progressEl.style.transform = `scaleX(${n ? (current + 1) / n : 0})`;
   const hash = `#${current + 1}`;
@@ -243,6 +245,67 @@ addEventListener('scroll', () => {
     if (i !== current) { current = i; sync(); }
   });
 }, { passive: true });
+
+// ---- Reading time (shared links and embeds) ----
+// The deck's workspace sees how many people opened it and how long each slide stayed on
+// screen (Stats in the studio). Time counts only while the page is visible and the reader
+// has moved, tapped, scrolled or pressed a key in the last two minutes. A random id kept in
+// this browser tells a returning reader from a new one; nothing here says who they are.
+
+const IDLE = 120000;
+let reading = null;
+
+function visitorId() {
+  const fresh = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => 'abcdefghijkmnopqrstuvwxyz23456789'[b % 33]).join('');
+  try {
+    let id = localStorage.getItem('deck.visitor');
+    if (!/^[a-z0-9]{16}$/.test(id || '')) { id = fresh(); localStorage.setItem('deck.visitor', id); }
+    return id;
+  } catch { return fresh(); }
+}
+
+async function startReading() {
+  const now = performance.now();
+  const r = { vid: null, slide: current, since: now, active: now, visible: document.visibilityState === 'visible', pending: {} };
+  // Add up the time on the slide shown, to now or to two minutes after the last sign of life.
+  r.tally = (at = performance.now()) => {
+    const end = Math.min(at, r.active + IDLE);
+    if (r.visible && end > r.since) r.pending[r.slide] = (r.pending[r.slide] || 0) + Math.round(end - r.since);
+    r.since = at;
+  };
+  r.on = (i) => { r.tally(); r.slide = i; };
+  r.send = (final) => {
+    if (!r.vid) return;
+    r.tally();
+    if (!Object.keys(r.pending).length && !final) return;
+    const body = JSON.stringify({ t: r.pending, at: current });
+    r.pending = {};
+    fetch(`/api/s/${source.id}/views/${r.vid}`, { method: 'POST', keepalive: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body }).catch(() => {});
+  };
+  reading = r;
+  const device = matchMedia('(pointer: coarse)').matches ? (Math.min(screen.width, screen.height) >= 600 ? 'tablet' : 'phone') : 'desktop';
+  let ref = '';
+  try { const from = document.referrer ? new URL(document.referrer) : null; if (from && from.host !== location.host) ref = from.host; } catch { ref = ''; }
+  try {
+    const res = await fetch(`/api/s/${source.id}/views`, {
+      method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ visitor: visitorId(), device, ref, embed: embedded, at: current }),
+    });
+    const data = res.ok ? await res.json() : null;
+    if (!data || !data.view) { reading = null; return; }
+    r.vid = data.view;
+  } catch { reading = null; return; }
+  const alive = () => { r.tally(); r.active = performance.now(); };
+  for (const type of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'scroll', 'touchstart']) addEventListener(type, alive, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    r.tally();
+    r.visible = document.visibilityState === 'visible';
+    if (r.visible) r.active = performance.now();
+    else r.send(true);
+  });
+  addEventListener('pagehide', () => r.send(true));
+  setInterval(() => r.send(false), 20000);
+}
 
 // ---- Controls, notes, input ----
 

@@ -19,6 +19,8 @@ at once if they have the deck open.
    small picture; `assets_link` gives the person a link to add screenshots from their phone.
    A library picture can become the workspace's logo with `workspaces_update`, when asked.
 8. Share only when asked: `share_set` with `latest` (the link follows every save) or `pinned`.
+9. `deck_stats` says who opened a shared deck and where they stopped: use it to suggest which
+   slides to cut or tighten.
 
 ## Writing well
 

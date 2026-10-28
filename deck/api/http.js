@@ -12,6 +12,7 @@ import {
   setShare, publicDeck, presentDeck, sharedDeck, previewImage,
 } from './decks.js';
 import { listMedia, storeMedia, deleteMedia, readUpload, createUploadLink, uploadLinkStatus, uploadWithLink, serve, inLibrary } from './media.js';
+import { openView, reportView, deckStats } from './stats.js';
 
 const LOCAL = /^(127\.|localhost|\[::1\]|[a-z0-9.-]+\.localhost|[0-9.]+\.nip\.io|[a-z0-9-]+\.[0-9.]+\.nip\.io)(:\d+)?$/;
 
@@ -122,6 +123,10 @@ async function api(request, env, url) {
   if (a === 'me' && parts.length === 1 && method === 'GET') return json(me(env, ctx, url.searchParams.get('return')));
   if (a === 'sample' && parts.length === 1 && method === 'GET') return json({ content: env.holm.private.readJSON('sample.json') }, 200, { 'Cache-Control': 'public, max-age=300' });
   if (a === 's' && parts.length === 2 && method === 'GET') return json(publicDeck(env, b), 200, { 'Cache-Control': 'no-cache' });
+  if (a === 's' && c === 'views' && method === 'POST') {
+    if (parts.length === 3) return json(openView(env, ctx, b, await body()), 201);
+    if (parts.length === 4) return json(reportView(env, b, d, await body()));
+  }
   if (a === 'join' && parts.length === 2) {
     if (method === 'GET') return json(await previewInvite(env, ctx, b));
     if (method === 'POST') return json(await acceptInvite(env, ctx, b));
@@ -185,6 +190,7 @@ async function api(request, env, url) {
     if (parts.length === 3) {
       if (c === 'duplicate' && method === 'POST') return json(duplicateDeck(env, ctx, did), 201);
       if (c === 'revisions' && method === 'GET') return json(listRevisions(env, ctx, did, 100));
+      if (c === 'stats' && method === 'GET') return json(deckStats(env, ctx, did));
       if (c === 'restore' && method === 'POST') return json(restoreRevision(env, ctx, did, (await body()).revision, 'person'));
       if (c === 'share' && method === 'PUT') return json(setShare(env, ctx, did, await body()));
       if (c === 'present' && method === 'GET') return json(presentDeck(env, ctx, did, url.searchParams.has('rev') ? int(url.searchParams.get('rev'), 1, 1, 1e9) : null), 200, { 'Cache-Control': 'no-store' });

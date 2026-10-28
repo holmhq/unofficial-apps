@@ -21,6 +21,7 @@ export async function opDeckGet(input, env) { return (await ops()).opDeckGet(inp
 export async function opDeckSave(input, env) { return (await ops()).opDeckSave(input, env); }
 export async function opSlidesEdit(input, env) { return (await ops()).opSlidesEdit(input, env); }
 export async function opDeckCheck(input, env) { return (await ops()).opDeckCheck(input, env); }
+export async function opDeckStats(input, env) { return (await ops()).opDeckStats(input, env); }
 export async function opRevisionsList(input, env) { return (await ops()).opRevisionsList(input, env); }
 export async function opRevisionsRestore(input, env) { return (await ops()).opRevisionsRestore(input, env); }
 export async function opAssetsList(input, env) { return (await ops()).opAssetsList(input, env); }

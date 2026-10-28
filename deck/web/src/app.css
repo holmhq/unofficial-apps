@@ -1,11 +1,15 @@
 /* Deck's app: the landing page, a workspace's decks, library and team, and the studio where a
    deck is edited. Same tokens as the slides (deck.css): a calm grey canvas, raised white
-   surfaces, one accent. Bars are frosted; only panels scroll in the studio. */
+   surfaces, one accent. Like a native app, the window never scrolls: bars are fixed and
+   frosted, panels scroll under them, and no scroll bars show. */
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
 body {
-  margin: 0; min-height: 100vh; min-height: 100svh;
+  margin: 0;
   background: radial-gradient(1400px 520px at 50% -200px, var(--glow), transparent 70%), var(--canvas);
   color: var(--text); font-family: var(--font); font-size: 14.5px; line-height: 1.45;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-optical-sizing: auto;
@@ -35,10 +39,22 @@ button, input, textarea, select { font: inherit; color: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .boot { display: grid; place-items: center; min-height: 70vh; }
 
+/* ---------- the shell: a fixed bar, one panel that scrolls under it ---------- */
+
+#app { height: 100%; }
+.shell { position: fixed; inset: 0; }
+.shell > .bar { position: absolute; top: 0; left: 0; right: 0; }
+.panel {
+  position: absolute; inset: 0; padding-top: 56px; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; -webkit-overflow-scrolling: touch;
+}
+.panel > :first-child { flex: 1 0 auto; width: 100%; }
+.panel > .credit { flex: none; }
+
 /* ---------- top bar ---------- */
 
 .bar {
-  position: sticky; top: 0; z-index: 30;
+  position: relative; z-index: 30;
   background: color-mix(in srgb, var(--canvas) 78%, transparent);
   -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px);
   border-bottom: 1px solid transparent; transition: border-color var(--slow);
@@ -251,14 +267,19 @@ button, input, textarea, select { font: inherit; color: inherit; }
   .bar-in { padding: 0 12px; gap: 6px; }
   .brand > span:not(.mark) { display: none; }
   .tabs, .bar-end .claude-btn { display: none; }
-  .page { padding: 8px 16px 110px; }
+  .page { padding: 8px 16px 28px; }
+  .panel { padding-bottom: calc(61px + env(safe-area-inset-bottom)); }
+  .ws-row { flex-wrap: wrap; }
+  .ws-row .row-main { flex: 1 1 160px; }
+  .ws-row .row-actions { width: 100%; padding-left: 52px; }
+  body:has(.tabbar) .toast { bottom: calc(76px + env(safe-area-inset-bottom)); }
   .page-head { margin: 12px 0 18px; flex-wrap: wrap; }
   .page-head h1 { font-size: 28px; }
   .decks { grid-template-columns: 1fr 1fr; gap: 18px 12px; }
   .deck-card .info h3 { font-size: 13.5px; }
   .media-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
   .tabbar {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; justify-content: space-around;
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; justify-content: space-around;
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
     background: color-mix(in srgb, var(--panel) 82%, transparent); border-top: 1px solid var(--line);
     -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
@@ -267,7 +288,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
   .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; font-size: 10.5px; font-weight: 550; color: var(--text-3); text-decoration: none; }
   .tabbar a .ic { width: 23px; height: 23px; stroke-width: 1.6; }
   .tabbar a.on { color: var(--accent-text); }
-  .credit { padding-bottom: 100px; }
+  .credit { padding-bottom: 20px; }
 }
 @media (max-width: 420px) { .decks { grid-template-columns: 1fr; } }
 
@@ -313,7 +334,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 @media (max-width: 520px) { .features { grid-template-columns: 1fr; } .landing-hero .sub { font-size: 16.5px; } }
 
 /* A centred card: join, new workspace, sign in. */
-.card-page { min-height: calc(100svh - 56px); display: grid; place-items: center; padding: 24px 16px 60px; }
+.card-page { display: grid; place-items: center; padding: 24px 16px 60px; }
 .solo {
   width: min(440px, 100%); padding: 28px 28px 26px; border-radius: 16px; background: var(--slide-bg); box-shadow: var(--slide-lift);
   animation: rise-lg 520ms var(--ease-out) both;
@@ -471,6 +492,43 @@ body.in-studio { overflow: hidden; height: 100svh; }
 }
 .banner .btn { height: 28px; }
 
+/* Stats: four figures, opens per day, and slide by slide how far people got. One series per
+   chart, in the deck's accent; values and labels stay in text colours. */
+.stat-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.stat-tile { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 12px; background: var(--panel-2); box-shadow: inset 0 0 0 1px var(--line); }
+[data-theme='dark'] .stat-tile { background: var(--sunken); }
+.stat-tile span { font-size: 12.5px; color: var(--text-2); }
+.stat-tile b { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.stat-tile small { font-size: 11.5px; color: var(--text-3); }
+.stats-h { margin: 22px 0 10px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.stats-h small { font-weight: 450; color: var(--text-3); margin-left: 6px; }
+.days { position: relative; padding-left: 28px; }
+.days-peak { position: absolute; left: 0; top: -2px; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.days-bars { display: flex; align-items: flex-end; gap: 2px; height: 96px; border-bottom: 1px solid var(--line-2); }
+.day { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; border-radius: 3px; outline-offset: 1px; cursor: default; }
+.day i { display: block; width: 100%; max-width: 24px; border-radius: 4px 4px 0 0; background: var(--accent); transition: opacity var(--fast); }
+.days-bars:hover .day i { opacity: 0.55; }
+.days-bars .day:hover i, .day:focus-visible i { opacity: 1; }
+.days-axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--text-3); }
+.days .tip { position: absolute; top: -34px; transform: translateX(-50%); padding: 5px 9px; border-radius: 8px; white-space: nowrap; font-size: 12px; color: var(--text); background: var(--panel); box-shadow: var(--pop); pointer-events: none; }
+[data-theme='dark'] .days .tip { background: var(--raise-bg); }
+.reach { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.reach li { display: grid; grid-template-columns: 22px minmax(0, 1.2fr) minmax(0, 1fr) 42px 40px; align-items: center; gap: 10px; min-height: 30px; font-size: 13px; }
+.reach .n { text-align: right; font-size: 11.5px; font-weight: 600; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.reach-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reach-bar { height: 10px; border-radius: 0 4px 4px 0; background: var(--hover); overflow: visible; }
+.reach-bar i { display: block; height: 100%; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--accent); }
+.reach b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.reach small { text-align: right; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.stats-seen { flex-direction: column; align-items: flex-end; gap: 0; }
+.stats-seen b { font-weight: 600; font-size: 13px; }
+.stats-seen small { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.stats-note { margin-top: 14px; font-size: 12px; color: var(--text-3); }
+@media (max-width: 640px) {
+  .stat-tiles { grid-template-columns: 1fr 1fr; }
+  .reach li { grid-template-columns: 18px minmax(0, 1fr) 70px 38px 36px; gap: 8px; }
+}
+
 /* History */
 .rev { display: flex; align-items: center; gap: 12px; padding: 10px 2px; }
 .rev + .rev { border-top: 1px solid var(--line); }
@@ -512,9 +570,10 @@ body.in-studio { overflow: hidden; height: 100svh; }
 
 /* Phones: one scrolling column. The canvas on top, a filmstrip, then the details. */
 @media (max-width: 760px) {
-  body.in-studio { overflow: auto; height: auto; }
-  /* The stage's parts join the column so the filmstrip sits right under the slide. */
-  .studio { position: static; display: flex; flex-direction: column; }
+  /* The studio is the one scrolling panel. The stage's parts join its column so the
+     filmstrip sits right under the slide. */
+  .studio { display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .studio > *, .stage > *, .canvas-wrap > * { flex-shrink: 0; }
   .stage, .canvas-wrap { display: contents; }
   .canvas { order: 1; margin: 14px 14px 0; }
   .stage-tools { order: 1; margin: 8px 14px 0; }
@@ -524,14 +583,14 @@ body.in-studio { overflow: hidden; height: 100svh; }
   .st-bar { position: sticky; top: 0; height: 52px; padding: 0 8px 0 4px; }
   .st-title { flex: 1; max-width: none; min-width: 0; font-size: 15px; }
   .st-status span { display: none; }
-  .st-actions .btn-label, .st-back .btn-label, .st-actions [data-act='history'] { display: none; }
+  .st-actions .btn-label, .st-back .btn-label, .st-actions [data-act='history'], .st-actions [data-act='stats'] { display: none; }
   .st-actions .btn.primary { width: 34px; padding: 0; }
   .rail { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 12px 14px 14px; border: 0; background: transparent; scroll-snap-type: x proximity; }
   .rail-item { flex: none; width: 104px; grid-template-columns: 1fr; margin: 0; scroll-snap-align: start; }
   .rail-item .n { display: none; }
   .add-slide { flex: none; width: 70px; height: 59px; margin: 0; }
   .add-slide span { display: none; }
-  .inspector { position: static; width: auto; transform: none; box-shadow: none; border: 0; background: transparent; padding: 0 0 120px; }
+  .inspector { position: static; width: auto; overflow: visible; transform: none; box-shadow: none; border: 0; background: transparent; padding: 0 0 120px; }
   [data-theme='dark'] .inspector { background: transparent; }
   .insp-tabs { position: static; border: 0; padding: 4px 14px 6px; background: transparent; }
   .insp-body { padding: 8px 14px; }

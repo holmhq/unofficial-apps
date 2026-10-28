@@ -5,6 +5,8 @@
 :root { --gut: clamp(12px, 3.2vmin, 48px); --notes-h: 0px; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; }
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
 body {
   background:
     radial-gradient(1400px 560px at 50% -160px, var(--glow), transparent 72%),

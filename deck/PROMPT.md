@@ -29,8 +29,8 @@ third-party runtime CDN; vendor Inter with its licence.
   format guide, list/create decks, read a deck with an outline and a check,
   save the whole deck or apply small slide edits, revisions and restore,
   pictures (SVG, small base64, or an upload link), a workspace's name and
-  logo from its library, share, and point the person's open deck at a slide
-  with a message. Every save names the version
+  logo from its library, share, the deck's stats, and point the person's open
+  deck at a slide with a message. Every save names the version
   it was made from; a stale one gets 409.
 - Live loop: each save pings the deck's secret realtime channel; the open
   studio reloads in place on the same slide and says what changed, or asks
@@ -41,8 +41,14 @@ third-party runtime CDN; vendor Inter with its licence.
   slides on portrait phones, print to one slide per page.
 - Sharing: a link that follows every save or pins a revision, an iframe
   embed, server-written link previews, and turning it off retires the link.
+- Stats for shared links and embeds: opens, readers, reads, read to the end,
+  opens per day, slide-by-slide reach and time, latest opens. Count only
+  visible, active time; skip the workspace's own people; store no IP, browser
+  string or name, just a random id from the reader's browser.
 - Apple-quality UI on phone and desktop, light and dark, with a round avatar
-  button top right (signed out too).
+  button top right (signed out too). Native-like: the window never scrolls,
+  bars stay fixed, panels scroll with no scroll bars, and the Holm credit with
+  Send feedback (the owner's feedback.zyt.app form) sits at the foot.
 - For this repository's store, use holm.json version, holm.symbol.svg and
   listing/listing.json with sample screenshots. These are repo conventions,
   not a catalog format promised by the Holm guide.
@@ -77,3 +83,11 @@ and, later:
 and, once Claude had used the tools:
 
 > Also, can you place the [company's] logo [from a folder path] in the workspace
+
+and:
+
+> Make the Holm footer in deck stuck to bottom?
+> - make the app native like
+> - no scroll bars only panels scroll
+> - add feedback.zyt.app to the app
+> - add some stats page so that stats on the deck can be read: opens, reads etc

@@ -3,7 +3,7 @@
   "category": "Productivity",
   "featured": false,
   "description": "Make a workspace for your team, connect Claude, and ask for a deck. Claude drafts, tightens and rearranges, and every save lands in the deck you have open, on the slide you were looking at, with a note saying what changed.\n\nSeven layouts keep every deck looking considered: a cover with a fan of what comes next, a statement with a highlighted phrase, cards, a flow, a screenshot with boxes and pins, numbers that count up, and the ask with owners and dates. There is no free canvas to make a mess on.\n\nEdit words right on the slide, or every detail in the inspector: lists of cards and steps, links, colours, the picture, speaker notes. Drag slides into order, change a slide's layout without losing its words, and pick one of six accents for the deck. Every save is kept, so any earlier version can come back.\n\nInvite teammates with a link. Decks and the picture library stay private to the workspace until you share one: a link that follows your latest save or stays on one version, and an embed for any website. Present with keys, swipes, notes and a clock, on a big screen or a phone, or print one slide per page.",
-  "whatsNew": "Claude can rename a workspace and set its logo from the library, and Add a logo now offers the library's pictures as well as an upload.",
+  "whatsNew": "Stats for shared decks: opens, readers, how far people read and how long each slide held them, for you and for Claude. Deck now feels like an app: fixed bars, panels that scroll without scroll bars, the footer at the bottom, and Send feedback.",
   "screenshots": [
     {
       "file": "decks.webp",

@@ -9,6 +9,7 @@ import {
   setShare, showStudio, summary, deckAccess,
 } from './decks.js';
 import { listMedia, storeMedia, createUploadLink, inLibrary } from './media.js';
+import { deckStats } from './stats.js';
 
 const CODES = { 400: 'APP_INVALID_INPUT', 401: 'APP_UNAUTHORIZED', 403: 'APP_FORBIDDEN', 404: 'APP_NOT_FOUND', 409: 'APP_CONFLICT', 410: 'APP_CONFLICT', 413: 'APP_INVALID_INPUT', 415: 'APP_INVALID_INPUT', 422: 'APP_INVALID', 429: 'APP_RATE_LIMITED' };
 // The contract declares no error details, so what they carry is already in the message.
@@ -102,6 +103,10 @@ export function opDeckCheck(input, env) {
     if (!wid) reject(400, 'invalid_input', 'Pass the workspace (or deck) the content is for: its pictures must be in that library.');
     return checkDeck(env, ctx, wid, input.content);
   });
+}
+
+export function opDeckStats(input, env) {
+  return op(env, (ctx) => deckStats(env, ctx, input.deck));
 }
 
 export function opRevisionsList(input, env) {
