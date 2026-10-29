@@ -28,13 +28,17 @@ export function zonePicker(current, { title = 'Time zone' } = {}) {
       }
       search.addEventListener('input', paint)
       paint()
-      // Scroll the sheet by hand: scrollIntoView would move the page too.
-      requestAnimationFrame(() => requestAnimationFrame(() => {
+      // Start with your zone in the middle. Scroll the sheet by hand
+      // (scrollIntoView would move the page too), once it has its height.
+      const centre = () => {
         const on = list.querySelector('.on')
         const body = list.closest('.sheet-body')
-        if (on && body) body.scrollTop += on.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight / 2 + 30
-      }))
-      return [h('div.search', ic('search', 17, 2), search), list]
+        if (!on || !body || !body.clientHeight) return false
+        body.scrollTop += on.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight / 2 + on.offsetHeight / 2
+        return true
+      }
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (!centre()) setTimeout(centre, 120) }))
+      return [h('div.search-bar', h('div.search', ic('search', 17, 2), search)), list]
     }
   })
 }

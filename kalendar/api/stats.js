@@ -3,7 +3,9 @@
 // beacons (POST /api/hit); each lands in one document per host per day, in
 // the host's own time zone. No cookies and no addresses: a visitor is a
 // random id the browser keeps, and a place is the visitor's time zone.
-import { MIN, DAY, HOUR, member } from './lib.js'
+// A tag (?ref=sundown-2026, from a saved link or a QR code) says which link
+// brought them, and follows them to the booking.
+import { MIN, DAY, HOUR, member, cleanTag } from './lib.js'
 import { hostByHandle } from './hosts.js'
 import { eventsOf } from './events.js'
 import { offsetAt, toUtc, ymd } from './tz.js'
@@ -19,7 +21,7 @@ const SOURCE = /^(direct|[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?(?:\.[a-z0-9](?:[a-
 const ZONE = /^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+){0,2}$/
 const LINK = /^[a-z0-9]{1,20}$/
 // Map fields keep at most this many keys; the rest count as "other".
-const LIMIT = { sources: 60, zones: 120, links: 24, events: 60 }
+const LIMIT = { sources: 60, zones: 120, links: 24, events: 60, tags: 60 }
 
 const HOST_CAP = 20000
 const VISITOR_CAP = 300
@@ -62,7 +64,17 @@ function parse(raw) {
     else return null
   }
   if (b.ms !== undefined) { const ms = Number(b.ms); if (!Number.isFinite(ms) || ms < 0) return null; hit.ms = Math.min(Math.round(ms), 30 * MIN) }
-  if (b.ref !== undefined) { if (typeof b.ref !== 'string' || b.ref.length > 100) return null; const r = b.ref.toLowerCase(); if (!SOURCE.test(r)) return null; hit.ref = r }
+  // A bad source, tag or "via" loses only itself, never the visit. Pages
+  // before 0.3.0 sent a ?ref= tag as the source: it counts as the tag.
+  let legacy = null
+  if (typeof b.ref === 'string' && b.ref.length <= 100) {
+    const r = b.ref.toLowerCase()
+    if (SOURCE.test(r)) hit.ref = r
+    else legacy = cleanTag(r)
+  }
+  const tag = b.g !== undefined ? cleanTag(b.g) : legacy
+  if (tag) hit.g = tag
+  if (b.w === 'qr') hit.w = 'qr'
   if (b.tz !== undefined) { if (typeof b.tz !== 'string' || b.tz.length > 64 || !ZONE.test(b.tz)) return null; hit.tz = b.tz }
   if (b.d !== undefined) { if (!DEVICES.has(b.d)) return null; hit.d = b.d }
   return hit
@@ -70,10 +82,10 @@ function parse(raw) {
 
 const blank = (host, day) => ({
   host, day, views: 0, profileViews: 0, eventViews: 0, visitors: 0, clicks: 0, picks: 0, timeSum: 0, timeCount: 0,
-  events: {}, links: {}, sources: {}, devices: {}, zones: {}
+  events: {}, links: {}, sources: {}, devices: {}, zones: {}, tags: {}
 })
 
-const FIELDS = ['views', 'profileViews', 'eventViews', 'visitors', 'clicks', 'picks', 'timeSum', 'timeCount', 'events', 'links', 'sources', 'devices', 'zones']
+const FIELDS = ['views', 'profileViews', 'eventViews', 'visitors', 'clicks', 'picks', 'timeSum', 'timeCount', 'events', 'links', 'sources', 'devices', 'zones', 'tags']
 
 function apply(doc, hit, first) {
   const ev = (slug) => {
@@ -83,6 +95,15 @@ function apply(doc, hit, first) {
       doc.events[k] = { views: 0, clicks: 0, picks: 0 }
     }
     return doc.events[k]
+  }
+  const tagged = () => {
+    if (!hit.g) return null
+    const k = enc(hit.g)
+    if (!doc.tags[k]) {
+      if (Object.keys(doc.tags).length >= LIMIT.tags) return null
+      doc.tags[k] = { views: 0, visitors: 0, scans: 0, picks: 0 }
+    }
+    return doc.tags[k]
   }
   if (hit.k === 'view') {
     doc.views++
@@ -97,6 +118,14 @@ function apply(doc, hit, first) {
       if (hit.d) bump(doc.devices, hit.d, 1, 3)
       if (hit.tz) bump(doc.zones, hit.tz, 1, LIMIT.zones)
     }
+    const g = tagged()
+    if (g) {
+      g.views++
+      if (first) {
+        g.visitors++
+        if (hit.w === 'qr') g.scans++
+      }
+    }
   } else if (hit.k === 'click') {
     doc.clicks++
     if (hit.t && hit.t.kind === 'event') { const e = ev(hit.t.key); if (e) e.clicks++ }
@@ -105,6 +134,8 @@ function apply(doc, hit, first) {
     doc.picks++
     const e = hit.e && ev(hit.e)
     if (e) e.picks++
+    const g = tagged()
+    if (g) g.picks++
   } else if (hit.k === 'leave' && hit.ms >= 500) {
     doc.timeSum += hit.ms
     doc.timeCount++
@@ -153,7 +184,7 @@ const addDays = (day, n) => new Date(Date.parse(day + 'T00:00:00Z') + n * DAY).t
 
 function sum(docs) {
   const t = { views: 0, profileViews: 0, eventViews: 0, visitors: 0, clicks: 0, picks: 0, timeSum: 0, timeCount: 0 }
-  const maps = { sources: {}, devices: {}, zones: {}, links: {}, events: {} }
+  const maps = { sources: {}, devices: {}, zones: {}, links: {}, events: {}, tags: {} }
   for (const d of docs) {
     for (const k of Object.keys(t)) t[k] += Number(d[k]) || 0
     for (const m of ['sources', 'devices', 'zones', 'links']) for (const [k, n] of Object.entries(d[m] || {})) { const key = k === 'other' ? 'other' : dec(k); maps[m][key] = (maps[m][key] || 0) + (Number(n) || 0) }
@@ -163,6 +194,11 @@ function sum(docs) {
       x.views += Number(e && e.views) || 0
       x.clicks += Number(e && e.clicks) || 0
       x.picks += Number(e && e.picks) || 0
+    }
+    for (const [k, g] of Object.entries(d.tags || {})) {
+      const tag = dec(k)
+      const x = maps.tags[tag] || (maps.tags[tag] = { views: 0, visitors: 0, scans: 0, picks: 0 })
+      for (const f of ['views', 'visitors', 'scans', 'picks']) x[f] += Number(g && g[f]) || 0
     }
   }
   return { t, maps }
@@ -185,7 +221,7 @@ export function statsFor(env, host, days, now) {
   // Bookings and requests made in each period, by the host's day.
   const startAt = toUtc(host.tzTable, Date.parse(prevFrom + 'T00:00:00Z')) ?? Date.parse(prevFrom + 'T00:00:00Z') - 14 * HOUR
   const made = ds(env).find('bookings', { host: host.id, createdAt: { $gte: startAt - DAY } }, { limit: 5000 })
-    .map((b) => ({ day: dayOf(host, b.createdAt), slug: b.slug, booked: !b.rescheduledFrom && b.status !== 'requested' && b.status !== 'declined' && !(b.asked && !b.acceptedAt), asked: !!b.asked }))
+    .map((b) => ({ day: dayOf(host, b.createdAt), slug: b.slug, ref: b.ref || null, booked: !b.rescheduledFrom && b.status !== 'requested' && b.status !== 'declined' && !(b.asked && !b.acceptedAt), asked: !!b.asked }))
     .filter((b) => b.day >= prevFrom && b.day <= to)
 
   const totals = (list, period) => {
@@ -212,6 +248,24 @@ export function statsFor(env, host, days, now) {
     return { slug: e.slug, title: e.title, color: e.color || 'blue', views: x.views, clicks: x.clicks, picks: x.picks, bookings: made.filter((b) => b.day >= from && b.slug === e.slug && b.booked).length }
   })
 
+  // Every saved link, even when nothing came through it yet, then the 20
+  // busiest tags nobody saved (hand-made links), most bookings first.
+  const zero = { views: 0, visitors: 0, scans: 0, picks: 0 }
+  const tagRow = (tag, label, slug) => {
+    const x = maps.tags[tag] || zero
+    const mine = made.filter((b) => b.day >= from && b.ref === tag)
+    return { tag, label, slug, views: x.views, visitors: x.visitors, scans: x.scans, picks: x.picks, bookings: mine.filter((b) => b.booked).length, requests: mine.filter((b) => b.asked).length }
+  }
+  const saved = Array.isArray(host.tags) ? host.tags : []
+  const known = new Set(saved.map((x) => x.tag))
+  const others = [...new Set([...Object.keys(maps.tags), ...made.filter((b) => b.day >= from && b.ref).map((b) => b.ref)])]
+    .filter((tag) => !known.has(tag))
+    .map((tag) => tagRow(tag, null, null))
+    .sort((a, b) => b.visitors - a.visitors || b.bookings - a.bookings || a.tag.localeCompare(b.tag))
+    .slice(0, 20)
+  const tags = [...saved.map((x) => tagRow(x.tag, x.label, x.slug || null)), ...others]
+    .sort((a, b) => b.bookings - a.bookings || b.visitors - a.visitors || a.tag.localeCompare(b.tag))
+
   return {
     days, from, to,
     totals: totals(cur, 'cur'),
@@ -221,6 +275,7 @@ export function statsFor(env, host, days, now) {
     devices: top(maps.devices, 4),
     zones: top(maps.zones, 10),
     links: top(maps.links, 24),
-    events
+    events,
+    tags
   }
 }

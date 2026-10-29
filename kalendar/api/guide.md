@@ -21,6 +21,8 @@ on the signed-in person's own Kalendar only. Call `me_get` first.
 - `hours_get` / `hours_update`: weekly hours by day (`mon`…`sun`, each a list of
   `["09:00","17:00"]` ranges, `[]` for a day off), plus single days off
   (`days_off_add`, `days_off_remove`, as `YYYY-MM-DD`). Only the days you send change.
+  `pause` / `unpause` switch weekdays off and on while keeping their hours; `hours_get`
+  lists them under `paused`. A paused day offers no times, unless that date has special hours.
 - `events_list` / `events_create` / `events_update` / `events_delete`: the kinds of meeting.
   Fields: `title`, `slug` (the link), `duration` (minutes), `description`, `color` (red,
   orange, yellow, green, teal, blue, indigo, purple, pink, graphite), `location`
@@ -40,8 +42,13 @@ on the signed-in person's own Kalendar only. Call `me_get` first.
   the guest is emailed a link to book again. Confirm with the person before cancelling or
   declining.
 - `stats_get`: page views, visitors, bookings, where visitors come from (sites), devices,
-  places (from time zones), time on page and per-event clicks, for 7, 30 or 90 days, with the
-  period before for comparison. The person's own visits don't count.
+  places (from time zones), time on page, per-event clicks and per-link `tags`, for 7, 30 or
+  90 days, with the period before for comparison. The person's own visits don't count.
+- `links_list` / `links_create` / `links_delete`: saved links that tag where visits come from,
+  like a flyer, a talk or an email signature. Each is the page address with `?ref=<tag>`
+  (`qr_url` adds `&via=qr`, so scans of a printed code count apart), opening the profile or
+  one event type (`event`). The tag follows the guest to their booking, so `stats_get` shows
+  views, visitors, scans and bookings per link, and `meetings_list` shows `came_from`.
 
 ## Good habits
 

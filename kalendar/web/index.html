@@ -18,14 +18,30 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preload" href="/assets/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/src/styles.css">
+  <link rel="modulepreload" href="/src/main.js">
+  <link rel="modulepreload" href="/src/shell.js">
+  <link rel="modulepreload" href="/src/ui.js">
+  <link rel="modulepreload" href="/src/icons.js">
+  <link rel="modulepreload" href="/src/api.js">
+  <link rel="modulepreload" href="/src/store.js">
+  <link rel="modulepreload" href="/src/theme.js">
+  <link rel="modulepreload" href="/src/sound.js">
+  <link rel="modulepreload" href="/src/time.js">
   <script>
-    // Apply the saved theme before the first paint.
+    // Apply the saved theme before the first paint, and ask for this page's
+    // data now, while the code loads (api.js picks the answers up).
     (function () {
       var mode = 'system'
       try { mode = localStorage.getItem('kalendar:theme') || 'system' } catch (e) {}
       var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
       if (dark) document.documentElement.classList.add('dark')
       document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#000000' : '#f5f5f7')
+      var boot = window.__kalendarBoot = {}
+      var ask = function (path) { boot[path] = fetch(path, { headers: { accept: 'application/json' } }); boot[path].catch(function () {}) }
+      var path = location.pathname, m
+      ask('/api/me?next=' + encodeURIComponent(path + location.search))
+      if ((m = /^\/@([^/]+)\/([^/]+)\/?$/.exec(path))) ask('/api/u/' + m[1] + '/' + m[2])
+      else if ((m = /^\/@([^/]+)\/?$/.exec(path))) ask('/api/u/' + m[1])
     })()
   </script>
 </head>

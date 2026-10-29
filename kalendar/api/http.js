@@ -4,7 +4,7 @@
 //   GET    /api/me                         who's signed in, their host profile, sign-in/out URLs
 //   GET    /api/handle?h=                  is this link free?
 //   POST   /api/host                       become a host { handle, name, tz, tzLabel, tzTable, weekly }
-//   PATCH  /api/host                       change profile, hours, days, zone, notify, rotateFeed
+//   PATCH  /api/host                       change profile, hours, paused days, days, zone, saved links (tags), notify, rotateFeed
 //   GET    /api/events                     my event types
 //   POST   /api/events                     add one
 //   PATCH  /api/events/:id                 change one

@@ -3,7 +3,7 @@
 // rest are the host's tools for Claude through Holm's MCP endpoint
 // (/_holm/mcp): open to anyone signed in (auth "user"), and each acts only
 // on the caller's own Kalendar.
-import { origin, reject, MIN, DAY } from './lib.js'
+import { origin, reject, text, cleanTag, MIN, DAY } from './lib.js'
 import { hostOf, updateHost, privateHost } from './hosts.js'
 import { eventsOf, eventDTO, createEvent, updateEvent, deleteEvent, stepOf } from './events.js'
 import { createBooking, cancelByInvitee, cancelByHost, acceptRequest, declineRequest, listForHost, counts, slotsForHost } from './bookings.js'
@@ -103,6 +103,7 @@ function meeting(host, b) {
   if (b.reason) out.reason = b.reason
   if (b.cancelledBy) out.cancelled_by = b.cancelledBy === 'host' ? 'you' : 'guest'
   if (b.rescheduledTo) out.moved = true
+  if (b.ref) out.came_from = b.ref
   return out
 }
 
@@ -147,13 +148,22 @@ function minutes(value, label) {
   return v
 }
 
+const dayIndex = (k) => {
+  const i = DAY_KEYS.indexOf(k)
+  if (i < 0) reject(400, 'invalid_input', `Days are ${DAY_KEYS.join(', ')}.`)
+  return i
+}
+
 function hoursOf(host, now) {
   const today = ymd(now + offsetAt(host.tzTable, now) * MIN)
   const overrides = host.overrides || {}
   const keys = Object.keys(overrides).filter((k) => k >= today).sort()
+  const paused = Array.isArray(host.paused) ? host.paused : []
   return {
     zone: host.tz, zone_label: host.tzLabel,
     weekly: Object.fromEntries(DAY_KEYS.map((k, i) => [k, (host.weekly[i] || []).map(([a, b]) => [hhmm(a), hhmm(b)])])),
+    paused: DAY_KEYS.filter((k, i) => paused.includes(i)),
+    ...(paused.length ? { paused_note: 'Paused days keep their hours but offer no times until unpaused.' } : {}),
     days_off: keys.filter((k) => !overrides[k].length),
     special_hours: Object.fromEntries(keys.filter((k) => overrides[k].length).map((k) => [k, overrides[k].map(([a, b]) => [hhmm(a), hhmm(b)])]))
   }
@@ -169,8 +179,7 @@ export function opHoursUpdate(input, env) {
     if (input.weekly) {
       const weekly = host.weekly.map((r) => r.map((x) => x.slice()))
       for (const [k, ranges] of Object.entries(input.weekly)) {
-        const i = DAY_KEYS.indexOf(k)
-        if (i < 0) reject(400, 'invalid_input', `Days are ${DAY_KEYS.join(', ')}.`)
+        const i = dayIndex(k)
         weekly[i] = (ranges || []).map((r) => [minutes(r[0], k), minutes(r[1], k)])
       }
       change.weekly = weekly
@@ -183,7 +192,15 @@ export function opHoursUpdate(input, env) {
       for (const d of add) overrides[d] = []
       change.overrides = overrides
     }
-    if (!Object.keys(change).length) reject(400, 'invalid_input', 'Send weekly hours, days_off_add or days_off_remove.')
+    const pause = input.pause || []
+    const unpause = input.unpause || []
+    if (pause.length || unpause.length) {
+      const paused = new Set(Array.isArray(host.paused) ? host.paused : [])
+      for (const k of unpause) paused.delete(dayIndex(k))
+      for (const k of pause) paused.add(dayIndex(k))
+      change.paused = [...paused]
+    }
+    if (!Object.keys(change).length) reject(400, 'invalid_input', 'Send weekly hours, pause, unpause, days_off_add or days_off_remove.')
     const next = updateHost(env, m, host, change, now)
     return { ...hoursOf(next, now), saved: true }
   })
@@ -298,6 +315,67 @@ export function opSlotsList(input, env) {
 /* stats.get */
 export function opStats(input, env) {
   return tool(env, ({ host }, now) => statsFor(env, host, input.days, now))
+}
+
+/* links.* : saved links that tag where visits come from */
+function linkOut(env, host, x) {
+  const url = `${link(env, host)}${x.slug ? '/' + x.slug : ''}?ref=${x.tag}`
+  return { tag: x.tag, label: x.label, event: x.slug || null, url, qr_url: `${url}&via=qr`, created: iso(host, x.createdAt) }
+}
+
+const savedOf = (host) => (Array.isArray(host.tags) ? host.tags : [])
+
+// "Sundown 2026 flyer" → "sundown-2026-flyer", made unique with -2, -3…
+function tagFor(label, taken) {
+  const base = label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9._-]/g, '').replace(/[._-]{2,}/g, '-')
+    .replace(/^[._-]+|[._-]+$/g, '').slice(0, 40).replace(/[._-]+$/, '') || 'link'
+  if (!taken.has(base)) return base
+  for (let n = 2; ; n++) {
+    const tag = `${base.slice(0, 40 - String(n).length - 1).replace(/[._-]+$/, '')}-${n}`
+    if (!taken.has(tag)) return tag
+  }
+}
+
+export function opLinksList(input, env) {
+  return tool(env, ({ host }, now) => {
+    const numbers = new Map(statsFor(env, host, 30, now).tags.map((x) => [x.tag, x]))
+    return {
+      links: savedOf(host).map((x) => {
+        const n = numbers.get(x.tag) || {}
+        return { ...linkOut(env, host, x), last_30_days: { views: n.views || 0, visitors: n.visitors || 0, scans: n.scans || 0, bookings: n.bookings || 0 } }
+      }),
+      next: 'links_create makes a new one; stats_get shows every tag, including links nobody saved.'
+    }
+  })
+}
+
+export function opLinksCreate(input, env) {
+  return tool(env, ({ m, host }, now) => {
+    const label = text(input.label, 60, 'label', true)
+    const saved = savedOf(host)
+    if (saved.length >= 50) reject(400, 'invalid_input', 'You have 50 saved links, the most there can be. links_delete one first.')
+    const taken = new Set(saved.map((x) => x.tag))
+    let tag
+    if (input.tag !== undefined && input.tag !== null && input.tag !== '') {
+      tag = cleanTag(input.tag)
+      if (!tag) reject(400, 'invalid_input', 'A tag uses lowercase letters, numbers, dots, dashes or underscores, up to 40, like sundown-2026.')
+      if (taken.has(tag)) reject(409, 'tag_taken', `You already have a link tagged ${tag}. links_list shows it.`)
+    } else tag = tagFor(label, taken)
+    const slug = input.event ? findEvent(env, host, { slug: input.event }).slug : null
+    const next = updateHost(env, m, host, { tags: [...saved, { tag, label, slug, createdAt: now }] }, now)
+    const made = savedOf(next).find((x) => x.tag === tag)
+    return { link: linkOut(env, next, made), next: 'Share url anywhere; print qr_url as a QR code so scans count apart. stats_get shows what each brings in.' }
+  })
+}
+
+export function opLinksDelete(input, env) {
+  return tool(env, ({ m, host }, now) => {
+    const tag = cleanTag(input.tag)
+    const saved = savedOf(host)
+    if (!tag || !saved.some((x) => x.tag === tag)) reject(404, 'not_found', 'You have no saved link with that tag. links_list shows them.')
+    updateHost(env, m, host, { tags: saved.filter((x) => x.tag !== tag) }, now)
+    return { deleted: tag, next: 'The link still opens your page; visits through it still count in stats_get, under its tag.' }
+  })
 }
 
 /* guide.get */

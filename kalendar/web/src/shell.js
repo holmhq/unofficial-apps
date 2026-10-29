@@ -1,23 +1,42 @@
 // What every page shares: who's signed in, moving between pages, the top
-// bar with its round account button, and the account menu.
-import { h, ic, avatar, menu, segmented, toggle, haptic, copyText, toast } from './ui.js'
+// bar with its round account button, the account menu, and the footer.
+import { h, ic, fill, avatar, menu, segmented, toggle, haptic, copyText, toast } from './ui.js'
 import { mark, HOLM } from './icons.js'
 import * as api from './api.js'
+import * as store from './store.js'
 import * as theme from './theme.js'
 import { sound } from './sound.js'
 import { clock24, setClock24 } from './time.js'
 
-export const state = { me: null }
+// Who's signed in, as this browser last saw it, so the first page draws
+// without waiting; loadMe() then asks the server.
+export const state = { me: store.peek('me') || null }
 
+const who = (me) => (me && me.member ? me.member.id + ':' + (me.host ? me.host.handle : '') : '')
+
+// Asks the server who's signed in. Says whether that changed who it is
+// (signed in or out, or became a host) since the page last drew.
 export async function loadMe() {
   const next = encodeURIComponent(location.pathname + location.search)
+  const before = who(state.me)
+  let fresh = true
   try {
     state.me = await api.get('/api/me?next=' + next)
-  } catch {
-    state.me = { member: null, host: null, loginURL: '/auth/login', logoutURL: null }
+  } catch (error) {
+    fresh = false
+    // Offline: keep what we had. Signed out for sure: forget it.
+    if (!state.me || error.status) state.me = { member: null, host: null, loginURL: '/auth/login', logoutURL: null }
   }
-  return state.me
+  if (fresh) {
+    if (who(state.me) !== before) store.forget((k) => k.startsWith('m:'))
+    store.keep('me', state.me)
+  }
+  paintAccounts()
+  return who(state.me) !== before
 }
+
+// Lists that belong to the signed-in host carry their id.
+export const mine = (name) => 'm:' + (state.me && state.me.member ? state.me.member.id : '-') + ':' + name
 
 // ---- Moving between pages ----------------------------------------------------
 
@@ -52,6 +71,7 @@ export function signIn() {
 }
 
 export async function signOut() {
+  store.forget()
   try { await fetch(state.me.logoutURL, { method: 'POST', headers: { accept: 'application/json' } }) } catch {}
   location.href = '/'
 }
@@ -79,10 +99,30 @@ export function topBar({ left = null, title = null, right = [], glass = true } =
     h('div.top-r', ...right, accountButton()))
 }
 
-export function accountButton() {
+// Every account button on the page, so they change together when the
+// server says someone else is signed in.
+const buttons = new Set()
+
+function paintAccount(btn) {
   const m = state.me && state.me.member
-  const btn = h('button.avatar-btn', { type: 'button', 'aria-label': m ? `Account: ${m.name}` : 'Account and settings', 'aria-haspopup': 'menu' },
-    m ? avatar({ key: m.id, name: m.name, picture: m.picture }) : h('span.avatar.ghost', ic('user', 17, 2)))
+  const face = m ? (m.picture || '') + m.name : ''
+  if (btn.dataset.face === face && btn.firstChild) return
+  btn.dataset.face = face
+  btn.setAttribute('aria-label', m ? `Account: ${m.name}` : 'Account and settings')
+  fill(btn, m ? avatar({ key: m.id, name: m.name, picture: m.picture }) : h('span.avatar.ghost', ic('user', 17, 2)))
+}
+
+function paintAccounts() {
+  for (const btn of buttons) {
+    if (!btn.isConnected) buttons.delete(btn)
+    else paintAccount(btn)
+  }
+}
+
+export function accountButton() {
+  const btn = h('button.avatar-btn', { type: 'button', 'aria-haspopup': 'menu' })
+  paintAccount(btn)
+  buttons.add(btn)
   btn.addEventListener('click', () => { haptic(); accountMenu(btn) })
   return btn
 }
@@ -118,14 +158,46 @@ function accountMenu(anchor) {
     row('clock', '24-hour time', toggle(clock24(), (v) => { setClock24(v); sound.toggle(v); dispatchEvent(new Event('kalendar:clock')) }, '24-hour time')),
     surfaces && surfaces.analytics && me.admin ? { label: 'Analytics', icon: 'chartColumn', onclick: () => { location.href = surfaces.analytics } } : null,
     'sep',
+    FEEDBACK_PROJECT ? { label: 'Send feedback', icon: 'messageSquareText', onclick: feedback } : null,
     m ? { label: 'Sign out', icon: 'logOut', onclick: signOut } : { label: 'Sign in', icon: 'user', onclick: signIn },
     h('a.holm-line', { href: 'https://holmhq.com', target: '_blank', rel: 'noopener', html: `<svg width="11" height="11" viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="${HOLM}"/></svg>A Holm app` })
   ]
   menu(anchor, items, { align: 'end' })
 }
 
-export function holmFooter() {
-  return h('footer.holm-foot', h('a', { href: 'https://holmhq.com', target: '_blank', rel: 'noopener', html: `<svg width="12" height="12" viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="${HOLM}"/></svg>A Holm app` }))
+/* ---- Footer and feedback ------------------------------------------------------- */
+
+// Send feedback opens Kalendar's form on the owner's feedback app, from a
+// local copy of its embed.js (web/vendor/feedback/), loaded on first use.
+export const FEEDBACK_PROJECT = '2pbgt57k'
+let feedbackScript = null
+export function feedback() {
+  if (!FEEDBACK_PROJECT) return
+  if (!feedbackScript) {
+    feedbackScript = new Promise((resolve, reject) => {
+      const s = document.createElement('script')
+      s.src = '/vendor/feedback/embed.js'
+      Object.assign(s.dataset, { project: FEEDBACK_PROJECT, origin: 'https://feedback.zyt.app', color: '#e0352b', button: 'none' })
+      s.onload = () => resolve()
+      s.onerror = () => { feedbackScript = null; reject(new Error('Feedback is not available right now.')) }
+      document.head.append(s)
+    })
+  }
+  feedbackScript.then(() => (globalThis.HolmFeedback || globalThis.ZytFeedback)?.open?.()).catch((error) => toast(error.message, { kind: 'bad' }))
+}
+
+const holmMark = (size) => h('span.holm-mark', { 'aria-hidden': 'true', html: `<svg width="${size}" height="${size}" viewBox="0 0 32 32"><path fill="currentColor" fill-rule="evenodd" d="${HOLM}"/></svg>` })
+export const SOURCE = 'https://github.com/holmhq/unofficial-apps/tree/main/kalendar'
+
+// The bar along the bottom of public pages, frosted like the top one: who
+// makes it, where its source is, and a way to say what you think.
+export function holmFooter({ bar = true } = {}) {
+  return h('footer.holm-foot' + (bar ? '.bar' : ''),
+    h('a', { href: 'https://holmhq.com', target: '_blank', rel: 'noopener' }, holmMark(12), 'A Holm app'),
+    h('span.dot'),
+    h('a', { href: SOURCE, target: '_blank', rel: 'noopener' }, ic('github', 13, 2), 'Source'),
+    FEEDBACK_PROJECT ? h('span.dot') : null,
+    FEEDBACK_PROJECT ? h('button', { type: 'button', onclick: feedback }, ic('messageSquareText', 13, 2.2), 'Send feedback') : null)
 }
 
 export function failure(error) {

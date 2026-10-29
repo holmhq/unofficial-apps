@@ -5,7 +5,10 @@
 import { MIN, DAY } from './lib.js'
 import { offsetAt, toUtc, ymd } from './tz.js'
 
-// host: { weekly: [[ [startMin, endMin], ... ] x7, Sunday first], overrides: { 'YYYY-MM-DD': ranges }, tzTable }
+// host: { weekly: [[ [startMin, endMin], ... ] x7, Sunday first], paused: [weekday, ...],
+//         overrides: { 'YYYY-MM-DD': ranges }, tzTable }
+// A paused weekday keeps its hours but offers nothing, unless that date has
+// hours of its own.
 // event: { duration, step, notice, window, before, after } in minutes (window in days)
 // busy: [[start, end], ...] instants already taken
 export function slotsFor(host, event, busy, from, to, now) {
@@ -25,9 +28,12 @@ export function slotsFor(host, event, busy, from, to, now) {
   const lastDay = Math.floor((hi + offsetAt(table, hi) * MIN) / DAY) * DAY + DAY
   for (let day = firstDay; day <= lastDay; day += DAY) {
     const key = ymd(day)
+    const weekday = new Date(day).getUTCDay()
     const ranges = host.overrides && Object.prototype.hasOwnProperty.call(host.overrides, key)
       ? host.overrides[key]
-      : (host.weekly && host.weekly[new Date(day).getUTCDay()]) || []
+      : Array.isArray(host.paused) && host.paused.includes(weekday)
+        ? []
+        : (host.weekly && host.weekly[weekday]) || []
     for (const range of ranges) {
       const end = day + range[1] * MIN
       for (let local = day + range[0] * MIN; local + duration <= end; local += step) {

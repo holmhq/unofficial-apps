@@ -31,13 +31,17 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   (trim the ends, slide them) and see where they overlap the host's. The
   host sees those spans over their own week, drags the meeting inside them
   and accepts, or declines with a note. Hosts paint their weekly hours the
-  same way.
+  same way, drag a span onto another day, drag a day onto another to move or
+  swap it, and pause a day with a switch that keeps its hours. Every strip
+  zooms: pinch, ctrl-scroll, or − 24h +.
 - A profile page: photo, role, company, place with local time, a note,
   website and profile links with their icons, and each event type with its
   next open time. Never a coloured stripe down the side of a rounded card.
 - Insights for the host without cookies: views, visitors, profile clicks,
   bookings, time on page, sources, devices, places from time zones, and a
-  visit-to-booking funnel. Expose the host's management (profile, hours,
+  visit-to-booking funnel. Tracked links: /@handle?ref=tag (also #ref= and
+  utm_campaign) with a QR code adding &via=qr; the tag follows the guest to
+  their booking, and Insights shows each link's visitors, scans and bookings. Expose the host's management (profile, hours,
   event types, meetings, requests, open times, insights) as auth "user"
   named operations, so Claude can run it all over Holm's MCP endpoint.
 - The server has no Intl, so have the host's browser send its zone's UTC
@@ -53,7 +57,11 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   panels scroll: a round avatar button top right
   (signed out too) with light/dark/auto, sounds and 24-hour time; fine
   motion, quiet Web Audio sounds, and Inter weights that mean something.
-  Installable, with a network-first service worker.
+  It must open and move like a native app, with no flicker: a versioned
+  service worker that serves the whole shell offline, pages drawn at once
+  from the last answers kept in the browser and refreshed quietly, motion
+  only for changes. Public pages end in a frosted footer: A Holm app, Source,
+  Send feedback (the repo's feedback app, embed.js vendored).
 - For this repository's store, use holm.json version, holm.symbol.svg (one
   black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,
   category, description, whatsNew and sample screenshots. These are repo
@@ -110,3 +118,21 @@ reply was:
 > I like the paint concept the best; is it possible to make the slots designed like video editor strips rather? so that i can trim start/end by dragging or move the slot over all? and i wonder whether we can do it horizontally than vertically? Also, I wish someone else can paint over if they want over the available time slots for their preferred time & request whether its possible? even when i am not available?
 
 > So that something like overlap app's capability can be brought in
+
+**Kalendar 0.3.0: opens like an app, a week you can rearrange, and tracked links**
+
+> Lets refine Kalendar:
+> - all the pages have slight flicker
+> - like the components flicker to appear
+> - looks like no caching is there
+> - refine it such that the whole app feels like a genuine native app
+> - shall we do a footer like in the catalog app? blured / holm / feedback links
+> - shouldnt the days slots be draggable to an empty day or swapped with an exiting day?
+> - shouldnt the day track be zoomable, so that the whole day scales in & out?
+> - the time zone selection modal's search bar has weird size
+> - shouldnt there be a quick enable/disable switch for each day, so that a quick enable/disable is possible without having to delete the slot
+> - may be we can make urls like this also to work? /@username/#ref=sundown-2026
+> - so that, when we send this in urls in email or use this in QR codes, we know where each came from?
+> - not sure thats the perfect scheme to do?
+> - find a way so that we can track it well
+> - perhaps it show up in stats too

@@ -12,10 +12,20 @@ export class ApiError extends Error {
   }
 }
 
+// index.html asks for the first page's data while the code is still
+// loading; the first GET of the same path takes that answer.
+function early(method, path) {
+  const boot = globalThis.__kalendarBoot
+  if (method !== 'GET' || !boot || !boot[path]) return null
+  const promise = boot[path]
+  delete boot[path]
+  return promise
+}
+
 async function send(method, path, body, headers = {}) {
   let response
   try {
-    response = await fetch(path, {
+    response = await early(method, path) || await fetch(path, {
       method,
       headers: { accept: 'application/json', ...(body ? { 'content-type': 'application/json' } : {}), ...headers },
       body: body ? JSON.stringify(body) : undefined

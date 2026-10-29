@@ -1,9 +1,12 @@
 // The host's side: bookings and requests, event types, hours and insights. A
 // tab bar on a phone, a sidebar with your link on a wide screen. Changes
-// save as you make them.
+// save as you make them. Like tabs in an app, each keeps its place while
+// you're on another, and draws from what this browser saw last before the
+// server's answer quietly brings it up to date.
 import { h, ic, fill, avatar, sheet, menu, segmented, toggle, toast, haptic, copyText, flip, nope, collapsing, reduced, wide } from '../ui.js'
 import * as api from '../api.js'
-import { state, topBar, go, failure, prettyURL, pageURL, share } from '../shell.js'
+import * as store from '../store.js'
+import { state, topBar, go, failure, prettyURL, pageURL, share, holmFooter, mine } from '../shell.js'
 import { sound } from '../sound.js'
 import * as t from '../time.js'
 import { zonePayload, city, gmt, offsetIn } from '../zones.js'
@@ -26,7 +29,8 @@ const TABS = [
 export function dash(tab) {
   const host = () => state.me.host
   const params = new URLSearchParams(location.search)
-  const s = { tab, view: params.get('r') ? 'requests' : 'upcoming', lists: new Map(), events: null, open: params.get('r'), statsDays: 30 }
+  const s = { tab: null, view: params.get('r') ? 'requests' : 'upcoming', lists: new Map(), events: store.peek(mine('events')) || null, open: params.get('r'), statsDays: 30 }
+  const pages = new Map()
   const main = h('div.panel.dash-main')
   const navButtons = new Map()
   const tabButtons = new Map()
@@ -43,7 +47,9 @@ export function dash(tab) {
       const b = h('button.side-item', { type: 'button', onclick: () => switchTo(x.id) }, ic(x.icon, 19, 2), h('span.grow', x.label), h('span.badge', { hidden: true }))
       navButtons.set(x.id, b)
       return b
-    }))
+    }),
+    h('div.grow'),
+    holmFooter({ bar: false }))
   const tabbar = h('nav.tabbar', { 'aria-label': 'Sections' }, TABS.map((x) => {
     const b = h('button.tab', { type: 'button', onclick: () => switchTo(x.id) }, h('span.tab-icon', ic(x.icon, 23, 1.9), h('span.tab-dot', { hidden: true })), h('span', x.short || x.label))
     tabButtons.set(x.id, b)
@@ -63,9 +69,11 @@ export function dash(tab) {
     go(TABS.find((x) => x.id === id).path)
   }
 
-  let leaveTab = null
-  function show(id, animate = true) {
-    if (leaveTab) { leaveTab(); leaveTab = null }
+  // Each tab is built once and kept, with its scroll, while you're on
+  // another; coming back shows it as it was and refreshes it quietly.
+  function show(id) {
+    const was = s.tab && pages.get(s.tab)
+    if (was) was.top = main.scrollTop
     s.tab = id
     el.dataset.tab = id
     for (const [k, b] of navButtons) b.classList.toggle('on', k === id)
@@ -74,10 +82,25 @@ export function dash(tab) {
     document.title = `${title} · Kalendar`
     bar.querySelector('.top-title') || bar.insertBefore(h('div.top-title.small-title'), bar.querySelector('.top-r'))
     bar.querySelector('.top-title').textContent = title
-    const content = { bookings: bookingsTab, events: eventsTab, hours: hoursTab, insights: insightsTab }[id]()
-    fill(main, content)
-    main.scrollTop = 0
-    if (animate && !reduced()) content.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' })
+    let page = pages.get(id)
+    const built = !page
+    if (!page) {
+      page = { bookings: bookingsTab, events: eventsTab, hours: hoursTab, insights: insightsTab }[id]()
+      pages.set(id, page)
+    }
+    fill(main, page.el)
+    main.scrollTop = page.top || 0
+    main.dispatchEvent(new Event('scroll'))
+    if (!built && page.refresh) page.refresh()
+  }
+
+  // Rebuild every tab (the clock style or the link changed), from what's kept.
+  function rebuild() {
+    for (const page of pages.values()) if (page.leave) page.leave()
+    pages.clear()
+    const id = s.tab
+    s.tab = null
+    show(id)
   }
 
   function badges() {
@@ -98,7 +121,7 @@ export function dash(tab) {
     const list = h('div.booking-list')
     const seg = segmented([
       { value: 'upcoming', label: 'Upcoming' }, { value: 'requests', label: 'Requests' }, { value: 'past', label: 'Past' }, { value: 'cancelled', label: 'Cancelled' }
-    ], s.view, (v) => { s.view = v; sound.tap(); load(list, true) }, { label: 'Which bookings' })
+    ], s.view, (v) => { s.view = v; sound.tap(); load(list) }, { label: 'Which bookings' })
     seg.querySelectorAll('button')[1].append(h('span.seg-count', { 'data-view': 'requests', hidden: true }))
     const box = h('section.tab-page',
       h('h1.large-title', 'Bookings'),
@@ -107,22 +130,27 @@ export function dash(tab) {
         h('button.icon-btn.tinted', { type: 'button', 'aria-label': 'Copy your link', onclick: () => { copyText(pageURL(host().handle), 'Link copied'); sound.pop() } }, ic('copy', 18, 2))),
       h('div.seg-wrap', seg),
       list)
-    load(list, false)
+    load(list)
     requestAnimationFrame(badges)
-    return box
+    return { el: box, refresh: () => load(list) }
   }
 
-  async function load(list, animate) {
+  const listOf = (view) => s.lists.get(view) || store.peek(mine('b:' + view))
+
+  // What's kept draws at once; the server's answer redraws only if it
+  // changed. A list that had to wait for it fades in, once.
+  async function load(list) {
     const view = s.view
-    const cached = s.lists.get(view)
-    if (cached) draw(list, cached, view, animate)
-    else fill(list, skeleton())
+    const cached = listOf(view)
+    if (cached) { s.lists.set(view, cached); if (list.dataset.view !== view) draw(list, cached, view) }
+    else if (list.dataset.view !== view) { fill(list, skeleton()); list.dataset.view = '' }
     try {
       const r = await api.get('/api/bookings?view=' + view)
+      const changed = store.keep(mine('b:' + view), r.bookings)
       s.lists.set(view, r.bookings)
       if (view === 'requests') state.me.counts = { ...(state.me.counts || {}), requests: r.bookings.length }
       badges()
-      if (s.view === view && s.tab === 'bookings') draw(list, r.bookings, view, animate && !cached)
+      if (s.view === view && (changed || list.dataset.view !== view)) draw(list, r.bookings, view, !cached)
       if (view === 'requests' && s.open) {
         const b = r.bookings.find((x) => x.id === s.open)
         s.open = null
@@ -131,13 +159,16 @@ export function dash(tab) {
         else toast('That request was already answered or withdrawn.', { kind: 'info' })
       }
     } catch (error) {
-      if (!cached) fill(list, h('div.empty', ic('circleAlert', 26, 1.8), h('b', 'Can’t load bookings'), h('p', error.message), h('button.btn.small', { type: 'button', onclick: () => load(list, true) }, 'Try again')))
+      if (!cached) fill(list, h('div.empty', ic('circleAlert', 26, 1.8), h('b', 'Can’t load bookings'), h('p', error.message), h('button.btn.small', { type: 'button', onclick: () => load(list) }, 'Try again')))
     }
   }
 
   const skeleton = () => h('div.skeleton', [0, 1, 2].map(() => h('div.sk-row', h('span'), h('span'), h('span'))))
 
-  function draw(list, bookings, view, animate) {
+  function draw(list, bookings, view, enter = false) {
+    list.dataset.view = view
+    list.classList.toggle('enter', enter && !reduced())
+    if (enter) setTimeout(() => list.classList.remove('enter'), 700)
     if (!bookings.length) {
       const copy = {
         upcoming: ['calendarCheck', 'No bookings yet', 'Share your link. New bookings show up here, and in your email.'],
@@ -151,7 +182,6 @@ export function dash(tab) {
     }
     if (view === 'requests') {
       fill(list, h('p.list-note', 'They painted when they’re free. Pick a time in it, or say no.'), h('div.group', bookings.map((b, i) => requestRow(b, i))))
-      if (animate && !reduced()) list.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 })
       return
     }
     const zone = host().tz
@@ -173,7 +203,6 @@ export function dash(tab) {
       out.push(h('div.group', items.map((b) => row(b, i++))))
     }
     fill(list, out)
-    if (animate && !reduced()) list.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 })
   }
 
   // The next meeting, large, with how long until it starts.
@@ -237,7 +266,8 @@ export function dash(tab) {
           metaRow('calendar', t.fullDate(b.start, zone)),
           metaRow('clock', t.range(b.start, b.end, zone), theirs),
           place ? metaRow(place.icon, place.text, place.sub, place.href) : null,
-          b.phone && b.location.kind !== 'phone' ? metaRow('phone', b.phone, null, `tel:${b.phone}`) : null),
+          b.phone && b.location.kind !== 'phone' ? metaRow('phone', b.phone, null, `tel:${b.phone}`) : null,
+          b.ref ? metaRow('tag', cameFrom(b.ref), 'Came through this tracked link') : null),
         b.notes ? h('div.notes', h('small', 'Notes'), h('p', b.notes)) : null,
         b.reason ? h('div.notes', h('small', b.status === 'declined' ? 'What you told them' : 'Why it was cancelled'), h('p', b.reason)) : null,
         h('div.sheet-actions',
@@ -248,6 +278,8 @@ export function dash(tab) {
     })
     if (result === 'cancel') cancelBooking(b)
   }
+
+  const cameFrom = (tag) => ((host().tags || []).find((x) => x.tag === tag) || {}).label || `?ref=${tag}`
 
   async function cancelBooking(b) {
     const reason = h('textarea.input', { rows: '3', maxlength: '500', placeholder: `A note for ${b.name.split(' ')[0]} (optional)` })
@@ -266,8 +298,7 @@ export function dash(tab) {
       const r = await api.post(`/api/bookings/${b.id}/cancel`, { reason: reason.value.trim() })
       sound.remove()
       toast(r.emailed ? `Cancelled. ${b.name.split(' ')[0]} has been told.` : 'Cancelled.')
-      s.lists.clear()
-      if (s.tab === 'bookings') show('bookings', false)
+      refreshBookings(b.id)
     } catch (error) { failure(error) }
   }
 
@@ -297,7 +328,8 @@ export function dash(tab) {
     const hoursOn = (key) => {
       const o = host().overrides && host().overrides[key]
       if (o) return o
-      return host().weekly[new Date(key + 'T12:00:00Z').getUTCDay()] || []
+      const d = new Date(key + 'T12:00:00Z').getUTCDay()
+      return (host().paused || []).includes(d) ? [] : host().weekly[d] || []
     }
     const busyOn = (key) => onDay(upcoming.filter((x) => x.id !== b.id && x.status === 'confirmed').map((x) => [x.start, x.end]), key)
     const free = (key) => {
@@ -367,6 +399,7 @@ export function dash(tab) {
       mode: 'clip',
       clipLength: dur,
       keyStep: 5,
+      zoom: 'settle',
       corner: h('span.tl-zone', city(zone)),
       glowLabel: 'Both free',
       layers: (tr) => ({ shade: hoursOn(tr.key), busy: busyOn(tr.key), glow: intersect(theirs(tr.key), free(tr.key)).filter(([a, z]) => z - a >= dur) }),
@@ -402,7 +435,7 @@ export function dash(tab) {
             h('div', h('b', b.name), h('a', { href: `mailto:${b.email}` }, b.email)),
             h('span.req-event', { style: { '--event': colorOf(b.event.color) } }, h('i.ev-dot'), `${b.event.title} · ${t.minutesLabel(dur)}`)),
           b.notes ? h('div.notes', h('small', 'Notes'), h('p', b.notes)) : null,
-          h('div.req-legend', h('span', h('i.key.mine'), `${first}’s times`), h('span', h('i.key.shade'), 'Your hours'), h('span', h('i.key.glow'), 'Both free')),
+          h('div.req-legend', h('span', h('i.key.mine'), `${first}’s times`), h('span', h('i.key.shade'), 'Your hours'), h('span', h('i.key.glow'), 'Both free'), h('span.grow'), tl.zoomControl()),
           h('div.req-tl', tl.el),
           status,
           h('div.sheet-actions', accept, h('button.btn.block.danger', { type: 'button', onclick: () => close('decline') }, ic('x', 18, 2.2), 'Say no')),
@@ -417,7 +450,7 @@ export function dash(tab) {
         const r = await api.post(`/api/bookings/${b.id}/accept`, { start: ms })
         sound.booked()
         toast(r.emailed ? `Booked. ${first} has the invite.` : 'Booked.')
-        afterRequest()
+        afterRequest(b.id)
       } catch (error) { failure(error) }
     } else if (result === 'decline') declineRequest(b)
   }
@@ -440,14 +473,27 @@ export function dash(tab) {
       const r = await api.post(`/api/bookings/${b.id}/decline`, { reason: reason.value.trim() })
       sound.remove()
       toast(r.emailed ? `Done. ${first} has been told.` : 'Done.')
-      afterRequest()
+      afterRequest(b.id)
     } catch (error) { failure(error) }
   }
 
-  function afterRequest() {
-    s.lists.clear()
+  function afterRequest(id) {
     api.get('/api/me').then((r) => { state.me.counts = r.counts; badges() }).catch(() => {})
-    if (s.tab === 'bookings') show('bookings', false)
+    refreshBookings(id)
+  }
+
+  // A booking that changed leaves its list at once; the server's lists follow.
+  function refreshBookings(gone = null) {
+    if (gone) for (const [view, list] of s.lists) {
+      if (view === 'cancelled' || view === 'past') continue
+      const next = list.filter((x) => x.id !== gone)
+      s.lists.set(view, next)
+      store.keep(mine('b:' + view), next)
+    }
+    for (const view of [...s.lists.keys()]) if (view !== s.view) s.lists.delete(view)
+    const page = pages.get('bookings')
+    if (page) { const list = page.el.querySelector('.booking-list'); if (list) { if (gone) draw(list, s.lists.get(s.view) || [], s.view); load(list) } }
+    badges()
   }
 
   /* ---- Event types ---------------------------------------------------------- */
@@ -459,20 +505,24 @@ export function dash(tab) {
       h('p.page-sub', 'Each has its own link. Turn one off to hide it.'),
       grid)
     loadEvents(grid)
-    return box
+    return { el: box, refresh: () => loadEvents(grid) }
   }
 
   async function loadEvents(grid) {
-    if (s.events) drawEvents(grid)
-    else fill(grid, skeleton())
+    const had = !!s.events
+    if (had && !grid.firstChild) drawEvents(grid)
+    else if (!had) fill(grid, skeleton())
     try {
       const r = await api.get('/api/events')
+      const changed = store.keep(mine('events'), r.events)
       s.events = r.events
-      if (s.tab === 'events') drawEvents(grid)
-    } catch (error) { failure(error) }
+      if (changed || !had) drawEvents(grid, !had)
+    } catch (error) { if (!had) failure(error) }
   }
 
-  function drawEvents(grid) {
+  function drawEvents(grid, enter = false) {
+    grid.classList.toggle('enter', enter && !reduced())
+    if (enter) setTimeout(() => grid.classList.remove('enter'), 700)
     if (!s.events.length) {
       fill(grid, h('div.empty', h('span.empty-icon', ic('layers', 28, 1.8)), h('b', 'No event types'), h('p', 'Add one so people have something to book.'), h('button.btn.small.tinted', { type: 'button', onclick: () => edit(null) }, ic('plus', 15, 2.2), 'New event type')))
       return
@@ -512,16 +562,20 @@ export function dash(tab) {
     if (result.deleted) s.events = s.events.filter((x) => x.id !== e.id)
     else if (e) s.events = s.events.map((x) => (x.id === result.id ? result : x))
     else s.events = [...(s.events || []), result]
+    store.keep(mine('events'), s.events)
     if (grid) drawEvents(grid)
   }
 
   /* ---- Hours ------------------------------------------------------------------ */
 
-  // Your week as tracks: paint when you're free, trim the ends, slide a
-  // span along, and it saves as you go.
+  // Your week as tracks: paint when you're free, trim the ends, slide a span
+  // along or onto another day, drag a day's name onto another to move or
+  // swap the whole day, switch a day off without losing its hours, and zoom
+  // the day in and out. It saves as you go.
   function hoursTab() {
     const hst = host()
     const weekly = hst.weekly.map((r) => r.map((x) => x.slice()))
+    const paused = new Set(hst.paused || [])
     const overrides = { ...hst.overrides }
     const saved = h('span.saved', { 'aria-live': 'polite' })
     const zoneRow = h('button.row-btn', { type: 'button', onclick: changeZone })
@@ -541,13 +595,14 @@ export function dash(tab) {
         try {
           const r = await api.patch('/api/host', change())
           state.me.host = r.host
+          store.keep('me', state.me)
           fill(saved, ic('check', 14, 2.6), label)
           saved.className = 'saved show good'
           setTimeout(() => { saved.className = 'saved' }, 1600)
         } catch (error) { saved.className = 'saved'; failure(error) }
       }, 450)
     }
-    const saveWeekly = () => save(() => ({ weekly }))
+    const saveWeekly = () => save(() => ({ weekly, paused: [...paused].sort() }))
     const saveOffs = () => save(() => ({ overrides }))
 
     const name = (d) => t.weekday(Date.UTC(2023, 0, 1 + d), 'UTC', 'short')
@@ -555,23 +610,67 @@ export function dash(tab) {
     const summary = (d) => {
       const r = weekly[d]
       if (!r.length) return 'Off'
+      if (paused.has(d)) return 'Paused'
+      // 7h, 8½h, 5h 15m: short enough for a phone's day column.
       const total = r.reduce((n, [a, z]) => n + z - a, 0)
-      return `${t.minutesLabel(total).replace(' min', 'm').replace(' h', 'h')}`
+      const hh = Math.floor(total / 60)
+      const mm = total % 60
+      return mm === 0 ? `${hh}h` : mm === 30 ? `${hh || ''}½h` : hh ? `${hh}h ${mm}m` : `${mm}m`
     }
-    const tracks = () => days.map((d) => ({ key: String(d), label: name(d), sub: summary(d), dim: !weekly[d].length }))
+    const tracks = () => days.map((d) => ({ key: String(d), label: name(d), sub: summary(d), dim: !weekly[d].length, paused: paused.has(d) && weekly[d].length > 0 }))
+
+    // A day switched on with nothing in it gets the hours most days have.
+    function usualHours() {
+      const seen = new Map()
+      for (let d = 0; d < 7; d++) if (weekly[d].length && !paused.has(d)) { const k = JSON.stringify(weekly[d]); seen.set(k, (seen.get(k) || 0) + 1) }
+      const best = [...seen].sort((x, y) => y[1] - x[1])[0]
+      return best ? JSON.parse(best[0]) : [[540, 1020]]
+    }
 
     const tl = timeline({
       label: 'Weekly hours',
       className: 'week',
       tracks: tracks(),
       mode: 'strips',
+      zoom: 'week',
       corner: h('span.tl-zone', city(host().tz)),
       strips: {
-        kind: 'host', step: 15, min: 15, max: 6,
+        kind: 'host', step: 15, min: 15, max: 6, across: true,
         get: (key) => weekly[Number(key)],
         set: (key, ranges, { live }) => {
           weekly[Number(key)] = ranges.map((r) => r.slice())
           if (!live) { refreshLabels(); saveWeekly() }
+        }
+      },
+      days: {
+        toggle(key, on) {
+          const d = Number(key)
+          if (on) {
+            paused.delete(d)
+            if (!weekly[d].length) { weekly[d] = usualHours(); tl.redrawTrack(key) }
+          } else if (weekly[d].length) paused.add(d)
+          sound.toggle(on)
+          haptic(6)
+          refreshLabels()
+          saveWeekly()
+        },
+        move(from, to) {
+          const a = Number(from)
+          const b = Number(to)
+          const swap = weekly[b].length > 0
+          const pa = paused.has(a)
+          const pb = paused.has(b)
+          ;[weekly[a], weekly[b]] = [swap ? weekly[b] : [], weekly[a]]
+          paused.delete(a)
+          paused.delete(b)
+          if (pa) paused.add(b)
+          if (swap && pb) paused.add(a)
+          tl.select(null)
+          tl.setTracks(tracks())
+          sound.pop()
+          haptic(10)
+          toast(swap ? `Swapped ${longName(a)} and ${longName(b)}` : `Moved ${longName(a)} to ${longName(b)}`, { kind: 'info' })
+          saveWeekly()
         }
       },
       onTap: (key, minute) => {
@@ -597,14 +696,18 @@ export function dash(tab) {
     function refreshLabels() {
       for (const row of tl.el.querySelectorAll('.tl-row')) {
         const d = Number(row.dataset.key)
+        const off = paused.has(d) && weekly[d].length > 0
         row.classList.toggle('dim', !weekly[d].length)
+        row.classList.toggle('paused', off)
         const small = row.querySelector('.tl-label small')
         if (small) small.textContent = summary(d)
+        const sw = row.querySelector('input.switch')
+        if (sw) sw.checked = weekly[d].length > 0 && !paused.has(d)
       }
     }
 
     function copyTo(d, targets) {
-      for (const x of targets) if (x !== d) { weekly[x] = weekly[d].map((r) => r.slice()); tl.redrawTrack(String(x)) }
+      for (const x of targets) if (x !== d) { weekly[x] = weekly[d].map((r) => r.slice()); paused.delete(x); tl.redrawTrack(String(x)) }
       refreshLabels()
       sound.pop()
       saveWeekly()
@@ -612,6 +715,7 @@ export function dash(tab) {
 
     function preset(fn) {
       for (let d = 0; d < 7; d++) { weekly[d] = fn(d); tl.redrawTrack(String(d)) }
+      paused.clear()
       tl.select(null)
       refreshLabels()
       sound.pop()
@@ -645,7 +749,6 @@ export function dash(tab) {
       const earliest = Math.min(...weekly.map((r) => (r[0] ? r[0][0] : DAY)))
       tl.scrollToMinute(Math.max(0, (earliest < DAY ? earliest : 540) - 60))
     })
-    leaveTab = () => tl.destroy()
 
     function drawOffs() {
       const keys = Object.keys(overrides).filter((k) => !overrides[k].length).sort()
@@ -674,6 +777,7 @@ export function dash(tab) {
       try {
         const r = await api.patch('/api/host', zonePayload(z))
         state.me.host = r.host
+        store.keep('me', state.me)
         paintZone()
         toast(`Hours now in ${city(z)} time`)
         s.lists.clear()
@@ -682,38 +786,48 @@ export function dash(tab) {
       } catch (error) { failure(error) }
     }
 
-    return h('section.tab-page.hours-page',
+    const el = h('section.tab-page.hours-page',
       h('div.title-row', h('h1.large-title', 'Availability'), saved),
-      h('p.page-sub', wide() ? 'Drag along a day to paint when you’re free. Drag the ends to trim, the middle to slide. Guests see it in their own time.' : 'Hold and drag along a day to paint when you’re free, or tap a day to add two hours. Drag the ends to trim.'),
-      h('div.week-card', tools, tl.el),
+      h('p.page-sub', wide()
+        ? 'Drag along a day to paint when you’re free. Drag a span to move it, even onto another day, or a day’s name to move or swap the whole day. Guests see it in their own time.'
+        : 'Hold and drag along a day to paint when you’re free, or tap a day to add two hours. Hold a span, or a day’s name, to move it. Pinch to zoom.'),
+      h('div.week-card', h('div.week-bar', tools, tl.zoomControl()), tl.el),
       h('h2.group-title', 'Time zone'),
       h('div.group', zoneRow),
       h('h2.group-title', 'Days off'),
       offList)
+    return { el, leave: () => tl.destroy() }
   }
 
   /* ---- Insights ------------------------------------------------------------------ */
 
   function insightsTab() {
-    const view = insights({ host, days: s.statsDays, onDays: (d) => { s.statsDays = d } })
-    leaveTab = view.leave
-    return view.el
+    return insights({ host, days: s.statsDays, onDays: (d) => { s.statsDays = d } })
   }
 
   /* ---- Start -------------------------------------------------------------------- */
 
   paintLink()
-  show(tab, false)
+  show(tab)
 
   // Keep the zone table fresh: it covers about 15 months from when it was made.
   const hst = host()
   if (!hst.tableEnd || hst.tableEnd < Date.now() + 300 * 86400000) {
-    api.patch('/api/host', zonePayload(hst.tz)).then((r) => { state.me.host = r.host }).catch(() => {})
+    api.patch('/api/host', zonePayload(hst.tz)).then((r) => { state.me.host = r.host; store.keep('me', state.me) }).catch(() => {})
   }
-  const onVisible = () => { if (!document.hidden && s.tab === 'bookings') { s.lists.clear(); show('bookings', false) } }
+  // Back in the app: bring the open tab up to date, quietly.
+  const onVisible = () => { if (!document.hidden) { const page = pages.get(s.tab); if (page && page.refresh) page.refresh() } }
   document.addEventListener('visibilitychange', onVisible)
   // The badge on Bookings counts the next 24 hours and any requests waiting.
-  api.get('/api/bookings?view=upcoming').then((r) => { s.lists.set('upcoming', r.bookings); badges() }).catch(() => {})
+  if (listOf('upcoming')) { s.lists.set('upcoming', listOf('upcoming')); requestAnimationFrame(badges) }
+  if (s.tab !== 'bookings') api.get('/api/bookings?view=upcoming').then((r) => { s.lists.set('upcoming', r.bookings); store.keep(mine('b:upcoming'), r.bookings); badges() }).catch(() => {})
+  // Fetch the other tabs' first answers while nothing else is happening, so
+  // even the first visit to each opens at once.
+  const idle = globalThis.requestIdleCallback || ((fn) => setTimeout(fn, 1500))
+  idle(() => {
+    if (!s.events) api.get('/api/events').then((r) => { if (!s.events) s.events = r.events; store.keep(mine('events'), r.events) }).catch(() => {})
+    if (!store.peek(mine('stats:' + s.statsDays))) api.get('/api/stats?days=' + s.statsDays).then((r) => store.keep(mine('stats:' + s.statsDays), r)).catch(() => {})
+  })
 
   return {
     el,
@@ -723,8 +837,9 @@ export function dash(tab) {
       if (x.id !== s.tab) show(x.id)
       return true
     },
-    leave() { document.removeEventListener('visibilitychange', onVisible); if (leaveTab) leaveTab() },
-    clock() { show(s.tab, false) },
-    refresh() { paintLink(); show(s.tab, false) }
+    leave() { document.removeEventListener('visibilitychange', onVisible); for (const page of pages.values()) if (page.leave) page.leave() },
+    clock() { rebuild() },
+    refresh() { paintLink(); rebuild() },
+    me() { paintLink(); badges() }
   }
 }

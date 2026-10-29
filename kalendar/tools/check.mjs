@@ -11,6 +11,8 @@ import { offsetTable, offsetIn } from '../web/src/zones.js'
 import { slotsFor } from '../api/slots.js'
 import { toUtc, offsetAt, clockRange, longDate, parts } from '../api/tz.js'
 import { calendar } from '../api/ics.js'
+import { cleanTag } from '../api/lib.js'
+import { readFileSync, readdirSync } from 'node:fs'
 
 const DAY = 86400000
 const wall = (zone, ms) => new Intl.DateTimeFormat('en-GB', { timeZone: zone, hourCycle: 'h23', weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(ms)
@@ -59,6 +61,31 @@ for (const zone of ZONES) {
   assert.deepEqual(around.map((s) => wall(zone, s)), ['Tue 09:00', 'Tue 12:00', 'Tue 13:00', 'Tue 14:00', 'Tue 15:00', 'Tue 16:00'])
 }
 
+// A paused weekday keeps its hours but offers nothing, unless that date has
+// hours of its own.
+{
+  const zone = 'Asia/Kolkata'
+  const { table } = offsetTable(zone, from, to)
+  const nine = [[540, 1020]]
+  const host = { tzTable: table, weekly: [nine, nine, nine, nine, nine, nine, nine], paused: [6, 0], overrides: { '2026-07-11': [[600, 720]] } }
+  const event = { duration: 60, step: 60, notice: 0, window: 400, before: 0, after: 0 }
+  const july = slotsFor(host, event, [], Date.UTC(2026, 6, 6), Date.UTC(2026, 6, 20), from)
+  const days = new Set(july.map((s) => wall(zone, s).slice(0, 3)))
+  assert.ok(!days.has('Sun'), 'a paused Sunday offers nothing')
+  assert.deepEqual([...days].sort(), ['Fri', 'Mon', 'Sat', 'Thu', 'Tue', 'Wed'])
+  const saturdays = july.filter((s) => wall(zone, s).startsWith('Sat'))
+  assert.deepEqual(saturdays.map((s) => wall(zone, s)), ['Sat 10:00', 'Sat 11:00'], 'only the Saturday with its own hours opens')
+  host.paused = []
+  assert.ok(slotsFor(host, event, [], Date.UTC(2026, 6, 12), Date.UTC(2026, 6, 13), from).length > 0, 'unpaused, Sunday opens again')
+}
+
+// Tags from ?ref= links: lowercase, letters and digits at both ends.
+{
+  assert.equal(cleanTag(' Sundown-2026 '), 'sundown-2026')
+  assert.equal(cleanTag('flyer.v2_a'), 'flyer.v2_a')
+  for (const bad of ['', '-x', 'x-', 'a b', 'a'.repeat(41), 'ünï', null, 42]) assert.equal(cleanTag(bad), null, `bad tag ${bad}`)
+}
+
 // Dates written out for emails, without Intl.
 {
   const start = Date.UTC(2026, 10, 4, 14, 0)
@@ -76,4 +103,18 @@ for (const zone of ZONES) {
   assert.ok(ics.endsWith('END:VCALENDAR\r\n'))
 }
 
-console.log(`ok: ${checked} slots across ${ZONES.length} zones match Intl; weekly hours, busy times, email dates and calendar files check out`)
+// The service worker installs a version all or nothing: it must list every
+// page file, and carry the app's version so a deploy installs the new set.
+{
+  const web = new URL('../web/', import.meta.url)
+  const sw = readFileSync(new URL('sw.js', web), 'utf8')
+  const listed = new Set([...sw.match(/const FILES = \[([\s\S]*?)\]/)[1].matchAll(/'([^']+)'/g)].map((m) => m[1]))
+  const code = [...readdirSync(new URL('src/', web)).filter((f) => f.endsWith('.js') || f.endsWith('.css')).map((f) => '/src/' + f),
+    ...readdirSync(new URL('src/views/', web)).map((f) => '/src/views/' + f)]
+  for (const file of code) assert.ok(listed.has(file), `sw.js doesn't list ${file}`)
+  for (const file of listed) if (file !== '/') readFileSync(new URL('.' + file, web))
+  const version = JSON.parse(readFileSync(new URL('../holm.json', import.meta.url), 'utf8')).version
+  assert.equal(sw.match(/const VERSION = '([^']+)'/)[1], version, 'sw.js VERSION must match holm.json')
+}
+
+console.log(`ok: ${checked} slots across ${ZONES.length} zones match Intl; weekly hours, paused days, busy times, tags, email dates, calendar files and the app shell check out`)

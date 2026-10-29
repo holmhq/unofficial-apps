@@ -36,14 +36,19 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   one off to hide it.
 - **Hours on a timeline.** Your week is seven tracks. Drag along a day to paint
   when you're free, drag either end of a span to trim it, drag the middle to
-  slide it; tap a span to copy it to weekdays or every day, or remove it.
-  Presets fill the week in one tap. Days off sit below. Changes save as you
-  make them.
+  slide it along the day or up and down onto another one (it lands in the
+  nearest gap long enough); tap a span to copy it to weekdays or every day, or
+  remove it. Drag a day's name onto another day to move its hours there, or to
+  swap the two. A switch beside each day pauses it without losing its hours.
+  Pinch, ctrl- or ⌘-scroll, or − and + zoom the whole day in and out; "24h"
+  fits it in view. Presets fill the week in one tap. Days off sit below.
+  Changes save as you make them.
 - **Booking, no account.** Guests see your free time shaded on the same kind of
   strip, one day per track, in their own zone (which they can change) and in
   12- or 24-hour time. Tap a shaded span and the meeting drops in, the length
   of the event; drag it along the day or onto another and it snaps to the
-  times that are open. "Soonest" jumps to the first one. Then name, email,
+  times that are open; pinch or use − and + to zoom. "Soonest" jumps to the
+  first one. Then name, email,
   notes, and a phone number when you'll call. A time someone takes disappears
   for everyone, and two people racing for the same slot can't both get it.
 - **Asking for another time.** Dropped outside your shading, the meeting
@@ -63,24 +68,42 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   calendar, reschedule (the old time is freed and the new one booked in one
   step) or cancel with a note; a request can be withdrawn. Hosts cancel from
   their list, and the guest is told with a link to book again.
+- **Tracked links.** Share `/@handle?ref=sundown-2026` on a flyer and
+  `/@handle?ref=newsletter` in an email, and Insights tells them apart. Make
+  them under Insights → Tracked links: a name, a tag and the page it opens.
+  Each has a QR code to save as PNG or SVG; the code adds `&via=qr`, so scans
+  count apart from clicks on the same link. The tag is kept in the guest's
+  browser for 30 days, so a booking made on a later visit still counts for
+  the link that brought them, and it's shown on the booking. `#ref=` and
+  `utm_campaign` work too. The tag comes off the address once read, so a
+  guest who passes the page on doesn't pass it on.
 - **Insights.** Page views, visitors, profile clicks, bookings and time on
   page for 7, 30 or 90 days, against the period before; views by day with each
-  booking marked; where visitors came from, what they opened the page on and
-  where they are; what they tapped; how many went from a visit to a booking;
-  and each event type's views and bookings. No cookies: a random id kept in the
+  booking marked; each tracked link's visitors, scans and bookings; where
+  visitors came from, what they opened the page on and where they are; what
+  they tapped; how many went from a visit to a booking; and each event type's
+  views and bookings. No cookies: a random id kept in the
   visitor's browser tells visitors apart, the place comes from their browser's
   time zone (never an address), browsers asking not to be tracked send
   nothing, and your own visits don't count.
 - **From Claude.** Connect Claude's MCP connector to
   `https://<your-kalendar>/_holm/mcp` and sign in: Claude can read and change
   your profile, hours, days off and event types, list your meetings and
-  requests, accept or decline requests, cancel bookings, look up open times and
-  read your insights. It reads `guide.get` first.
+  requests, accept or decline requests, cancel bookings, look up open times,
+  make tracked links and read your insights. It reads `guide.get` first.
 - **Your calendar.** A private feed (`/feed/<secret>.ics`) to subscribe to in
   Apple Calendar, Google Calendar or Outlook, with a button to make a new link.
 
 ### How it feels
 
+- It opens like an app on a phone. A service worker keeps every file of the
+  version you have and opens straight from them, so nothing waits on the
+  network; a new version installs in the background and takes over next time.
+  Each page draws at once from what your browser saw last (your bookings,
+  your insights, a host's page and its open times) and the server's answer
+  slips in behind it only if something changed. Tabs keep their place while
+  you're on another, and the first page's data is asked for while the code
+  is still loading.
 - An Apple-like look: greys, one red accent from the Calendar app, frosted
   bars, large titles, sheets that rise on a phone and dialogs on a desk, a
   segmented control, switches, and a round avatar button at the top right,
@@ -96,13 +119,16 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   flag above a clip too short to hold its label, handles on each end of a
   span, and edges that scroll the strip while you drag near them. On a phone
   a swipe scrolls and a hold starts painting; arrow keys move the meeting.
-- Motion: the meeting springs in, painted overlap glows in, bars grow, steps
-  push in from the right (with Back and an edge swipe), the check on the
-  confirmation draws itself, and a theme change spreads from where you tapped.
+- Motion means a change, never a page appearing: the meeting springs in where
+  it lands, steps push in from the right (with Back and an edge swipe), a
+  lifted day follows your finger, the check on the confirmation draws itself,
+  and a theme change spreads from where you tapped. Charts grow only the first
+  time they're drawn.
 - Sound: quiet Web Audio cues for a tap, a pick, a snap, a step, a booking (a
   small chime), a request sent and a mistake; off with one switch.
 - Phones get one step per screen and a tab bar; wide screens get a card with
-  the event beside the strip, and a sidebar with your link.
+  the event beside the strip, and a sidebar with your link. Public pages end
+  in a frosted bar like Catalog's: A Holm app, Source and Send feedback.
 
 ## How it's built
 
@@ -120,11 +146,14 @@ api/slots.js       weekly hours → open times, minus notice, horizon and busy t
 api/tz.js          offset tables, wall time ↔ UTC, dates written out without Intl
 api/mail.js        the emails, HTML and plain text
 api/ics.js         iCalendar files and Google/Outlook links
+web/sw.js          the app shell: every file of this version, installed all or nothing
 web/src/           the page: main.js (routes), shell.js, ui.js, views/…
-web/src/timeline.js  the strip of days: shading, painted spans, the meeting clip
-web/src/track.js   the visit beacon: views, clicks, picks, time on page
+web/src/store.js   what the page last saw, so it draws at once and catches up
+web/src/timeline.js  the strip of days: shading, spans, the meeting clip, zoom, day moves
+web/src/track.js   the visit beacon: views, clicks, picks, time on page, the link's tag
+web/src/qr.js      QR codes for tracked links (SVG and PNG)
 web/src/countries.js each time zone's country, for Insights (generated)
-tools/check.mjs    time-maths and calendar-file checks (not deployed)
+tools/check.mjs    time-maths, calendar-file and app-shell checks (not deployed)
 tools/book.mjs     books sample meetings through the real operation (not deployed)
 tools/countries.mjs  builds countries.js from the tz database (not deployed)
 ```
@@ -142,7 +171,7 @@ Holm primitives it uses:
 - **Named operations as MCP tools**: the host's tools (`me.get`,
   `profile.update`, `hours.get`/`hours.update`, `events.*`, `meetings.list`,
   `meetings.cancel`, `requests.accept`/`requests.decline`, `slots.list`,
-  `stats.get`) use `auth: "user"`, so anyone signed in can connect Claude,
+  `stats.get`, `links.*`) use `auth: "user"`, so anyone signed in can connect Claude,
   and each acts only on the caller's own page. Holm serves them at
   `/_holm/mcp`; `guide.get` is public.
 - **Named operations** (`api/contract.json`): `bookings.create` is public,
@@ -211,6 +240,20 @@ Then:
   holm @<peer> settings set settings.apps.<app-id>.theme.accent '#e0352b'
   ```
 
+- **Feedback.** Send feedback opens Kalendar's form on the owner's
+  [feedback](../feedback/) app through a local copy of its `embed.js`
+  (`web/vendor/feedback/`). Set `FEEDBACK_PROJECT` in `web/src/shell.js` to
+  your own project, or leave it empty to hide the link. The site must be
+  allowed to frame the form:
+
+  ```sh
+  holm @<peer> policy set security.csp.frame_src "https://feedback.example.com" --app <app-id>
+  ```
+
+Bump `VERSION` in `web/sw.js` with `holm.json`'s version for every release
+(`tools/check.mjs` checks it, and that the worker lists every page file), or
+browsers keep the version they installed.
+
 Open the site, sign in, and choose your link. `node kalendar/tools/book.mjs
 https://kalendar.example.com <handle> 6` books six made-up meetings (with
 example.com addresses) to see the dashboard filled in.
@@ -244,6 +287,9 @@ only give to `https://` and `localhost` pages. On a local node, add a
   per host keep that small.
 - Offset tables cover about 15 months from when the host last opened their
   page; past that, the last known offset is used.
+- **Tags are what the link says.** Anyone can put any `?ref=` on your link;
+  tags you didn't save show in grey, and a day counts at most 60 of them.
+  Browsers that ask not to be tracked keep no tag, so their bookings have none.
 
 ## Licences
 
@@ -252,5 +298,9 @@ only give to `https://` and `localhost` pages. On a local node, add a
 - Icons from [Lucide](https://lucide.dev): ISC, in `web/vendor/lucide/LICENSE`.
   The X logo is from [Simple Icons](https://simpleicons.org) (CC0 1.0). Kalendar's
   mark is its own.
+- [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 2.0.4:
+  MIT, in `web/vendor/qrcode/LICENSE`.
+- `web/vendor/feedback/embed.js` is a copy of the feedback button from this
+  repository's [feedback](../feedback/) app, under this repository's licence.
 - `web/src/countries.js` is built from the [tz database](https://www.iana.org/time-zones)'s
   `zone.tab` and `iso3166.tab`, which are in the public domain.

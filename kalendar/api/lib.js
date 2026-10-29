@@ -73,6 +73,17 @@ export function email(value, label = 'Email') {
   return out
 }
 
+// A tag names where a visit came from, as in /@handle?ref=sundown-2026:
+// lowercase letters and digits, with dots, dashes or underscores inside,
+// up to 40 characters.
+export const TAG = /^[a-z0-9](?:[a-z0-9._-]{0,38}[a-z0-9])?$/
+
+export function cleanTag(value) {
+  if (typeof value !== 'string') return null
+  const tag = value.trim().toLowerCase()
+  return TAG.test(tag) ? tag : null
+}
+
 const ALPHABET = 'abcdefghijkmnopqrstuvwxyz23456789'
 export function randomId(length = 12) {
   const bytes = new Uint8Array(length)

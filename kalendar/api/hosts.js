@@ -1,9 +1,11 @@
 // Hosts: a signed-in person with a public link (/@handle), a profile (role,
-// company, where they are, a website and links), a time zone, weekly hours,
-// days with other hours or none, and a private calendar feed.
-import { reject, text, longText, randomId, displayName, MIN, DAY } from './lib.js'
+// company, where they are, a website and links), a time zone, weekly hours
+// (each weekday can be paused and keep its hours), days with other hours or
+// none, saved links that tag where visits come from, and a private
+// calendar feed.
+import { reject, text, longText, randomId, displayName, cleanTag, MIN, DAY } from './lib.js'
 import { cleanTable, cleanZone, cleanZoneLabel, offsetAt } from './tz.js'
-import { createDefaults } from './events.js'
+import { createDefaults, eventsOf } from './events.js'
 
 const RESERVED = new Set(('about admin api app apps assets auth b book booking bookings calendar dashboard demo docs ' +
   'edit events feed help holm home hours kalendar login logout me new null privacy root settings signin signup ' +
@@ -38,6 +40,35 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 export function cleanWeekly(value) {
   if (!Array.isArray(value) || value.length !== 7) reject(400, 'invalid_input', 'Send hours for all seven days.')
   return value.map((ranges, i) => cleanRanges(ranges, DAY_NAMES[i]))
+}
+
+// Weekdays switched off for now: 0 is Sunday. Their hours stay as they are.
+export function cleanPaused(value) {
+  if (!Array.isArray(value) || value.length > 7 || !value.every((d) => Number.isInteger(d) && d >= 0 && d <= 6)) {
+    reject(400, 'invalid_input', 'Paused days are weekday numbers, 0 (Sunday) to 6 (Saturday).')
+  }
+  return [...new Set(value)].sort((a, b) => a - b)
+}
+
+// Saved links: a name for each tag the host hands out (a flyer, a talk, an
+// email signature), and which page it opens: the profile, or one event type.
+export function cleanTags(env, host, value, now) {
+  if (!Array.isArray(value)) reject(400, 'invalid_input', 'Send saved links as a list.')
+  if (value.length > 50) reject(400, 'invalid_input', 'Up to 50 saved links.')
+  const slugs = new Set(eventsOf(env, host.id).map((e) => e.slug))
+  const seen = new Set()
+  return value.map((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) reject(400, 'invalid_input', 'Each saved link is an object with a tag and a label.')
+    const tag = cleanTag(item.tag)
+    if (!tag) reject(400, 'invalid_input', 'A tag uses lowercase letters, numbers, dots, dashes or underscores, up to 40, like sundown-2026.')
+    if (seen.has(tag)) reject(400, 'invalid_input', `Two saved links share the tag ${tag}.`)
+    seen.add(tag)
+    const label = text(item.label, 60, 'A saved link’s name', true)
+    const slug = item.slug === undefined || item.slug === null || item.slug === '' ? null : String(item.slug)
+    if (slug !== null && !slugs.has(slug)) reject(400, 'invalid_input', `You have no event type at /${slug}.`)
+    const createdAt = Number.isFinite(item.createdAt) && item.createdAt > 0 ? item.createdAt : now
+    return { tag, label, slug, createdAt }
+  })
 }
 
 export function cleanOverrides(value, now, table) {
@@ -121,7 +152,9 @@ export function privateHost(env, host, base) {
     tzLabel: host.tzLabel,
     tableEnd: host.tzTable && host.tzTable.length ? host.tableEnd || 0 : 0,
     weekly: host.weekly,
+    paused: Array.isArray(host.paused) ? host.paused : [],
     overrides: host.overrides || {},
+    tags: Array.isArray(host.tags) ? host.tags : [],
     notify: host.notify !== false,
     feed: base + '/feed/' + host.feed + '.ics'
   }
@@ -146,7 +179,7 @@ export function createHost(env, m, input, now) {
   const weekly = input.weekly ? cleanWeekly(input.weekly) : WORKWEEK
   const doc = {
     member: m.id, handle, name, picture: m.picture || null, email: m.email || null, bio: '',
-    ...zone, weekly, overrides: {}, notify: true, feed: randomId(32), createdAt: now
+    ...zone, weekly, paused: [], overrides: {}, tags: [], notify: true, feed: randomId(32), createdAt: now
   }
   let host
   let created = false
@@ -174,6 +207,8 @@ export function updateHost(env, m, host, input, now) {
   if ('notify' in input) set.notify = input.notify !== false
   if ('tz' in input || 'tzTable' in input) Object.assign(set, zoneFields(input))
   if ('weekly' in input) set.weekly = cleanWeekly(input.weekly)
+  if ('paused' in input) set.paused = cleanPaused(input.paused)
+  if ('tags' in input) set.tags = cleanTags(env, host, input.tags, now)
   if ('overrides' in input) set.overrides = cleanOverrides(input.overrides, now, set.tzTable || host.tzTable)
   if (input.rotateFeed === true) set.feed = randomId(32)
   // Sign-in details can change: keep the picture and verified email fresh.

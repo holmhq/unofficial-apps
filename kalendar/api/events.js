@@ -73,6 +73,7 @@ export function updateEvent(env, host, id, input) {
   if (set.slug && set.slug !== event.slug) uniqueSlug(env, host.id, set.slug, id)
   if ('order' in input) set.order = int(input.order, 'Order', 0, 1000)
   ds(env).update('events', { id }, { $set: set })
+  if (set.slug && set.slug !== event.slug) retag(env, host, event.slug, set.slug)
   return { ...event, ...set }
 }
 
@@ -80,6 +81,15 @@ export function deleteEvent(env, host, id) {
   const event = ds(env).findOne('events', id)
   if (!event || event.host !== host.id) reject(404, 'not_found', 'That event type is gone.')
   ds(env).delete('events', { id })
+  retag(env, host, event.slug, null)
+}
+
+// Saved links follow their event type to its new link, or open the profile
+// once it's gone.
+function retag(env, host, from, to) {
+  const tags = Array.isArray(host.tags) ? host.tags : []
+  if (!tags.some((x) => x.slug === from)) return
+  ds(env).update('hosts', { id: host.id }, { $set: { tags: tags.map((x) => (x.slug === from ? { ...x, slug: to } : x)) } })
 }
 
 export function createDefaults(env, host) {

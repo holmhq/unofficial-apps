@@ -7,21 +7,29 @@
 // host painting weekly hours, and a host settling a request. Callers keep the
 // data; the strip draws it and reports what the pointer did.
 //
+// The whole day zooms: pinch, ctrl or ⌘ with the scroll wheel (a trackpad
+// pinch), or the − and + of zoomControl(). Positions are written in minutes
+// times one CSS variable (--ppm, pixels per minute), so a zoom moves nothing
+// but that variable and the scroll.
+//
 //   timeline({
-//     tracks: [{ key, label, sub, dim, today }],
+//     tracks: [{ key, label, sub, dim, today, paused }],
 //     mode: 'clip' | 'strips',
-//     layers: (track) => ({ shade, busy, glow }),     minutes of the day, [[a, b]]
-//     strips: { get(key), set(key, ranges), kind: 'host' | 'guest', step, min },
-//     clip: { get(), place(key, start) },             place() snaps, or returns null
+//     layers: (track) => ({ shade, busy, glow, mark }),  minutes of the day, [[a, b]]
+//     strips: { get(key), set(key, ranges, { live }), kind: 'host' | 'guest', step, min, max, editable, across },
+//     clip: { get(), set(c), place(key, start) },        place() snaps, or returns null
 //     now: () => ({ key, minute }) | null,
+//     zoom: 'week',                                      remember the zoom under this name
+//     days: { toggle(key, on), move(from, to) },         the host's week: a switch per day, days that drag
 //     onTap(key, minute), onChange(), onSelect(sel), onLive()
 //   })
-import { h, fill, haptic, reduced, wide } from './ui.js'
+import { h, fill, ic, haptic, reduced, wide } from './ui.js'
 import * as t from './time.js'
 import { sound } from './sound.js'
 
 const DAY = 1440
 const HOLD = 260
+const ZOOM_MAX = 6
 
 const pad = (n) => String(n).padStart(2, '0')
 
@@ -40,7 +48,8 @@ export function span(a, b) {
   return pa === pb ? `${short(a)} – ${short(b)} ${pb}` : `${short(a)} ${pa} – ${short(b)} ${pb}`
 }
 
-function hourLabel(hh) {
+function hourLabel(hh, min = 0) {
+  if (min) return t.clock24() ? `${pad(hh % 24)}:${pad(min)}` : `${hh % 12 || 12}:${pad(min)}`
   if (t.clock24()) return `${pad(hh % 24)}:00`
   const x = hh % 24
   return x === 12 ? 'Noon' : x === 0 ? '12 AM' : `${x % 12} ${x < 12 ? 'AM' : 'PM'}`
@@ -67,16 +76,35 @@ export function intersect(xs, ys) {
   return merge(out)
 }
 
+// Where a span `len` long can start in a day that already has `list`,
+// nearest to `want`, or null when no gap is long enough.
+function fitInto(list, want, len) {
+  let best = null
+  let edge = 0
+  for (const [a, b] of [...list.slice().sort((x, y) => x[0] - y[0]), [DAY, DAY]]) {
+    if (a - edge >= len) {
+      const at = Math.max(edge, Math.min(a - len, want))
+      if (best === null || Math.abs(at - want) < Math.abs(best - want)) best = at
+    }
+    edge = Math.max(edge, b)
+  }
+  return best
+}
+
 export function timeline(o) {
+  const zoomKey = o.zoom ? 'kalendar:zoom:' + o.zoom : null
+  const base = () => o.ppm || (wide() ? 1 : 1.15)
+  const kept = () => { try { const z = Number(localStorage.getItem(zoomKey)); return zoomKey && z > 0 ? z : null } catch { return null } }
   const state = {
     tracks: o.tracks || [],
     mode: o.mode || 'clip',
-    ppm: o.ppm || (wide() ? 1 : 1.15),
+    ppm: kept() || base(),
     sel: null,
-    drag: null
+    drag: null,
+    shown: null
   }
-  const labelW = () => (wide() ? 96 : 70)
-  const laneW = () => Math.round(DAY * state.ppm)
+  const labelW = () => (o.days ? (wide() ? 136 : 112) : wide() ? 96 : 70)
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
   const corner = h('div.tl-corner', o.corner || null)
   const scale = h('div.tl-scale')
@@ -85,20 +113,24 @@ export function timeline(o) {
   const sheet = h('div.tl-sheet', ruler, rows)
   const el = h('div.tl' + (o.className ? '.' + o.className : ''), { role: 'group', 'aria-label': o.label || 'Times' }, sheet)
   const lanes = new Map()
+  const zooms = new Set()
 
   /* ---- Drawing ---------------------------------------------------------------- */
 
   function layout() {
-    sheet.style.setProperty('--lane', laneW() + 'px')
+    sheet.style.setProperty('--ppm', String(state.ppm))
     sheet.style.setProperty('--label', labelW() + 'px')
-    sheet.style.setProperty('--hour', state.ppm * 60 + 'px')
   }
 
+  // Hour marks: every hour when there's room, every two or three when the
+  // day is zoomed right out, and half hours when it's zoomed right in.
   function drawScale() {
-    const every = state.ppm * 60 >= 52 ? 1 : 2
+    const hour = state.ppm * 60
+    const every = hour >= 52 ? 1 : hour >= 26 ? 2 : 3
     const ticks = []
     for (let hh = 0; hh <= 24; hh += every) {
-      ticks.push(h('span.tl-tick' + (hh === 0 ? '.first' : hh === 24 ? '.last' : ''), { style: { left: hh * 60 * state.ppm + 'px' } }, hh < 24 ? hourLabel(hh) : ''))
+      ticks.push(h('span.tl-tick' + (hh === 0 ? '.first' : hh === 24 ? '.last' : ''), { style: { left: at(hh * 60) } }, hh < 24 ? hourLabel(hh) : ''))
+      if (hour >= 150 && hh < 24) ticks.push(h('span.tl-tick.half', { style: { left: at(hh * 60 + 30) } }, hourLabel(hh, 30)))
     }
     fill(scale, ticks)
   }
@@ -109,14 +141,22 @@ export function timeline(o) {
       const lane = h('div.tl-lane', { 'data-key': track.key, tabindex: '-1' })
       lanes.set(track.key, lane)
       drawLane(track, lane)
-      return h('div.tl-row' + (track.dim ? '.dim' : '') + (track.today ? '.today' : ''), { 'data-key': track.key },
-        h('div.tl-label', h('b', track.label), track.sub ? h('small', track.sub) : null),
+      return h('div.tl-row' + (track.dim ? '.dim' : '') + (track.today ? '.today' : '') + (track.paused ? '.paused' : ''), { 'data-key': track.key },
+        h('div.tl-label' + (o.days ? '.day' : ''),
+          h('div.tl-name', h('b', track.label), track.sub ? h('small', track.sub) : null),
+          o.days && o.days.toggle ? daySwitch(track) : null),
         lane)
     }))
   }
 
-  const px = (min) => min * state.ppm + 'px'
-  const box = (cls, a, b, kids = []) => h(cls, { style: { left: px(a), width: px(Math.max(b - a, 1)) } }, kids)
+  function daySwitch(track) {
+    const input = h('input.switch.mini', { type: 'checkbox', role: 'switch', checked: !track.paused && !track.dim, 'aria-label': `${track.label}: open for bookings` })
+    input.addEventListener('change', () => o.days.toggle(track.key, input.checked))
+    return input
+  }
+
+  const at = (min) => `calc(var(--ppm) * ${min}px)`
+  const box = (cls, a, b, kids = []) => h(cls, { style: { left: at(a), width: at(Math.max(b - a, 1)) } }, kids)
 
   function drawLane(track, lane = lanes.get(track.key)) {
     if (!lane) return
@@ -145,22 +185,26 @@ export function timeline(o) {
     const c = o.clip && o.clip.get()
     if (c && c.key === track.key && state.mode === 'clip') {
       const narrow = (c.end - c.start) * state.ppm < 66
-      const clip = box('div.tl-clip.' + (c.mode || 'open') + (narrow ? '.narrow' : ''), c.start, c.end, narrow ? [h('span.tl-flag', short(c.start))] : [h('span.tl-text', clipLabel(c))])
+      // It pops in where it lands, not while it's dragged or nudged.
+      const was = state.shown
+      const fresh = !state.drag && (!was || was.key !== c.key || Math.abs(was.start - c.start) > c.end - c.start)
+      state.shown = { key: c.key, start: c.start }
+      const clip = box('div.tl-clip.' + (c.mode || 'open') + (narrow ? '.narrow' : '') + (fresh ? '.fresh' : ''), c.start, c.end, narrow ? [h('span.tl-flag', short(c.start))] : [h('span.tl-text', clipLabel(c))])
       clip.dataset.part = 'clip'
       clip.tabIndex = 0
       clip.setAttribute('role', 'slider')
       clip.setAttribute('aria-label', o.clipAria ? o.clipAria(c) : span(c.start, c.end))
       clip.setAttribute('aria-valuetext', span(c.start, c.end))
       kids.push(clip)
-    }
-    if (now && now.key === track.key) kids.push(h('div.tl-now', { style: { left: px(now.minute) } }))
+    } else if (!c) state.shown = null
+    if (now && now.key === track.key) kids.push(h('div.tl-now', { style: { left: at(now.minute) } }))
     fill(lane, kids)
   }
 
   function label(a, b, kind) {
     const w = (b - a) * state.ppm
     if (o.stripLabel) return o.stripLabel(a, b, kind, w)
-    return w > 150 ? span(a, b) : w > 84 ? `${short(a)}–${short(b)}` : w > 44 ? short(a) : ''
+    return w > 150 ? span(a, b) : w > 84 ? `${short(a)}–${short(b)}` : w > 58 ? short(a) : ''
   }
 
   function clipLabel(c) {
@@ -180,11 +224,121 @@ export function timeline(o) {
     if (track) drawLane(track)
   }
 
+  /* ---- Zoom ----------------------------------------------------------------------- */
+
+  // Out to the whole day in view, in to an hour across a phone.
+  const fit = () => (el.clientWidth > labelW() ? (el.clientWidth - labelW()) / DAY : base())
+  const limits = () => [Math.min(fit(), base()), ZOOM_MAX]
+
+  // Zoom to `ppm`, keeping the time under client x `ax` (default: the middle) still.
+  function zoomNow(ppm, ax = null) {
+    const [lo, hi] = limits()
+    ppm = clamp(ppm, lo, hi)
+    if (Math.abs(ppm - state.ppm) < 1e-4) return
+    const r = el.getBoundingClientRect()
+    const x = (ax == null ? r.left + labelW() + (el.clientWidth - labelW()) / 2 : ax) - r.left - labelW()
+    const minute = (el.scrollLeft + x) / state.ppm
+    state.ppm = ppm
+    sheet.style.setProperty('--ppm', String(ppm))
+    el.scrollLeft = minute * ppm - x
+    settle()
+  }
+
+  let zoomRaf = 0
+  function zoomTo(ppm, ax = null) {
+    cancelAnimationFrame(zoomRaf)
+    const [lo, hi] = limits()
+    const to = clamp(ppm, lo, hi)
+    if (reduced()) { zoomNow(to, ax); return }
+    const from = state.ppm
+    const t0 = performance.now()
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / 260)
+      const e = 1 - Math.pow(1 - p, 3)
+      zoomNow(from * Math.pow(to / from, e), ax)
+      if (p < 1) zoomRaf = requestAnimationFrame(step)
+    }
+    zoomRaf = requestAnimationFrame(step)
+  }
+
+  // Once a zoom comes to rest, redraw what depends on width (the hour marks,
+  // the times written inside spans) and remember it for next time.
+  let settleTimer = 0
+  function settle() {
+    clearTimeout(settleTimer)
+    paintZooms()
+    settleTimer = setTimeout(() => {
+      drawScale()
+      for (const track of state.tracks) drawLane(track)
+      try { if (zoomKey) localStorage.setItem(zoomKey, String(Math.round(state.ppm * 1000) / 1000)) } catch {}
+    }, 140)
+  }
+
+  el.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey && !e.metaKey) return
+    e.preventDefault()
+    cancelAnimationFrame(zoomRaf)
+    zoomNow(state.ppm * Math.exp(-clamp(e.deltaY, -60, 60) * 0.012), e.clientX)
+  }, { passive: false })
+
+  // Two fingers pinch, followed as pointers (touch events don't always come
+  // once the strip's own gestures are under way).
+  let pinch = null
+  const fingers = new Map()
+  const pair = () => [...fingers.values()].slice(0, 2)
+  const gap = ([a, b]) => Math.hypot(a.x - b.x, a.y - b.y)
+  el.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return
+    fingers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (fingers.size !== 2) return
+    // The first finger may have caught a handle or a strip: a second one
+    // makes it a pinch, and whatever the first had started is put back.
+    const p = state.pending
+    if (p) { clearTimeout(p.timer); state.pending = null }
+    if (state.drag) abandon()
+    pinch = { d: Math.max(20, gap(pair())), ppm: state.ppm }
+    cancelAnimationFrame(zoomRaf)
+  }, true)
+  const onFinger = (e) => {
+    const f = fingers.get(e.pointerId)
+    if (!f) return
+    f.x = e.clientX
+    f.y = e.clientY
+    if (!pinch || fingers.size < 2) return
+    const [a, b] = pair()
+    zoomNow(pinch.ppm * gap([a, b]) / pinch.d, (a.x + b.x) / 2)
+  }
+  const offFinger = (e) => { fingers.delete(e.pointerId); if (fingers.size < 2) pinch = null }
+  addEventListener('pointermove', onFinger)
+  addEventListener('pointerup', offFinger)
+  addEventListener('pointercancel', offFinger)
+  // While something is dragged or pinched, a finger mustn't scroll the page.
+  el.addEventListener('touchmove', (e) => { if (state.drag || pinch) e.preventDefault() }, { passive: false })
+
+  // − whole day + : a small control for the page to place.
+  function zoomControl() {
+    const less = h('button.zoom-btn', { type: 'button', 'aria-label': 'Zoom out', title: 'Zoom out', onclick: () => { zoomTo(state.ppm / 1.6); sound.tap() } }, ic('minus', 16, 2.4))
+    const whole = h('button.zoom-btn.whole', { type: 'button', 'aria-label': 'Show the whole day', title: 'Whole day', onclick: () => { zoomTo(fit()); sound.tap() } }, h('span', '24h'))
+    const more = h('button.zoom-btn', { type: 'button', 'aria-label': 'Zoom in', title: 'Zoom in', onclick: () => { zoomTo(state.ppm * 1.6); sound.tap() } }, ic('plus', 16, 2.4))
+    const box = h('div.zoom', { role: 'group', 'aria-label': 'Zoom' }, less, whole, more)
+    zooms.add({ less, whole, more })
+    requestAnimationFrame(paintZooms)
+    return box
+  }
+
+  function paintZooms() {
+    const [lo, hi] = limits()
+    for (const z of zooms) {
+      z.less.disabled = state.ppm <= lo + 1e-3
+      z.more.disabled = state.ppm >= hi - 1e-3
+      z.whole.classList.toggle('on', state.ppm <= fit() + 1e-3)
+    }
+  }
+
   /* ---- Pointer ------------------------------------------------------------------- */
 
   const minuteAt = (lane, x) => (x - lane.getBoundingClientRect().left) / state.ppm
   const snap = (m, step = (o.strips && o.strips.step) || 15) => Math.round(m / step) * step
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
   function laneAt(y) {
     for (const [key, lane] of lanes) {
@@ -210,13 +364,24 @@ export function timeline(o) {
 
   el.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return
+    // A second finger is a pinch, not a paint.
+    if (!e.isPrimary) { const p = state.pending; if (p) { clearTimeout(p.timer); state.pending = null } return }
+    const touch = e.pointerType === 'touch'
+    const dayLabel = o.days && o.days.move && e.target.closest('.tl-label')
+    if (dayLabel) {
+      if (e.target.closest('input')) return
+      const key = dayLabel.parentNode.dataset.key
+      state.pending = { kind: 'day', key, x: e.clientX, y: e.clientY, id: e.pointerId, hold: touch }
+      if (touch) armHold()
+      else e.preventDefault()
+      return
+    }
     const lane = e.target.closest('.tl-lane')
     if (!lane) return
     const key = lane.dataset.key
     const at = minuteAt(lane, e.clientX)
     const partEl = e.target.closest('[data-part]')
     const part = partEl && partEl.dataset.part
-    const touch = e.pointerType === 'touch'
     const start = { x: e.clientX, y: e.clientY, key, at, id: e.pointerId, target: e.target }
 
     if (part === 'clip' && state.mode === 'clip') {
@@ -265,6 +430,7 @@ export function timeline(o) {
 
   function startPending(p, x, y) {
     state.pending = null
+    if (p.kind === 'day') { liftDay(p, x, y); return }
     const lane = lanes.get(p.key)
     if (!lane) return
     if (p.kind === 'clip-new') {
@@ -287,7 +453,8 @@ export function timeline(o) {
       moveTo(x, y)
     } else if (p.kind === 'move') {
       select({ key: p.key, index: p.index })
-      begin({ kind: 'move', key: p.key, index: p.index, list: p.list, grab: p.grab }, { target: el, pointerId: p.id })
+      const len = p.list[p.index][1] - p.list[p.index][0]
+      begin({ kind: 'move', key: p.key, index: p.index, list: p.list, grab: p.grab, from: p.key, fromIndex: p.index, len, orig: new Map([[p.key, p.list]]), touched: new Set([p.key]) }, { target: el, pointerId: p.id })
       moveTo(x, y)
     }
   }
@@ -303,21 +470,19 @@ export function timeline(o) {
       if (moved > 4) startPending(p, e.clientX, e.clientY)
       return
     }
-    if (!state.drag) return
+    if (!state.drag || e.pointerId !== undefined && state.drag.id !== undefined && e.pointerId !== state.drag.id) return
     e.preventDefault()
     moveTo(e.clientX, e.clientY)
-    edgeScroll(e.clientX)
+    if (state.drag && state.drag.kind !== 'day') edgeScroll(e.clientX)
   }
   addEventListener('pointermove', onMove, { passive: false })
-
-  // While something is being dragged, a finger mustn't scroll the page.
-  el.addEventListener('touchmove', (e) => { if (state.drag) e.preventDefault() }, { passive: false })
 
   function moveTo(x, y) {
     const d = state.drag
     if (!d) return
     d.x = x
     d.y = y
+    if (d.kind === 'day') { dragDay(x, y); return }
     if (d.kind === 'clip') {
       const hit = laneAt(y) || { key: d.last.key, lane: lanes.get(d.last.key) }
       const at = minuteAt(hit.lane, x)
@@ -333,6 +498,7 @@ export function timeline(o) {
       o.onLive && o.onLive()
       return
     }
+    if (d.kind === 'move' && o.strips.across) { moveAcross(d, x, y); return }
     const lane = lanes.get(d.key)
     const at = minuteAt(lane, x)
     const list = d.list.map((r) => r.slice())
@@ -359,6 +525,57 @@ export function timeline(o) {
     o.onLive && o.onLive()
   }
 
+  // A strip slides along its own day, or up and down into another, landing
+  // in the nearest gap long enough for it. A day with no room keeps it home.
+  function moveAcross(d, x, y) {
+    const hit = laneAt(y)
+    let key = hit ? hit.key : d.key
+    const want = (k) => snap(minuteAt(lanes.get(k), x) - d.grab)
+    const orig = (k) => {
+      if (!d.orig.has(k)) d.orig.set(k, stripsOf(k))
+      return d.orig.get(k).map((r) => r.slice())
+    }
+    const lists = new Map()
+    let index = d.fromIndex
+    if (key !== d.from) {
+      const target = orig(key)
+      const a = target.length >= (o.strips.max || 8) ? null : fitInto(target, want(key), d.len)
+      if (a === null) {
+        if (!d.full || d.full !== key) { d.full = key; sound.error(); haptic(12) }
+        key = d.from
+      } else {
+        d.full = null
+        target.push([a, a + d.len])
+        target.sort((p, q) => p[0] - q[0])
+        index = target.findIndex((r) => r[0] === a)
+        const home = orig(d.from)
+        home.splice(d.fromIndex, 1)
+        lists.set(d.from, home)
+        lists.set(key, target)
+      }
+    }
+    if (key === d.from) {
+      const home = orig(d.from)
+      const [lo, hi] = bounds(home, d.fromIndex)
+      const a = clamp(want(d.from), lo, hi - d.len)
+      home[d.fromIndex] = [a, a + d.len]
+      lists.set(d.from, home)
+      index = d.fromIndex
+    }
+    // Put back any day it passed through.
+    for (const k of d.touched) if (!lists.has(k)) lists.set(k, orig(k))
+    const same = key === d.key && index === d.index && lists.get(key)[index][0] === o.strips.get(key)[d.index]?.[0]
+    if (same && lists.size === d.touched.size) return
+    if (key !== d.key) { haptic(8); sound.tick && sound.tick() } else haptic(2)
+    d.key = key
+    d.index = index
+    d.touched = new Set(lists.keys())
+    state.sel = { key, index }
+    for (const [k, list] of lists) { o.strips.set(k, list, { live: true }); redrawTrack(k) }
+    for (const row of rows.children) row.classList.toggle('drop', row.dataset.key === key && key !== d.from)
+    o.onLive && o.onLive()
+  }
+
   let scrollRaf = 0
   function edgeScroll(x) {
     cancelAnimationFrame(scrollRaf)
@@ -375,6 +592,55 @@ export function timeline(o) {
     scrollRaf = requestAnimationFrame(tick)
   }
 
+  /* ---- Moving a whole day ----------------------------------------------------------- */
+
+  // Hold a day's name (or press and drag it with a mouse) and it lifts; let
+  // go over another day to move its hours there, or swap the two.
+  function liftDay(p, x, y) {
+    const row = [...rows.children].find((r) => r.dataset.key === p.key)
+    if (!row) return
+    const label = row.querySelector('.tl-label')
+    const r = label.getBoundingClientRect()
+    const ghost = h('div.tl-ghost', { 'aria-hidden': 'true' }, label.querySelector('.tl-name').cloneNode(true), h('span.tl-ghost-hint'))
+    Object.assign(ghost.style, { left: r.left + 'px', top: r.top + 'px', width: Math.max(r.width, 150) + 'px', height: r.height + 'px' })
+    document.body.append(ghost)
+    row.classList.add('lifted')
+    begin({ kind: 'day', key: p.key, row, ghost, dy: y - r.top, target: null, id: p.id }, { target: el, pointerId: p.id })
+    sound.tap()
+    dragDay(x, y)
+  }
+
+  function dragDay(x, y) {
+    const d = state.drag
+    d.ghost.style.transform = `translate3d(0, ${y - d.dy - parseFloat(d.ghost.style.top)}px, 0) scale(1.03)`
+    const hit = laneAt(y)
+    const target = hit && hit.key !== d.key ? hit.key : null
+    if (target === d.target) return
+    d.target = target
+    for (const row of rows.children) {
+      row.classList.toggle('drop', row.dataset.key === target)
+      row.classList.toggle('swap', row.dataset.key === target && o.strips.get(target).length > 0)
+    }
+    const hint = d.ghost.querySelector('.tl-ghost-hint')
+    hint.textContent = target ? (o.strips.get(target).length ? 'Swap' : 'Move here') : ''
+    if (target) { haptic(6); sound.tick && sound.tick() }
+  }
+
+  function dropDay(d, cancelled) {
+    d.row.classList.remove('lifted')
+    for (const row of rows.children) row.classList.remove('drop', 'swap')
+    const target = cancelled ? null : d.target
+    const ghost = d.ghost
+    if (target && !reduced()) {
+      const to = [...rows.children].find((r) => r.dataset.key === target).getBoundingClientRect()
+      ghost.style.transition = 'transform .22s var(--ease-out), opacity .22s'
+      ghost.style.transform = `translate3d(0, ${to.top - parseFloat(ghost.style.top)}px, 0)`
+      ghost.style.opacity = '0'
+      setTimeout(() => ghost.remove(), 240)
+    } else ghost.remove()
+    if (target) o.days.move(d.key, target)
+  }
+
   function end(e) {
     const p = state.pending
     if (p && e.pointerId === p.id) {
@@ -382,6 +648,7 @@ export function timeline(o) {
       state.pending = null
       if (p.held) return
       // A tap.
+      if (p.kind === 'day') return
       if (p.tapSelect) { select(state.sel && state.sel.key === p.key && state.sel.index === p.index ? null : { key: p.key, index: p.index }); return }
       if (p.kind === 'move') return
       if (state.sel && state.mode === 'strips') { select(null); return }
@@ -393,7 +660,11 @@ export function timeline(o) {
     const d = state.drag
     state.drag = null
     el.classList.remove('dragging')
+    if (d.kind === 'day') { dropDay(d, e.type === 'pointercancel'); return }
     if (d.kind !== 'clip') {
+      for (const row of rows.children) row.classList.remove('drop')
+      // Other days a strip passed through or left settle first.
+      if (d.touched) for (const k of d.touched) if (k !== d.key) { o.strips.set(k, merge(o.strips.get(k)), { live: false }); redrawTrack(k) }
       const list = o.strips.get(d.key)
       const keep = list[d.index]
       const merged = merge(list)
@@ -406,6 +677,21 @@ export function timeline(o) {
     } else sound.tap()
     o.onChange && o.onChange()
   }
+  // Put a drag back as it was, unsaved: a pinch took over.
+  function abandon() {
+    const d = state.drag
+    state.drag = null
+    el.classList.remove('dragging')
+    cancelAnimationFrame(scrollRaf)
+    if (d.kind === 'day') { dropDay(d, true); return }
+    if (d.kind === 'clip') return
+    if (d.kind === 'move' && d.orig) for (const [k, list] of d.orig) { o.strips.set(k, list, { live: true }); redrawTrack(k) }
+    else if (d.kind === 'paint') { o.strips.set(d.key, d.list.filter((_, i) => i !== d.index), { live: true }); redrawTrack(d.key) }
+    else if (d.list) { o.strips.set(d.key, d.list, { live: true }); redrawTrack(d.key) }
+    for (const row of rows.children) row.classList.remove('drop')
+    select(null)
+  }
+
   const onCancel = (e) => {
     const p = state.pending
     if (p && e.pointerId === p.id) { clearTimeout(p.timer); state.pending = null }
@@ -438,6 +724,11 @@ export function timeline(o) {
   }
 
   el.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+' || e.key === '-')) {
+      e.preventDefault()
+      zoomTo(state.ppm * (e.key === '-' ? 1 / 1.6 : 1.6))
+      return
+    }
     if (state.mode === 'clip' && e.target.closest('.tl-clip')) {
       const c = o.clip.get()
       if (!c) return
@@ -504,15 +795,17 @@ export function timeline(o) {
     el.scrollLeft = Math.max(0, minute * state.ppm - 8)
   }
 
-  const onResize = () => {
-    const ppm = o.ppm || (wide() ? 1 : 1.15)
-    if (ppm === state.ppm) return
-    const mid = (el.scrollLeft + (el.clientWidth - labelW()) / 2) / state.ppm
-    state.ppm = ppm
-    redraw()
-    el.scrollLeft = Math.max(0, mid * ppm - (el.clientWidth - labelW()) / 2)
-  }
-  addEventListener('resize', onResize)
+  // A new width can make the kept zoom too far out (or the label column change).
+  let lastW = 0
+  const sizer = new ResizeObserver(() => {
+    if (!el.clientWidth || el.clientWidth === lastW) return
+    lastW = el.clientWidth
+    layout()
+    const [lo, hi] = limits()
+    if (state.ppm < lo - 1e-4 || state.ppm > hi + 1e-4) zoomNow(clamp(state.ppm, lo, hi))
+    else paintZooms()
+  })
+  sizer.observe(el)
 
   redraw()
 
@@ -523,6 +816,8 @@ export function timeline(o) {
     reveal,
     scrollToMinute,
     removeSelected,
+    zoomControl,
+    zoomTo,
     get selected() { return state.sel },
     select,
     setTracks(tracks) { state.tracks = tracks; drawRows() },
@@ -530,10 +825,13 @@ export function timeline(o) {
     get mode() { return state.mode },
     lane: (key) => lanes.get(key),
     destroy() {
-      removeEventListener('resize', onResize)
+      sizer.disconnect()
       removeEventListener('pointerup', end)
       removeEventListener('pointermove', onMove)
       removeEventListener('pointercancel', onCancel)
+      removeEventListener('pointermove', onFinger)
+      removeEventListener('pointerup', offFinger)
+      removeEventListener('pointercancel', offFinger)
     }
   }
 }

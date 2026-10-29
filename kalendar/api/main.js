@@ -29,3 +29,6 @@ export async function opRequestsAccept(input, env) { return (await ops()).opRequ
 export async function opRequestsDecline(input, env) { return (await ops()).opRequestsDecline(input, env) }
 export async function opSlotsList(input, env) { return (await ops()).opSlotsList(input, env) }
 export async function opStats(input, env) { return (await ops()).opStats(input, env) }
+export async function opLinksList(input, env) { return (await ops()).opLinksList(input, env) }
+export async function opLinksCreate(input, env) { return (await ops()).opLinksCreate(input, env) }
+export async function opLinksDelete(input, env) { return (await ops()).opLinksDelete(input, env) }

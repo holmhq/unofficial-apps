@@ -6,6 +6,7 @@
 // the host settles on a time inside what they painted. No account either way.
 import { h, fill, ic, avatar, toast, haptic, nope, reduced, wide, segmented } from '../ui.js'
 import * as api from '../api.js'
+import * as store from '../store.js'
 import { state, topBar, go, link, failure, holmFooter, signIn } from '../shell.js'
 import { sound } from '../sound.js'
 import * as t from '../time.js'
@@ -26,25 +27,36 @@ const enc = encodeURIComponent
 const savedZone = () => { try { return localStorage.getItem(ZONE_KEY) } catch { return null } }
 const remembered = () => { try { return JSON.parse(localStorage.getItem(ME_KEY) || 'null') || {} } catch { return {} } }
 
+// The page and its open times draw at once from what this browser saw
+// last, when it has them; the server's answers follow behind.
 export async function book(handle, slug) {
   const params = new URLSearchParams(location.search)
   const moving = params.get('reschedule') && params.get('t') ? { id: params.get('reschedule'), token: params.get('t') } : null
-  let page
+  const key = `u:${handle.toLowerCase()}/${slug}`
+  const asking = api.get(`/api/u/${enc(handle)}/${enc(slug)}`)
+  let page = moving ? null : store.peek(key)
   let old = null
   try {
     ;[page, old] = await Promise.all([
-      api.get(`/api/u/${enc(handle)}/${enc(slug)}`),
+      page || asking,
       moving ? api.get(`/api/b/${enc(moving.id)}?t=${enc(moving.token)}`).catch(() => null) : null
     ])
   } catch (error) {
     return missingHost(handle, error)
   }
+  // A changed event (a new length, say) redraws the page, unless the guest
+  // has already started choosing.
+  asking.then((fresh) => {
+    if (store.keep(key, fresh) && page !== fresh && s.step === 'pick' && !s.clip && !s.paint.length && location.pathname === `/@${handle}/${slug}`) go(location.pathname + location.search, { replace: true, dir: 'none' })
+  }).catch(() => {})
   const { host, event } = page
   if (old && old.status !== 'confirmed') old = null
   const first = host.name.split(' ')[0]
   const dur = event.duration
   const asks = !old && event.requests !== false
   const visit = track.page(host.handle, { event: event.slug })
+  document.title = `${event.title} with ${host.name} · Kalendar`
+  const slotsKey = old ? null : key + ':slots'
 
   const s = {
     zone: savedZone() || here(),
@@ -92,6 +104,7 @@ export async function book(handle, slug) {
     className: 'guest',
     tracks: [],
     mode: 'clip',
+    zoom: 'guest',
     clipLength: dur,
     keyStep: 15,
     corner: h('span.tl-zone', city(s.zone)),
@@ -124,7 +137,7 @@ export async function book(handle, slug) {
       get: stripsOn,
       set: (key, ranges, { live }) => setStrips(key, ranges, live)
     },
-    stripLabel: (a, b, kind, w) => (w > 150 ? span(a, b) : w > 84 ? `${short(a)}–${short(b)}` : w > 44 ? short(a) : ''),
+    stripLabel: (a, b, kind, w) => (w > 150 ? span(a, b) : w > 84 ? `${short(a)}–${short(b)}` : w > 58 ? short(a) : ''),
     onTap: (key, minute) => {
       if (s.mode !== 'clip') return
       const c = placeClip(key, Math.round(minute - dur / 2))
@@ -145,7 +158,7 @@ export async function book(handle, slug) {
     h('div.pick-head',
       modeSeg ? null : h('h2.step-title.only-wide', old ? 'Pick a new time' : 'Pick a time'),
       modeSeg ? h('div.mode-wrap', modeSeg) : null,
-      h('div.zone-line', zoneBtn, clockSeg)),
+      h('div.zone-line', zoneBtn, h('span.grow'), tl.zoomControl(), clockSeg)),
     hint,
     h('div.tl-wrap', tl.el),
     bar)
@@ -168,11 +181,14 @@ export async function book(handle, slug) {
     const from = Math.max(s.loadedTo, Date.now() - 3600000)
     const end = Math.min(from + 44 * 86400000, Math.max(to, from + 21 * 86400000))
     const skip = old ? `&skip=${enc(old.id)}&t=${enc(moving.token)}` : ''
-    tl.el.classList.add('loading')
+    const first = !s.loadedTo
+    if (!s.seeded) tl.el.classList.add('loading')
     s.loading = api.get(`/api/u/${enc(host.handle)}/${enc(event.slug)}/slots?from=${from}&to=${end}${skip}`).then((r) => {
       s.until = r.until
       s.loadedTo = end
-      s.slots = [...new Set([...s.slots, ...r.slots])].sort((a, b) => a - b)
+      // The first answer replaces what was kept; later ones add days to it.
+      s.slots = first ? r.slots.slice() : [...new Set([...s.slots, ...r.slots])].sort((a, b) => a - b)
+      if (first && slotsKey) store.keep(slotsKey, { slots: r.slots, until: r.until })
       group()
     }).finally(() => { s.loading = null; tl.el.classList.remove('loading') })
     return s.loading
@@ -302,26 +318,35 @@ export async function book(handle, slug) {
     requestAnimationFrame(() => { const c = tl.lane(w.key) && tl.lane(w.key).querySelector('.tl-clip'); c && c.focus({ preventScroll: true }) })
   }
 
+  // The bar changes in place while the meeting is dragged; only a new kind
+  // of bar (nothing picked, a time, a request, painted times) moves in.
+  function setBar(kind, ...kids) {
+    const same = bar.dataset.kind === kind
+    bar.dataset.kind = kind
+    fill(bar, ...kids)
+    bar.classList.toggle('still', same)
+  }
+
   function paintBar() {
     if (s.mode === 'clip') {
       fill(hint, asks ? `Tap a shaded time to pick it. Tap anywhere else to ask ${first} for that time instead.` : 'Tap a shaded time to pick it, then drag to fine-tune.')
       if (!s.clip) {
         const soon = soonest()
-        fill(bar, h('div.bar-text', h('b', 'Pick a time'), h('span', s.slots.length || s.loading ? `Shaded is when ${first} is free.` : `${first} has nothing open right now.`)), soon)
+        setBar('pick' + (soon ? '-soon' : ''), h('div.bar-text', h('b', 'Pick a time'), h('span', s.slots.length || s.loading ? `Shaded is when ${first} is free.` : `${first} has nothing open right now.`)), soon)
         return
       }
       const end = s.clip.ms + dur * MIN
       const ask = s.clip.mode === 'ask'
-      fill(bar,
+      setBar(ask ? 'ask' : 'open',
         h('div.bar-text', h('b.num', t.range(s.clip.ms, end, s.zone)), h('span', `${t.relativeDay(s.clip.ms, s.zone) || t.weekday(s.clip.ms, s.zone)}, ${t.monthDay(s.clip.ms, s.zone)}${ask ? ` · not in ${first}’s hours` : ` · ${city(s.zone)}`}`)),
         h('button.btn' + (ask ? '.tinted' : '.primary'), { type: 'button', onclick: toDetails }, ask ? `Ask ${first}` : 'Next', ic('arrowRight', 17, 2.4)))
       return
     }
     fill(hint, `${wide() ? 'Drag' : 'Hold, then drag'} along a day to paint when you’re free; drag the ends to trim. Where it meets ${first}’s free time it glows.`)
     const n = s.paint.length
-    if (!n) { fill(bar, h('div.bar-text', h('b', 'Suggest times'), h('span', `${first} picks one that works and emails you.`))); return }
+    if (!n) { setBar('suggest', h('div.bar-text', h('b', 'Suggest times'), h('span', `${first} picks one that works and emails you.`))); return }
     const best = bestMatch()
-    fill(bar,
+    setBar('painted',
       h('div.bar-text', h('b', `${n} ${n === 1 ? 'time' : 'times'} painted`),
         best
           ? h('span', `${first} is free in ${n === 1 ? 'part of it' : 'some'}: `, h('button.inline-link', { type: 'button', onclick: () => jumpTo(best) }, `book ${t.relativeDay(best, s.zone) ? '' : t.weekday(best, s.zone, 'short') + ' '}${t.clock(best, s.zone)}`))
@@ -435,6 +460,8 @@ export async function book(handle, slug) {
     if (s.request) { input.request = true; input.ranges = s.request } else input.start = s.clip.ms
     if (f.phone) input.phone = inputs.phone.value.trim()
     if (old) input.reschedule = moving
+    const came = track.tag(host.handle)
+    if (came) input.ref = came
     try { localStorage.setItem(ME_KEY, JSON.stringify({ name: input.name, email: input.email, phone: input.phone || '' })) } catch {}
     try {
       const result = await api.op('bookings.create', input, { challenge: true, key: crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) })
@@ -553,16 +580,31 @@ export async function book(handle, slug) {
 
   history.replaceState({ page: location.pathname + location.search, step: 'pick' }, '', location.href)
   paintZone()
-  paintBar()
-  tl.setTracks(tracks())
-  tl.scrollToMinute(8 * 60)
-  const opening = load(Date.now() + 30 * 86400000).then(() => {
-    tl.setTracks(tracks())
-    // Open the strip at the soonest open time, so hours that cross midnight
-    // in the guest's zone don't start it at 12 AM.
+  // Open the strip at the soonest open time, so hours that cross midnight
+  // in the guest's zone don't start it at 12 AM.
+  const toSoonest = () => {
     const firstOpen = s.slots.find((x) => x > Date.now())
     const w = firstOpen ? t.wall(firstOpen, s.zone) : null
     tl.scrollToMinute(Math.max(0, (w ? w.min : 8 * 60) - 45))
+    return w
+  }
+  const kept = slotsKey && store.peek(slotsKey)
+  if (kept && kept.slots) {
+    s.seeded = true
+    s.slots = kept.slots.filter((x) => x > Date.now())
+    s.until = kept.until || s.until
+    group()
+  }
+  paintBar()
+  tl.setTracks(tracks())
+  if (s.seeded) toSoonest()
+  else tl.scrollToMinute(8 * 60)
+  const opening = load(Date.now() + 30 * 86400000).then(() => {
+    const before = tl.el.scrollLeft
+    tl.setTracks(tracks())
+    const w = s.seeded ? null : toSoonest()
+    if (s.seeded) tl.el.scrollLeft = before
+    s.seeded = false
     if (old && w) tl.reveal(t.wall(old.start, s.zone).key, t.wall(old.start, s.zone).min, { smooth: false })
     paintBar()
   }, failure)

@@ -3,7 +3,7 @@
 // host's list and calendar feed. A guest can also ask for times outside the
 // host's hours: they paint when they could meet, and the host accepts at a
 // time inside it or declines. A request never blocks anyone else's booking.
-import { reject, text, longText, email as cleanEmail, int, randomId, sha256, hmac, sameHash, MIN, DAY, HOUR } from './lib.js'
+import { reject, text, longText, email as cleanEmail, int, randomId, sha256, hmac, sameHash, cleanTag, MIN, DAY, HOUR } from './lib.js'
 import { offsetAt, cleanZone, cleanZoneLabel } from './tz.js'
 import { slotsFor } from './slots.js'
 import { hostByHandle, publicHost } from './hosts.js'
@@ -254,6 +254,9 @@ export async function createBooking(env, input, now, base) {
     if (old.host !== host.id) reject(400, 'invalid_input', 'That booking is with someone else.')
     if (old.status !== 'confirmed') reject(410, 'gone', 'That booking was cancelled, so there’s nothing to move.')
   }
+  // The link that brought them (?ref=), for the host's stats. A bad one is
+  // dropped, never a reason to refuse the booking; a move keeps the first.
+  const ref = cleanTag(input.ref) || (old && old.ref) || null
 
   const day = new Date(now).toISOString().slice(0, 10)
   if (kv(env).increment(`cap:mail:${address}:${day}`, 1) > 10) reject(429, 'too_many', 'That address has booked a lot today. Try again tomorrow.')
@@ -267,7 +270,7 @@ export async function createBooking(env, input, now, base) {
   if (!open) {
     if (!asking) reject(409, 'slot_taken', 'That time just went. Pick another.')
     if (event.requests === false) reject(409, 'slot_taken', `${host.name} only takes the times shown.`)
-    return createRequest(env, { host, event, input, start, now, base, name, address, notes, location, phone, tz, tzLabel, offset, h24 })
+    return createRequest(env, { host, event, input, start, now, base, name, address, notes, location, phone, tz, tzLabel, offset, h24, ref })
   }
 
   const end = start + event.duration * MIN
@@ -275,7 +278,7 @@ export async function createBooking(env, input, now, base) {
   const doc = {
     host: host.id, event: event.id, slug: event.slug, eventTitle: event.title, duration: event.duration, color: event.color || 'blue',
     location, start, end, from: start - s.before * MIN, to: end + s.after * MIN,
-    name, email: address, phone, notes, tz, tzLabel, offset, h24,
+    name, email: address, phone, notes, tz, tzLabel, offset, h24, ref,
     tokenHash: await sha256(token), status: 'confirmed', sequence: 0, createdAt: now,
     rescheduledFrom: old ? old.id : null
   }
@@ -304,7 +307,7 @@ async function createRequest(env, c) {
     host: host.id, event: event.id, slug: event.slug, eventTitle: event.title, duration: event.duration, color: event.color || 'blue',
     location: c.location, start: first, end: first + event.duration * MIN, from: first, to: first + event.duration * MIN,
     ranges, until: ranges[ranges.length - 1][1], asked: true,
-    name: c.name, email: c.address, phone: c.phone, notes: c.notes, tz: c.tz, tzLabel: c.tzLabel, offset: c.offset, h24: c.h24,
+    name: c.name, email: c.address, phone: c.phone, notes: c.notes, tz: c.tz, tzLabel: c.tzLabel, offset: c.offset, h24: c.h24, ref: c.ref,
     tokenHash: await sha256(token), pendingToken: token, status: 'requested', sequence: 0, createdAt: now, rescheduledFrom: null
   }
   const id = ds(env).insert('bookings', doc)
@@ -391,7 +394,8 @@ export function hostDTO(b) {
     event: { title: b.eventTitle, slug: b.slug, duration: b.duration, color: b.color || 'blue' }, location: b.location || { kind: 'none', value: '' },
     tz: b.tz, tzLabel: b.tzLabel, cancelledBy: b.cancelledBy || null, reason: b.reason || '', cancelledAt: b.cancelledAt || null,
     rescheduledFrom: b.rescheduledFrom || null, rescheduledTo: b.rescheduledTo || null, createdAt: b.createdAt,
-    ranges: b.ranges || null, asked: !!b.asked, acceptedAt: b.acceptedAt || null, declinedAt: b.declinedAt || null
+    ranges: b.ranges || null, asked: !!b.asked, acceptedAt: b.acceptedAt || null, declinedAt: b.declinedAt || null,
+    ref: b.ref || null
   }
 }
 

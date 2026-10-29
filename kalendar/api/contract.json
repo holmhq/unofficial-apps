@@ -93,6 +93,11 @@
               "minItems": 2,
               "maxItems": 2
             }
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "The tag of the link that brought the guest (?ref= on the page address), for the host's stats. Optional; a malformed one is ignored."
           }
         },
         "required": [
@@ -336,8 +341,8 @@
       "handler": "opHoursGet",
       "auth": "user",
       "risk": "read",
-      "summary": "Your weekly hours and days off",
-      "description": "Returns weekly hours per day (mon…sun, 24-hour \"HH:MM\" ranges in your zone), upcoming days off and days with special hours.",
+      "summary": "Your weekly hours, paused days and days off",
+      "description": "Returns weekly hours per day (mon…sun, 24-hour \"HH:MM\" ranges in your zone), paused weekdays (they keep their hours but offer no times), upcoming days off and days with special hours.",
       "input": {
         "type": "object",
         "properties": {},
@@ -381,8 +386,8 @@
       "handler": "opHoursUpdate",
       "auth": "user",
       "risk": "write",
-      "summary": "Change your weekly hours or days off",
-      "description": "weekly: only the days you send change, each a list of [\"09:00\",\"17:00\"] ranges ([] for a day off). days_off_add / days_off_remove: dates as YYYY-MM-DD in your zone.",
+      "summary": "Change your weekly hours, pause a weekday, or add days off",
+      "description": "weekly: only the days you send change, each a list of [\"09:00\",\"17:00\"] ranges ([] for a day off). pause / unpause: weekdays (mon…sun) to switch off or on while keeping their hours. days_off_add / days_off_remove: dates as YYYY-MM-DD in your zone.",
       "input": {
         "type": "object",
         "properties": {
@@ -482,6 +487,40 @@
               }
             },
             "additionalProperties": false
+          },
+          "pause": {
+            "type": "array",
+            "maxItems": 7,
+            "items": {
+              "type": "string",
+              "enum": [
+                "mon",
+                "tue",
+                "wed",
+                "thu",
+                "fri",
+                "sat",
+                "sun"
+              ]
+            },
+            "description": "Weekdays that offer no times for now; their hours are kept."
+          },
+          "unpause": {
+            "type": "array",
+            "maxItems": 7,
+            "items": {
+              "type": "string",
+              "enum": [
+                "mon",
+                "tue",
+                "wed",
+                "thu",
+                "fri",
+                "sat",
+                "sun"
+              ]
+            },
+            "description": "Paused weekdays to open again with their hours."
           },
           "days_off_add": {
             "type": "array",
@@ -1235,7 +1274,7 @@
       "auth": "user",
       "risk": "read",
       "summary": "Who visits your page and who books",
-      "description": "Views, visitors, bookings, requests, sources, devices, places (from time zones), time on page and per-event numbers for 7, 30 or 90 days, with the period before.",
+      "description": "Views, visitors, bookings, requests, sources, devices, places (from time zones), time on page, per-event numbers and per-link tags (saved links and any ?ref= tag: views, visitors, QR scans, picks, bookings) for 7, 30 or 90 days, with the period before.",
       "input": {
         "type": "object",
         "properties": {
@@ -1248,6 +1287,165 @@
             ]
           }
         },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "links.list": {
+      "handler": "opLinksList",
+      "auth": "user",
+      "risk": "read",
+      "summary": "Your saved links and what each brings in",
+      "description": "Saved links tag where visits come from (a flyer, a talk, an email signature). Each has its url (?ref=tag), qr_url (adds &via=qr so scans count apart) and the last 30 days' views, visitors, scans and bookings.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "links.create": {
+      "handler": "opLinksCreate",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Make a saved link to share or print as a QR code",
+      "description": "label names it (up to 60 characters). tag is optional: it comes from the label when left out (lowercase, dashes). event is an event type slug, to open that booking page instead of the profile. Returns url and qr_url.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "tag": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "event": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "links.delete": {
+      "handler": "opLinksDelete",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Remove a saved link",
+      "description": "Removes a saved link by its tag. The address keeps working, and visits through it still count in stats_get under the tag.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "tag"
+        ],
         "additionalProperties": false
       },
       "output": {
