@@ -48,6 +48,7 @@ function clean(input, existing) {
   if (has('description')) out.description = longText(input.description, 1000, 'Description')
   if (has('color')) out.color = COLORS.includes(input.color) ? input.color : 'blue'
   if (has('active')) out.active = input.active !== false
+  if (has('requests')) out.requests = input.requests !== false
   return out
 }
 
@@ -83,8 +84,8 @@ export function deleteEvent(env, host, id) {
 
 export function createDefaults(env, host) {
   if (ds(env).count('events', { host: host.id })) return
-  ds(env).insert('events', { host: host.id, order: 0, title: 'Quick chat', slug: 'chat', duration: 15, step: 0, notice: 240, window: 60, before: 0, after: 0, location: { kind: 'none', value: '' }, description: '', color: 'blue', active: true })
-  ds(env).insert('events', { host: host.id, order: 1, title: 'Meeting', slug: 'meeting', duration: 30, step: 0, notice: 240, window: 60, before: 0, after: 0, location: { kind: 'none', value: '' }, description: '', color: 'red', active: true })
+  ds(env).insert('events', { host: host.id, order: 0, title: 'Quick chat', slug: 'chat', duration: 15, step: 0, notice: 240, window: 60, before: 0, after: 0, location: { kind: 'none', value: '' }, description: '', color: 'blue', active: true, requests: true })
+  ds(env).insert('events', { host: host.id, order: 1, title: 'Meeting', slug: 'meeting', duration: 30, step: 0, notice: 240, window: 60, before: 0, after: 0, location: { kind: 'none', value: '' }, description: '', color: 'red', active: true, requests: true })
 }
 
 // The step between start times: the meeting's length, up to half an hour.
@@ -113,6 +114,7 @@ export function eventDTO(event, { mine = false, hostName = '' } = {}) {
     before: event.before || 0,
     after: event.after || 0,
     active: event.active !== false,
+    requests: event.requests !== false,
     location: mine ? location : { kind: location.kind, value: location.kind === 'video' ? '' : location.value, label: locationLabel(location, hostName) }
   }
 }

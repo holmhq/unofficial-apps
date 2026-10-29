@@ -1,6 +1,6 @@
 // Dates and times for people, in the zone they're looking from, with the
 // browser's own words for days and months. 12- or 24-hour is remembered.
-import { here } from './zones.js'
+import { here, offsetIn } from './zones.js'
 
 const KEY = 'kalendar:h24'
 const cache = new Map()
@@ -92,4 +92,27 @@ export function minutesLabel(n) {
 // A minute of the day as a clock: 540 → "9:00 AM".
 export function minuteClock(min) {
   return f('UTC', hourOpts()).format(Date.UTC(2020, 0, 1, 0, min))
+}
+
+// An instant as the day it falls on and the minute of that day, in a zone.
+export function wall(ms, zone = here()) {
+  const p = {}
+  for (const x of f(zone, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(ms)) p[x.type] = x.value
+  return { key: `${p.year}-${p.month}-${p.day}`, min: (Number(p.hour) % 24) * 60 + Number(p.minute) }
+}
+
+// And back: the instant a wall-clock minute of a day falls on in a zone.
+export function instant(key, min, zone = here()) {
+  const [y, m, d] = key.split('-').map(Number)
+  const guess = Date.UTC(y, m - 1, d, 0, min)
+  let ms = guess - offsetIn(zone, guess) * 60000
+  const again = guess - offsetIn(zone, ms) * 60000
+  if (again !== ms) ms = again
+  return ms
+}
+
+// The day after a "2025-11-04" key.
+export function nextKey(key, by = 1) {
+  const [y, m, d] = key.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + by)).toISOString().slice(0, 10)
 }

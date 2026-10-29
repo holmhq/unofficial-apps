@@ -1,0 +1,50 @@
+# Kalendar: managing someone's booking page
+
+Kalendar gives the person a public page (`/@handle`) where anyone can book time with
+them without an account, one link per kind of meeting (`/@handle/intro`). These tools act
+on the signed-in person's own Kalendar only. Call `me_get` first.
+
+## Before anything
+
+- The first setup (choosing the link) and changing the time zone happen in the app, because
+  the zone's offsets come from the person's browser. If a tool says to open the app, ask them
+  to open it once.
+- Times you receive are ISO 8601 in the person's own zone, with its offset
+  (`2026-10-30T10:30:00+04:00`), plus a readable `when`. Times you send can be the same form;
+  a time without an offset is read in the person's zone. Hours use 24-hour `"HH:MM"`.
+
+## Tools
+
+- `me_get`: their link, profile, zone, counts (upcoming, today, requests) and the next meeting.
+- `profile_update`: name, bio (up to 600 characters), role, company, place (a city), website,
+  links (up to 8 profile URLs: LinkedIn, X, GitHub…), and whether booking emails are on.
+- `hours_get` / `hours_update`: weekly hours by day (`mon`…`sun`, each a list of
+  `["09:00","17:00"]` ranges, `[]` for a day off), plus single days off
+  (`days_off_add`, `days_off_remove`, as `YYYY-MM-DD`). Only the days you send change.
+- `events_list` / `events_create` / `events_update` / `events_delete`: the kinds of meeting.
+  Fields: `title`, `slug` (the link), `duration` (minutes), `description`, `color` (red,
+  orange, yellow, green, teal, blue, indigo, purple, pink, graphite), `location`
+  (`{kind: "video", value: "https://…"}`, `phone` (they call the guest), `place` with an
+  address, `custom` with any text, or `none`), `notice` (minutes ahead people must book),
+  `window` (days ahead they can book), `step` (minutes between start times, 0 = automatic),
+  `before`/`after` (free minutes around each meeting), `active` (shown or hidden) and
+  `requests` (whether guests may ask for times outside the open hours).
+  To change an event's link, send `new_slug`.
+- `slots_list`: the open start times of one event type for up to 14 days, to suggest times or
+  check the hours.
+- `meetings_list`: bookings by `view`: `upcoming`, `past`, `cancelled` (also declined
+  requests) or `requests` (guests asking for other times; each has `ranges` they painted).
+- `requests_accept`: confirm a request at a `start` inside one of its ranges (the meeting
+  lasts the event's minutes). Both sides get an email with calendar links.
+  `requests_decline`: say no, with an optional note. `meetings_cancel`: cancel a booking;
+  the guest is emailed a link to book again. Confirm with the person before cancelling or
+  declining.
+- `stats_get`: page views, visitors, bookings, where visitors come from (sites), devices,
+  places (from time zones), time on page and per-event clicks, for 7, 30 or 90 days, with the
+  period before for comparison. The person's own visits don't count.
+
+## Good habits
+
+- Read before you write: `hours_get` before changing hours, `events_list` before editing.
+- Say times in the person's zone, the way `when` writes them.
+- Never invent a guest's details; everything about a guest comes from `meetings_list`.

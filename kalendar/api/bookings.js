@@ -1,6 +1,8 @@
 // Bookings: open times, booking one (no account needed), seeing and
 // cancelling it with the secret link from the email, moving it, and the
-// host's list and calendar feed.
+// host's list and calendar feed. A guest can also ask for times outside the
+// host's hours: they paint when they could meet, and the host accepts at a
+// time inside it or declines. A request never blocks anyone else's booking.
 import { reject, text, longText, email as cleanEmail, int, randomId, sha256, hmac, sameHash, MIN, DAY, HOUR } from './lib.js'
 import { offsetAt, cleanZone, cleanZoneLabel } from './tz.js'
 import { slotsFor } from './slots.js'
@@ -41,6 +43,30 @@ export function openSlots(env, handle, slug, from, to, now, skip = null) {
   return { slots, until: horizon, earliest: now + (event.notice ?? 240) * MIN }
 }
 
+// Open starts for one of a host's own event types, for their tools.
+export function slotsForHost(env, host, event, lo, hi, now) {
+  return slotsFor(host, shape(event), busyFor(env, host.id, lo - DAY, hi + DAY), lo, hi, now)
+}
+
+// The soonest open start for each event type in the next 30 days, from one
+// busy query: { [eventId]: ms | null }.
+export function nextOpen(env, host, events, now) {
+  const busy = busyFor(env, host.id, now - DAY, now + 31 * DAY)
+  const out = {}
+  for (const event of events) {
+    const s = shape(event)
+    const until = now + Math.min(30, s.window) * DAY
+    let first = null
+    for (const [a, b] of [[now, now + 7 * DAY], [now + 7 * DAY, until]]) {
+      if (a >= until) break
+      const slots = slotsFor(host, s, busy, a, Math.min(b, until), now)
+      if (slots.length) { first = slots[0]; break }
+    }
+    out[event.id] = first
+  }
+  return out
+}
+
 export function bookingPage(env, handle, slug) {
   const { host, event } = bookable(env, handle, slug)
   return { host: publicHost(host), event: eventDTO(event, { hostName: host.name }) }
@@ -56,6 +82,9 @@ async function withToken(env, id, token) {
 // ending in .ics to Calendar as a calendar to subscribe to, not an event to add.
 function links(env, base, b, host, token) {
   const manage = `${base}/b/${b.id}?t=${token}`
+  const rebook = `${base}/@${host.handle}/${b.slug}`
+  // A request isn't on anyone's calendar yet: it can only be withdrawn.
+  if (b.status === 'requested' || b.status === 'declined') return { manage, rebook, dashboard: `${base}/` }
   const entry = calendarEntry(b, host, base, manage, false)
   return {
     manage,
@@ -104,18 +133,108 @@ function calendarEntry(b, host, base, manage, forHost) {
 }
 
 async function mailBoth(env, kind, b, host, base, token, old = null) {
-  const c = { b, host, base, links: links(env, base, b, host, token), hostOffset: offsetAt(host.tzTable, b.start), old }
+  const c = { b, host, base, links: links(env, base, b, host, token), hostOffset: offsetAt(host.tzTable, b.start), hostTable: host.tzTable, old }
   const invitee = send(env, b.email, inviteeMail(kind, c))
-  const hostSent = host.notify !== false && host.email ? send(env, host.email, hostMail(kind, { ...c, links: await hostLinks(base, b, host) })) : { ok: false, code: 'OFF' }
+  const hostLinkSet = b.status === 'confirmed' || b.status === 'cancelled' ? await hostLinks(base, b, host) : { dashboard: `${base}/`, review: `${base}/?r=${b.id}` }
+  const hostSent = host.notify !== false && host.email ? send(env, host.email, hostMail(kind, { ...c, links: hostLinkSet })) : { ok: false, code: 'OFF' }
   return { invitee: invitee.ok, host: hostSent.ok, code: invitee.ok ? null : invitee.code }
+}
+
+/* ---- Requests ---------------------------------------------------------------- */
+
+// The stretches a guest painted: 1–12, on five-minute marks, each long enough
+// for the meeting and at most twelve hours, from half an hour ahead to the
+// event's horizon. Overlapping or touching stretches merge.
+export function cleanRequestRanges(value, start, event, now) {
+  const dur = event.duration * MIN
+  let ranges = value
+  if (ranges === undefined || ranges === null) {
+    if (!Number.isInteger(start)) reject(400, 'invalid_input', 'Paint when you could meet.')
+    ranges = [[start, start + dur]]
+  }
+  if (!Array.isArray(ranges) || !ranges.length || ranges.length > 12) reject(400, 'invalid_input', 'Send one to twelve stretches of time.')
+  const lo = now + 30 * MIN
+  const hi = now + (event.window ?? 60) * DAY
+  const sorted = ranges.map((r) => {
+    if (!Array.isArray(r) || r.length !== 2) reject(400, 'invalid_input', 'Each stretch is a start and an end.')
+    const [a, b] = r.map(Number)
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a % (5 * MIN) || b % (5 * MIN)) reject(400, 'invalid_input', 'Times go in five-minute steps.')
+    if (b - a < dur) reject(400, 'invalid_input', `Each stretch needs at least ${event.duration} minutes.`)
+    if (a < lo) reject(400, 'too_soon', 'Ask for times at least half an hour from now.')
+    if (b > hi) reject(400, 'too_far', `Ask for times up to ${event.window ?? 60} days ahead.`)
+    return [a, b]
+  }).sort((x, y) => x[0] - y[0])
+  const merged = []
+  for (const r of sorted) {
+    const last = merged[merged.length - 1]
+    if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1])
+    else merged.push(r.slice())
+  }
+  for (const [a, b] of merged) if (b - a > 12 * HOUR) reject(400, 'invalid_input', 'Keep each stretch under twelve hours.')
+  return merged
+}
+
+const sameRanges = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((r, i) => r[0] === b[i][0] && r[1] === b[i][1])
+
+// The host says yes at a time inside what the guest painted.
+export async function acceptRequest(env, host, id, input, now, base) {
+  const b = ds(env).findOne('bookings', id)
+  if (!b || b.host !== host.id) reject(404, 'not_found', 'That request is gone.')
+  if (b.status !== 'requested') reject(409, 'not_pending', b.status === 'confirmed' ? 'You already accepted it.' : 'That request was withdrawn or declined.')
+  const ranges = Array.isArray(b.ranges) && b.ranges.length ? b.ranges : [[b.start, b.end]]
+  const dur = b.duration * MIN
+  let start = input && input.start
+  if (start === undefined || start === null || start === '') {
+    if (ranges.length === 1 && ranges[0][1] - ranges[0][0] === dur) start = ranges[0][0]
+    else reject(400, 'invalid_input', 'Pick a start time inside what they offered.')
+  }
+  start = Number(start)
+  if (!Number.isInteger(start) || start % (5 * MIN)) reject(400, 'invalid_input', 'Pick a start time on a five-minute mark.')
+  if (start <= now) reject(410, 'gone', 'That time has passed.')
+  if (!ranges.some(([a, z]) => start >= a && start + dur <= z)) reject(400, 'invalid_input', 'That time isn’t inside what they offered.')
+  const event = ds(env).findOne('events', b.event)
+  const before = event ? event.before || 0 : 0
+  const after = event ? event.after || 0 : 0
+  let token = b.pendingToken
+  const set = {
+    status: 'confirmed', start, end: start + dur, from: start - before * MIN, to: start + dur + after * MIN,
+    acceptedAt: now, sequence: (b.sequence || 0) + 1, updatedAt: now, pendingToken: null
+  }
+  if (!token) {
+    token = randomId(24)
+    set.tokenHash = await sha256(token)
+  }
+  ds(env).transaction((tx) => {
+    const cur = tx.find('bookings', { id }, { limit: 1 })[0]
+    if (!cur || cur.status !== 'requested') reject(409, 'not_pending', 'That request was withdrawn or declined.')
+    const clash = tx.find('bookings', { host: host.id, status: 'confirmed', from: { $lt: set.to }, to: { $gt: set.from } }, { limit: 1 })
+    if (clash.length) reject(409, 'clash', 'You already have something then.')
+    tx.update('bookings', { id }, { $set: set })
+  })
+  const done = { ...b, ...set }
+  const emailed = await mailBoth(env, 'accepted', done, host, base, token)
+  return { ok: true, booking: hostDTO(done), emailed }
+}
+
+export function declineRequest(env, host, id, input, now, base) {
+  const b = ds(env).findOne('bookings', id)
+  if (!b || b.host !== host.id) reject(404, 'not_found', 'That request is gone.')
+  if (b.status !== 'requested') reject(409, 'not_pending', b.status === 'confirmed' ? 'You accepted it; cancel the booking instead.' : 'That request was already withdrawn or declined.')
+  const reason = longText(input && input.reason, 500, 'Note')
+  const set = { status: 'declined', reason, declinedAt: now, sequence: (b.sequence || 0) + 1, updatedAt: now, pendingToken: null }
+  ds(env).update('bookings', { id }, { $set: set })
+  const done = { ...b, ...set }
+  const sent = send(env, b.email, inviteeMail('declined', { b: done, host, base, links: { rebook: `${base}/@${host.handle}/${b.slug}` } }))
+  return { ok: true, emailed: sent.ok }
 }
 
 // The bookings.create operation. Anyone may call it, behind Holm's challenge
 // and rate limit; a few more caps here keep it from becoming a mailer.
 export async function createBooking(env, input, now, base) {
   const { host, event } = bookable(env, input.handle, input.event)
-  const start = Number(input.start)
-  if (!Number.isInteger(start)) reject(400, 'invalid_input', 'Pick a time.')
+  const asking = input.request === true && !input.reschedule
+  const start = input.start === undefined || input.start === null ? null : Number(input.start)
+  if (start === null ? !asking : !Number.isInteger(start)) reject(400, 'invalid_input', 'Pick a time.')
   const name = text(input.name, 80, 'Your name', true)
   const address = cleanEmail(input.email)
   const notes = longText(input.notes, 1000, 'Notes')
@@ -141,8 +260,15 @@ export async function createBooking(env, input, now, base) {
   if (kv(env).increment(`cap:host:${host.id}:${day}`, 1) > 80) reject(429, 'too_many', `${host.name} can’t take more bookings today.`)
 
   const s = shape(event)
-  const busy = busyFor(env, host.id, start - DAY, start + DAY, old && old.id)
-  if (!slotsFor(host, s, busy, start, start + 1, now).includes(start)) reject(409, 'slot_taken', 'That time just went. Pick another.')
+  // An open time books at once, even when it came as a request; anything else
+  // is a request when the guest asked and the host takes them.
+  const open = start !== null && (!asking || input.ranges === undefined || input.ranges === null) &&
+    slotsFor(host, s, busyFor(env, host.id, start - DAY, start + DAY, old && old.id), start, start + 1, now).includes(start)
+  if (!open) {
+    if (!asking) reject(409, 'slot_taken', 'That time just went. Pick another.')
+    if (event.requests === false) reject(409, 'slot_taken', `${host.name} only takes the times shown.`)
+    return createRequest(env, { host, event, input, start, now, base, name, address, notes, location, phone, tz, tzLabel, offset, h24 })
+  }
 
   const end = start + event.duration * MIN
   const token = randomId(24)
@@ -166,10 +292,40 @@ export async function createBooking(env, input, now, base) {
   return { booking: inviteeDTO(b, host, links(env, base, b, host, token)), token, emailed }
 }
 
-// The bookings.cancel operation, from the link in the email.
+async function createRequest(env, c) {
+  const { host, event, input, start, now, base } = c
+  const ranges = cleanRequestRanges(input.ranges, start, event, now)
+  const pending = ds(env).find('bookings', { host: host.id, email: c.address, status: 'requested' }, { limit: 50 })
+  if (pending.some((b) => sameRanges(b.ranges, ranges))) reject(409, 'already_asked', `You’ve already asked ${host.name} for these times.`)
+  if (pending.length >= 5) reject(429, 'too_many', `You have several requests waiting with ${host.name}. Wait for an answer first.`)
+  const token = randomId(24)
+  const first = ranges[0][0]
+  const doc = {
+    host: host.id, event: event.id, slug: event.slug, eventTitle: event.title, duration: event.duration, color: event.color || 'blue',
+    location: c.location, start: first, end: first + event.duration * MIN, from: first, to: first + event.duration * MIN,
+    ranges, until: ranges[ranges.length - 1][1], asked: true,
+    name: c.name, email: c.address, phone: c.phone, notes: c.notes, tz: c.tz, tzLabel: c.tzLabel, offset: c.offset, h24: c.h24,
+    tokenHash: await sha256(token), pendingToken: token, status: 'requested', sequence: 0, createdAt: now, rescheduledFrom: null
+  }
+  const id = ds(env).insert('bookings', doc)
+  const b = { ...doc, id }
+  const emailed = await mailBoth(env, 'requested', b, host, base, token)
+  return { booking: inviteeDTO(b, host, links(env, base, b, host, token)), token, emailed, requested: true }
+}
+
+// The bookings.cancel operation, from the link in the email. On a request
+// it withdraws it, and only the host hears.
 export async function cancelByInvitee(env, input, now, base) {
   const b = await withToken(env, input.id, input.token)
   const reason = longText(input.reason, 500, 'Note')
+  if (b.status === 'requested') {
+    const host = ds(env).findOne('hosts', b.host)
+    const set = { status: 'cancelled', cancelledBy: 'invitee', reason, cancelledAt: now, sequence: (b.sequence || 0) + 1, updatedAt: now, pendingToken: null }
+    ds(env).update('bookings', { id: b.id }, { $set: set })
+    const done = { ...b, ...set }
+    const sent = host && host.notify !== false && host.email ? send(env, host.email, hostMail('withdrawn', { b: done, host, base, hostOffset: offsetAt(host.tzTable, b.start), hostTable: host.tzTable, links: { dashboard: `${base}/` } })) : { ok: false }
+    return { ok: true, withdrawn: true, emailed: { invitee: false, host: sent.ok } }
+  }
   if (b.status !== 'confirmed') return { ok: true, already: true }
   const host = ds(env).findOne('hosts', b.host)
   const done = { ...b, status: 'cancelled', cancelledBy: 'invitee', reason, cancelledAt: now, sequence: (b.sequence || 0) + 1, updatedAt: now }
@@ -199,7 +355,8 @@ export function inviteeDTO(b, host, l) {
     event: { title: b.eventTitle, slug: b.slug, duration: b.duration, color: b.color },
     host: publicHost(host), location: { kind: location.kind, value: location.value },
     cancelledBy: b.cancelledBy || null, reason: b.reason || '', rescheduledTo: b.rescheduledTo || null,
-    links: l ? { ics: l.ics, google: l.google, outlook: l.outlook, reschedule: l.reschedule, manage: l.manage } : null
+    ranges: b.ranges || null, asked: !!b.asked, h24: !!b.h24, tz: b.tz || null,
+    links: !l ? null : l.ics ? { ics: l.ics, google: l.google, outlook: l.outlook, reschedule: l.reschedule, manage: l.manage, rebook: l.rebook } : { manage: l.manage, rebook: l.rebook }
   }
 }
 
@@ -210,8 +367,11 @@ export async function bookingForInvitee(env, id, token, base) {
   return inviteeDTO(b, host, links(env, base, b, host, token))
 }
 
+const onCalendar = (b) => b.status === 'confirmed' || (b.status === 'cancelled' && !(b.asked && !b.acceptedAt))
+
 export async function inviteIcs(env, id, token, base, domain) {
   const b = await withToken(env, id, token)
+  if (!onCalendar(b)) reject(404, 'not_found', 'This isn’t booked yet.')
   const host = ds(env).findOne('hosts', b.host)
   if (!host) reject(404, 'not_found', 'This booking’s host has left Kalendar.')
   return calendar([calendarEntry(b, host, base, `${base}/b/${b.id}?t=${token}`, false)], { domain })
@@ -221,6 +381,7 @@ export async function hostIcs(env, id, key, base, domain) {
   const b = typeof id === 'string' && id.length < 40 ? ds(env).findOne('bookings', id) : null
   const host = b && ds(env).findOne('hosts', b.host)
   if (!host || typeof key !== 'string' || !sameHash(key, await hostKey(host, b.id))) reject(404, 'not_found', 'This link doesn’t open a booking. Check the email it came in.')
+  if (!onCalendar(b)) reject(404, 'not_found', 'This isn’t booked yet.')
   return calendar([calendarEntry(b, host, base, null, true)], { domain })
 }
 
@@ -229,7 +390,8 @@ export function hostDTO(b) {
     id: b.id, status: b.status, start: b.start, end: b.end, name: b.name, email: b.email, phone: b.phone || '', notes: b.notes || '',
     event: { title: b.eventTitle, slug: b.slug, duration: b.duration, color: b.color || 'blue' }, location: b.location || { kind: 'none', value: '' },
     tz: b.tz, tzLabel: b.tzLabel, cancelledBy: b.cancelledBy || null, reason: b.reason || '', cancelledAt: b.cancelledAt || null,
-    rescheduledFrom: b.rescheduledFrom || null, rescheduledTo: b.rescheduledTo || null, createdAt: b.createdAt
+    rescheduledFrom: b.rescheduledFrom || null, rescheduledTo: b.rescheduledTo || null, createdAt: b.createdAt,
+    ranges: b.ranges || null, asked: !!b.asked, acceptedAt: b.acceptedAt || null, declinedAt: b.declinedAt || null
   }
 }
 
@@ -245,14 +407,16 @@ export function listForHost(env, host, view, now) {
     return out
   }
   if (view === 'past') return all({ host: host.id, status: 'confirmed', end: { $lte: now } }, 400).sort((a, b) => b.start - a.start).slice(0, 300).map(hostDTO)
-  if (view === 'cancelled') return all({ host: host.id, status: 'cancelled' }, 400).sort((a, b) => b.start - a.start).slice(0, 300).map(hostDTO)
+  if (view === 'cancelled') return all({ host: host.id, status: { $in: ['cancelled', 'declined'] } }, 400).sort((a, b) => b.start - a.start).slice(0, 300).map(hostDTO)
+  if (view === 'requests') return all({ host: host.id, status: 'requested', until: { $gt: now } }, 400).sort((a, b) => a.start - b.start).map(hostDTO)
   return all({ host: host.id, status: 'confirmed', end: { $gt: now } }, 1000).sort((a, b) => a.start - b.start).map(hostDTO)
 }
 
 export function counts(env, host, now) {
   return {
     upcoming: ds(env).count('bookings', { host: host.id, status: 'confirmed', end: { $gt: now } }),
-    today: ds(env).count('bookings', { host: host.id, status: 'confirmed', end: { $gt: now }, start: { $lt: now + 24 * HOUR } })
+    today: ds(env).count('bookings', { host: host.id, status: 'confirmed', end: { $gt: now }, start: { $lt: now + 24 * HOUR } }),
+    requests: ds(env).count('bookings', { host: host.id, status: 'requested', until: { $gt: now } })
   }
 }
 
@@ -261,6 +425,6 @@ export function feedFor(env, secret, base, domain, now) {
   if (!/^[a-z0-9]{32}$/.test(String(secret || ''))) return null
   const host = ds(env).find('hosts', { feed: secret }, { limit: 1 })[0]
   if (!host) return null
-  const rows = ds(env).find('bookings', { host: host.id, end: { $gt: now - 31 * DAY } }, { limit: 1000, order: 'desc' })
+  const rows = ds(env).find('bookings', { host: host.id, end: { $gt: now - 31 * DAY } }, { limit: 1000, order: 'desc' }).filter(onCalendar)
   return calendar(rows.map((b) => calendarEntry(b, host, base, null, true)), { domain, name: `Kalendar · ${host.name}` })
 }

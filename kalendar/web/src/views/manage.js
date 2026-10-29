@@ -25,6 +25,8 @@ export async function manage(id) {
   const el = h('div.app.public', topBar({ left: link(`/@${b.host.handle}`, { class: 'top-host' }, ic('chevronLeft', 20, 2.2), h('span', b.host.name)) }), h('div.panel', body, holmFooter()))
 
   function draw() {
+    const first = b.host.name.split(' ')[0]
+    if (b.status === 'requested' || b.status === 'declined' || (b.status === 'cancelled' && (b.requested || (b.asked && !b.acceptedAt)))) return drawRequest(first)
     const live = b.status === 'confirmed'
     const past = b.end < Date.now()
     const where = placeLine(b.location, b.host.name, { revealed: true, phone: b.phone })
@@ -47,8 +49,29 @@ export async function manage(id) {
       ] : null,
       !live ? h('div.manage-note',
         h('p', b.rescheduledTo ? 'This booking moved to a new time. The newest email has the details.' : b.cancelledBy === 'host' ? `${b.host.name} cancelled this booking.` : 'You cancelled this booking.'),
-        b.reason ? h('blockquote', b.reason) : null,
+        b.reason ? h('p.quote', b.reason) : null,
         link(`/@${b.host.handle}/${b.event.slug}`, { class: 'btn primary' }, 'Book another time')) : null)
+  }
+
+  // A request: the times the guest sent, waiting for the host to pick one.
+  function drawRequest(first) {
+    const waiting = b.status === 'requested'
+    const status = waiting ? ['Waiting for ' + first, 'wait'] : b.status === 'declined' ? ['Not this time', 'off'] : ['Withdrawn', 'past']
+    const ranges = b.ranges && b.ranges.length ? b.ranges : [[b.start, b.end]]
+    fill(body,
+      h('div.ticket.big' + (waiting ? '' : '.dim'), { style: { '--event': colorOf(b.event.color) } },
+        h('span.status.' + status[1], status[0]),
+        h('div.ticket-head', avatar({ key: b.host.handle, name: b.host.name, picture: b.host.picture, size: 44 }), h('div', h('b', b.event.title), h('span', `with ${b.host.name}`))),
+        h('p.ticket-lead', ranges.length === 1 ? 'The time you asked for' : 'The times you said you’re free'),
+        h('ul.range-list' + (waiting ? '' : '.struck'), ranges.map(([a, z]) => h('li', h('b', `${t.relativeDay(a, zone) || t.weekday(a, zone, 'short')}, ${t.monthDay(a, zone)}`), h('span.num', t.range(a, z, zone))))),
+        h('ul.meta', metaRow('user', b.name, b.email))),
+      waiting
+        ? [h('p.manage-hint', `${first} picks a time in these and you get an email with the invite. Nothing to do until then.`),
+            h('div.manage-actions', h('button.btn.block.danger', { type: 'button', onclick: cancel }, ic('x', 18, 2.2), 'Withdraw request'))]
+        : h('div.manage-note',
+          h('p', b.status === 'declined' ? `${first} can’t make these times.` : 'You withdrew this request.'),
+          b.reason ? h('p.quote', b.reason) : null,
+          link(`/@${b.host.handle}/${b.event.slug}`, { class: 'btn primary' }, 'Pick another time')))
   }
 
   async function cancel() {
@@ -57,17 +80,19 @@ export async function manage(id) {
     const ok = await sheet({
       title: '', label: 'Cancel this booking', cancel: null, plain: true,
       body: (close) => [
-        h('div.confirm-head', doneMark('off'), h('b', 'Cancel this booking?'), h('p', `${t.fullDate(b.start, zone)}, ${t.range(b.start, b.end, zone)}. ${b.host.name} will get an email.`)),
+        b.status === 'requested'
+          ? h('div.confirm-head', doneMark('off'), h('b', 'Withdraw your request?'), h('p', `${b.host.name} will get an email and won’t pick a time.`))
+          : h('div.confirm-head', doneMark('off'), h('b', 'Cancel this booking?'), h('p', `${t.fullDate(b.start, zone)}, ${t.range(b.start, b.end, zone)}. ${b.host.name} will get an email.`)),
         reason,
         h('div.confirm-actions',
-          h('button.btn.large.block.danger-solid', { type: 'button', onclick: () => close(true) }, 'Cancel booking'),
+          h('button.btn.large.block.danger-solid', { type: 'button', onclick: () => close(true) }, b.status === 'requested' ? 'Withdraw' : 'Cancel booking'),
           h('button.btn.large.block', { type: 'button', onclick: () => close(false) }, 'Keep it'))
       ]
     })
     if (!ok) return
     try {
       await api.op('bookings.cancel', { id: b.id, token, reason: reason.value.trim() })
-      b = { ...b, status: 'cancelled', cancelledBy: 'invitee', reason: reason.value.trim() }
+      b = { ...b, requested: b.status === 'requested', status: 'cancelled', cancelledBy: 'invitee', reason: reason.value.trim() }
       sound.remove()
       draw()
     } catch (error) {

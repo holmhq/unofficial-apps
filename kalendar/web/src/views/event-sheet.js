@@ -1,6 +1,6 @@
 // Adding or changing an event type: name, link, length, where, colour and
 // the booking rules. Resolves with the saved event, { deleted }, or nothing.
-import { h, ic, sheet, confirm, nope, haptic, toast } from '../ui.js'
+import { h, toggle, ic, sheet, confirm, nope, haptic, toast } from '../ui.js'
 import * as api from '../api.js'
 import { failure } from '../shell.js'
 import { sound } from '../sound.js'
@@ -33,8 +33,8 @@ const HINTS = {
 }
 
 export function eventSheet(event, host) {
-  const e = event || { title: '', slug: '', duration: 30, step: 0, notice: 240, window: 60, before: 0, after: 0, location: { kind: 'none', value: '' }, description: '', color: 'blue', active: true }
-  const v = { kind: e.location.kind, color: e.color, length: PRESET.includes(e.duration) ? e.duration : 'other' }
+  const e = event || { title: '', slug: '', duration: 30, step: 0, notice: 240, window: 60, before: 0, after: 0, location: { kind: 'none', value: '' }, description: '', color: 'blue', active: true, requests: true }
+  const v = { kind: e.location.kind, color: e.color, length: PRESET.includes(e.duration) ? e.duration : 'other', requests: e.requests !== false }
   let slugTouched = !!event
 
   const title = h('input.input', { value: e.title, maxlength: '80', placeholder: 'Intro call', autofocus: !event })
@@ -94,7 +94,8 @@ export function eventSheet(event, host) {
     try {
       const body = {
         title: name, slug: slugify(slug.value) || slugify(name), duration, step: Number(step.value), notice: Number(notice.value), window: Number(ahead.value),
-        before: Number(before.value), after: Number(after.value), location: { kind: v.kind, value: where }, description: desc.value.trim(), color: v.color
+        before: Number(before.value), after: Number(after.value), location: { kind: v.kind, value: where }, description: desc.value.trim(), color: v.color,
+        requests: v.requests
       }
       const r = event ? await api.patch(`/api/events/${event.id}`, body) : await api.post('/api/events', body)
       sound.pop()
@@ -125,11 +126,13 @@ export function eventSheet(event, host) {
           rule('Start times', step),
           rule('Free time before', before),
           rule('Free time after', after))),
+      h('div.field', h('span.field-label', 'Other times'),
+        h('div.group', h('label.rule', h('span', h('b', 'Let people ask for other times'), h('small', 'Guests can paint when they’re free, even outside your hours, and you pick a time that works.')), toggle(v.requests, (x) => { v.requests = x; sound.toggle(x) }, 'Let people ask for other times')))),
       event ? h('button.btn.block.danger', { type: 'button', onclick: async () => {
         const ok = await confirm({ title: `Delete “${event.title}”?`, text: 'Its link stops working. Bookings already made stay.', action: 'Delete' })
         if (!ok) return
         try { await api.del(`/api/events/${event.id}`); sound.remove(); close({ deleted: true }) } catch (error) { failure(error) }
-      } }, ic('trash2', 17, 2), 'Delete event type') : null
+      } }, ic('trash', 17, 2), 'Delete event type') : null
     ]
   })
   done = [...document.querySelectorAll('.layer .sheet-head .r')].pop()

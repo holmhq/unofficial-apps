@@ -9,8 +9,12 @@
 //   POST   /api/events                     add one
 //   PATCH  /api/events/:id                 change one
 //   DELETE /api/events/:id                 remove one
-//   GET    /api/bookings?view=             upcoming | past | cancelled
+//   GET    /api/bookings?view=             upcoming | past | cancelled | requests
 //   POST   /api/bookings/:id/cancel        cancel as the host { reason }
+//   POST   /api/bookings/:id/accept        accept a request at a time inside it { start }
+//   POST   /api/bookings/:id/decline       decline a request { reason }
+//   GET    /api/stats?days=                7 | 30 | 90 days of page stats
+//   POST   /api/hit                        a page beacon from a visitor (stats.js)
 //   GET    /api/u/:handle                  a host's public page
 //   GET    /api/u/:handle/:slug            one event type, for booking
 //   GET    /api/u/:handle/:slug/slots      open times { from, to, skip?, t? }
@@ -20,11 +24,13 @@
 //
 // Booking and cancelling with an emailed link are named operations
 // (contract.json: bookings.create, bookings.cancel) behind Holm's challenge
-// and rate limits; see ops.js.
+// and rate limits, and the host's own tools for Claude are named operations
+// too; see ops.js.
 import { json, errorResponse, readJSON, reject, requireMember, member, rememberOrigin, esc, displayName } from './lib.js'
 import { hostOf, hostByHandle, handleFree, createHost, updateHost, privateHost, publicHost } from './hosts.js'
 import { eventsOf, eventDTO, createEvent, updateEvent, deleteEvent } from './events.js'
-import { openSlots, bookingPage, bookingForInvitee, inviteIcs, hostIcs, listForHost, cancelByHost, counts, feedFor } from './bookings.js'
+import { openSlots, bookingPage, bookingForInvitee, inviteIcs, hostIcs, listForHost, cancelByHost, counts, feedFor, nextOpen, acceptRequest, declineRequest } from './bookings.js'
+import { hit, statsFor } from './stats.js'
 import { icsResponse } from './ics.js'
 
 const match = (path, re) => {
@@ -90,13 +96,21 @@ async function api(request, env, url) {
     })
   }
 
+  // A visitor's page beacon. Always 204, whatever it holds.
+  if (route === 'POST /api/hit') {
+    await hit(request, env, now)
+    return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } })
+  }
+
   // Public pages.
   let p = match(path, /^\/api\/u\/([^/]+)$/)
   if (p && method === 'GET') {
     const host = hostByHandle(env, p[0])
     if (!host) reject(404, 'not_found', 'There’s no one at that link yet.')
-    const events = eventsOf(env, host.id).filter((e) => e.active !== false).map((e) => eventDTO(e, { hostName: host.name }))
-    return json({ host: publicHost(host), events })
+    const active = eventsOf(env, host.id).filter((e) => e.active !== false)
+    const next = nextOpen(env, host, active, now)
+    const events = active.map((e) => ({ ...eventDTO(e, { hostName: host.name }), next: next[e.id] ?? null }))
+    return json({ host: publicHost(host), events }, 200, { 'Cache-Control': 'no-store' })
   }
   p = match(path, /^\/api\/u\/([^/]+)\/([^/]+)$/)
   if (p && method === 'GET') return json(bookingPage(env, p[0], p[1]))
@@ -136,19 +150,26 @@ async function api(request, env, url) {
   }
 
   if (route === 'GET /api/bookings') {
-    const view = ['past', 'cancelled'].includes(url.searchParams.get('view')) ? url.searchParams.get('view') : 'upcoming'
+    const view = ['past', 'cancelled', 'requests'].includes(url.searchParams.get('view')) ? url.searchParams.get('view') : 'upcoming'
     return json({ view, bookings: listForHost(env, host, view, now) })
   }
-  p = match(path, /^\/api\/bookings\/([^/]+)\/cancel$/)
-  if (p && method === 'POST') return json(await cancelByHost(env, host, p[0], body, now, base))
+  p = match(path, /^\/api\/bookings\/([^/]+)\/(cancel|accept|decline)$/)
+  if (p && method === 'POST') {
+    if (p[1] === 'accept') return json(await acceptRequest(env, host, p[0], body, now, base))
+    if (p[1] === 'decline') return json(declineRequest(env, host, p[0], body, now, base))
+    return json(await cancelByHost(env, host, p[0], body, now, base))
+  }
+
+  if (route === 'GET /api/stats') return json(statsFor(env, host, url.searchParams.get('days'), now))
 
   reject(404, 'not_found', 'No such route.')
 }
 
 // The page for /@handle and /@handle/slug, with the host's name and the
-// event in its title and social card.
+// event in its title and social card. It's always the app's shell from /:
+// a handle with a dot (/@bo.test) looks like a file to the static server.
 async function hostPage(request, env, handle, slug) {
-  const response = await env.holm.web.fetch(request)
+  const response = await env.holm.web.fetch(new Request(new URL('/', request.url), { method: 'GET', headers: request.headers }))
   const type = response.headers.get('content-type') || ''
   if (!type.includes('text/html')) return response
   const host = hostByHandle(env, handle)

@@ -39,10 +39,10 @@ export function calendarButtons(links) {
     h('a.cal-btn', { href: links.outlook, target: '_blank', rel: 'noopener' }, h('span.cal-logo.o', { 'aria-hidden': 'true' }), 'Outlook'))
 }
 
-// A check that draws itself.
+// A check that draws itself: green when booked, blue while a request waits.
 export function doneMark(kind = 'good') {
   const el = h('div.done-mark.' + kind)
-  el.innerHTML = kind === 'good'
+  el.innerHTML = kind !== 'off'
     ? '<svg viewBox="0 0 64 64" aria-hidden="true"><circle class="ring" cx="32" cy="32" r="29"/><path class="tick" d="M19.5 33.5l8.5 8.5 17-19"/></svg>'
     : '<svg viewBox="0 0 64 64" aria-hidden="true"><circle class="ring" cx="32" cy="32" r="29"/><path class="tick" d="M23 23l18 18M41 23 23 41"/></svg>'
   return el

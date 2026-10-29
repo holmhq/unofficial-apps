@@ -1,8 +1,10 @@
-// Booking: pick a day, then a time, then say who you are. No account.
-// On a wide screen the host and event sit on the left, the month in the
-// middle, and the day's times slide in on the right. On a phone each step
-// is its own screen, pushed in from the right, with Back and swipe-back.
-import { h, fill, ic, avatar, toast, haptic, nope, reduced, wide } from '../ui.js'
+// Booking: the host's free time lies on a strip of days, time running left
+// to right. Tap a shaded span and the meeting drops in, the length of the
+// event; drag it along the day or to another. Dropped outside the shading it
+// becomes a request. "Suggest times" lets a guest paint when they're free
+// instead, Overlap-style: where it meets the host's free time it glows, and
+// the host settles on a time inside what they painted. No account either way.
+import { h, fill, ic, avatar, toast, haptic, nope, reduced, wide, segmented } from '../ui.js'
 import * as api from '../api.js'
 import { state, topBar, go, link, failure, holmFooter, signIn } from '../shell.js'
 import { sound } from '../sound.js'
@@ -11,9 +13,14 @@ import { here, zoneName, gmt, offsetIn, city } from '../zones.js'
 import { zonePicker } from './zone-picker.js'
 import { colorOf, placeLine, metaRow, calendarButtons, doneMark, field } from './common.js'
 import { missingHost } from './missing.js'
+import { timeline, merge, intersect, span, short } from '../timeline.js'
+import * as track from '../track.js'
 
 const ZONE_KEY = 'kalendar:zone'
 const ME_KEY = 'kalendar:invitee'
+const DAY = 1440
+const MIN = 60000
+const SNAP = 20
 const enc = encodeURIComponent
 
 const savedZone = () => { try { return localStorage.getItem(ZONE_KEY) } catch { return null } }
@@ -34,285 +41,300 @@ export async function book(handle, slug) {
   }
   const { host, event } = page
   if (old && old.status !== 'confirmed') old = null
+  const first = host.name.split(' ')[0]
+  const dur = event.duration
+  const asks = !old && event.requests !== false
+  const visit = track.page(host.handle, { event: event.slug })
 
   const s = {
     zone: savedZone() || here(),
-    year: 0, month: 0,
-    months: new Map(),
-    day: null, slot: null,
-    step: 'day',
-    until: Infinity,
+    step: 'pick',
+    mode: 'clip',
+    slots: [],
+    byDay: new Map(),
+    loadedTo: 0,
+    until: Date.now() + 60 * 86400000,
+    days: wide() ? 28 : 21,
+    loading: null,
+    clip: null,
+    paint: [],
+    request: null,
     busy: false
   }
-  const now = new Date()
-  {
-    const k = t.dayKey(now.getTime(), s.zone).split('-').map(Number)
-    s.year = k[0]
-    s.month = k[1] - 1
-  }
-  const first = t.weekStart()
 
-  /* ---- Structure ---------------------------------------------------- */
+  /* ---- Structure ----------------------------------------------------------- */
 
   const color = colorOf(event.color)
   const place = placeLine(event.location, host.name)
-  const chosen = h('div.chosen', { hidden: true })
   const info = h('aside.book-info',
     link(`/@${host.handle}`, { class: 'host-line' }, avatar({ key: host.handle, name: host.name, picture: host.picture, size: 28 }), h('span', host.name)),
     h('h1.event-title', event.title),
     h('ul.meta',
-      metaRow('clock', t.minutesLabel(event.duration)),
+      metaRow('clock', t.minutesLabel(dur)),
       place ? metaRow(place.icon, place.text, place.sub) : null),
     event.description ? h('p.event-desc', event.description) : null,
     old ? h('div.moving', ic('repeat', 16, 2), h('div', h('b', 'Moving your booking'), h('span', `${t.fullDate(old.start, s.zone)}, ${t.range(old.start, old.end, s.zone)}`))) : null,
-    chosen)
+    h('div.legend.only-wide',
+      h('span', h('i.key.shade'), `${first} is free`),
+      asks ? h('span', h('i.key.mine'), 'Your times') : null,
+      asks ? h('span', h('i.key.glow'), 'Both free') : null))
 
-  const monthTitle = h('h3.month-title', { id: 'month-title', 'aria-live': 'polite' })
-  const prev = h('button.round-btn', { type: 'button', 'aria-label': 'Previous month', onclick: () => shiftMonth(-1) }, ic('chevronLeft', 20, 2.2))
-  const next = h('button.round-btn', { type: 'button', 'aria-label': 'Next month', onclick: () => shiftMonth(1) }, ic('chevronRight', 20, 2.2))
-  const grid = h('div.grid', { role: 'grid', 'aria-labelledby': 'month-title' })
-  const note = h('div.month-note', { hidden: true })
   const zoneBtn = h('button.zone-btn', { type: 'button', onclick: pickZone })
   const clockSeg = h('div.clock-seg', { role: 'group', 'aria-label': 'Clock' },
     h('button', { type: 'button', 'data-v': '12', onclick: () => setClock(false) }, 'am/pm'),
     h('button', { type: 'button', 'data-v': '24', onclick: () => setClock(true) }, '24h'))
-  const pick = h('section.book-pick', { 'aria-label': 'Pick a day' },
-    h('h2.step-title', 'Pick a day'),
-    h('div.month-head', monthTitle, h('div.month-nav', prev, next)),
-    h('div.weekdays', { 'aria-hidden': 'true' }, t.weekLetters(first, 'short').map((d) => h('span', d.slice(0, 3)))),
-    h('div.grid-wrap', grid, note),
-    h('div.zone-line', zoneBtn, clockSeg))
+  const modeSeg = asks ? segmented([{ value: 'clip', label: 'Pick a time' }, { value: 'strips', label: 'Suggest times' }], 'clip', setMode, { label: 'How to choose' }) : null
+  const hint = h('p.pick-hint')
+  const bar = h('div.pick-bar', { 'aria-live': 'polite' })
 
-  const timesTitle = h('h2.times-title')
-  const timesList = h('div.times', { role: 'listbox', 'aria-label': 'Times' })
-  const dayPrev = h('button.round-btn.small', { type: 'button', 'aria-label': 'Previous day with times', onclick: () => stepDay(-1) }, ic('chevronLeft', 18, 2.2))
-  const dayNext = h('button.round-btn.small', { type: 'button', 'aria-label': 'Next day with times', onclick: () => stepDay(1) }, ic('chevronRight', 18, 2.2))
-  const times = h('section.book-times', { 'aria-label': 'Pick a time' },
-    h('div.times-head', h('button.back-btn.only-narrow', { type: 'button', 'aria-label': 'Back to the calendar', onclick: () => history.back() }, ic('chevronLeft', 22, 2.2)), timesTitle, h('div.day-nav.only-narrow', dayPrev, dayNext)),
-    h('p.times-zone.only-narrow'),
-    timesList)
+  const tl = timeline({
+    label: `Times for ${event.title}`,
+    className: 'guest',
+    tracks: [],
+    mode: 'clip',
+    clipLength: dur,
+    keyStep: 15,
+    corner: h('span.tl-zone', city(s.zone)),
+    layers: (tr) => {
+      const shade = windows(tr.key)
+      const out = { shade }
+      if (old) {
+        const w = t.wall(old.start, s.zone)
+        if (w.key === tr.key) out.mark = [[w.min, w.min + dur]]
+      }
+      if (s.mode === 'strips') out.glow = intersect(stripsOn(tr.key), shade).filter(([a, b]) => b - a >= Math.min(dur, 30))
+      return out
+    },
+    now: () => { const w = t.wall(Date.now(), s.zone); return { key: w.key, minute: w.min } },
+    clip: {
+      get: () => {
+        if (!s.clip) return null
+        const w = t.wall(s.clip.ms, s.zone)
+        return { key: w.key, start: w.min, end: w.min + dur, mode: s.clip.mode }
+      },
+      set: (c) => { setClip(c) },
+      place: placeClip
+    },
+    clipAria: (c) => `${c.mode === 'ask' ? 'Ask for' : 'Meeting at'} ${span(c.start, c.end)}. Arrow keys move it, Enter continues.`,
+    strips: {
+      kind: 'guest',
+      step: 15,
+      min: Math.max(15, Math.ceil(dur / 15) * 15),
+      max: 4,
+      get: stripsOn,
+      set: (key, ranges, { live }) => setStrips(key, ranges, live)
+    },
+    stripLabel: (a, b, kind, w) => (w > 150 ? span(a, b) : w > 84 ? `${short(a)}–${short(b)}` : w > 44 ? short(a) : ''),
+    onTap: (key, minute) => {
+      if (s.mode !== 'clip') return
+      const c = placeClip(key, Math.round(minute - dur / 2))
+      if (!c) { sound.error(); return }
+      setClip(c)
+      tl.redrawTrack(key)
+      sound.pick()
+      haptic(8)
+      afterClip()
+    },
+    onLive: paintBar,
+    onChange: () => { if (s.mode === 'clip') afterClip(); else paintBar() },
+    onEnter: () => toDetails(),
+    onSelect: paintBar
+  })
+
+  const pick = h('section.book-pick', { 'aria-label': 'Pick a time' },
+    h('div.pick-head',
+      modeSeg ? null : h('h2.step-title.only-wide', old ? 'Pick a new time' : 'Pick a time'),
+      modeSeg ? h('div.mode-wrap', modeSeg) : null,
+      h('div.zone-line', zoneBtn, clockSeg)),
+    hint,
+    h('div.tl-wrap', tl.el),
+    bar)
 
   const details = h('section.book-details', { 'aria-label': 'Your details' })
   const done = h('section.book-done', { 'aria-live': 'polite' })
 
-  const card = h('div.book-card', { style: { '--event': color } }, info, pick, times, details, done)
-  const root = h('main.book', { 'data-step': 'day' }, card, h('div.book-foot', h('span', 'Booking with ', h('b', 'Kalendar')), h('span.dot', '·'), state.me && state.me.host ? link('/', {}, 'Your dashboard') : h('a', { href: '#', onclick: (e) => { e.preventDefault(); state.me && state.me.member ? go('/') : signIn() } }, 'Get your own link')))
-  const panel = h('div.panel.book-panel', root, holmFooter())
+  const card = h('div.book-card', { style: { '--event': color } }, info, pick, details, done)
+  const root = h('main.book', { 'data-step': 'pick' }, card,
+    h('div.book-foot', h('span', 'Booking with ', h('b', 'Kalendar')), h('span.dot', '·'), state.me && state.me.host ? link('/', {}, 'Your dashboard') : h('a', { href: '#', onclick: (e) => { e.preventDefault(); state.me && state.me.member ? go('/') : signIn() } }, 'Get your own link')))
+  const panel = h('div.panel.book-panel.picking', root, holmFooter())
   const el = h('div.app.public', topBar({ left: link(`/@${host.handle}`, { class: 'top-host', 'aria-label': `${host.name}’s page` }, ic('chevronLeft', 20, 2.2), h('span', host.name)) }), panel)
   swipeBack(card)
 
-  /* ---- Months and slots ------------------------------------------------- */
+  /* ---- Open times ------------------------------------------------------------- */
 
-  const mkey = (y, m) => `${y}-${String(m + 1).padStart(2, '0')}`
-
-  function loadMonth(y, m) {
-    const key = mkey(y, m)
-    if (s.months.has(key)) return s.months.get(key).promise
-    const from = Date.UTC(y, m, 1) - 15 * 3600000
-    const to = Date.UTC(y, m + 1, 1) + 15 * 3600000
-    const entry = { status: 'loading', slots: [], byDay: new Map() }
+  async function load(to) {
+    if (s.loadedTo >= to || s.loadedTo >= s.until) return
+    if (s.loading) return s.loading
+    const from = Math.max(s.loadedTo, Date.now() - 3600000)
+    const end = Math.min(from + 44 * 86400000, Math.max(to, from + 21 * 86400000))
     const skip = old ? `&skip=${enc(old.id)}&t=${enc(moving.token)}` : ''
-    entry.promise = api.get(`/api/u/${enc(host.handle)}/${enc(event.slug)}/slots?from=${from}&to=${to}${skip}`).then((r) => {
-      entry.status = 'ready'
-      entry.slots = r.slots
+    tl.el.classList.add('loading')
+    s.loading = api.get(`/api/u/${enc(host.handle)}/${enc(event.slug)}/slots?from=${from}&to=${end}${skip}`).then((r) => {
       s.until = r.until
-      group(entry, key)
-      return entry
-    }, (error) => {
-      entry.status = 'error'
-      s.months.delete(key)
-      throw error
-    })
-    s.months.set(key, entry)
-    return entry.promise
+      s.loadedTo = end
+      s.slots = [...new Set([...s.slots, ...r.slots])].sort((a, b) => a - b)
+      group()
+    }).finally(() => { s.loading = null; tl.el.classList.remove('loading') })
+    return s.loading
   }
 
-  function group(entry, key) {
-    entry.byDay = new Map()
-    for (const ms of entry.slots) {
-      const d = t.dayKey(ms, s.zone)
-      if (!d.startsWith(key)) continue
-      if (!entry.byDay.has(d)) entry.byDay.set(d, [])
-      entry.byDay.get(d).push(ms)
+  function group() {
+    s.byDay = new Map()
+    for (const ms of s.slots) {
+      const w = t.wall(ms, s.zone)
+      if (!s.byDay.has(w.key)) s.byDay.set(w.key, [])
+      s.byDay.get(w.key).push(w.min)
     }
   }
 
-  const monthEntry = () => s.months.get(mkey(s.year, s.month))
-  const slotsOn = (day) => {
-    const e = s.months.get(day.slice(0, 7))
-    return e && e.byDay.get(day) || []
-  }
+  const startsOn = (key) => s.byDay.get(key) || []
+  const windows = (key) => merge(startsOn(key).map((m) => [m, Math.min(DAY, m + dur)]))
 
-  /* ---- Drawing the month ---------------------------------------------- */
-
-  function drawMonth(dir = 0) {
-    const entry = monthEntry()
-    monthTitle.replaceChildren(h('b', t.monthName(s.year, s.month)), ' ', h('span', String(s.year)))
-    const today = t.dayKey(Date.now(), s.zone)
-    const thisMonth = today.slice(0, 7)
-    prev.disabled = mkey(s.year, s.month) <= thisMonth
-    next.disabled = Date.UTC(s.year, s.month + 1, 1) - 14 * 3600000 > s.until
-    const lead = (new Date(Date.UTC(s.year, s.month, 1)).getUTCDay() - first + 7) % 7
-    const days = new Date(Date.UTC(s.year, s.month + 1, 0)).getUTCDate()
-    const ready = entry && entry.status === 'ready'
-    const cells = []
-    for (let i = 0; i < lead; i++) cells.push(h('span.cell.blank', { 'aria-hidden': 'true' }))
-    let open = 0
-    for (let d = 1; d <= days; d++) {
-      const key = t.keyOf(s.year, s.month, d)
-      const count = ready ? (entry.byDay.get(key) || []).length : 0
-      if (count) open++
-      const label = `${t.fullDate(Date.UTC(s.year, s.month, d, 12), 'UTC')}${count ? `, ${count} ${count === 1 ? 'time' : 'times'}` : ', no times'}`
-      const b = h('button.cell' + (count ? '.open' : '') + (key === today ? '.today' : '') + (key === s.day ? '.on' : '') + (key < today ? '.past' : ''), {
-        type: 'button', 'data-day': key, 'aria-label': label, 'aria-pressed': String(key === s.day), disabled: !count, tabindex: key === (s.day || firstOpenKey(entry) || today) ? '0' : '-1',
-        style: { '--i': String(d) }
-      }, h('span', String(d)))
-      b.addEventListener('click', () => chooseDay(key))
-      cells.push(b)
+  function tracks() {
+    const today = t.wall(Date.now(), s.zone).key
+    const last = t.wall(s.until, s.zone).key
+    const out = []
+    for (let key = today, i = 0; i < s.days && key <= last; key = t.nextKey(key), i++) {
+      const noon = Date.parse(key + 'T12:00:00Z')
+      const rel = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : null
+      const n = startsOn(key).length
+      out.push({ key, today: i === 0, dim: !n, label: rel || t.weekday(noon, 'UTC', 'short'), sub: `${t.shortMonth(noon, 'UTC')} ${Number(key.slice(8))}` })
     }
-    grid.classList.toggle('loading', !ready)
-    const swap = () => fill(grid, cells)
-    if (dir && !reduced()) {
-      grid.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateX(${-dir * 18}px)` }], { duration: 120, easing: 'ease-in' }).finished.then(() => {
-        swap()
-        grid.animate([{ opacity: 0, transform: `translateX(${dir * 22}px)` }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' })
-      })
-    } else swap()
-    // A month with nothing open says so and offers the next open day.
-    note.hidden = !ready || open > 0
-    if (ready && !open) {
-      fill(note, h('p', h('b', `No open times in ${t.monthName(s.year, s.month)}`)), h('button.pill-btn', { type: 'button', onclick: findNext }, 'Next open day', ic('arrowRight', 16, 2.2)))
-      if (next.disabled) fill(note, h('p', h('b', 'Nothing open right now'), h('span', `${host.name} has no open times for this. Check back later.`)))
+    return out
+  }
+
+  const lastTrackEnd = () => {
+    const list = tracks()
+    return list.length ? t.instant(t.nextKey(list[list.length - 1].key), 0, s.zone) : Date.now()
+  }
+
+  async function more() {
+    const last = t.wall(s.until, s.zone).key
+    const list = tracks()
+    if (!list.length || list[list.length - 1].key >= last) return
+    s.days += 14
+    await load(lastTrackEnd()).catch(failure)
+    tl.setTracks(tracks())
+  }
+
+  tl.el.addEventListener('scroll', () => {
+    if (tl.el.scrollTop + tl.el.clientHeight > tl.el.scrollHeight - 160) more()
+  }, { passive: true })
+
+  /* ---- The clip ------------------------------------------------------------------ */
+
+  // Near an open start it snaps there; elsewhere it's a request, if allowed.
+  function placeClip(key, start, { dir = 0 } = {}) {
+    const list = startsOn(key)
+    const cur = s.clip ? t.wall(s.clip.ms, s.zone) : null
+    if (dir && cur && cur.key === key) {
+      const next = dir > 0 ? list.find((m) => m > cur.min) : [...list].reverse().find((m) => m < cur.min)
+      if (next != null && (!asks || Math.abs(next - start) <= 15 || s.clip.mode === 'open')) return { key, start: next, end: next + dur, mode: 'open' }
     }
+    let nearest = null
+    for (const m of list) if (nearest === null || Math.abs(m - start) < Math.abs(nearest - start)) nearest = m
+    const open = nearest !== null ? { key, start: nearest, end: nearest + dur, mode: 'open' } : null
+    if (open && Math.abs(nearest - start) <= SNAP) return open
+    if (!asks) return open
+    const m = Math.max(0, Math.min(DAY - dur, Math.round(start / 15) * 15))
+    const ms = t.instant(key, m, s.zone)
+    if (ms < Date.now() + 30 * MIN || ms > s.until) return open
+    return { key, start: m, end: m + dur, mode: 'ask' }
   }
 
-  function firstOpenKey(entry) {
-    if (!entry || entry.status !== 'ready') return null
-    return [...entry.byDay.keys()].sort()[0] || null
+  function setClip(c) {
+    if (!c) { s.clip = null; return }
+    s.clip = { ms: t.instant(c.key, c.start, s.zone), mode: c.mode }
   }
 
-  async function showMonth(y, m, dir = 0) {
-    s.year = y
-    s.month = m
-    drawMonth(dir)
-    try {
-      await loadMonth(y, m)
-      if (s.year === y && s.month === m) drawMonth()
-      // Fetch the next month quietly so the arrow answers at once.
-      const n = m === 11 ? [y + 1, 0] : [y, m + 1]
-      if (Date.UTC(n[0], n[1], 1) < s.until) loadMonth(n[0], n[1]).catch(() => {})
-    } catch (error) {
-      failure(error)
-    }
+  function afterClip() {
+    if (s.clip) visit.pick()
+    paintBar()
   }
 
-  function shiftMonth(by) {
-    let m = s.month + by
-    let y = s.year
-    if (m < 0) { m = 11; y-- }
-    if (m > 11) { m = 0; y++ }
-    sound.flip()
-    showMonth(y, m, by)
+  /* ---- Painted times ---------------------------------------------------------------- */
+
+  function stripsOn(key) {
+    const lo = t.instant(key, 0, s.zone)
+    const hi = t.instant(t.nextKey(key), 0, s.zone)
+    return s.paint.filter(([a, b]) => b > lo && a < hi).map(([a, b]) => [t.wall(Math.max(a, lo), s.zone).min, b >= hi ? DAY : t.wall(b, s.zone).min])
   }
 
-  async function findNext() {
-    let y = s.year
-    let m = s.month
-    for (let i = 0; i < 13; i++) {
-      m++
-      if (m > 11) { m = 0; y++ }
-      if (Date.UTC(y, m, 1) - 14 * 3600000 > s.until) break
-      const entry = await loadMonth(y, m).catch(() => null)
-      const key = firstOpenKey(entry)
-      if (key) {
-        await showMonth(y, m, 1)
-        chooseDay(key)
-        return
-      }
-    }
-    toast('Nothing open further ahead.', { kind: 'info' })
-  }
-
-  /* ---- Days and times ----------------------------------------------------- */
-
-  function chooseDay(key, { push = true } = {}) {
-    const list = slotsOn(key)
-    if (!list.length) return
-    const changed = s.day !== key
-    s.day = key
-    s.slot = null
-    sound.tap()
-    haptic(6)
-    for (const c of grid.querySelectorAll('.cell')) {
-      const on = c.dataset.day === key
-      c.classList.toggle('on', on)
-      c.setAttribute('aria-pressed', String(on))
-      c.tabIndex = on ? 0 : -1
-    }
-    drawTimes(changed)
-    root.classList.add('has-day')
-    paintChosen()
-    if (!wide() && push) setStep('time')
-  }
-
-  function stepDay(by) {
-    const keys = [...s.months.values()].flatMap((e) => [...e.byDay.keys()]).sort()
-    const i = keys.indexOf(s.day)
-    const key = keys[i + by]
-    if (!key) { nope(by < 0 ? dayPrev : dayNext); return }
-    const [y, m] = key.split('-').map(Number)
-    if (y !== s.year || m - 1 !== s.month) showMonth(y, m - 1, by)
-    chooseDay(key, { push: false })
-  }
-
-  function drawTimes(animate) {
-    if (!s.day) return
-    const list = slotsOn(s.day)
-    const noon = Date.parse(s.day + 'T12:00:00Z')
-    timesTitle.replaceChildren(h('b', t.weekday(noon, 'UTC')), ' ', h('span', t.monthDay(noon, 'UTC')))
-    times.querySelector('.times-zone').textContent = `${event.title} · ${t.minutesLabel(event.duration)} · ${zoneName(s.zone)}`
-    const keys = [...s.months.values()].flatMap((e) => [...e.byDay.keys()]).sort()
-    dayPrev.disabled = keys.indexOf(s.day) <= 0
-    dayNext.disabled = keys.indexOf(s.day) >= keys.length - 1
-    fill(timesList, list.map((ms, i) => slotButton(ms, i)))
-    timesList.scrollTop = 0
-    if (animate && !reduced()) {
-      timesList.classList.remove('enter')
-      void timesList.offsetWidth
-      timesList.classList.add('enter')
+  function setStrips(key, ranges, live) {
+    const lo = t.instant(key, 0, s.zone)
+    const hi = t.instant(t.nextKey(key), 0, s.zone)
+    const floor = Date.now() + 30 * MIN
+    let mine = ranges.map(([a, b]) => [t.instant(key, a, s.zone), b >= DAY ? hi : t.instant(key, b, s.zone)])
+    if (!live) mine = mine.map(([a, b]) => [Math.max(a, Math.ceil(floor / (15 * MIN)) * 15 * MIN), Math.min(b, s.until)]).filter(([a, b]) => b - a >= dur * MIN)
+    s.paint = merge([...s.paint.filter(([a, b]) => !(b > lo && a < hi)), ...mine])
+    if (!live) {
+      if (s.paint.length > 12) { s.paint = s.paint.slice(0, 12); toast('Up to 12 times.', { kind: 'info' }) }
+      tl.redrawTrack(key)
     }
   }
 
-  function slotButton(ms, i) {
-    const { main, period } = t.clockParts(ms, s.zone)
-    const on = s.slot === ms
-    const label = h('button.slot-time', { type: 'button', role: 'option', 'aria-selected': String(on), onclick: () => chooseSlot(ms) },
-      h('span.num', main), period ? h('small', period) : null)
-    const nextBtn = h('button.slot-next', { type: 'button', tabindex: on ? '0' : '-1', 'aria-hidden': String(!on), onclick: () => toDetails() }, 'Next')
-    return h('div.slot' + (on ? '.on' : ''), { 'data-ms': String(ms), style: { '--i': String(Math.min(i, 14)) } }, label, nextBtn)
+  // The earliest open start that fits inside something painted.
+  function bestMatch() {
+    for (const ms of s.slots) if (s.paint.some(([a, b]) => ms >= a && ms + dur * MIN <= b)) return ms
+    return null
   }
 
-  function chooseSlot(ms) {
-    if (s.slot === ms) { toDetails(); return }
-    s.slot = ms
+  /* ---- The bar under the strip ---------------------------------------------------------- */
+
+  function soonest() {
+    const ms = s.slots.find((x) => x > Date.now())
+    if (ms == null) return null
+    return h('button.soon', { type: 'button', onclick: () => jumpTo(ms) },
+      h('small', 'Soonest'), h('b.num', `${t.relativeDay(ms, s.zone) || t.shortDay(ms, s.zone)}, ${t.clock(ms, s.zone)}`))
+  }
+
+  function jumpTo(ms, mode = 'open') {
+    if (s.mode !== 'clip') { setMode('clip'); modeSeg && modeSeg.querySelectorAll('button')[0].click() }
+    const prev = s.clip && t.wall(s.clip.ms, s.zone).key
+    s.clip = { ms, mode }
+    const w = t.wall(ms, s.zone)
+    if (prev && prev !== w.key) tl.redrawTrack(prev)
+    tl.redrawTrack(w.key)
+    tl.reveal(w.key, w.min, { center: true })
     sound.pick()
     haptic(8)
-    for (const row of timesList.querySelectorAll('.slot')) {
-      const on = Number(row.dataset.ms) === ms
-      row.classList.toggle('on', on)
-      row.querySelector('.slot-time').setAttribute('aria-selected', String(on))
-      const n = row.querySelector('.slot-next')
-      n.tabIndex = on ? 0 : -1
-      n.setAttribute('aria-hidden', String(!on))
-    }
-    paintChosen()
+    afterClip()
+    requestAnimationFrame(() => { const c = tl.lane(w.key) && tl.lane(w.key).querySelector('.tl-clip'); c && c.focus({ preventScroll: true }) })
   }
 
-  function paintChosen() {
-    if (!s.slot) { chosen.hidden = true; return }
-    const end = s.slot + event.duration * 60000
-    fill(chosen, ic('calendarCheck', 18, 2), h('div', h('b', t.range(s.slot, end, s.zone)), h('span', t.fullDate(s.slot, s.zone))))
-    chosen.hidden = false
+  function paintBar() {
+    if (s.mode === 'clip') {
+      fill(hint, asks ? `Tap a shaded time to pick it. Tap anywhere else to ask ${first} for that time instead.` : 'Tap a shaded time to pick it, then drag to fine-tune.')
+      if (!s.clip) {
+        const soon = soonest()
+        fill(bar, h('div.bar-text', h('b', 'Pick a time'), h('span', s.slots.length || s.loading ? `Shaded is when ${first} is free.` : `${first} has nothing open right now.`)), soon)
+        return
+      }
+      const end = s.clip.ms + dur * MIN
+      const ask = s.clip.mode === 'ask'
+      fill(bar,
+        h('div.bar-text', h('b.num', t.range(s.clip.ms, end, s.zone)), h('span', `${t.relativeDay(s.clip.ms, s.zone) || t.weekday(s.clip.ms, s.zone)}, ${t.monthDay(s.clip.ms, s.zone)}${ask ? ` · not in ${first}’s hours` : ` · ${city(s.zone)}`}`)),
+        h('button.btn' + (ask ? '.tinted' : '.primary'), { type: 'button', onclick: toDetails }, ask ? `Ask ${first}` : 'Next', ic('arrowRight', 17, 2.4)))
+      return
+    }
+    fill(hint, `${wide() ? 'Drag' : 'Hold, then drag'} along a day to paint when you’re free; drag the ends to trim. Where it meets ${first}’s free time it glows.`)
+    const n = s.paint.length
+    if (!n) { fill(bar, h('div.bar-text', h('b', 'Suggest times'), h('span', `${first} picks one that works and emails you.`))); return }
+    const best = bestMatch()
+    fill(bar,
+      h('div.bar-text', h('b', `${n} ${n === 1 ? 'time' : 'times'} painted`),
+        best
+          ? h('span', `${first} is free in ${n === 1 ? 'part of it' : 'some'}: `, h('button.inline-link', { type: 'button', onclick: () => jumpTo(best) }, `book ${t.relativeDay(best, s.zone) ? '' : t.weekday(best, s.zone, 'short') + ' '}${t.clock(best, s.zone)}`))
+          : h('span', `${first} will pick a time in ${n === 1 ? 'it' : 'them'}`)),
+      h('button.btn.primary', { type: 'button', onclick: () => toDetails() }, 'Send', ic('arrowRight', 17, 2.4)))
+  }
+
+  function setMode(mode) {
+    if (mode === s.mode) return
+    s.mode = mode
+    tl.setMode(mode)
+    sound.tap()
+    paintBar()
   }
 
   /* ---- Steps ----------------------------------------------------------------- */
@@ -322,6 +344,7 @@ export async function book(handle, slug) {
     const change = () => {
       s.step = step
       root.dataset.step = step
+      panel.classList.toggle('picking', step === 'pick')
       if (step === 'details') drawDetails()
       panel.scrollTop = 0
     }
@@ -335,48 +358,59 @@ export async function book(handle, slug) {
   }
 
   function toDetails() {
-    if (!s.slot) return
+    if (s.mode === 'clip') {
+      if (!s.clip) return
+      s.request = s.clip.mode === 'ask' ? [[s.clip.ms, s.clip.ms + dur * MIN]] : null
+    } else {
+      if (!s.paint.length) { sound.error(); return }
+      s.request = s.paint.map((r) => r.slice())
+    }
     api.prepare('bookings.create')
     setStep('details')
   }
 
   /* ---- Details --------------------------------------------------------------- */
 
+  function rangeList(ranges) {
+    return h('ul.range-list', ranges.map(([a, b]) => h('li', h('b', `${t.relativeDay(a, s.zone) || t.weekday(a, s.zone, 'short')}, ${t.monthDay(a, s.zone)}`), h('span.num', t.range(a, b, s.zone)))))
+  }
+
   function drawDetails() {
     const me = state.me && state.me.member
     const last = remembered()
+    const asking = !!s.request
     const name = h('input.input', { name: 'name', autocomplete: 'name', required: true, maxlength: '80', value: (old && old.name) || (me && me.name) || last.name || '', placeholder: 'Jane Appleseed' })
     const email = h('input.input', { name: 'email', type: 'email', autocomplete: 'email', inputmode: 'email', required: true, maxlength: '200', value: (old && old.email) || (me && me.email) || last.email || '', placeholder: 'jane@example.com' })
     const phone = h('input.input', { name: 'phone', type: 'tel', autocomplete: 'tel', inputmode: 'tel', maxlength: '32', value: (old && old.phone) || last.phone || '', placeholder: '+1 555 010 0199' })
-    const notes = h('textarea.input', { name: 'notes', rows: '3', maxlength: '1000', placeholder: 'Anything that helps prepare' })
+    const notes = h('textarea.input', { name: 'notes', rows: '3', maxlength: '1000', placeholder: asking ? `What you’d like to talk about, and anything ${first} should know about these times` : 'Anything that helps prepare' })
     const f = {
       name: field({ label: 'Name', input: name }),
-      email: field({ label: 'Email', input: email, hint: 'Your invite goes here.' }),
+      email: field({ label: 'Email', input: email, hint: asking ? `${first}’s answer comes here.` : 'Your invite goes here.' }),
       phone: event.location.kind === 'phone' ? field({ label: 'Phone number', input: phone, hint: `${host.name} will call you on it.` }) : null,
       notes: field({ label: 'Notes', input: notes, hint: `Only ${host.name} sees these.` })
     }
-    const submit = h('button.btn.primary.large.block', { type: 'submit' }, h('span', old ? 'Move booking' : 'Book it'))
-    const end = s.slot + event.duration * 60000
+    const label = old ? 'Move booking' : asking ? `Send to ${first}` : 'Book it'
+    const submit = h('button.btn.primary.large.block', { type: 'submit' }, h('span', label))
+    const summary = asking
+      ? h('div.summary', h('span.event-chip', { style: { '--event': color } }), h('div', h('b', `${event.title} · ${t.minutesLabel(dur)}`), h('span', `${s.request.length === 1 ? 'The time you’re asking for' : `${s.request.length} times you’re free`}, ${city(s.zone)}`), rangeList(s.request)), h('button.link-btn', { type: 'button', onclick: () => history.back() }, 'Change'))
+      : h('div.summary', h('span.event-chip', { style: { '--event': color } }), h('div', h('b', event.title), h('span', t.fullDate(s.clip.ms, s.zone)), h('span.num', `${t.range(s.clip.ms, s.clip.ms + dur * MIN, s.zone)} · ${city(s.zone)}`)), h('button.link-btn', { type: 'button', onclick: () => history.back() }, 'Change'))
     const form = h('form.details-form', { novalidate: true },
       h('div.details-head',
-        h('button.back-btn', { type: 'button', 'aria-label': 'Back to times', onclick: () => history.back() }, ic('chevronLeft', 22, 2.2)),
-        h('h2.step-title', old ? 'Confirm the new time' : 'Almost there')),
-      h('div.summary', { style: { '--event': color } },
-        h('span.summary-bar'),
-        h('div', h('b', event.title), h('span', `${t.fullDate(s.slot, s.zone)}`), h('span.num', `${t.range(s.slot, end, s.zone)} · ${city(s.zone)}`)),
-        h('button.link-btn', { type: 'button', onclick: () => history.back() }, 'Change')),
+        h('button.back-btn', { type: 'button', 'aria-label': 'Back to the times', onclick: () => history.back() }, ic('chevronLeft', 22, 2.2)),
+        h('h2.step-title', old ? 'Confirm the new time' : asking ? `Ask ${first}` : 'Almost there')),
+      summary,
       f.name, f.email, f.phone, f.notes,
       submit,
-      h('p.fine', 'No account needed. You’ll get an email with a calendar invite and a link to change or cancel.'))
+      h('p.fine', asking ? `${first} picks a time that works, or says no. You’ll get an email either way, and no account is needed.` : 'No account needed. You’ll get an email with a calendar invite and a link to change or cancel.'))
     form.addEventListener('submit', (e) => {
       e.preventDefault()
-      confirm({ form, f, inputs: { name, email, phone, notes }, submit })
+      confirm({ f, inputs: { name, email, phone, notes }, submit, label })
     })
     fill(details, form)
     if (wide()) requestAnimationFrame(() => (name.value ? (email.value ? notes : email) : name).focus({ preventScroll: true }))
   }
 
-  async function confirm({ f, inputs, submit }) {
+  async function confirm({ f, inputs, submit, label }) {
     if (s.busy) return
     let bad = null
     const check = (box, ok, message) => { box.setError(ok ? '' : message); if (!ok && !bad) bad = box }
@@ -391,12 +425,14 @@ export async function book(handle, slug) {
     }
     s.busy = true
     submit.classList.add('busy')
-    fill(submit, h('span.spin'), h('span', old ? 'Moving…' : 'Booking…'))
+    fill(submit, h('span.spin'), h('span', old ? 'Moving…' : s.request ? 'Sending…' : 'Booking…'))
+    const at = s.request ? s.request[0][0] : s.clip.ms
     const input = {
-      handle: host.handle, event: event.slug, start: s.slot,
+      handle: host.handle, event: event.slug,
       name: inputs.name.value.trim(), email: inputs.email.value.trim(), notes: inputs.notes.value.trim(),
-      tz: s.zone, tzLabel: zoneName(s.zone, s.slot), offset: offsetIn(s.zone, s.slot), h24: t.clock24()
+      tz: s.zone, tzLabel: zoneName(s.zone, at), offset: offsetIn(s.zone, at), h24: t.clock24()
     }
+    if (s.request) { input.request = true; input.ranges = s.request } else input.start = s.clip.ms
     if (f.phone) input.phone = inputs.phone.value.trim()
     if (old) input.reschedule = moving
     try { localStorage.setItem(ME_KEY, JSON.stringify({ name: input.name, email: input.email, phone: input.phone || '' })) } catch {}
@@ -407,18 +443,17 @@ export async function book(handle, slug) {
     } catch (error) {
       s.busy = false
       submit.classList.remove('busy')
-      fill(submit, h('span', old ? 'Move booking' : 'Book it'))
-      if (error.status === 409) {
-        // Someone took it first: back to the times, without it.
+      fill(submit, h('span', label))
+      if (error.status === 409 && error.code !== 'already_asked' && !s.request) {
+        // Someone took it first: back to the strip, without it.
         toast(error.message, { kind: 'bad' })
         sound.error()
-        s.months.clear()
-        s.slot = null
-        await loadMonth(s.year, s.month).catch(() => {})
-        drawMonth()
-        if (s.day && slotsOn(s.day).length) drawTimes(true)
-        else { s.day = null; root.classList.remove('has-day') }
-        paintChosen()
+        s.slots = []
+        s.loadedTo = 0
+        s.clip = null
+        await load(lastTrackEnd()).catch(() => {})
+        tl.setTracks(tracks())
+        paintBar()
         history.back()
         return
       }
@@ -431,37 +466,45 @@ export async function book(handle, slug) {
 
   function showDone(result) {
     const b = result.booking
+    const asked = result.requested || b.status === 'requested'
     const where = placeLine(b.location, host.name, { revealed: true, phone: b.phone })
     const emailed = result.emailed && result.emailed.invitee
+    const ranges = b.ranges && b.ranges.length ? b.ranges : s.request
     fill(done,
-      doneMark('good'),
-      h('h1.done-title', old ? 'Booking moved' : 'You’re booked'),
-      h('p.done-lead', emailed ? ['An invite is on its way to ', h('b', b.email), '.'] : 'Add it to your calendar below. We couldn’t send the email just now.'),
+      doneMark(asked ? 'wait' : 'good'),
+      h('h1.done-title', old ? 'Booking moved' : asked ? 'Request sent' : 'You’re booked'),
+      h('p.done-lead', asked
+        ? [`${first} will pick a time from what you sent. `, emailed ? ['You’ll hear back at ', h('b', b.email), '.'] : 'We couldn’t send your copy by email just now.']
+        : emailed ? ['An invite is on its way to ', h('b', b.email), '.'] : 'Add it to your calendar below. We couldn’t send the email just now.'),
       h('div.ticket', { style: { '--event': color } },
-        h('div.ticket-head', avatar({ key: host.handle, name: host.name, picture: host.picture, size: 40 }), h('div', h('b', b.event.title), h('span', `with ${host.name}`))),
-        h('ul.meta',
-          metaRow('calendar', t.fullDate(b.start, s.zone)),
-          metaRow('clock', t.range(b.start, b.end, s.zone), `${zoneName(s.zone, b.start)} · ${gmt(offsetIn(s.zone, b.start))}`),
-          where ? metaRow(where.icon, where.text, where.sub, where.href) : null)),
-      h('p.cal-label', 'Add to your calendar'),
-      calendarButtons(b.links),
+        h('div.ticket-head', avatar({ key: host.handle, name: host.name, picture: host.picture, size: 40 }), h('div', h('b', b.event.title), h('span', `with ${host.name}`)), h('span.event-chip', { style: { '--event': color } })),
+        asked
+          ? rangeList(ranges)
+          : h('ul.meta',
+            metaRow('calendar', t.fullDate(b.start, s.zone)),
+            metaRow('clock', t.range(b.start, b.end, s.zone), `${zoneName(s.zone, b.start)} · ${gmt(offsetIn(s.zone, b.start))}`),
+            where ? metaRow(where.icon, where.text, where.sub, where.href) : null)),
+      asked ? null : h('p.cal-label', 'Add to your calendar'),
+      asked ? null : calendarButtons(b.links),
       h('div.done-links',
-        h('a', { href: b.links.reschedule, onclick: (e) => { e.preventDefault(); location.href = b.links.reschedule } }, 'Reschedule'),
-        h('span.dot', '·'),
-        h('a', { href: b.links.manage, onclick: (e) => { e.preventDefault(); go(new URL(b.links.manage).pathname + new URL(b.links.manage).search) } }, 'Cancel')),
+        asked ? null : h('a', { href: b.links.reschedule, onclick: (e) => { e.preventDefault(); location.href = b.links.reschedule } }, 'Reschedule'),
+        asked ? null : h('span.dot', '·'),
+        h('a', { href: b.links.manage, onclick: (e) => { e.preventDefault(); go(new URL(b.links.manage).pathname + new URL(b.links.manage).search) } }, asked ? 'Withdraw the request' : 'Cancel')),
       !(state.me && state.me.host) ? h('div.promo', ic('sparkles', 18, 2), h('div', h('b', 'Want a page like this?'), h('span', 'Share one link and let people book you.')), h('button.btn.small.tinted', { type: 'button', onclick: () => (state.me && state.me.member ? go('/') : signIn()) }, 'Get yours')) : null)
-    // Replace the steps in history: Back from here shouldn't rebook.
+    // Replace the steps in history: Back from here shouldn't book again.
     history.replaceState({ page: location.pathname, step: 'done' }, '', `/@${host.handle}/${event.slug}`)
     setStep('done', { push: false })
-    sound.booked()
+    if (asked) sound.sent(); else sound.booked()
     haptic(14)
   }
 
   /* ---- Zone and clock ---------------------------------------------------------- */
 
   function paintZone() {
-    fill(zoneBtn, ic('globe', 16, 2), h('span', zoneName(s.zone, Date.now(), 'longGeneric')), h('span.zone-time.num', t.clock(Date.now(), s.zone)), ic('chevronDown', 15, 2.2))
+    fill(zoneBtn, ic('globe', 16, 2), h('span', wide() ? zoneName(s.zone, Date.now(), 'longGeneric') : city(s.zone)), h('span.zone-time.num', t.clock(Date.now(), s.zone)), ic('chevronDown', 15, 2.2))
     for (const b of clockSeg.querySelectorAll('button')) b.setAttribute('aria-pressed', String((b.dataset.v === '24') === t.clock24()))
+    const corner = tl.el.querySelector('.tl-zone')
+    if (corner) corner.textContent = city(s.zone)
   }
 
   async function pickZone() {
@@ -469,12 +512,11 @@ export async function book(handle, slug) {
     if (!zone || zone === s.zone) return
     s.zone = zone
     try { localStorage.setItem(ZONE_KEY, zone) } catch {}
-    for (const [key, entry] of s.months) if (entry.status === 'ready') group(entry, key)
+    group()
     paintZone()
-    if (s.day && !slotsOn(s.day).length) { s.day = null; s.slot = null; root.classList.remove('has-day') }
-    drawMonth()
-    drawTimes(true)
-    paintChosen()
+    tl.setTracks(tracks())
+    tl.redraw()
+    paintBar()
   }
 
   function setClock(v) {
@@ -486,41 +528,17 @@ export async function book(handle, slug) {
 
   function redrawClocks() {
     paintZone()
-    drawTimes(false)
-    paintChosen()
+    tl.redraw()
+    paintBar()
     if (s.step === 'details') drawDetails()
   }
-
-  /* ---- Keyboard in the month ----------------------------------------------------- */
-
-  grid.addEventListener('keydown', (e) => {
-    const cell = e.target.closest('.cell')
-    if (!cell) return
-    const moves = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
-    if (!(e.key in moves)) return
-    e.preventDefault()
-    const cells = [...grid.querySelectorAll('.cell:not(.blank)')]
-    let i = cells.indexOf(cell) + moves[e.key]
-    while (cells[i] && cells[i].disabled) i += Math.sign(moves[e.key])
-    if (cells[i]) { cells[i].tabIndex = 0; cell.tabIndex = -1; cells[i].focus() } else if (!(moves[e.key] < 0 ? prev : next).disabled) shiftMonth(Math.sign(moves[e.key]))
-  })
-
-  // Swipe the month sideways on a touch screen.
-  let sx = null
-  grid.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX }, { passive: true })
-  grid.addEventListener('touchend', (e) => {
-    if (sx === null) return
-    const dx = e.changedTouches[0].clientX - sx
-    sx = null
-    if (Math.abs(dx) > 60) { const btn = dx < 0 ? next : prev; if (!btn.disabled) shiftMonth(dx < 0 ? 1 : -1) }
-  }, { passive: true })
 
   // Phone: swipe from the left edge goes back a step.
   function swipeBack(target) {
     let start = null
     target.addEventListener('touchstart', (e) => {
       const x = e.touches[0].clientX
-      start = x < 24 && s.step !== 'day' && s.step !== 'done' ? { x, y: e.touches[0].clientY } : null
+      start = x < 24 && s.step === 'details' ? { x, y: e.touches[0].clientY } : null
     }, { passive: true })
     target.addEventListener('touchend', (e) => {
       if (!start) return
@@ -533,31 +551,33 @@ export async function book(handle, slug) {
 
   /* ---- Start ------------------------------------------------------------------- */
 
-  history.replaceState({ page: location.pathname + location.search, step: 'day' }, '', location.href)
+  history.replaceState({ page: location.pathname + location.search, step: 'pick' }, '', location.href)
   paintZone()
-  const opening = showMonth(s.year, s.month).then(() => {
-    const entry = monthEntry()
-    if (entry && entry.status === 'ready' && !entry.byDay.size && !next.disabled) findNextQuietly()
-  })
-  async function findNextQuietly() {
-    let y = s.year
-    let m = s.month + 1
-    if (m > 11) { m = 0; y++ }
-    if (Date.UTC(y, m, 1) - 14 * 3600000 > s.until) return
-    const entry = await loadMonth(y, m).catch(() => null)
-    if (entry && entry.byDay.size) showMonth(y, m, 1)
-  }
+  paintBar()
+  tl.setTracks(tracks())
+  tl.scrollToMinute(8 * 60)
+  const opening = load(Date.now() + 30 * 86400000).then(() => {
+    tl.setTracks(tracks())
+    // Start the strip at the first open hour of the next few days.
+    const firstOpen = s.slots[0]
+    const w = firstOpen ? t.wall(firstOpen, s.zone) : null
+    const earliest = Math.min(...tracks().slice(0, 7).map((x) => startsOn(x.key)[0] ?? DAY))
+    tl.scrollToMinute(Math.max(0, (earliest < DAY ? earliest : 8 * 60) - 45))
+    if (old && w) tl.reveal(t.wall(old.start, s.zone).key, t.wall(old.start, s.zone).min, { smooth: false })
+    paintBar()
+  }, failure)
 
   return {
     el,
     ready: () => opening,
     clock: redrawClocks,
+    leave: () => { visit.leave(); tl.destroy() },
     // Back and Forward move between the steps on this page.
     pop(st) {
       if (!st || !st.step || st.page !== location.pathname + location.search || s.step === 'done') return false
-      const step = st.step === 'time' && wide() ? 'day' : st.step
-      if (step === 'details' && !s.slot) return false
-      const order = ['day', 'time', 'details', 'done']
+      const step = st.step === 'time' ? 'pick' : st.step
+      if (step === 'details' && !s.clip && !s.paint.length) return false
+      const order = ['pick', 'details', 'done']
       setStep(step, { push: false, dir: order.indexOf(step) < order.indexOf(s.step) ? 'back' : 'forward' })
       return true
     }

@@ -1,61 +1,1287 @@
 {
   "operations": {
     "bookings.create": {
-      "handler": "opBook", "auth": "public", "risk": "write", "idempotency": "optional", "sensitive": true,
+      "handler": "opBook",
+      "auth": "public",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
       "summary": "Book a time with a Kalendar host, no account needed",
-      "description": "Read the open times first (GET /api/u/<handle>/<event>/slots?from=<ms>&to=<ms>), then send one of them as start (Unix ms) with the invitee's name and email, their IANA time zone, its offset in minutes at that time and its long name. Emails a calendar invitation to the invitee and a note to the host. Pass reschedule { id, token } from a booking's link to move it instead. Solve the Holm challenge first; six a minute from one address.",
-      "limits": { "rate": { "requests": 6, "per": "1m" }, "challenge": { "work": "1s" } },
+      "description": "Read the open times first (GET /api/u/<handle>/<event>/slots?from=<ms>&to=<ms>), then send one of them as start (Unix ms) with the invitee's name and email, their IANA time zone, its offset in minutes at that time and its long name. Emails a calendar invitation to the invitee and a note to the host. Pass reschedule { id, token } from a booking's link to move it instead. To ask for other times, send request: true with ranges [[startMs, endMs], ...] the invitee could meet in; the host accepts at a time inside them or declines. Solve the Holm challenge first; six a minute from one address.",
+      "limits": {
+        "rate": {
+          "requests": 6,
+          "per": "1m"
+        },
+        "challenge": {
+          "work": "1s"
+        }
+      },
       "input": {
         "type": "object",
         "properties": {
-          "handle": { "type": "string", "maxLength": 40 },
-          "event": { "type": "string", "maxLength": 60 },
-          "start": { "type": "number" },
-          "name": { "type": "string", "maxLength": 200 },
-          "email": { "type": "string", "maxLength": 300 },
-          "phone": { "type": "string", "maxLength": 60 },
-          "notes": { "type": "string", "maxLength": 2000 },
-          "tz": { "type": "string", "maxLength": 80 },
-          "tzLabel": { "type": "string", "maxLength": 120 },
-          "offset": { "type": "number" },
-          "h24": { "type": "boolean" },
+          "handle": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "event": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "start": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "tz": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "tzLabel": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "offset": {
+            "type": "number"
+          },
+          "h24": {
+            "type": "boolean"
+          },
           "reschedule": {
             "type": "object",
-            "properties": { "id": { "type": "string", "maxLength": 60 }, "token": { "type": "string", "maxLength": 80 } },
-            "required": ["id", "token"], "additionalProperties": false
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 60
+              },
+              "token": {
+                "type": "string",
+                "maxLength": 80
+              }
+            },
+            "required": [
+              "id",
+              "token"
+            ],
+            "additionalProperties": false
+          },
+          "request": {
+            "type": "boolean"
+          },
+          "ranges": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
           }
         },
-        "required": ["handle", "event", "start", "name", "email", "tz", "offset"],
+        "required": [
+          "handle",
+          "event",
+          "name",
+          "email",
+          "tz",
+          "offset"
+        ],
         "additionalProperties": false
       },
-      "output": { "type": "object" },
+      "output": {
+        "type": "object"
+      },
       "errors": {
-        "APP_INVALID_INPUT": { "status": 400, "public": true },
-        "APP_NOT_FOUND": { "status": 404, "public": true },
-        "APP_CONFLICT": { "status": 409, "public": true },
-        "APP_GONE": { "status": 410, "public": true },
-        "APP_RATE_LIMITED": { "status": 429, "public": true }
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
       }
     },
     "bookings.cancel": {
-      "handler": "opCancel", "auth": "public", "risk": "write", "sensitive": true,
+      "handler": "opCancel",
+      "auth": "public",
+      "risk": "write",
+      "sensitive": true,
       "summary": "Cancel a Kalendar booking with the link from its email",
-      "description": "Send the booking id and the token from the link (?t=) with an optional note to the host. Emails both sides. Ten a minute from one address.",
-      "limits": { "rate": { "requests": 10, "per": "1m" } },
+      "description": "Send the booking id and the token from the link (?t=) with an optional note to the host. Cancels a booking and emails both sides, or withdraws a request and tells the host. Ten a minute from one address.",
+      "limits": {
+        "rate": {
+          "requests": 10,
+          "per": "1m"
+        }
+      },
       "input": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "maxLength": 60 },
-          "token": { "type": "string", "maxLength": 80 },
-          "reason": { "type": "string", "maxLength": 1000 }
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "token": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000
+          }
         },
-        "required": ["id", "token"],
+        "required": [
+          "id",
+          "token"
+        ],
         "additionalProperties": false
       },
-      "output": { "type": "object" },
+      "output": {
+        "type": "object"
+      },
       "errors": {
-        "APP_INVALID_INPUT": { "status": 400, "public": true },
-        "APP_NOT_FOUND": { "status": 404, "public": true }
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        }
+      }
+    },
+    "guide.get": {
+      "handler": "opGuide",
+      "auth": "public",
+      "risk": "read",
+      "summary": "Read how to manage a Kalendar booking page (call this first)",
+      "description": "Returns {guide}: what each tool does, how times are written, and what only the app can change.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        }
+      }
+    },
+    "me.get": {
+      "handler": "opMe",
+      "auth": "user",
+      "risk": "read",
+      "summary": "Your Kalendar: link, profile, zone, counts and next meeting",
+      "description": "Returns the booking link, profile, time zone, counts of upcoming meetings, today's and waiting requests, the next meeting, and what to do next.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "profile.update": {
+      "handler": "opProfile",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Change your public profile",
+      "description": "Change any of name, bio, role, company, place (a city), website and links (profile URLs) shown on your page, and whether booking emails are on. Send only what changes.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 600
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Like \"Product designer\"."
+          },
+          "company": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "place": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Like \"Dubai\"."
+          },
+          "website": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "https:// address; empty to remove."
+          },
+          "links": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Profile URLs: LinkedIn, X, GitHub, Instagram…; the whole list."
+          },
+          "notify": {
+            "type": "boolean",
+            "description": "Email me when someone books."
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "hours.get": {
+      "handler": "opHoursGet",
+      "auth": "user",
+      "risk": "read",
+      "summary": "Your weekly hours and days off",
+      "description": "Returns weekly hours per day (mon…sun, 24-hour \"HH:MM\" ranges in your zone), upcoming days off and days with special hours.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "hours.update": {
+      "handler": "opHoursUpdate",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Change your weekly hours or days off",
+      "description": "weekly: only the days you send change, each a list of [\"09:00\",\"17:00\"] ranges ([] for a day off). days_off_add / days_off_remove: dates as YYYY-MM-DD in your zone.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "weekly": {
+            "type": "object",
+            "properties": {
+              "mon": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 5
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "tue": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 5
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "wed": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 5
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "thu": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 5
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "fri": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 5
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "sat": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 5
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "sun": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 5
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "days_off_add": {
+            "type": "array",
+            "maxItems": 60,
+            "items": {
+              "type": "string",
+              "maxLength": 10
+            },
+            "description": "Dates nobody can book."
+          },
+          "days_off_remove": {
+            "type": "array",
+            "maxItems": 60,
+            "items": {
+              "type": "string",
+              "maxLength": 10
+            },
+            "description": "Days off to open again."
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "events.list": {
+      "handler": "opEventsList",
+      "auth": "user",
+      "risk": "read",
+      "summary": "Your kinds of meeting (event types)",
+      "description": "Returns each event type with its id, link, length, location, rules and whether it is shown.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "events.create": {
+      "handler": "opEventsCreate",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Add a kind of meeting",
+      "description": "Adds an event type with its own link (/@handle/<slug>). Only title is required; the rest have sensible defaults.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Name people see, like \"Intro call\"."
+          },
+          "duration": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 720,
+            "description": "Length in minutes."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "red",
+              "orange",
+              "yellow",
+              "green",
+              "teal",
+              "blue",
+              "indigo",
+              "purple",
+              "pink",
+              "graphite"
+            ]
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "video",
+                  "phone",
+                  "place",
+                  "custom"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 300,
+                "description": "The https:// video link, the address, or the text for custom."
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          "notice": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 43200,
+            "description": "Minutes of notice a booking needs (default 240)."
+          },
+          "window": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365,
+            "description": "How many days ahead people can book (default 60)."
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 720,
+            "description": "Minutes between start times; 0 picks one from the length."
+          },
+          "before": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 240,
+            "description": "Free minutes kept before each meeting."
+          },
+          "after": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 240,
+            "description": "Free minutes kept after each meeting."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Shown on the page (true) or hidden."
+          },
+          "requests": {
+            "type": "boolean",
+            "description": "Let guests ask for times outside the open hours."
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "The link; made from the title when left out."
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "events.update": {
+      "handler": "opEventsUpdate",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Change a kind of meeting",
+      "description": "Find it by id or slug, then send only the fields that change; new_slug changes its link.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "new_slug": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Name people see, like \"Intro call\"."
+          },
+          "duration": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 720,
+            "description": "Length in minutes."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "red",
+              "orange",
+              "yellow",
+              "green",
+              "teal",
+              "blue",
+              "indigo",
+              "purple",
+              "pink",
+              "graphite"
+            ]
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "video",
+                  "phone",
+                  "place",
+                  "custom"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 300,
+                "description": "The https:// video link, the address, or the text for custom."
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          "notice": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 43200,
+            "description": "Minutes of notice a booking needs (default 240)."
+          },
+          "window": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365,
+            "description": "How many days ahead people can book (default 60)."
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 720,
+            "description": "Minutes between start times; 0 picks one from the length."
+          },
+          "before": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 240,
+            "description": "Free minutes kept before each meeting."
+          },
+          "after": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 240,
+            "description": "Free minutes kept after each meeting."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Shown on the page (true) or hidden."
+          },
+          "requests": {
+            "type": "boolean",
+            "description": "Let guests ask for times outside the open hours."
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "events.delete": {
+      "handler": "opEventsDelete",
+      "auth": "user",
+      "risk": "destructive",
+      "summary": "Delete a kind of meeting",
+      "description": "Deletes an event type by id or slug. Bookings already made stay. Prefer active: false to hide it.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "meetings.list": {
+      "handler": "opMeetingsList",
+      "auth": "user",
+      "risk": "read",
+      "summary": "Your bookings and requests",
+      "description": "view: upcoming (default), past, cancelled (with declined requests) or requests (guests asking for other times, with the ranges they offered). Times are ISO 8601 in your zone.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "view": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "past",
+              "cancelled",
+              "requests"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "meetings.cancel": {
+      "handler": "opMeetingsCancel",
+      "auth": "user",
+      "risk": "destructive",
+      "summary": "Cancel a booking",
+      "description": "Cancels a confirmed booking by id and emails the guest a link to book again, with your note.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "A note for the guest."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "requests.accept": {
+      "handler": "opRequestsAccept",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Accept a request at a time inside it",
+      "description": "Confirms a waiting request at start (ISO 8601 with an offset, a time in your zone, or Unix ms) inside one of its ranges. Emails both sides with calendar links.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "start": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Like 2026-10-30T10:30:00+04:00."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "requests.decline": {
+      "handler": "opRequestsDecline",
+      "auth": "user",
+      "risk": "write",
+      "summary": "Decline a request",
+      "description": "Declines a waiting request; the guest is emailed with your note and a link to the open times.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "slots.list": {
+      "handler": "opSlotsList",
+      "auth": "user",
+      "risk": "read",
+      "summary": "Open times for one kind of meeting",
+      "description": "Open start times of an event type (by slug) for up to 14 days from a date (YYYY-MM-DD, default today), grouped by day, in your zone.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "from": {
+            "type": "string",
+            "maxLength": 10
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14
+          }
+        },
+        "required": [
+          "event"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
+      }
+    },
+    "stats.get": {
+      "handler": "opStats",
+      "auth": "user",
+      "risk": "read",
+      "summary": "Who visits your page and who books",
+      "description": "Views, visitors, bookings, requests, sources, devices, places (from time zones), time on page and per-event numbers for 7, 30 or 90 days, with the period before.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "enum": [
+              7,
+              30,
+              90
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_GONE": {
+          "status": 410,
+          "public": true
+        },
+        "APP_RATE_LIMITED": {
+          "status": 429,
+          "public": true
+        }
       }
     }
   }

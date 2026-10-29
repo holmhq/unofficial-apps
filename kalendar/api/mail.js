@@ -1,13 +1,15 @@
-// The emails: a booking confirmed, cancelled or moved, to the person who
+// The emails: a booking confirmed, cancelled or moved, and a request for
+// other times sent, accepted, declined or withdrawn, to the person who
 // booked and to the host. Tables and inline styles so they hold together in
 // Gmail, Outlook and Apple Mail; Inter where the client loads web fonts;
 // dark mode where it's supported. Each has a plain-text twin.
 import { esc } from './lib.js'
-import { parts, clockRange, longDate, shortDate, clock, gmt } from './tz.js'
+import { parts, clockRange, longDate, shortDate, clock, gmt, offsetAt } from './tz.js'
 
 const C = {
   page: '#f2f2f7', card: '#ffffff', ink: '#1d1d1f', ink2: '#6e6e73', ink3: '#8e8e93', line: '#e5e5ea',
-  accent: '#e0352b', green: '#1f8a3b', greenSoft: '#e7f6eb', red: '#d70015', redSoft: '#fdecec', blue: '#0a66d8', blueSoft: '#e8f0fc'
+  accent: '#e0352b', green: '#1f8a3b', greenSoft: '#e7f6eb', red: '#d70015', redSoft: '#fdecec', blue: '#0a66d8', blueSoft: '#e8f0fc',
+  amber: '#a35200', amberSoft: '#fdf1e1', well: '#f5f5f7'
 }
 const FONT = "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 
@@ -35,7 +37,8 @@ a { color: ${C.accent}; }
   .tile { background: #2c2c2e !important; border-color: #3a3a3c !important; }
   .pill { background: #2c2c2e !important; border-color: #3a3a3c !important; }
   .pill a { color: #f5f5f7 !important; }
-  .quote { border-color: #48484a !important; }
+  .quote { background: #2c2c2e !important; }
+  .ask { background: #2c2c2e !important; }
 }
 @media (max-width: 620px) {
   .pad { padding: 28px 22px !important; }
@@ -120,9 +123,22 @@ function button(label, href) {
 </tr></table>`
 }
 
+// Someone's own words, in a soft tinted block.
 function quote(textValue) {
-  return `<div class="quote ink2" style="border-left:3px solid ${C.line};padding:2px 0 2px 12px;color:${C.ink2};white-space:pre-wrap;">${esc(textValue)}</div>`
+  return `<div class="quote ink2" style="background:${C.well};border-radius:12px;padding:10px 13px;color:${C.ink2};white-space:pre-wrap;">${esc(textValue)}</div>`
 }
+
+// The stretches a guest painted, one per line, in the reader's zone.
+function stretches(ranges, offsetOf, h24, struck = false) {
+  const items = ranges.map(([a, z]) => {
+    const off = offsetOf(a)
+    return `<tr><td class="${struck ? 'ink3' : 'ink'}" style="padding:7px 0;font-size:15px;line-height:1.4;color:${struck ? C.ink3 : C.ink};font-variant-numeric:tabular-nums;${struck ? 'text-decoration:line-through;' : ''}"><b style="font-weight:620;">${esc(shortDate(parts(a, off)))}</b>&nbsp;&nbsp;${esc(clockRange(a, z, off, h24))}</td></tr>`
+  }).join('')
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="ask" style="margin:24px 0 0;background:${C.well};border-radius:16px;"><tr><td style="padding:10px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${items}</table>
+</td></tr></table>`
+}
+const plainStretches = (ranges, offsetOf, h24) => ranges.map(([a, z]) => `- ${shortDate(parts(a, offsetOf(a)))}, ${clockRange(a, z, offsetOf(a), h24)}`).join('\n')
 
 function changeBox(links) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;"><tr>
@@ -158,6 +174,34 @@ export function inviteeMail(kind, c) {
   const time = { start: b.start, end: b.end, offset, h24: b.h24, zone: b.tzLabel }
   const footer = `Sent by Kalendar for ${esc(host.name)}. You booked at <a href="${esc(base)}/@${esc(host.handle)}" style="color:${C.ink3};">${esc(base.replace(/^https?:\/\//, ''))}/@${esc(host.handle)}</a>.`
   const place = where(b.location, { hostName: host.name, phone: b.phone })
+  const ranges = b.ranges || [[b.start, b.end]]
+  const guestOffset = () => offset
+  if (kind === 'requested') {
+    const body = badge('Request sent', C.amber, C.amberSoft) +
+      heading(`You asked ${host.name} for a time`, `${esc(b.eventTitle)} · ${b.duration} minutes. You’ll hear back by email.`) +
+      stretches(ranges, guestOffset, b.h24) +
+      `<p class="ink2" style="margin:10px 0 0;font-size:13px;color:${C.ink2};">${esc(b.tzLabel)} · ${gmt(offset)}</p>` +
+      (b.notes ? rows([['Notes', quote(b.notes)]]) : '') +
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;"><tr>
+<td class="line ink2" style="border-top:1px solid ${C.line};padding-top:18px;font-size:14px;line-height:1.5;color:${C.ink2};">Changed your mind? <a href="${esc(c.links.manage)}" style="color:${C.accent};font-weight:600;text-decoration:none;">Withdraw the request</a></td></tr></table>`
+    return {
+      subject: `Request sent: ${b.eventTitle} with ${host.name}`,
+      html: layout({ base, title: 'Request sent', preheader: `${host.name} will pick a time from what you offered, or let you know.`, body, footer }),
+      text: [`You asked ${host.name} for ${b.eventTitle} (${b.duration} min) at one of these times (${b.tzLabel}):`, plainStretches(ranges, guestOffset, b.h24), `You'll hear back by email.`, `Withdraw the request: ${c.links.manage}`].join('\n\n')
+    }
+  }
+  if (kind === 'declined') {
+    const body = badge('Not this time', C.ink2, C.well) +
+      heading(`${host.name} can’t make those times`, `${esc(b.eventTitle)} · ${b.duration} minutes.`) +
+      stretches(ranges, guestOffset, b.h24, true) +
+      (b.reason ? rows([['Note', quote(b.reason)]]) : '') +
+      button('See open times', c.links.rebook)
+    return {
+      subject: `${host.name} can’t make those times`,
+      html: layout({ base, title: 'Request declined', preheader: `${host.name} declined your request for ${b.eventTitle}.`, body, footer }),
+      text: [`${host.name} can't make the times you asked for (${b.eventTitle}).`, b.reason ? `Note: ${b.reason}` : '', `See open times: ${c.links.rebook}`].filter(Boolean).join('\n\n')
+    }
+  }
   if (kind === 'cancelled') {
     const byHost = b.cancelledBy === 'host'
     const body = badge('Cancelled', C.red, C.redSoft) +
@@ -172,18 +216,19 @@ export function inviteeMail(kind, c) {
     }
   }
   const moved = kind === 'rescheduled'
-  const body = (moved ? badge('Rescheduled', C.blue, C.blueSoft) : badge('Confirmed', C.green, C.greenSoft)) +
-    heading(moved ? `Your time with ${host.name} moved` : `You’re booked with ${host.name}`, `${esc(b.eventTitle)} · ${b.duration} minutes`) +
+  const accepted = kind === 'accepted'
+  const body = (moved ? badge('Rescheduled', C.blue, C.blueSoft) : badge(accepted ? 'Accepted' : 'Confirmed', C.green, C.greenSoft)) +
+    heading(moved ? `Your time with ${host.name} moved` : accepted ? `${host.name} said yes` : `You’re booked with ${host.name}`, `${esc(b.eventTitle)} · ${b.duration} minutes`) +
     when(time) +
     (moved && c.old ? `<p class="ink3" style="margin:10px 0 0 82px;font-size:13px;color:${C.ink3};">Was <span style="text-decoration:line-through;">${esc(at(c.old.start, offset, b.h24))}</span></p>` : '') +
     rows([place ? ['Where', place] : null, ['Host', `${esc(host.name)}`], ['Invitee', `${esc(b.name)} · ${esc(b.email)}`]]) +
     pills([['Google', c.links.google], ['Apple', c.links.ics], ['Outlook', c.links.outlook]]) +
     changeBox(c.links)
   return {
-    subject: moved ? `Rescheduled: ${b.eventTitle} with ${host.name} — now ${at(b.start, offset, b.h24)}` : `Confirmed: ${b.eventTitle} with ${host.name} — ${at(b.start, offset, b.h24)}`,
-    html: layout({ base, title: moved ? 'Rescheduled' : 'Confirmed', preheader: `${longDate(parts(b.start, offset))}, ${clockRange(b.start, b.end, offset, b.h24)}. Add it to your calendar.`, body, footer }),
+    subject: moved ? `Rescheduled: ${b.eventTitle} with ${host.name} — now ${at(b.start, offset, b.h24)}` : `${accepted ? 'Accepted' : 'Confirmed'}: ${b.eventTitle} with ${host.name} — ${at(b.start, offset, b.h24)}`,
+    html: layout({ base, title: moved ? 'Rescheduled' : accepted ? 'Accepted' : 'Confirmed', preheader: `${longDate(parts(b.start, offset))}, ${clockRange(b.start, b.end, offset, b.h24)}. Add it to your calendar.`, body, footer }),
     text: [
-      moved ? `Your ${b.eventTitle} with ${host.name} moved.` : `You're booked: ${b.eventTitle} with ${host.name}.`,
+      moved ? `Your ${b.eventTitle} with ${host.name} moved.` : accepted ? `${host.name} said yes: ${b.eventTitle}.` : `You're booked: ${b.eventTitle} with ${host.name}.`,
       `${longDate(parts(b.start, offset))}\n${clockRange(b.start, b.end, offset, b.h24)} (${b.tzLabel}, ${gmt(offset)})`,
       moved && c.old ? `Was: ${at(c.old.start, offset, b.h24)}` : '',
       plainPlace(b.location, host.name, b.phone) ? `Where: ${plainPlace(b.location, host.name, b.phone)}` : '',
@@ -202,6 +247,32 @@ export function hostMail(kind, c) {
   const footer = `You get these because people book you at <a href="${esc(base)}/@${esc(host.handle)}" style="color:${C.ink3};">${esc(base.replace(/^https?:\/\//, ''))}/@${esc(host.handle)}</a>. Turn them off in Kalendar.`
   const who = `${esc(b.name)}<br><a href="mailto:${esc(b.email)}" style="color:${C.accent};text-decoration:none;">${esc(b.email)}</a>`
   const place = where(b.location, { hostName: host.name, phone: b.phone, forHost: true })
+  const ranges = b.ranges || [[b.start, b.end]]
+  const hostOffset = (ms) => (c.hostTable ? offsetAt(c.hostTable, ms) : offset)
+  if (kind === 'requested') {
+    const body = badge('Request', C.amber, C.amberSoft) +
+      heading(`${b.name} asks for a time`, `${esc(b.eventTitle)} · ${b.duration} min, at any time in ${ranges.length === 1 ? 'this stretch' : 'these stretches'}. Nothing is booked until you accept.`) +
+      stretches(ranges, hostOffset, h24) +
+      `<p class="ink2" style="margin:10px 0 0;font-size:13px;color:${C.ink2};">${esc(host.tzLabel)}</p>` +
+      rows([['From', who], b.phone ? ['Phone', esc(b.phone)] : null, b.notes ? ['Notes', quote(b.notes)] : null, ['Their zone', `${esc(b.tzLabel)} · ${gmt(b.offset)}`]]) +
+      button('Accept or decline', c.links.review)
+    return {
+      subject: `Request: ${b.name} asks for ${b.eventTitle}`,
+      html: layout({ base, title: 'Request', preheader: `${b.name} asks for ${b.eventTitle}, ${shortDate(parts(ranges[0][0], hostOffset(ranges[0][0])))} or later.`, body, footer }),
+      text: [`${b.name} (${b.email}) asks for ${b.eventTitle} (${b.duration} min) at any time in:`, plainStretches(ranges, hostOffset, h24), b.notes ? `Notes:\n${b.notes}` : '', `Accept or decline: ${c.links.review}`].filter(Boolean).join('\n\n')
+    }
+  }
+  if (kind === 'withdrawn') {
+    const body = badge('Withdrawn', C.ink2, C.well) +
+      heading(`${b.name} withdrew their request`, `${esc(b.eventTitle)} · ${b.duration} min. There’s nothing to do.`) +
+      rows([['From', who], b.reason ? ['Note', quote(b.reason)] : null]) +
+      button('Open Kalendar', c.links.dashboard)
+    return {
+      subject: `Withdrawn: ${b.name}’s request`,
+      html: layout({ base, title: 'Withdrawn', preheader: `${b.name} withdrew their request for ${b.eventTitle}.`, body, footer }),
+      text: [`${b.name} (${b.email}) withdrew their request for ${b.eventTitle}.`, b.reason ? `Note: ${b.reason}` : '', `Kalendar: ${c.links.dashboard}`].filter(Boolean).join('\n\n')
+    }
+  }
   if (kind === 'cancelled') {
     const body = badge('Cancelled', C.red, C.redSoft) +
       heading(`${b.name} cancelled`, `${esc(b.eventTitle)} · ${b.duration} min. The time is free again.`) +
@@ -215,18 +286,19 @@ export function hostMail(kind, c) {
     }
   }
   const moved = kind === 'rescheduled'
-  const body = (moved ? badge('Rescheduled', C.blue, C.blueSoft) : badge('New booking', C.accent, '#fdeceb')) +
-    heading(moved ? `${b.name} moved their time` : `${b.name} booked you`, `${esc(b.eventTitle)} · ${b.duration} min`) +
+  const accepted = kind === 'accepted'
+  const body = (moved ? badge('Rescheduled', C.blue, C.blueSoft) : accepted ? badge('Accepted', C.green, C.greenSoft) : badge('New booking', C.accent, '#fdeceb')) +
+    heading(moved ? `${b.name} moved their time` : accepted ? `You’re meeting ${b.name}` : `${b.name} booked you`, `${esc(b.eventTitle)} · ${b.duration} min`) +
     when(time) +
     (moved && c.old ? `<p class="ink3" style="margin:10px 0 0 82px;font-size:13px;color:${C.ink3};">Was <span style="text-decoration:line-through;">${esc(at(c.old.start, offset, h24))}</span></p>` : '') +
     rows([['Invitee', who], place ? ['Where', place] : null, b.phone && b.location.kind !== 'phone' ? ['Phone', esc(b.phone)] : null, b.notes ? ['Notes', quote(b.notes)] : null, ['Their zone', `${esc(b.tzLabel)} · ${gmt(b.offset)}`]]) +
     pills([['Google', c.links.google], ['Apple', c.links.ics], ['Outlook', c.links.outlook]]) +
     button('Open Kalendar', c.links.dashboard)
   return {
-    subject: moved ? `Rescheduled: ${b.name} — now ${at(b.start, offset, h24)}` : `New booking: ${b.name} — ${at(b.start, offset, h24)}`,
-    html: layout({ base, title: moved ? 'Rescheduled' : 'New booking', preheader: `${b.eventTitle} · ${longDate(parts(b.start, offset))}, ${clockRange(b.start, b.end, offset, h24)}`, body, footer }),
+    subject: moved ? `Rescheduled: ${b.name} — now ${at(b.start, offset, h24)}` : `${accepted ? 'Accepted' : 'New booking'}: ${b.name} — ${at(b.start, offset, h24)}`,
+    html: layout({ base, title: moved ? 'Rescheduled' : accepted ? 'Accepted' : 'New booking', preheader: `${b.eventTitle} · ${longDate(parts(b.start, offset))}, ${clockRange(b.start, b.end, offset, h24)}`, body, footer }),
     text: [
-      moved ? `${b.name} moved ${b.eventTitle}.` : `${b.name} booked ${b.eventTitle}.`,
+      moved ? `${b.name} moved ${b.eventTitle}.` : accepted ? `You accepted ${b.name}'s request: ${b.eventTitle}.` : `${b.name} booked ${b.eventTitle}.`,
       `${longDate(parts(b.start, offset))}\n${clockRange(b.start, b.end, offset, h24)} (${host.tzLabel})`,
       moved && c.old ? `Was: ${at(c.old.start, offset, h24)}` : '',
       `Invitee: ${b.name} <${b.email}>`,

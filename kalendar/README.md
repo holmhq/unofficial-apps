@@ -2,10 +2,11 @@
 
 Share one link and let people book time with you, on [Holm](https://holmhq.com).
 Your page lives at your own address (`/@avery`), with a link for each kind of
-meeting you offer. People pick a day and a time in their own time zone, type
-their name and email, and they're booked: no account, no back-and-forth. Both
-of you get an email with Add to Calendar buttons, and the person who booked can
-move or cancel from it.
+meeting you offer. Your free time lies on a strip of days, time running left to
+right like a video editor's timeline: people drop the meeting into it, or paint
+when suits them and let you pick. No account, no back-and-forth. Both of you get
+an email with Add to Calendar buttons, the person who booked can move or cancel
+from it, and you can run all of it from Claude.
 
 It was built from the request quoted in [`PROMPT.md`](PROMPT.md), which also
 has a reusable version of it. Try it at [kalendar.zyt.app](https://kalendar.zyt.app).
@@ -15,36 +16,66 @@ has a reusable version of it. Try it at [kalendar.zyt.app](https://kalendar.zyt.
 Kalendar follows [Holm App Spec v1](https://holmhq.com/llms-full.txt),
 sections 9–12: `holm.json` holds identity and web settings (`web.spa` is on),
 `web/` holds public files, and `api/main.js` exports
-`default { fetch(request, env) }` and the handlers of the two named operations
-in `api/contract.json`. Every deploy needs `--spec-v1`; the node runs no build.
+`default { fetch(request, env) }` and the handlers of the named operations in
+`api/contract.json`, which Holm also serves as MCP tools at `/_holm/mcp`. Every deploy needs `--spec-v1`; the node runs no build.
 Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
 
 ## What it does
 
-- **Your link.** Sign in, choose a handle, your time zone and roughly when
+- **Your page.** Sign in, choose a handle, your time zone and roughly when
   you're free, and you're live at `/@handle`, with a 15-minute chat and a
-  30-minute meeting ready to share.
+  30-minute meeting ready to share. The page shows your photo, what you do and
+  where, your local time, a welcome note, your website and profile links
+  (LinkedIn, X, GitHub and others get their own icons), and each kind of
+  meeting with the next time that's open.
 - **Event types.** Each has a name, its own link (`/@handle/intro`), a length,
   where you'll meet (a video link, a phone call to the guest, an address,
   anything else, or decide later), a description and a colour. Rules per type:
   notice needed, how far ahead people can book, how often start times fall,
-  and free time before and after. Turn one off to hide it.
-- **Hours.** Weekly hours in your zone, several ranges a day, copied to
-  weekdays or every day in one tap, and days off. Changes save as you make
-  them.
-- **Booking, no account.** Pick a day (open days are red circles), then a time;
-  the time splits into a Next button. Name, email, notes, and a phone number
-  when you'll call. Times show in the guest's zone, which they can change,
-  in 12- or 24-hour time. A time someone takes disappears for everyone, and
-  two people racing for the same slot can't both get it.
+  free time before and after, and whether guests may ask for other times. Turn
+  one off to hide it.
+- **Hours on a timeline.** Your week is seven tracks. Drag along a day to paint
+  when you're free, drag either end of a span to trim it, drag the middle to
+  slide it; tap a span to copy it to weekdays or every day, or remove it.
+  Presets fill the week in one tap. Days off sit below. Changes save as you
+  make them.
+- **Booking, no account.** Guests see your free time shaded on the same kind of
+  strip, one day per track, in their own zone (which they can change) and in
+  12- or 24-hour time. Tap a shaded span and the meeting drops in, the length
+  of the event; drag it along the day or onto another and it snaps to the
+  times that are open. "Soonest" jumps to the first one. Then name, email,
+  notes, and a phone number when you'll call. A time someone takes disappears
+  for everyone, and two people racing for the same slot can't both get it.
+- **Asking for another time.** Dropped outside your shading, the meeting
+  becomes a request. Or a guest switches to "Suggest times" and paints when
+  they're free, as many spans as they like, even when you aren't; where their
+  paint meets your free time it glows (the way the Overlap app shows
+  everyone's overlap), with a button to book that time at once. You see their
+  spans over your own week, next to your hours and other meetings, drag the
+  meeting to a time inside them and accept, or say no with a note. Both
+  answers are emailed.
 - **Emails.** The guest gets a confirmation with the day as a little calendar
   page, the time in their zone, where to meet, Google, Apple and Outlook
   buttons and links to reschedule or cancel. The host gets one with the
-  guest's details and notes. Moving or cancelling sends matching emails.
+  guest's details and notes. Requests, accepting, declining, moving and
+  cancelling each send matching emails.
 - **Changing a booking.** The emailed link opens the booking: add it to a
   calendar, reschedule (the old time is freed and the new one booked in one
-  step) or cancel with a note. Hosts cancel from their list, and the guest is
-  told with a link to book again.
+  step) or cancel with a note; a request can be withdrawn. Hosts cancel from
+  their list, and the guest is told with a link to book again.
+- **Insights.** Page views, visitors, profile clicks, bookings and time on
+  page for 7, 30 or 90 days, against the period before; views by day with each
+  booking marked; where visitors came from, what they opened the page on and
+  where they are; what they tapped; how many went from a visit to a booking;
+  and each event type's views and bookings. No cookies: a random id kept in the
+  visitor's browser tells visitors apart, the place comes from their browser's
+  time zone (never an address), browsers asking not to be tracked send
+  nothing, and your own visits don't count.
+- **From Claude.** Connect Claude's MCP connector to
+  `https://<your-kalendar>/_holm/mcp` and sign in: Claude can read and change
+  your profile, hours, days off and event types, list your meetings and
+  requests, accept or decline requests, cancel bookings, look up open times and
+  read your insights. It reads `guide.get` first.
 - **Your calendar.** A private feed (`/feed/<secret>.ics`) to subscribe to in
   Apple Calendar, Google Calendar or Outlook, with a button to make a new link.
 
@@ -53,48 +84,67 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
 - An Apple-like look: greys, one red accent from the Calendar app, frosted
   bars, large titles, sheets that rise on a phone and dialogs on a desk, a
   segmented control, switches, and a round avatar button at the top right,
-  signed out too, holding light/dark/auto, sounds and 24-hour time.
+  signed out too, holding light/dark/auto, sounds and 24-hour time. A colour
+  marks each event type with a dot or a tinted tile, never a stripe.
 - Inter's weights carry meaning: 720 for titles, 620 for anything you can
   pick (open days, times, names), 520 for labels, 430 for reading and 360
   for context (the year beside the month, the date beside the weekday, end
   times under start times).
-- Motion: open days pop in, months slide, the times column grows into the
-  card, a picked time splits into Next, steps push in from the right (with
-  Back and an edge swipe), the check on the confirmation draws itself, and a
-  theme change spreads from where you tapped.
-- Sound: quiet Web Audio cues for a day, a time, a month turning, a step, a
-  booking (a small chime) and a mistake; off with one switch.
+- The strip behaves like an editor's timeline: a ruler and day labels that
+  stay put while it scrolls both ways, a red playhead at the current minute,
+  the past hatched, the meeting snapping to open times with a tick, a time
+  flag above a clip too short to hold its label, handles on each end of a
+  span, and edges that scroll the strip while you drag near them. On a phone
+  a swipe scrolls and a hold starts painting; arrow keys move the meeting.
+- Motion: the meeting springs in, painted overlap glows in, bars grow, steps
+  push in from the right (with Back and an edge swipe), the check on the
+  confirmation draws itself, and a theme change spreads from where you tapped.
+- Sound: quiet Web Audio cues for a tap, a pick, a snap, a step, a booking (a
+  small chime), a request sent and a mistake; off with one switch.
 - Phones get one step per screen and a tab bar; wide screens get a card with
-  the event, the month and the day's times side by side, and a sidebar with
-  your link. Arrow keys move through the month.
+  the event beside the strip, and a sidebar with your link.
 
 ## How it's built
 
 ```text
 api/main.js        tiny entry: imports http.js and ops.js with import()
-api/contract.json  bookings.create and bookings.cancel: public, challenge, rate limits
-api/http.js        the JSON API, calendar files, and /@handle pages with the host in the title
-api/ops.js         the named operations
-api/hosts.js       handles, profile, weekly hours, days off, the feed secret
+api/contract.json  booking and cancelling (public, challenge, rate limits) and the host's tools
+api/http.js        the JSON API, the visit beacon, calendar files, and /@handle pages
+api/ops.js         the named operations, which are also the MCP tools
+api/guide.md       how Claude should use the tools (guide.get)
+api/hosts.js       handles, profile and links, weekly hours, days off, the feed secret
+api/stats.js       visits counted per host per day, and the Insights summary
 api/events.js      event types
-api/bookings.js    open times, booking, rescheduling, cancelling, lists, the feed
+api/bookings.js    open times, booking, requests, rescheduling, cancelling, lists, the feed
 api/slots.js       weekly hours → open times, minus notice, horizon and busy times
 api/tz.js          offset tables, wall time ↔ UTC, dates written out without Intl
 api/mail.js        the emails, HTML and plain text
 api/ics.js         iCalendar files and Google/Outlook links
 web/src/           the page: main.js (routes), shell.js, ui.js, views/…
+web/src/timeline.js  the strip of days: shading, painted spans, the meeting clip
+web/src/track.js   the visit beacon: views, clicks, picks, time on page
+web/src/countries.js each time zone's country, for Insights (generated)
 tools/check.mjs    time-maths and calendar-file checks (not deployed)
 tools/book.mjs     books sample meetings through the real operation (not deployed)
+tools/countries.mjs  builds countries.js from the tz database (not deployed)
 ```
 
 Holm primitives it uses:
 
-- **`env.holm.app.ds`** for hosts, event types and bookings, and a
-  **`ds.transaction`** that checks for overlapping bookings and inserts in one
-  step, so a slot can't be taken twice. **`env.holm.app.kv`** counts daily
-  bookings per address and per host.
+- **`env.holm.app.ds`** for hosts, event types, bookings and requests, and
+  one stats document per host per day, and a **`ds.transaction`** that checks
+  for overlapping bookings and inserts in one step, so a slot can't be taken
+  twice (accepting a request checks again). **`env.holm.app.kv`** counts daily
+  bookings per address and per host, caps visits, and remembers which visitors
+  were already counted today.
 - **`env.holm.auth`** for hosts: sign-in, the verified email notifications go
   to, and the sign-out POST. Guests never sign in.
+- **Named operations as MCP tools**: the host's tools (`me.get`,
+  `profile.update`, `hours.get`/`hours.update`, `events.*`, `meetings.list`,
+  `meetings.cancel`, `requests.accept`/`requests.decline`, `slots.list`,
+  `stats.get`) use `auth: "user"`, so anyone signed in can connect Claude,
+  and each acts only on the caller's own page. Holm serves them at
+  `/_holm/mcp`; `guide.get` is public.
 - **Named operations** (`api/contract.json`): `bookings.create` is public,
   behind Holm's proof-of-work challenge (solved in the background from
   `/_holm/challenge.js` while the guest types) and six calls a minute, with an
@@ -180,6 +230,15 @@ only give to `https://` and `localhost` pages. On a local node, add a
   meeting; the calendar entries carry a 10-minute alert.
 - Days can be off, but not given different hours; one host per event type
   (no round robin or group events); no payments or custom questions.
+- **Insights are approximate by design.** Visitors are told apart by a random
+  id in their browser, so one person on two devices counts twice; places come
+  from time zones (several countries share some); requests from bookings made
+  without a visit (a direct link, a browser that asks not to be tracked) can
+  push a rate past what was counted, so rates stop at 100%.
+- **Claude can't do the first setup.** Choosing the link and changing the time
+  zone happen in the app, because the zone's offsets come from the browser.
+  Requests waiting for an answer don't expire by themselves; one whose times
+  have passed stops showing.
 - Anyone can book, so anyone can make Kalendar email an address they type.
   Holm's challenge and rate limit, ten bookings a day per address and eighty
   per host keep that small.
@@ -191,4 +250,7 @@ only give to `https://` and `localhost` pages. On a local node, add a
 - [Inter](https://rsms.me/inter/): SIL Open Font License 1.1, in
   `web/assets/OFL-inter.txt`.
 - Icons from [Lucide](https://lucide.dev): ISC, in `web/vendor/lucide/LICENSE`.
-  Kalendar's mark is its own.
+  The X logo is from [Simple Icons](https://simpleicons.org) (CC0 1.0). Kalendar's
+  mark is its own.
+- `web/src/countries.js` is built from the [tz database](https://www.iana.org/time-zones)'s
+  `zone.tab` and `iso3166.tab`, which are in the public domain.

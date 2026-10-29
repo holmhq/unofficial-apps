@@ -3,7 +3,7 @@
 // the network fails or takes more than four seconds. Nothing under /api/,
 // /auth/, /b/ or /feed/ is ever cached: bookings stay on the server.
 
-const CACHE = 'kalendar-shell-v1'
+const CACHE = 'kalendar-shell-v2'
 const SHELL = [
   '/', '/src/styles.css', '/src/main.js', '/src/shell.js', '/src/ui.js', '/src/icons.js', '/src/api.js',
   '/src/sound.js', '/src/theme.js', '/src/time.js', '/src/zones.js',

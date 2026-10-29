@@ -2,6 +2,7 @@
 //
 //   /                 signed out: what Kalendar is; first time: choose your link; then your bookings
 //   /events, /hours   your event types and your hours
+//   /insights         who opens your page and who books
 //   /@handle          someone's page: the kinds of meeting they offer
 //   /@handle/slug     pick a day and a time, then book
 //   /b/:id?t=         a booking, from its email: add it to a calendar, move or cancel it
@@ -17,7 +18,7 @@ async function view(path) {
   if ((m = /^\/@([^/]+)\/([^/]+)\/?$/.exec(path))) return (await import('./views/book.js')).book(decodeURIComponent(m[1]), decodeURIComponent(m[2]))
   if ((m = /^\/@([^/]+)\/?$/.exec(path))) return (await import('./views/profile.js')).profile(decodeURIComponent(m[1]))
   if ((m = /^\/b\/([a-z0-9-]+)\/?$/.exec(path))) return (await import('./views/manage.js')).manage(m[1])
-  const tab = { '/': 'bookings', '/events': 'events', '/hours': 'hours' }[path]
+  const tab = { '/': 'bookings', '/events': 'events', '/hours': 'hours', '/insights': 'insights' }[path]
   if (tab && !state.me.member) return (await import('./views/landing.js')).landing()
   if (tab && !state.me.host) return (await import('./views/onboard.js')).onboard()
   if (tab) return (await import('./views/dash.js')).dash(tab)

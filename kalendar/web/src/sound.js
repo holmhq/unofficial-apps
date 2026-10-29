@@ -75,6 +75,8 @@ const cues = {
   on: (c, t) => { tone(c, t, 880, .08, { gain: .016 }); tone(c, t + .06, 1320, .12, { gain: .014 }) },
   off: (c, t) => { tone(c, t, 1100, .08, { gain: .014 }); tone(c, t + .06, 740, .12, { gain: .012 }) },
   pop: (c, t) => tone(c, t, 700, .09, { gain: .03, to: 1400 }),
+  tick: (c, t) => tone(c, t, 2200, .018, { gain: .008, attack: .001 }),
+  sent: (c, t) => { tone(c, t, 880, .14, { type: 'triangle', gain: .022 }); tone(c, t + .1, 1318.5, .3, { type: 'triangle', gain: .018 }) },
   remove: (c, t) => { tone(c, t, 660, .09, { type: 'triangle', gain: .03 }); tone(c, t + .07, 440, .16, { type: 'triangle', gain: .026 }) }
 }
 
@@ -93,5 +95,7 @@ export const sound = {
   error: () => play(cues.error),
   toggle: (value) => play(value ? cues.on : cues.off),
   pop: () => play(cues.pop),
+  tick: () => play(cues.tick),
+  sent: () => play(cues.sent),
   remove: () => play(cues.remove)
 }

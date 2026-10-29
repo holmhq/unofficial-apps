@@ -1,5 +1,6 @@
-// Hosts: a signed-in person with a public link (/@handle), a time zone,
-// weekly hours, days with other hours or none, and a private calendar feed.
+// Hosts: a signed-in person with a public link (/@handle), a profile (role,
+// company, where they are, a website and links), a time zone, weekly hours,
+// days with other hours or none, and a private calendar feed.
 import { reject, text, longText, randomId, displayName, MIN, DAY } from './lib.js'
 import { cleanTable, cleanZone, cleanZoneLabel, offsetAt } from './tz.js'
 import { createDefaults } from './events.js'
@@ -71,6 +72,42 @@ export function handleFree(env, handle, memberId) {
   return { handle: h, free: !owner || owner.member === memberId, reason: owner && owner.member !== memberId ? 'That one’s taken.' : null }
 }
 
+// The profile shown on /@handle: who they are, what they do, where to find them.
+const profileOf = (host) => ({
+  role: host.role || '',
+  company: host.company || '',
+  place: host.place || '',
+  website: host.website || '',
+  links: Array.isArray(host.links) ? host.links : []
+})
+
+// A web address: https only; a bare domain gets https:// in front.
+export function cleanURL(value, label) {
+  let url = text(value, 200, label)
+  if (!url) return ''
+  if (/^http:\/\//i.test(url)) url = 'https://' + url.slice(7)
+  else if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) url = 'https://' + url.replace(/^\/+/, '')
+  let parsed = null
+  try { parsed = new URL(url) } catch { parsed = null }
+  if (!parsed || parsed.protocol !== 'https:' || !/^[^\s/?#]+\.[a-z]{2,}$/i.test(parsed.hostname) || /[\s<>"'`]/.test(url)) reject(400, 'invalid_input', `${label} must be a web address, like https://example.com.`)
+  return url
+}
+
+function cleanLinks(value) {
+  if (!Array.isArray(value)) reject(400, 'invalid_input', 'Send links as a list.')
+  if (value.length > 8) reject(400, 'invalid_input', 'Up to 8 links.')
+  const out = []
+  const seen = new Set()
+  for (const item of value) {
+    const url = cleanURL(item, 'A link')
+    const key = url.toLowerCase().replace(/\/+$/, '')
+    if (!url || seen.has(key)) continue
+    seen.add(key)
+    out.push(url)
+  }
+  return out
+}
+
 // What the host's own pages see.
 export function privateHost(env, host, base) {
   return {
@@ -79,6 +116,7 @@ export function privateHost(env, host, base) {
     picture: host.picture || null,
     email: host.email || null,
     bio: host.bio || '',
+    ...profileOf(host),
     tz: host.tz,
     tzLabel: host.tzLabel,
     tableEnd: host.tzTable && host.tzTable.length ? host.tableEnd || 0 : 0,
@@ -91,7 +129,7 @@ export function privateHost(env, host, base) {
 
 // What anyone with the link sees.
 export function publicHost(host) {
-  return { handle: host.handle, name: host.name, picture: host.picture || null, bio: host.bio || '', tz: host.tz, tzLabel: host.tzLabel }
+  return { handle: host.handle, name: host.name, picture: host.picture || null, bio: host.bio || '', ...profileOf(host), tz: host.tz, tzLabel: host.tzLabel }
 }
 
 function zoneFields(input) {
@@ -127,7 +165,12 @@ export function createHost(env, m, input, now) {
 export function updateHost(env, m, host, input, now) {
   const set = {}
   if ('name' in input) set.name = text(input.name, 80, 'Name', true)
-  if ('bio' in input) set.bio = longText(input.bio, 400, 'Welcome note')
+  if ('bio' in input) set.bio = longText(input.bio, 600, 'About you')
+  if ('role' in input) set.role = text(input.role, 80, 'Role')
+  if ('company' in input) set.company = text(input.company, 80, 'Company')
+  if ('place' in input) set.place = text(input.place, 80, 'Where you are')
+  if ('website' in input) set.website = cleanURL(input.website, 'Website')
+  if ('links' in input) set.links = cleanLinks(input.links)
   if ('notify' in input) set.notify = input.notify !== false
   if ('tz' in input || 'tzTable' in input) Object.assign(set, zoneFields(input))
   if ('weekly' in input) set.weekly = cleanWeekly(input.weekly)
