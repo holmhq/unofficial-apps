@@ -558,11 +558,11 @@ export async function book(handle, slug) {
   tl.scrollToMinute(8 * 60)
   const opening = load(Date.now() + 30 * 86400000).then(() => {
     tl.setTracks(tracks())
-    // Start the strip at the first open hour of the next few days.
-    const firstOpen = s.slots[0]
+    // Open the strip at the soonest open time, so hours that cross midnight
+    // in the guest's zone don't start it at 12 AM.
+    const firstOpen = s.slots.find((x) => x > Date.now())
     const w = firstOpen ? t.wall(firstOpen, s.zone) : null
-    const earliest = Math.min(...tracks().slice(0, 7).map((x) => startsOn(x.key)[0] ?? DAY))
-    tl.scrollToMinute(Math.max(0, (earliest < DAY ? earliest : 8 * 60) - 45))
+    tl.scrollToMinute(Math.max(0, (w ? w.min : 8 * 60) - 45))
     if (old && w) tl.reveal(t.wall(old.start, s.zone).key, t.wall(old.start, s.zone).min, { smooth: false })
     paintBar()
   }, failure)
