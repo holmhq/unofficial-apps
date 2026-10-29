@@ -33,7 +33,7 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   and accepts, or declines with a note. Hosts paint their weekly hours the
   same way, drag a span onto another day, drag a day onto another to move or
   swap it, and pause a day with a switch that keeps its hours. Every strip
-  zooms: pinch, ctrl-scroll, or − 24h +.
+  zooms: pinch, ctrl-scroll, or − and + with a button to fit the day.
 - A profile page: photo, role, company, place with local time, a note,
   website and profile links with their icons, and each event type with its
   next open time. Never a coloured stripe down the side of a rounded card.

@@ -40,7 +40,7 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   nearest gap long enough); tap a span to copy it to weekdays or every day, or
   remove it. Drag a day's name onto another day to move its hours there, or to
   swap the two. A switch beside each day pauses it without losing its hours.
-  Pinch, ctrl- or ⌘-scroll, or − and + zoom the whole day in and out; "24h"
+  Pinch, ctrl- or ⌘-scroll, or − and + zoom the whole day in and out; ↔
   fits it in view. Presets fill the week in one tap. Days off sit below.
   Changes save as you make them.
 - **Booking, no account.** Guests see your free time shaded on the same kind of

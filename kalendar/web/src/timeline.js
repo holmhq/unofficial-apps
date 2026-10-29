@@ -315,10 +315,10 @@ export function timeline(o) {
   // While something is dragged or pinched, a finger mustn't scroll the page.
   el.addEventListener('touchmove', (e) => { if (state.drag || pinch) e.preventDefault() }, { passive: false })
 
-  // − whole day + : a small control for the page to place.
+  // − ↔ + : zoom out, the whole day, zoom in; a small control for the page to place.
   function zoomControl() {
     const less = h('button.zoom-btn', { type: 'button', 'aria-label': 'Zoom out', title: 'Zoom out', onclick: () => { zoomTo(state.ppm / 1.6); sound.tap() } }, ic('minus', 16, 2.4))
-    const whole = h('button.zoom-btn.whole', { type: 'button', 'aria-label': 'Show the whole day', title: 'Whole day', onclick: () => { zoomTo(fit()); sound.tap() } }, h('span', '24h'))
+    const whole = h('button.zoom-btn.whole', { type: 'button', 'aria-label': 'Show the whole day', title: 'Whole day', onclick: () => { zoomTo(fit()); sound.tap() } }, ic('moveHorizontal', 16, 2.2))
     const more = h('button.zoom-btn', { type: 'button', 'aria-label': 'Zoom in', title: 'Zoom in', onclick: () => { zoomTo(state.ppm * 1.6); sound.tap() } }, ic('plus', 16, 2.4))
     const box = h('div.zoom', { role: 'group', 'aria-label': 'Zoom' }, less, whole, more)
     zooms.add({ less, whole, more })
