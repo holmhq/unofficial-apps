@@ -5,12 +5,15 @@
 // it takes over on the next launch, and the old set goes. The page loads all
 // of its code at start (main.js), so it never mixes two versions.
 //
-// Nothing under /api/, /auth/, /feed/, /_holm/ or /.well-known/, and no
-// calendar file, is ever cached: bookings stay on the server, and Holm's own
-// sign-in and connector pages stay Holm's. Addresses of pages (/@avery,
-// /hours, /b/…) all open the same shell, which draws the page itself.
+// Nothing under /api/, /auth/, /feed/ or /.well-known/, no address starting
+// with /_ (Holm's own pages: /_holm/, and the analytics and settings pages it
+// puts under a prefix of its choosing), no calendar file and nothing asked
+// for with cache: 'no-store' is ever cached or answered from the cache:
+// bookings stay on the server, and Holm's own pages stay Holm's. Addresses
+// of pages (/@avery, /hours, /b/…) all open the same shell, which draws the
+// page itself.
 
-const VERSION = '0.3.1'
+const VERSION = '0.4.0'
 const CACHE = 'kalendar-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
@@ -19,10 +22,10 @@ const FILES = [
   '/src/sound.js', '/src/time.js', '/src/zones.js', '/src/countries.js', '/src/timeline.js', '/src/track.js', '/src/qr.js',
   '/src/views/book.js', '/src/views/profile.js', '/src/views/manage.js', '/src/views/dash.js', '/src/views/landing.js',
   '/src/views/onboard.js', '/src/views/common.js', '/src/views/missing.js', '/src/views/zone-picker.js',
-  '/src/views/event-sheet.js', '/src/views/profile-sheet.js', '/src/views/insights.js', '/src/views/link-sheet.js',
+  '/src/views/event-sheet.js', '/src/views/profile-tab.js', '/src/views/insights.js', '/src/views/link-sheet.js',
   '/vendor/qrcode/qrcode.mjs'
 ]
-const PASS = /^\/(api|auth|feed|_holm|\.well-known)(\/|$)|^\/b\/[^/]+\/(calendar|invite\.ics)$|^\/sw\.js$/
+const PASS = /^\/(_[^/]*|api|auth|feed|\.well-known)(\/|$)|^\/b\/[^/]+\/(calendar|invite\.ics)$|^\/sw\.js$/
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE)
@@ -39,7 +42,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
-  if (request.method !== 'GET' || url.origin !== location.origin || PASS.test(url.pathname)) return
+  if (request.method !== 'GET' || request.cache === 'no-store' || url.origin !== location.origin || PASS.test(url.pathname)) return
   event.respondWith(answer(request, url))
 })
 

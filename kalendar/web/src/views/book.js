@@ -597,8 +597,11 @@ export async function book(handle, slug) {
   }
   paintBar()
   tl.setTracks(tracks())
-  if (s.seeded) toSoonest()
-  else tl.scrollToMinute(8 * 60)
+  // The strip only scrolls once it's on the page, which a page drawn from
+  // what's kept is a frame or two before it's shown.
+  const shown = (fn, tries = 30) => (tl.el.isConnected && tl.el.clientWidth ? fn() : tries && requestAnimationFrame(() => shown(fn, tries - 1)))
+  if (s.seeded) shown(toSoonest)
+  else shown(() => tl.scrollToMinute(8 * 60))
   const opening = load(Date.now() + 30 * 86400000).then(() => {
     const before = tl.el.scrollLeft
     tl.setTracks(tracks())

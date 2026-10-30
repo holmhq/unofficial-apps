@@ -129,8 +129,24 @@ export function sheet({ title = '', label = null, body, cancel = 'Cancel', done 
       if (first && wide()) first.focus({ preventScroll: true })
     }))
     pullToDismiss(box, close)
+    keepHeight(box, () => closed)
     box.doneButton = doneBtn
   })
+}
+
+// A sheet grows with what's in it but never shrinks while it's open, so
+// narrowing a search or closing a section doesn't drop it down the screen.
+function keepHeight(box, gone) {
+  if (box.classList.contains('plain') || typeof ResizeObserver !== 'function') return
+  let most = 0
+  const watch = new ResizeObserver(() => {
+    if (gone()) { watch.disconnect(); return }
+    const now = box.offsetHeight
+    if (now <= most) return
+    most = now
+    box.style.minHeight = `min(${most}px, 100%)`
+  })
+  watch.observe(box)
 }
 
 function trapFocus(event, box) {
@@ -196,7 +212,10 @@ export function confirm({ title, text, action, danger = true }) {
 // A small menu beside `anchor` (an element or { x, y }). items: { label, icon,
 // danger, onclick } or 'sep' or a ready node.
 export function menu(anchor, items, { align = 'end', lift = null } = {}) {
+  // Its button again closes it.
+  const again = openMenu && anchor instanceof Element && openMenu.anchor === anchor
   closeMenus()
+  if (again) return null
   const box = h('div.menu', { role: 'menu' })
   const done = () => closeMenus()
   for (const item of items) {
@@ -252,15 +271,17 @@ export function menu(anchor, items, { align = 'end', lift = null } = {}) {
     document.addEventListener('pointerdown', away, true)
     document.addEventListener('keydown', away, true)
   })
-  openMenu = { box, backdrop, clone, away }
+  if (anchor instanceof Element) anchor.setAttribute('aria-expanded', 'true')
+  openMenu = { box, backdrop, clone, away, anchor }
   return box
 }
 
 let openMenu = null
 export function closeMenus() {
   if (!openMenu) return
-  const { box, backdrop, clone, away } = openMenu
+  const { box, backdrop, clone, away, anchor } = openMenu
   openMenu = null
+  if (anchor instanceof Element) anchor.setAttribute('aria-expanded', 'false')
   document.removeEventListener('pointerdown', away, true)
   document.removeEventListener('keydown', away, true)
   box.classList.remove('open')

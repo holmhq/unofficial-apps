@@ -27,7 +27,9 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   30-minute meeting ready to share. The page shows your photo, what you do and
   where, your local time, a welcome note, your website and profile links
   (LinkedIn, X, GitHub and others get their own icons), and each kind of
-  meeting with the next time that's open.
+  meeting with the next time that's open. You edit it under Profile, a tab
+  of its own beside your bookings: your page as guests see it at the top,
+  then the fields, your link, email and calendar feed, saved as you type.
 - **Event types.** Each has a name, its own link (`/@handle/intro`), a length,
   where you'll meet (a video link, a phone call to the guest, an address,
   anything else, or decide later), a description and a colour. Rules per type:
@@ -36,10 +38,13 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   one off to hide it.
 - **Hours on a timeline.** Your week is seven tracks. Drag along a day to paint
   when you're free, drag either end of a span to trim it, drag the middle to
-  slide it along the day or up and down onto another one (it lands in the
-  nearest gap long enough); tap a span to copy it to weekdays or every day, or
-  remove it. Drag a day's name onto another day to move its hours there, or to
-  swap the two. A switch beside each day pauses it without losing its hours.
+  slide it along the day or up and down onto another one, where it lands
+  where you hold it, nudged into a gap close by, or trades places with the
+  spans in its way (they go back to the day it came from); tap a span to copy
+  it to weekdays or every day, or remove it. Hold a day's name over another
+  day and the two swap hours on screen as you go, so you see the week you'll
+  get; let go to keep it. A switch beside each day pauses it without losing
+  its hours.
   Pinch, ctrl- or ⌘-scroll, or − and + zoom the whole day in and out; ↔
   fits it in view. Presets fill the week in one tap. Days off sit below.
   Changes save as you make them.
@@ -107,8 +112,10 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
 - An Apple-like look: greys, one red accent from the Calendar app, frosted
   bars, large titles, sheets that rise on a phone and dialogs on a desk, a
   segmented control, switches, and a round avatar button at the top right,
-  signed out too, holding light/dark/auto, sounds and 24-hour time. A colour
-  marks each event type with a dot or a tinted tile, never a stripe.
+  signed out too, holding light/dark/auto, sounds and 24-hour time (tap it
+  again to close it). Sheets grow with what's in them but don't shrink while
+  open, so narrowing a search doesn't drop the sheet down the screen. A
+  colour marks each event type with a dot or a tinted tile, never a stripe.
 - Inter's weights carry meaning: 720 for titles, 620 for anything you can
   pick (open days, times, names), 520 for labels, 430 for reading and 360
   for context (the year beside the month, the date beside the weekday, end
@@ -121,14 +128,19 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   a swipe scrolls and a hold starts painting; arrow keys move the meeting.
 - Motion means a change, never a page appearing: the meeting springs in where
   it lands, steps push in from the right (with Back and an edge swipe), a
-  lifted day follows your finger, the check on the confirmation draws itself,
-  and a theme change spreads from where you tapped. Charts grow only the first
-  time they're drawn.
+  lifted day follows your finger while hours glide between the days it
+  swaps, the check on the confirmation draws itself, and a theme change
+  spreads from where you tapped. Charts grow only the first time they're
+  drawn. Signed out, the home page's booking card plays itself: a pointer
+  drops a meeting in, drags it to another day and books it, then paints
+  times to ask for. It rests while it's out of sight, and holds still for
+  anyone who asks for less motion.
 - Sound: quiet Web Audio cues for a tap, a pick, a snap, a step, a booking (a
   small chime), a request sent and a mistake; off with one switch.
 - Phones get one step per screen and a tab bar; wide screens get a card with
-  the event beside the strip, and a sidebar with your link. Public pages end
-  in a frosted bar like Catalog's: A Holm app, Source and Send feedback.
+  the event beside the strip, and a sidebar with your link. Profile's tab
+  shows your picture. Public pages end in a frosted bar like Catalog's: A
+  Holm app, Source and Send feedback.
 
 ## How it's built
 
@@ -149,7 +161,7 @@ api/ics.js         iCalendar files and Google/Outlook links
 web/sw.js          the app shell: every file of this version, installed all or nothing
 web/src/           the page: main.js (routes), shell.js, ui.js, views/…
 web/src/store.js   what the page last saw, so it draws at once and catches up
-web/src/timeline.js  the strip of days: shading, spans, the meeting clip, zoom, day moves
+web/src/timeline.js  the strip of days: shading, spans, the meeting clip, zoom, swaps and trades
 web/src/track.js   the visit beacon: views, clicks, picks, time on page, the link's tag
 web/src/qr.js      QR codes for tracked links (SVG and PNG)
 web/src/countries.js each time zone's country, for Insights (generated)
@@ -182,6 +194,12 @@ Holm primitives it uses:
 - **`env.holm.email.send`** with `html` and `body` for every email.
 - **`env.holm.web.fetch`** for the page, with `/@handle` and `/@handle/event`
   given the host's name in the title and social card.
+- **`__HOLM_SURFACES__`**: for the node's and the app's owners and admins,
+  Holm writes the address of the app's analytics page into the page, and the
+  avatar menu links to it. Holm puts that page under a path of its choosing
+  that starts with `/_`, so the service worker lets every such path through,
+  and an admin's browser reads the address from a fresh copy of the page
+  rather than the copy the worker keeps.
 
 ### Time zones without Intl
 
@@ -243,8 +261,9 @@ Then:
 - **Feedback.** Send feedback opens Kalendar's form on the owner's
   [feedback](../feedback/) app through a local copy of its `embed.js`
   (`web/vendor/feedback/`). Set `FEEDBACK_PROJECT` in `web/src/shell.js` to
-  your own project, or leave it empty to hide the link. The site must be
-  allowed to frame the form:
+  your own project, or leave it empty to hide the link. Give the project
+  Kalendar's icon (`web/icon-512.png`) as its logo so the form wears it. The
+  site must be allowed to frame the form:
 
   ```sh
   holm @<peer> policy set security.csp.frame_src "https://feedback.example.com" --app <app-id>

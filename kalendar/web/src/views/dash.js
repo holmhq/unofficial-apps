@@ -1,5 +1,6 @@
-// The host's side: bookings and requests, event types, hours and insights. A
-// tab bar on a phone, a sidebar with your link on a wide screen. Changes
+// The host's side: bookings and requests, event types, hours, insights and
+// your profile. A tab bar on a phone, a sidebar with your link on a wide
+// screen. Changes
 // save as you make them. Like tabs in an app, each keeps its place while
 // you're on another, and draws from what this browser saw last before the
 // server's answer quietly brings it up to date.
@@ -15,6 +16,7 @@ import { colorOf, LOCATIONS, placeLine, metaRow } from './common.js'
 import { eventSheet } from './event-sheet.js'
 import { timeline, merge, intersect, span } from '../timeline.js'
 import { insights } from './insights.js'
+import { profileTab as profilePage } from './profile-tab.js'
 
 const DAY = 1440
 const MIN = 60000
@@ -23,7 +25,8 @@ const TABS = [
   { id: 'bookings', path: '/', label: 'Bookings', icon: 'calendarCheck' },
   { id: 'events', path: '/events', label: 'Event types', short: 'Events', icon: 'layers' },
   { id: 'hours', path: '/hours', label: 'Availability', short: 'Hours', icon: 'clock' },
-  { id: 'insights', path: '/insights', label: 'Insights', icon: 'chartColumn' }
+  { id: 'insights', path: '/insights', label: 'Insights', icon: 'chartColumn' },
+  { id: 'profile', path: '/profile', label: 'Profile', icon: 'user' }
 ]
 
 export function dash(tab) {
@@ -37,21 +40,20 @@ export function dash(tab) {
   const linkText = h('span.link-text')
   const side = h('nav.side', { 'aria-label': 'Kalendar' },
     h('div.side-link',
-      h('button.icon-btn.small.side-edit', { type: 'button', 'aria-label': 'Edit your profile', title: 'Edit your profile', onclick: () => import('./profile-sheet.js').then((v) => v.profileSheet()) }, ic('pencil', 16, 2.2)),
       h('small', 'Your link'),
       linkText,
       h('div.link-actions',
         h('button.btn.small.tinted', { type: 'button', onclick: () => { copyText(pageURL(host().handle), 'Link copied'); sound.pop() } }, ic('copy', 15, 2.2), 'Copy'),
         h('a.btn.small.tinted', { href: pageURL(host().handle), target: '_blank', rel: 'noopener' }, ic('externalLink', 15, 2.2), 'Open'))),
     TABS.map((x) => {
-      const b = h('button.side-item', { type: 'button', onclick: () => switchTo(x.id) }, ic(x.icon, 19, 2), h('span.grow', x.label), h('span.badge', { hidden: true }))
+      const b = h('button.side-item', { type: 'button', onclick: () => switchTo(x.id) }, x.id === 'profile' ? face() : ic(x.icon, 19, 2), h('span.grow', x.label), h('span.badge', { hidden: true }))
       navButtons.set(x.id, b)
       return b
     }),
     h('div.grow'),
     holmFooter({ bar: false }))
   const tabbar = h('nav.tabbar', { 'aria-label': 'Sections' }, TABS.map((x) => {
-    const b = h('button.tab', { type: 'button', onclick: () => switchTo(x.id) }, h('span.tab-icon', ic(x.icon, 23, 1.9), h('span.tab-dot', { hidden: true })), h('span', x.short || x.label))
+    const b = h('button.tab', { type: 'button', onclick: () => switchTo(x.id) }, h('span.tab-icon', x.id === 'profile' ? face() : ic(x.icon, 23, 1.9), h('span.tab-dot', { hidden: true })), h('span', x.short || x.label))
     tabButtons.set(x.id, b)
     return b
   }))
@@ -59,6 +61,9 @@ export function dash(tab) {
   const bar = topBar({ right: [shareBtn] })
   const el = h('div.app.dash', bar, h('div.dash-body', side, main), tabbar)
   collapsing(bar, main)
+
+  // Profile's tab shows your picture, like an app's account tab.
+  function face() { return h('span.tab-face', avatar({ key: host().handle, name: host().name, picture: host().picture })) }
 
   function paintLink() { fill(linkText, h('span.link-host', `${location.host}/`), h('span.link-handle', `@${host().handle}`)) }
 
@@ -85,7 +90,7 @@ export function dash(tab) {
     let page = pages.get(id)
     const built = !page
     if (!page) {
-      page = { bookings: bookingsTab, events: eventsTab, hours: hoursTab, insights: insightsTab }[id]()
+      page = { bookings: bookingsTab, events: eventsTab, hours: hoursTab, insights: insightsTab, profile: profileTab }[id]()
       pages.set(id, page)
     }
     fill(main, page.el)
@@ -789,8 +794,8 @@ export function dash(tab) {
     const el = h('section.tab-page.hours-page',
       h('div.title-row', h('h1.large-title', 'Availability'), saved),
       h('p.page-sub', wide()
-        ? 'Drag along a day to paint when you’re free. Drag a span to move it, even onto another day, or a day’s name to move or swap the whole day. Guests see it in their own time.'
-        : 'Hold and drag along a day to paint when you’re free, or tap a day to add two hours. Hold a span, or a day’s name, to move it. Pinch to zoom.'),
+        ? 'Drag along a day to paint when you’re free. Drag a span to move it, even onto another day, where it trades places with what’s in its way. Drag a day’s name over another day to swap them. Guests see it in their own time.'
+        : 'Hold and drag along a day to paint when you’re free, or tap a day to add two hours. Hold a span to move it, or a day’s name to swap it with another. Pinch to zoom.'),
       h('div.week-card', h('div.week-bar', tools, tl.zoomControl()), tl.el),
       h('h2.group-title', 'Time zone'),
       h('div.group', zoneRow),
@@ -803,6 +808,20 @@ export function dash(tab) {
 
   function insightsTab() {
     return insights({ host, days: s.statsDays, onDays: (d) => { s.statsDays = d } })
+  }
+
+  /* ---- Profile ------------------------------------------------------------------- */
+
+  // A new link redraws your link everywhere; the other tabs draw afresh
+  // when you next open them.
+  function profileTab() {
+    return profilePage({
+      onSaved(change) {
+        if (!('handle' in change)) return
+        paintLink()
+        for (const [id, page] of pages) if (id !== 'profile') { if (page.leave) page.leave(); pages.delete(id) }
+      }
+    })
   }
 
   /* ---- Start -------------------------------------------------------------------- */
@@ -839,7 +858,6 @@ export function dash(tab) {
     },
     leave() { document.removeEventListener('visibilitychange', onVisible); for (const page of pages.values()) if (page.leave) page.leave() },
     clock() { rebuild() },
-    refresh() { paintLink(); rebuild() },
     me() { paintLink(); badges() }
   }
 }

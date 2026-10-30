@@ -31,12 +31,15 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   (trim the ends, slide them) and see where they overlap the host's. The
   host sees those spans over their own week, drags the meeting inside them
   and accepts, or declines with a note. Hosts paint their weekly hours the
-  same way, drag a span onto another day, drag a day onto another to move or
-  swap it, and pause a day with a switch that keeps its hours. Every strip
-  zooms: pinch, ctrl-scroll, or − and + with a button to fit the day.
+  same way and drag a span onto another day, where it trades places with
+  what's in its way; a day dragged over another swaps hours with it live, as
+  you go. A switch pauses a day and keeps its hours. Every strip zooms:
+  pinch, ctrl-scroll, or − and + with a button to fit the day.
 - A profile page: photo, role, company, place with local time, a note,
   website and profile links with their icons, and each event type with its
-  next open time. Never a coloured stripe down the side of a rounded card.
+  next open time. The host edits it under Profile, a tab of its own in the
+  sidebar and tab bar, which saves as they type. Never a coloured stripe
+  down the side of a rounded card.
 - Insights for the host without cookies: views, visitors, profile clicks,
   bookings, time on page, sources, devices, places from time zones, and a
   visit-to-booking funnel. Tracked links: /@handle?ref=tag (also #ref= and
@@ -55,8 +58,12 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   calendar feed.
 - An Apple-quality UI on phone and desktop, with a fixed shell where only
   panels scroll: a round avatar button top right
-  (signed out too) with light/dark/auto, sounds and 24-hour time; fine
-  motion, quiet Web Audio sounds, and Inter weights that mean something.
+  (signed out too) whose menu holds light/dark/auto, sounds, 24-hour time
+  and Holm's analytics link for admins, and closes when it's tapped again;
+  sheets that don't shrink as a search narrows; fine motion, quiet Web Audio
+  sounds, and Inter weights that mean something. The signed-out home shows
+  a booking card that plays itself: a pointer books a time, then asks for
+  another.
   It must open and move like a native app, with no flicker: a versioned
   service worker that serves the whole shell offline, pages drawn at once
   from the last answers kept in the browser and refreshed quietly, motion
@@ -136,3 +143,15 @@ reply was:
 > - not sure thats the perfect scheme to do?
 > - find a way so that we can track it well
 > - perhaps it show up in stats too
+
+**Kalendar 0.4.0: a Profile tab, days that swap as you drag, and a home page that shows itself working**
+
+> lets refine Kalendar a bit more:
+> - i think 'Your page' / profile; should be in the left sidebar
+> - should the modals be of so min vertical height? so that searching it down wont shrink it down to much smaller?
+> - the analytics link i think in holm is using a different url now?
+> - the feedback system uses a genric icon than the Kalendar icon
+> - I havent checked in mobile, hope it works well
+> - isnt swapping between the tracks on drag a better mechanic?
+> - dont do holm-app branding in avatar popup menu; clicking the icon again should dismiss it
+> - can you create the hero animated?

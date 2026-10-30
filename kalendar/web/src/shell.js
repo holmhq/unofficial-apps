@@ -30,9 +30,24 @@ export async function loadMe() {
   if (fresh) {
     if (who(state.me) !== before) store.forget((k) => k.startsWith('m:'))
     store.keep('me', state.me)
+    if (state.me.admin) loadSurfaces()
   }
   paintAccounts()
   return who(state.me) !== before
+}
+
+// Holm writes the addresses of its own pages for this app, analytics among
+// them, into the page for the people allowed to see them. The copy of the
+// page this browser keeps may predate who's signed in, or Holm may have
+// moved them since, so an admin's browser reads them from a fresh copy (the
+// service worker lets a no-store request through).
+let surfaces = globalThis.__HOLM_SURFACES__ || null
+async function loadSurfaces() {
+  try {
+    const page = await (await fetch('/', { cache: 'no-store' })).text()
+    const m = /__HOLM_SURFACES__\s*=\s*(\{[^}]*\})/.exec(page)
+    surfaces = m ? JSON.parse(m[1]) : null
+  } catch {}
 }
 
 // Lists that belong to the signed-in host carry their id.
@@ -144,23 +159,19 @@ function accountMenu(anchor) {
     theme.setMode(value, { x: r.left + r.width / 2, y: r.top + r.height / 2 })
     sound.tap()
   }, { label: 'Appearance' })
-  const surfaces = globalThis.__HOLM_SURFACES__
+  const analytics = me.admin && surfaces && typeof surfaces.analytics === 'string' ? surfaces.analytics : null
   const items = [
     m
       ? h('div.me', avatar({ key: m.id, name: m.name, picture: m.picture }), h('div.grow', h('b.trunc', m.name), h('small.trunc', host ? prettyURL(host.handle) : m.email || '')))
       : h('div.me', h('span.avatar.ghost', ic('user', 22, 2)), h('div.grow', h('b', 'Not signed in'), h('small', 'Sign in to get your own link'))),
-    host ? { label: 'Your page', icon: 'externalLink', onclick: () => window.open(pageURL(host.handle), '_blank', 'noopener') } : null,
-    host ? { label: 'Copy your link', icon: 'link', onclick: () => { copyText(pageURL(host.handle), 'Link copied'); sound.pop() } } : null,
-    host ? { label: 'Profile and link', icon: 'user', onclick: () => import('./views/profile-sheet.js').then((v) => v.profileSheet()) } : null,
     'sep',
     themes,
     row('volume2', 'Sounds', toggle(sound.on, (v) => { sound.set(v); if (!v) sound.toggle(false) }, 'Sounds')),
     row('clock', '24-hour time', toggle(clock24(), (v) => { setClock24(v); sound.toggle(v); dispatchEvent(new Event('kalendar:clock')) }, '24-hour time')),
-    surfaces && surfaces.analytics && me.admin ? { label: 'Analytics', icon: 'chartColumn', onclick: () => { location.href = surfaces.analytics } } : null,
+    analytics ? { label: 'Analytics', icon: 'chartColumn', onclick: () => window.open(analytics, '_blank', 'noopener') } : null,
     'sep',
     FEEDBACK_PROJECT ? { label: 'Send feedback', icon: 'messageSquareText', onclick: feedback } : null,
-    m ? { label: 'Sign out', icon: 'logOut', onclick: signOut } : { label: 'Sign in', icon: 'user', onclick: signIn },
-    h('a.holm-line', { href: 'https://holmhq.com', target: '_blank', rel: 'noopener', html: `<svg width="11" height="11" viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="${HOLM}"/></svg>A Holm app` })
+    m ? { label: 'Sign out', icon: 'logOut', onclick: signOut } : { label: 'Sign in', icon: 'user', onclick: signIn }
   ]
   menu(anchor, items, { align: 'end' })
 }

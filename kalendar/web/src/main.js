@@ -3,6 +3,7 @@
 //   /                 signed out: what Kalendar is; first time: choose your link; then your bookings
 //   /events, /hours   your event types and your hours
 //   /insights         who opens your page, where from, and who books
+//   /profile          what your page says about you, your link, email and feed
 //   /@handle          someone's page: the kinds of meeting they offer
 //   /@handle/slug     pick a day and a time, then book
 //   /b/:id?t=         a booking, from its email: add it to a calendar, move or cancel it
@@ -27,7 +28,7 @@ const PAGES = {
   missing: () => import('./views/missing.js')
 }
 
-const TABS = { '/': 'bookings', '/events': 'events', '/hours': 'hours', '/insights': 'insights' }
+const TABS = { '/': 'bookings', '/events': 'events', '/hours': 'hours', '/insights': 'insights', '/profile': 'profile' }
 const isPublic = (path) => !(path in TABS)
 
 async function view(path) {
@@ -66,9 +67,8 @@ addEventListener('popstate', (event) => {
   render('back')
 })
 
-// Tell the page when the clock style or the host's profile changes.
+// Tell the page when the clock style changes.
 addEventListener('kalendar:clock', () => { if (current && current.clock) current.clock() })
-addEventListener('kalendar:host', () => { if (current && current.refresh) current.refresh() })
 
 theme.apply()
 

@@ -29,6 +29,7 @@ import { sound } from './sound.js'
 
 const DAY = 1440
 const HOLD = 260
+const NUDGE = 60
 const ZOOM_MAX = 6
 
 const pad = (n) => String(n).padStart(2, '0')
@@ -101,7 +102,8 @@ export function timeline(o) {
     ppm: kept() || base(),
     sel: null,
     drag: null,
-    shown: null
+    shown: null,
+    swap: null
   }
   const labelW = () => (o.days ? (wide() ? 136 : 112) : wide() ? 96 : 70)
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
@@ -169,13 +171,15 @@ export function timeline(o) {
     for (const [a, b] of l.mark || []) kids.push(box('div.tl-mark', a, b, (b - a) * state.ppm > 64 ? [h('span.tl-text', o.markLabel || 'Booked now')] : []))
     const kind = o.strips ? o.strips.kind || 'host' : null
     if (o.strips) {
-      o.strips.get(track.key).forEach(([a, b], i) => {
+      const from = sourceOf(track.key)
+      hoursOf(track.key).forEach(([a, b], i) => {
         const on = state.sel && state.sel.key === track.key && state.sel.index === i
         const editable = state.mode === 'strips' && o.strips.editable !== false
         const strip = box(`div.tl-strip.${kind}` + (on ? '.sel' : '') + (editable ? '.edit' : ''), a, b,
           editable ? [h('span.tl-handle.l', { 'data-part': 'handle-l', 'aria-hidden': 'true' }), h('span.tl-handle.r', { 'data-part': 'handle-r', 'aria-hidden': 'true' })] : [])
         strip.dataset.part = 'strip'
         strip.dataset.index = String(i)
+        strip.dataset.src = from + ':' + i
         // Where the glow covers a strip, the glow speaks for it.
         if (!(l.glow || []).some(([g, z]) => g < b && z > a)) strip.append(h('span.tl-text', label(a, b, kind)))
         kids.push(strip)
@@ -222,6 +226,26 @@ export function timeline(o) {
   function redrawTrack(key) {
     const track = state.tracks.find((x) => x.key === key)
     if (track) drawLane(track)
+  }
+
+  // While a day is held over another, the two show each other's hours.
+  const sourceOf = (key) => { const w = state.swap; return w && key === w.from ? w.to : w && key === w.to ? w.from : key }
+  const hoursOf = (key) => o.strips.get(sourceOf(key))
+
+  // Strips that changed rows glide there from where they were drawn.
+  function tops() {
+    const seen = new Map()
+    for (const strip of rows.querySelectorAll('.tl-strip')) seen.set(strip.dataset.src, strip.getBoundingClientRect().top)
+    return seen
+  }
+  function glide(before, match = null) {
+    if (reduced()) return
+    for (const strip of rows.querySelectorAll('.tl-strip')) {
+      const top = before.get(match ? match(strip) : strip.dataset.src)
+      if (top === undefined) continue
+      const dy = top - strip.getBoundingClientRect().top
+      if (Math.abs(dy) > 1) strip.animate([{ transform: `translate3d(0, ${dy}px, 0)` }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2, .9, .25, 1)' })
+    }
   }
 
   /* ---- Zoom ----------------------------------------------------------------------- */
@@ -525,8 +549,11 @@ export function timeline(o) {
     o.onLive && o.onLive()
   }
 
-  // A strip slides along its own day, or up and down into another, landing
-  // in the nearest gap long enough for it. A day with no room keeps it home.
+  // A strip slides along its own day, or up and down into another. There it
+  // lands where it's held, nudged into a gap close by, or trades places with
+  // the spans in its way, which go back to the day it came from. Failing
+  // both, it takes the nearest gap long enough; a day with no room keeps it
+  // home.
   function moveAcross(d, x, y) {
     const hit = laneAt(y)
     let key = hit ? hit.key : d.key
@@ -537,10 +564,21 @@ export function timeline(o) {
     }
     const lists = new Map()
     let index = d.fromIndex
+    let traded = null
     if (key !== d.from) {
       const target = orig(key)
-      const a = target.length >= (o.strips.max || 8) ? null : fitInto(target, want(key), d.len)
-      if (a === null) {
+      const w = want(key)
+      const a = target.length >= (o.strips.max || 8) ? null : fitInto(target, w, d.len)
+      // A gap close to where it's held takes it; otherwise it trades places
+      // with what's there, rather than jumping to a far end of the day.
+      const deal = a === null || Math.abs(a - w) > NUDGE ? trade(d, key, w, orig) : null
+      if (deal) {
+        d.full = null
+        traded = deal.hit
+        index = deal.index
+        lists.set(d.from, deal.home)
+        lists.set(key, deal.there)
+      } else if (a === null) {
         if (!d.full || d.full !== key) { d.full = key; sound.error(); haptic(12) }
         key = d.from
       } else {
@@ -564,16 +602,59 @@ export function timeline(o) {
     }
     // Put back any day it passed through.
     for (const k of d.touched) if (!lists.has(k)) lists.set(k, orig(k))
-    const same = key === d.key && index === d.index && lists.get(key)[index][0] === o.strips.get(key)[d.index]?.[0]
+    const deal = traded ? key + ':' + JSON.stringify(traded) : null
+    const same = key === d.key && index === d.index && lists.get(key)[index][0] === o.strips.get(key)[d.index]?.[0] && deal === d.deal
     if (same && lists.size === d.touched.size) return
-    if (key !== d.key) { haptic(8); sound.tick && sound.tick() } else haptic(2)
+    if (key !== d.key || deal !== d.deal) { haptic(8); sound.tick && sound.tick() } else haptic(2)
+    // What's traded glides between the two days, and back if it's undone.
+    const before = new Map()
+    const at = (k, r) => k + ':' + r[0] + '-' + r[1]
+    for (const strip of rows.querySelectorAll('.tl-strip')) {
+      const k = strip.closest('.tl-lane').dataset.key
+      const r = o.strips.get(k)[Number(strip.dataset.index)]
+      if (r) before.set(at(k, r), strip.getBoundingClientRect().top)
+    }
+    const was = d.deal ? { key: d.dealKey, hit: d.dealHit } : null
     d.key = key
     d.index = index
+    d.deal = deal
+    d.dealKey = traded ? key : null
+    d.dealHit = traded
     d.touched = new Set(lists.keys())
     state.sel = { key, index }
     for (const [k, list] of lists) { o.strips.set(k, list, { live: true }); redrawTrack(k) }
-    for (const row of rows.children) row.classList.toggle('drop', row.dataset.key === key && key !== d.from)
+    if (traded || was) {
+      // A traded span is the same span in another row: match it by its times.
+      glide(before, (strip) => {
+        const k = strip.closest('.tl-lane').dataset.key
+        const r = o.strips.get(k)[Number(strip.dataset.index)]
+        if (!r) return null
+        if (traded && k === d.from && traded.some(([p, q]) => p === r[0] && q === r[1])) return at(key, r)
+        if (was && k === was.key && was.hit.some(([p, q]) => p === r[0] && q === r[1])) return at(d.from, r)
+        return null
+      })
+    }
+    for (const row of rows.children) row.classList.toggle('drop', (row.dataset.key === key && key !== d.from) || (!!traded && row.dataset.key === d.from))
     o.onLive && o.onLive()
+  }
+
+  // No gap long enough on that day: the strip takes the place of what's in
+  // its way, and that goes back to the day the strip came from, at its own
+  // times, if it fits there.
+  function trade(d, key, want, orig) {
+    const a = clamp(want, 0, DAY - d.len)
+    const there = orig(key)
+    const hit = there.filter(([p, q]) => p < a + d.len && q > a)
+    const home = orig(d.from)
+    home.splice(d.fromIndex, 1)
+    if (!hit.length || home.length + hit.length > (o.strips.max || 8)) return null
+    if (hit.some(([p, q]) => home.some(([x, y]) => p < y && q > x))) return null
+    const rest = there.filter((r) => !hit.includes(r))
+    rest.push([a, a + d.len])
+    rest.sort((p, q) => p[0] - q[0])
+    home.push(...hit.map((r) => r.slice()))
+    home.sort((p, q) => p[0] - q[0])
+    return { home, there: rest, hit: hit.map((r) => r.slice()), index: rest.findIndex((r) => r[0] === a) }
   }
 
   let scrollRaf = 0
@@ -594,18 +675,26 @@ export function timeline(o) {
 
   /* ---- Moving a whole day ----------------------------------------------------------- */
 
-  // Hold a day's name (or press and drag it with a mouse) and it lifts; let
-  // go over another day to move its hours there, or swap the two.
+  // Hold a day's name (or press and drag it with a mouse) and it lifts. Over
+  // another day, the two trade hours on screen as you go, so you see the week
+  // you'll get; let go to keep it, or anywhere else to put it back.
   function liftDay(p, x, y) {
     const row = [...rows.children].find((r) => r.dataset.key === p.key)
     if (!row) return
+    if (state.sel) select(null)
     const label = row.querySelector('.tl-label')
     const r = label.getBoundingClientRect()
     const ghost = h('div.tl-ghost', { 'aria-hidden': 'true' }, label.querySelector('.tl-name').cloneNode(true), h('span.tl-ghost-hint'))
-    Object.assign(ghost.style, { left: r.left + 'px', top: r.top + 'px', width: Math.max(r.width, 150) + 'px', height: r.height + 'px' })
+    Object.assign(ghost.style, { left: r.left + 'px', top: r.top + 'px', width: Math.max(r.width, 196) + 'px', height: r.height + 'px' })
     document.body.append(ghost)
     row.classList.add('lifted')
-    begin({ kind: 'day', key: p.key, row, ghost, dy: y - r.top, target: null, id: p.id }, { target: el, pointerId: p.id })
+    // How each day's label looks now, to trade along with its hours.
+    const looks = new Map([...rows.children].map((x) => {
+      const sw = x.querySelector('input.switch')
+      const small = x.querySelector('.tl-label small')
+      return [x.dataset.key, { dim: x.classList.contains('dim'), paused: x.classList.contains('paused'), sub: small ? small.textContent : '', on: sw ? sw.checked : null }]
+    }))
+    begin({ kind: 'day', key: p.key, row, ghost, looks, dy: y - r.top, target: null, id: p.id }, { target: el, pointerId: p.id })
     sound.tap()
     dragDay(x, y)
   }
@@ -616,19 +705,37 @@ export function timeline(o) {
     const hit = laneAt(y)
     const target = hit && hit.key !== d.key ? hit.key : null
     if (target === d.target) return
+    const was = d.target
     d.target = target
-    for (const row of rows.children) {
-      row.classList.toggle('drop', row.dataset.key === target)
-      row.classList.toggle('swap', row.dataset.key === target && o.strips.get(target).length > 0)
-    }
+    swapTo(d, was, target)
     const hint = d.ghost.querySelector('.tl-ghost-hint')
-    hint.textContent = target ? (o.strips.get(target).length ? 'Swap' : 'Move here') : ''
+    const name = target ? (state.tracks.find((tr) => tr.key === target) || {}).label : ''
+    hint.textContent = target ? (o.strips.get(target).length ? `Swap with ${name}` : `Move to ${name}`) : ''
     if (target) { haptic(6); sound.tick && sound.tick() }
+  }
+
+  function swapTo(d, was, target) {
+    const before = tops()
+    state.swap = target ? { from: d.key, to: target } : null
+    for (const key of new Set([d.key, was, target].filter(Boolean))) { redrawTrack(key); lookOf(d, key) }
+    for (const row of rows.children) row.classList.toggle('drop', !!target && (row.dataset.key === target || row.dataset.key === d.key))
+    glide(before)
+  }
+
+  function lookOf(d, key) {
+    const row = [...rows.children].find((r) => r.dataset.key === key)
+    const look = d.looks.get(sourceOf(key))
+    if (!row || !look) return
+    row.classList.toggle('dim', look.dim)
+    row.classList.toggle('paused', look.paused)
+    const small = row.querySelector('.tl-label small')
+    if (small) small.textContent = look.sub
+    const sw = row.querySelector('input.switch')
+    if (sw && look.on !== null) sw.checked = look.on
   }
 
   function dropDay(d, cancelled) {
     d.row.classList.remove('lifted')
-    for (const row of rows.children) row.classList.remove('drop', 'swap')
     const target = cancelled ? null : d.target
     const ghost = d.ghost
     if (target && !reduced()) {
@@ -638,7 +745,10 @@ export function timeline(o) {
       ghost.style.opacity = '0'
       setTimeout(() => ghost.remove(), 240)
     } else ghost.remove()
-    if (target) o.days.move(d.key, target)
+    for (const row of rows.children) row.classList.remove('drop')
+    // Kept: the week becomes what's on screen. Put back: the hours glide home.
+    if (target) { state.swap = null; o.days.move(d.key, target) }
+    else if (d.target) swapTo(d, d.target, null)
   }
 
   function end(e) {
