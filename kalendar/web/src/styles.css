@@ -241,6 +241,49 @@ textarea.input { resize: vertical; min-height: 84px; line-height: 1.45; }
 .field-error { margin: 0; font-size: 13px; color: var(--red-text); font-weight: var(--w-label); }
 .field.bad .input { border-color: var(--red); box-shadow: 0 0 0 4px var(--red-soft); }
 .small-input { width: 96px; flex: none; }
+
+/* An address line like Mail's To: bubbles that wrap, and the field to type in. */
+.chips-field { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 46px; padding: 6px 8px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--surface); cursor: text; transition: border-color .15s, box-shadow .2s; }
+.chips-field.focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.field.bad .chips-field { border-color: var(--red); box-shadow: 0 0 0 4px var(--red-soft); }
+.chips-input { flex: 1; min-width: 150px; height: 32px; padding: 0 6px; border: 0; background: none; color: var(--ink); font: inherit; font-size: 16px; font-weight: var(--w-body); letter-spacing: -.012em; }
+.chips-input:focus-visible { outline: none; }
+.chips-input::placeholder { color: var(--ink-3); }
+.chips-field:not(.focus) .mail-chip ~ .chips-input { min-width: 24px; }
+.chips-field.full .chips-input { min-width: 0; flex-basis: 0; width: 0; padding: 0; }
+.mail-chip { display: inline-flex; align-items: center; max-width: 100%; height: 30px; padding: 0 4px 0 11px; border-radius: 15px; background: var(--fill); color: var(--ink); font-size: 14.5px; font-weight: var(--w-label); letter-spacing: -.008em; cursor: pointer; user-select: none; -webkit-user-select: none;
+  animation: chip-in .32s var(--spring); transition: background .15s, color .15s; }
+.mail-chip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mail-chip .chip-x { display: grid; place-items: center; flex: none; width: 22px; height: 22px; margin-left: 3px; padding: 0; border: 0; border-radius: 11px; background: none; color: inherit; opacity: .55; cursor: pointer; }
+.mail-chip .chip-x:hover { opacity: 1; background: color-mix(in srgb, currentColor 14%, transparent); }
+.mail-chip.picked { background: var(--accent); color: #fff; }
+.mail-chip.picked .chip-x { opacity: 1; }
+.mail-chip.bad { background: none; box-shadow: inset 0 0 0 1px var(--red); color: var(--red-text); }
+.mail-chip.bad.picked { background: var(--red); color: #fff; box-shadow: none; }
+.mail-chip.leaving { animation: chip-out .2s var(--ease-out) forwards; pointer-events: none; }
+@keyframes chip-in { from { transform: scale(.6); opacity: 0; } }
+@keyframes chip-out { to { transform: scale(.6); opacity: 0; } }
+.add-guests { align-self: flex-start; margin: -8px 0 -4px -4px; }
+.guests-field.opening { animation: rise .3s var(--ease-out); }
+.req-guests { display: block; font-size: 13px; color: var(--ink-2); }
+
+/* Profile: where booking email goes. */
+.mail-row { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 54px; padding: 8px 10px 8px 16px; border: 0; background: none; color: var(--ink); text-align: left; font: inherit; }
+.mail-row + .mail-row::before, .mail-row + .row-btn::before, .mail-add::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; height: .5px; background: var(--line); }
+button.mail-row { cursor: pointer; }
+.mail-group .row-btn { position: relative; }
+button.mail-row:active { background: var(--fill); }
+.mail-row .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mail-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15.5px; font-weight: var(--w-label); }
+.mail-row small { font-size: 13px; color: var(--ink-2); }
+.mail-row small.wait { color: var(--amber-text, var(--ink-2)); }
+.mail-row .tick { flex: none; width: 22px; color: var(--accent-text); opacity: 0; transform: scale(.5); transition: opacity .2s, transform .3s var(--spring); }
+.mail-row.on .tick { opacity: 1; transform: none; }
+.mail-row .icon-btn { flex: none; color: var(--ink-3); }
+.mail-row .link-btn { flex: none; }
+.mail-add { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 50px; animation: rise .25s var(--ease-out); }
+.mail-add .row-input { height: 44px; }
+.mail-add .btn.busy { opacity: .5; pointer-events: none; }
 .fine { margin: 0; font-size: 12.5px; color: var(--ink-2); text-align: center; line-height: 1.45; }
 
 input.switch { flex: none; position: relative; width: 51px; height: 31px; margin: 0; border-radius: 16px; background: var(--fill-3); cursor: pointer; -webkit-appearance: none; appearance: none; transition: background .25s var(--ease); }

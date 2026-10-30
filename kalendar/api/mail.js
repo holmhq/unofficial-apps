@@ -111,6 +111,9 @@ function rows(items) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;">${cells}</table>`
 }
 
+const guestsOf = (b) => (Array.isArray(b.guests) ? b.guests : [])
+const guestRow = (b) => (guestsOf(b).length ? ['Guests', guestsOf(b).map(esc).join('<br>')] : null)
+
 function button(label, href) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;"><tr>
 <td class="btn" style="background:${C.accent};border-radius:13px;"><a href="${esc(href)}" style="display:inline-block;padding:13px 22px;font-size:15px;font-weight:620;letter-spacing:-0.008em;color:#ffffff;text-decoration:none;">${esc(label)}</a></td>
@@ -215,7 +218,7 @@ export function inviteeMail(kind, c) {
     heading(moved ? `Your time with ${host.name} moved` : accepted ? `${host.name} said yes` : `You’re booked with ${host.name}`, `${esc(b.eventTitle)} · ${b.duration} minutes`) +
     when(time) +
     (moved && c.old ? `<p class="ink3" style="margin:10px 0 0 82px;font-size:13px;color:${C.ink3};">Was <span style="text-decoration:line-through;">${esc(at(c.old.start, offset, b.h24))}</span></p>` : '') +
-    rows([place ? ['Where', place] : null, ['Host', `${esc(host.name)}`], ['Invitee', `${esc(b.name)} · ${esc(b.email)}`]]) +
+    rows([place ? ['Where', place] : null, ['Host', `${esc(host.name)}`], ['Invitee', `${esc(b.name)} · ${esc(b.email)}`], guestRow(b)]) +
     changeBox(c.links)
   return {
     subject: moved ? `Rescheduled: ${b.eventTitle} with ${host.name} — now ${at(b.start, offset, b.h24)}` : `${accepted ? 'Accepted' : 'Confirmed'}: ${b.eventTitle} with ${host.name} — ${at(b.start, offset, b.h24)}`,
@@ -225,6 +228,7 @@ export function inviteeMail(kind, c) {
       `${longDate(parts(b.start, offset))}\n${clockRange(b.start, b.end, offset, b.h24)} (${b.tzLabel}, ${gmt(offset)})`,
       moved && c.old ? `Was: ${at(c.old.start, offset, b.h24)}` : '',
       plainPlace(b.location, host.name, b.phone) ? `Where: ${plainPlace(b.location, host.name, b.phone)}` : '',
+      guestsOf(b).length ? `Guests: ${guestsOf(b).join(', ')}` : '',
       `Reschedule: ${c.links.reschedule}\nCancel: ${c.links.manage}`
     ].filter(Boolean).join('\n\n')
   }
@@ -284,7 +288,7 @@ export function hostMail(kind, c) {
     heading(moved ? `${b.name} moved their time` : accepted ? `You’re meeting ${b.name}` : `${b.name} booked you`, `${esc(b.eventTitle)} · ${b.duration} min`) +
     when(time) +
     (moved && c.old ? `<p class="ink3" style="margin:10px 0 0 82px;font-size:13px;color:${C.ink3};">Was <span style="text-decoration:line-through;">${esc(at(c.old.start, offset, h24))}</span></p>` : '') +
-    rows([['Invitee', who], place ? ['Where', place] : null, b.phone && b.location.kind !== 'phone' ? ['Phone', esc(b.phone)] : null, b.notes ? ['Notes', quote(b.notes)] : null, ['Their zone', `${esc(b.tzLabel)} · ${gmt(b.offset)}`]]) +
+    rows([['Invitee', who], guestRow(b), place ? ['Where', place] : null, b.phone && b.location.kind !== 'phone' ? ['Phone', esc(b.phone)] : null, b.notes ? ['Notes', quote(b.notes)] : null, ['Their zone', `${esc(b.tzLabel)} · ${gmt(b.offset)}`]]) +
     button('Open Kalendar', c.links.dashboard)
   return {
     subject: moved ? `Rescheduled: ${b.name} — now ${at(b.start, offset, h24)}` : `${accepted ? 'Accepted' : 'New booking'}: ${b.name} — ${at(b.start, offset, h24)}`,
@@ -294,10 +298,62 @@ export function hostMail(kind, c) {
       `${longDate(parts(b.start, offset))}\n${clockRange(b.start, b.end, offset, h24)} (${host.tzLabel})`,
       moved && c.old ? `Was: ${at(c.old.start, offset, h24)}` : '',
       `Invitee: ${b.name} <${b.email}>`,
+      guestsOf(b).length ? `Guests: ${guestsOf(b).join(', ')}` : '',
       b.phone ? `Phone: ${b.phone}` : '',
       b.notes ? `Notes:\n${b.notes}` : '',
       `Kalendar: ${c.links.dashboard}`
     ].filter(Boolean).join('\n\n')
+  }
+}
+
+// To someone the booker invited: the same meeting, without the links to
+// change it, which only the booker has.
+export function guestMail(kind, c) {
+  const { b, host, base } = c
+  const offset = b.offset
+  const time = { start: b.start, end: b.end, offset, h24: b.h24, zone: b.tzLabel }
+  const footer = `Sent by Kalendar for ${esc(host.name)}, because ${esc(b.name)} invited you.`
+  const others = [b.name, ...guestsOf(b)]
+  if (kind === 'cancelled') {
+    const lead = c.removed ? `${b.name} took you off the guest list.` : b.cancelledBy === 'host' ? `${host.name} cancelled it.` : `${b.name} cancelled it.`
+    const body = badge('Cancelled', C.red, C.redSoft) +
+      heading(`${b.eventTitle} with ${host.name} is off`, `${esc(lead)} There’s nothing to do.`) +
+      when({ ...time, struck: true })
+    return {
+      subject: `Cancelled: ${b.eventTitle} with ${host.name} — ${at(b.start, offset, b.h24)}`,
+      html: layout({ base, title: 'Cancelled', preheader: `${b.eventTitle} on ${at(b.start, offset, b.h24)} is off.`, body, footer }),
+      text: [`${b.eventTitle} with ${host.name} is off. ${lead}`, `Was: ${longDate(parts(b.start, offset))}, ${clockRange(b.start, b.end, offset, b.h24)} (${b.tzLabel})`].join('\n\n')
+    }
+  }
+  const moved = kind === 'rescheduled'
+  const place = where(b.location, { hostName: host.name, phone: b.phone })
+  const body = (moved ? badge('Rescheduled', C.blue, C.blueSoft) : badge('Invitation', C.green, C.greenSoft)) +
+    heading(moved ? `${b.eventTitle} with ${host.name} moved` : `${b.name} invited you`, `${esc(b.eventTitle)} with ${esc(host.name)} · ${b.duration} minutes`) +
+    when(time) +
+    rows([place ? ['Where', place] : null, ['Host', esc(host.name)], ['Guests', others.map(esc).join('<br>')]]) +
+    `<p class="ink2" style="margin:24px 0 0;font-size:14px;line-height:1.5;color:${C.ink2};">Only ${esc(b.name)} can move or cancel it. You’ll hear if they do.</p>`
+  return {
+    subject: moved ? `Rescheduled: ${b.eventTitle} with ${host.name} — now ${at(b.start, offset, b.h24)}` : `Invitation: ${b.eventTitle} with ${host.name} — ${at(b.start, offset, b.h24)}`,
+    html: layout({ base, title: moved ? 'Rescheduled' : 'Invitation', preheader: `${longDate(parts(b.start, offset))}, ${clockRange(b.start, b.end, offset, b.h24)}.`, body, footer }),
+    text: [
+      moved ? `${b.eventTitle} with ${host.name} moved.` : `${b.name} invited you to ${b.eventTitle} with ${host.name}.`,
+      `${longDate(parts(b.start, offset))}\n${clockRange(b.start, b.end, offset, b.h24)} (${b.tzLabel}, ${gmt(offset)})`,
+      plainPlace(b.location, host.name, b.phone) ? `Where: ${plainPlace(b.location, host.name, b.phone)}` : '',
+      `Guests: ${others.join(', ')}`,
+      `Only ${b.name} can move or cancel it.`
+    ].filter(Boolean).join('\n\n')
+  }
+}
+
+// The link that confirms an address a host added for booking email.
+export function verifyMail({ base, host, address, link }) {
+  const body = heading('Confirm this address', `${esc(host.name)} wants Kalendar’s booking emails at <b style="font-weight:620;">${esc(address)}</b>. Confirm it’s yours.`) +
+    button('Confirm address', link) +
+    `<p class="ink3" style="margin:22px 0 0;font-size:13px;line-height:1.5;color:${C.ink3};">The link works for a week. If you didn’t ask for this, ignore it, and nothing will be sent here.</p>`
+  return {
+    subject: 'Confirm your address for Kalendar',
+    html: layout({ base, title: 'Confirm your address', preheader: 'One tap to get booking emails here.', body, footer: `For ${esc(host.name)} on <a href="${esc(base)}/@${esc(host.handle)}" style="color:${C.ink3};">${esc(base.replace(/^https?:\/\//, ''))}/@${esc(host.handle)}</a>.` }),
+    text: [`${host.name} wants Kalendar's booking emails at ${address}. Confirm it's yours:`, link, `The link works for a week. If you didn't ask for this, ignore it.`].join('\n\n')
   }
 }
 

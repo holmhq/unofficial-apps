@@ -151,6 +151,8 @@ export function dash(tab) {
     else if (list.dataset.view !== view) { fill(list, skeleton()); list.dataset.view = '' }
     try {
       const r = await api.get('/api/bookings?view=' + view)
+      // Guests' emails left over from a change made elsewhere (Claude).
+      for (const x of r.bookings) if (x.waiting) api.flush(x.id, x.waiting)
       const changed = store.keep(mine('b:' + view), r.bookings)
       s.lists.set(view, r.bookings)
       if (view === 'requests') state.me.counts = { ...(state.me.counts || {}), requests: r.bookings.length }
@@ -272,7 +274,8 @@ export function dash(tab) {
           metaRow('clock', t.range(b.start, b.end, zone), theirs),
           place ? metaRow(place.icon, place.text, place.sub, place.href) : null,
           b.phone && b.location.kind !== 'phone' ? metaRow('phone', b.phone, null, `tel:${b.phone}`) : null,
-          b.ref ? metaRow('tag', cameFrom(b.ref), 'Came through this tracked link') : null),
+          b.ref ? metaRow('tag', cameFrom(b.ref), 'Came through this tracked link') : null,
+          b.guests && b.guests.length ? metaRow('mail', b.guests.join(', '), b.guests.length === 1 ? 'Guest' : `${b.guests.length} guests`) : null),
         b.notes ? h('div.notes', h('small', 'Notes'), h('p', b.notes)) : null,
         b.reason ? h('div.notes', h('small', b.status === 'declined' ? 'What you told them' : 'Why it was cancelled'), h('p', b.reason)) : null,
         h('div.sheet-actions',
@@ -301,6 +304,7 @@ export function dash(tab) {
     if (!ok) return
     try {
       const r = await api.post(`/api/bookings/${b.id}/cancel`, { reason: reason.value.trim() })
+      if (r.waiting) api.flush(b.id, r.waiting)
       sound.remove()
       toast(r.emailed ? `Cancelled. ${b.name.split(' ')[0]} has been told.` : 'Cancelled.')
       refreshBookings(b.id)
@@ -437,7 +441,7 @@ export function dash(tab) {
         return [
           h('div.person.row',
             avatar({ key: b.email, name: b.name, size: 48 }),
-            h('div', h('b', b.name), h('a', { href: `mailto:${b.email}` }, b.email)),
+            h('div', h('b', b.name), h('a', { href: `mailto:${b.email}` }, b.email), b.guests && b.guests.length ? h('small.req-guests', `With ${b.guests.join(', ')}`) : null),
             h('span.req-event', { style: { '--event': colorOf(b.event.color) } }, h('i.ev-dot'), `${b.event.title} · ${t.minutesLabel(dur)}`)),
           b.notes ? h('div.notes', h('small', 'Notes'), h('p', b.notes)) : null,
           h('div.req-legend', h('span', h('i.key.mine'), `${first}’s times`), h('span', h('i.key.shade'), 'Your hours'), h('span', h('i.key.glow'), 'Both free'), h('span.grow'), tl.zoomControl()),
@@ -453,6 +457,7 @@ export function dash(tab) {
       const ms = t.instant(clip.key, clip.start, zone)
       try {
         const r = await api.post(`/api/bookings/${b.id}/accept`, { start: ms })
+        if (r.emailed && r.emailed.waiting) api.flush(b.id, r.emailed.waiting)
         sound.booked()
         toast(r.emailed ? `Booked. ${first} has the invite.` : 'Booked.')
         afterRequest(b.id)

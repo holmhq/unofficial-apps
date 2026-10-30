@@ -53,6 +53,14 @@ export const post = (path, body = {}) => call('POST', path, body)
 export const patch = (path, body = {}) => call('PATCH', path, body)
 export const del = (path) => call('DELETE', path)
 
+// Guests' emails that didn't fit in the request that made them go out now,
+// a few seconds' worth at a time.
+export async function flush(id, waiting) {
+  for (let i = 0; waiting > 0 && i < 6; i++) {
+    try { waiting = (await post(`/api/b/${id}/flush`)).waiting } catch { return }
+  }
+}
+
 let solver = null
 const loadSolver = () => (solver ||= import('/_holm/challenge.js'))
 const ready = new Map()

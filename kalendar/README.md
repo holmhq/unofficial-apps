@@ -30,6 +30,8 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   meeting with the next time that's open. You edit it under Profile, a tab
   of its own beside your bookings: your page as guests see it at the top,
   then the fields, your link, email and calendar feed, saved as you type.
+  Booking email can go to another address than the one you sign in with:
+  add it, open the link Kalendar sends there, and tick it.
 - **Event types.** Each has a name, its own link (`/@handle/intro`), a length,
   where you'll meet (a video link, a phone call to the guest, an address,
   anything else, or decide later), a description and a colour. Rules per type:
@@ -53,8 +55,12 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   12- or 24-hour time. Tap a shaded span and the meeting drops in, the length
   of the event; drag it along the day or onto another and it snaps to the
   times that are open; pinch or use − and + to zoom. "Soonest" jumps to the
-  first one. Then name, email,
-  notes, and a phone number when you'll call. A time someone takes disappears
+  first one. Then name, email, guests, notes, and a phone number when you'll
+  call. "Add guests" opens an address line like Mail's: a comma, a space or
+  Return turns an address into a bubble, a bad one stays red until it's
+  fixed, and Backspace selects the last bubble, then removes it. Up to five
+  guests get the invite and hear about moves and cancellations; only the
+  person who booked can change it. A time someone takes disappears
   for everyone, and two people racing for the same slot can't both get it.
 - **Asking for another time.** Dropped outside your shading, the meeting
   becomes a request. Or a guest switches to "Suggest times" and paints when
@@ -230,9 +236,12 @@ Each booking email carries an iCalendar invite through `email.send`'s
 mail apps expect, so Apple Mail, Gmail and Outlook show their own card:
 
 - The guest's confirmation, acceptance or move is a `REQUEST` with the host as
-  organizer and the guest as attendee, so it lands on their calendar and
-  Accept or Decline goes to the host. A cancellation is a `CANCEL`, which takes
-  it off. A host with no email address sends a plain `PUBLISH` instead.
+  organizer (at the address they picked for booking email) and the guest and
+  their guests as attendees, so it lands on their calendars and Accept or
+  Decline goes to the host. Guests get their own email with the same invite,
+  without the link to change it. A cancellation is a `CANCEL`, which takes it
+  off, and a guest taken off the list on a move gets one too. A host with no
+  email address sends a plain `PUBLISH` instead.
 - The host's own email carries a `REQUEST` too, named for the guest, from
   Kalendar's own address (the `from` that `email.send` reports) as organizer,
   with the host already accepted. It has a UID of its own, since Kalendar
@@ -244,6 +253,14 @@ mail apps expect, so Apple Mail, Gmail and Outlook show their own card:
   event rather than add a second, and the old booking's calendar file answers
   "moved".
 - If Holm turns an invite down, the email goes without it (`api/mail.js`).
+- Holm sends one email per call and a request stops near five seconds, so
+  guests' emails go out after the guest's and the host's while there's time
+  (`SEND_FOR` in `api/bookings.js`). The rest wait on the booking, and the
+  page that made the change sends them (`POST /api/b/:id/flush`), as does
+  the host's list.
+
+An address the host adds gets a link (`/confirm-email?h=…&t=…`, good for a
+week) and is used only once it's opened (`api/hosts.js`).
 
 The emails carry no Add to Calendar buttons: on a phone they leave Mail for
 the browser, and with the invite they'd add the meeting twice. The booking
@@ -318,7 +335,12 @@ only give to `https://` and `localhost` pages. On a local node, add a
 - **The host's Accept or Decline goes nowhere.** Their invite is organized by
   Kalendar's sending address, which Kalendar can't read, so it comes already
   accepted; declining it in a calendar doesn't cancel the booking. Cancel in
-  Kalendar, which tells the guest and takes it off both calendars.
+  Kalendar, which tells the guest and takes it off both calendars. On a node
+  whose incoming mail can't take that reply, it bounces back to the host.
+- **Guests can't change the booking or answer through Kalendar.** Their Accept
+  or Decline goes to the host. If the page that booked closes at once while
+  guests' emails are still waiting, they go when the host next opens
+  Kalendar.
 - **Invites and the feed together show each booking twice**, once in each
   calendar. Use one, or hide the feed's calendar.
 - **A node that can't send invites** sends the email without one; the
@@ -340,9 +362,9 @@ only give to `https://` and `localhost` pages. On a local node, add a
   zone happen in the app, because the zone's offsets come from the browser.
   Requests waiting for an answer don't expire by themselves; one whose times
   have passed stops showing.
-- Anyone can book, so anyone can make Kalendar email an address they type.
-  Holm's challenge and rate limit, ten bookings a day per address and eighty
-  per host keep that small.
+- Anyone can book, so anyone can make Kalendar email addresses they type, up
+  to six per booking with guests. Holm's challenge and rate limit, ten
+  bookings a day per address and eighty per host keep that small.
 - Offset tables cover about 15 months from when the host last opened their
   page; past that, the last known offset is used.
 - **Tags are what the link says.** Anyone can put any `?ref=` on your link;

@@ -43,7 +43,7 @@ function vevent(e, domain) {
     e.location ? `LOCATION:${escapeText(e.location)}` : null,
     e.url ? `URL:${e.url}` : null,
     e.organizer ? `ORGANIZER;CN=${param(e.organizer.name)}:mailto:${e.organizer.email}` : null,
-    e.attendee ? `ATTENDEE;CN=${param(e.attendee.name)};ROLE=REQ-PARTICIPANT;${e.attendee.accepted ? 'PARTSTAT=ACCEPTED;RSVP=FALSE' : 'PARTSTAT=NEEDS-ACTION;RSVP=TRUE'}:mailto:${e.attendee.email}` : null,
+    ...(e.attendees || []).map((a) => `ATTENDEE${a.name ? `;CN=${param(a.name)}` : ''};ROLE=REQ-PARTICIPANT;${a.accepted ? 'PARTSTAT=ACCEPTED;RSVP=FALSE' : 'PARTSTAT=NEEDS-ACTION;RSVP=TRUE'}:mailto:${a.email}`),
     `STATUS:${e.cancelled ? 'CANCELLED' : 'CONFIRMED'}`,
     `SEQUENCE:${e.sequence || 0}`,
     'TRANSP:OPAQUE'

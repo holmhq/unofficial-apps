@@ -59,7 +59,14 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   Outlook.com and a hosted calendar file whose link doesn't end in .ics
   (Apple Mail offers to subscribe to those). Emailed links let the guest move
   or cancel; the host can cancel from their list. Give the host a private
-  calendar feed.
+  calendar feed, and let them add other addresses, each confirmed by a link
+  sent to it, and pick which one gets booking email and organizes invites.
+- The booking form's "Add guests" is an address line like Mail's: a comma,
+  space or Return makes a bubble, a bad address stays red, Backspace selects
+  then removes the last bubble. Up to five guests are on the invite and get
+  their own email, without the links to change it. Holm sends one email a
+  call within a request's few seconds, so queue the guests' emails that don't
+  fit and have the page send them after.
 - An Apple-quality UI on phone and desktop, with a fixed shell where only
   panels scroll: a round avatar button top right
   (signed out too) whose menu holds light/dark/auto, sounds, 24-hour time
@@ -183,3 +190,13 @@ didn't (an address is replaced here):
 > - plus such links arent there in other invites from say Google/Calendly
 > - i think ics is enough?
 > - but i wonder why it didn't show up or get recognised like how it did with [my other] email
+
+**Kalendar 0.6.0: guests on a booking, and booking email at another address**
+
+> Shall we do this:
+> - add additional emails? and select with one to send email to
+> - so that it can be changed, one can be used for sign-in & another can be used to receive
+> - also, wish multiple people can be added to invite with comma? (may be have a nice iOS like email selection interaction when adding comma)
+
+Asked who adds the extra people, the answer was the guest, on the booking
+form.

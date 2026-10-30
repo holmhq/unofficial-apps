@@ -5,7 +5,7 @@
 // it takes over on the next launch, and the old set goes. The page loads all
 // of its code at start (main.js), so it never mixes two versions.
 //
-// Nothing under /api/, /auth/, /feed/ or /.well-known/, no address starting
+// Nothing under /api/, /auth/, /feed/, /confirm-email or /.well-known/, no address starting
 // with /_ (Holm's own pages: /_holm/, and the analytics and settings pages it
 // puts under a prefix of its choosing), no calendar file and nothing asked
 // for with cache: 'no-store' is ever cached or answered from the cache:
@@ -13,19 +13,19 @@
 // of pages (/@avery, /hours, /b/…) all open the same shell, which draws the
 // page itself.
 
-const VERSION = '0.5.1'
+const VERSION = '0.6.0'
 const CACHE = 'kalendar-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
   '/assets/inter-latin.woff2', '/src/styles.css',
   '/src/main.js', '/src/shell.js', '/src/ui.js', '/src/icons.js', '/src/api.js', '/src/store.js', '/src/theme.js',
-  '/src/sound.js', '/src/time.js', '/src/zones.js', '/src/countries.js', '/src/timeline.js', '/src/track.js', '/src/qr.js',
+  '/src/sound.js', '/src/time.js', '/src/zones.js', '/src/countries.js', '/src/timeline.js', '/src/track.js', '/src/qr.js', '/src/chips.js',
   '/src/views/book.js', '/src/views/profile.js', '/src/views/manage.js', '/src/views/dash.js', '/src/views/landing.js',
   '/src/views/onboard.js', '/src/views/common.js', '/src/views/missing.js', '/src/views/zone-picker.js',
   '/src/views/event-sheet.js', '/src/views/profile-tab.js', '/src/views/insights.js', '/src/views/link-sheet.js',
   '/vendor/qrcode/qrcode.mjs'
 ]
-const PASS = /^\/(_[^/]*|api|auth|feed|\.well-known)(\/|$)|^\/b\/[^/]+\/(calendar|invite\.ics)$|^\/sw\.js$/
+const PASS = /^\/(_[^/]*|api|auth|feed|\.well-known|confirm-email)(\/|$)|^\/b\/[^/]+\/(calendar|invite\.ics)$|^\/sw\.js$/
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE)

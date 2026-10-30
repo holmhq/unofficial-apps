@@ -15,6 +15,7 @@ import { zonePicker } from './zone-picker.js'
 import { colorOf, placeLine, metaRow, calendarButtons, doneMark, field } from './common.js'
 import { missingHost } from './missing.js'
 import { timeline, merge, intersect, span, short } from '../timeline.js'
+import { chipField } from '../chips.js'
 import * as track from '../track.js'
 
 const ZONE_KEY = 'kalendar:zone'
@@ -408,6 +409,23 @@ export async function book(handle, slug) {
     const email = h('input.input', { name: 'email', type: 'email', autocomplete: 'email', inputmode: 'email', required: true, maxlength: '200', value: (old && old.email) || (me && me.email) || last.email || '', placeholder: 'jane@example.com' })
     const phone = h('input.input', { name: 'phone', type: 'tel', autocomplete: 'tel', inputmode: 'tel', maxlength: '32', value: (old && old.phone) || last.phone || '', placeholder: '+1 555 010 0199' })
     const notes = h('textarea.input', { name: 'notes', rows: '3', maxlength: '1000', placeholder: asking ? `What you’d like to talk about, and anything ${first} should know about these times` : 'Anything that helps prepare' })
+    // Guests: an address line like Mail's, behind "Add guests" unless the
+    // booking being moved has some. Not a <label>: it would click the
+    // first bubble's ×.
+    const had = (old && old.guests) || []
+    const guestList = chipField({ values: had, max: 5, label: 'Guests’ email addresses', placeholder: 'name@example.com', mine: () => email.value })
+    const guestErr = h('p.field-error', { role: 'alert', hidden: true })
+    const guests = h('div.field.guests-field', { hidden: !had.length },
+      h('span.field-label', 'Guests'), guestList,
+      h('span.field-hint', asking ? `Up to 5. They get the invite if ${first} says yes.` : 'Up to 5. They get the invite too; only you can change it.'), guestErr)
+    guests.setError = (message) => { guestErr.textContent = message || ''; guestErr.hidden = !message; guests.classList.toggle('bad', !!message) }
+    const addGuests = h('button.link-btn.add-guests', { type: 'button', hidden: had.length > 0, onclick: () => {
+      addGuests.hidden = true
+      guests.hidden = false
+      guests.classList.add('opening')
+      guestList.input.focus()
+      sound.tap()
+    } }, ic('plus', 15, 2.4), 'Add guests')
     const f = {
       name: field({ label: 'Name', input: name }),
       email: field({ label: 'Email', input: email, hint: asking ? `${first}’s answer comes here.` : 'Your invite goes here.' }),
@@ -424,23 +442,25 @@ export async function book(handle, slug) {
         h('button.back-btn', { type: 'button', 'aria-label': 'Back to the times', onclick: () => history.back() }, ic('chevronLeft', 22, 2.2)),
         h('h2.step-title', old ? 'Confirm the new time' : asking ? `Ask ${first}` : 'Almost there')),
       summary,
-      f.name, f.email, f.phone, f.notes,
+      f.name, f.email, addGuests, guests, f.phone, f.notes,
       submit,
       h('p.fine', asking ? `${first} picks a time that works, or says no. You’ll get an email either way, and no account is needed.` : 'No account needed. You’ll get an email with a calendar invite and a link to change or cancel.'))
     form.addEventListener('submit', (e) => {
       e.preventDefault()
-      confirm({ f, inputs: { name, email, phone, notes }, submit, label })
+      confirm({ f, inputs: { name, email, phone, notes, guestList }, guests, submit, label })
     })
     fill(details, form)
     if (wide()) requestAnimationFrame(() => (name.value ? (email.value ? notes : email) : name).focus({ preventScroll: true }))
   }
 
-  async function confirm({ f, inputs, submit, label }) {
+  async function confirm({ f, inputs, guests, submit, label }) {
     if (s.busy) return
     let bad = null
     const check = (box, ok, message) => { box.setError(ok ? '' : message); if (!ok && !bad) bad = box }
     check(f.name, inputs.name.value.trim().length > 0, 'Add your name.')
     check(f.email, /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(inputs.email.value.trim()), 'That email doesn’t look right.')
+    inputs.guestList.take()
+    check(guests, !inputs.guestList.bad(), 'Fix or remove the address in red.')
     if (f.phone) check(f.phone, /^\+?[0-9][0-9 ().-]{5,30}$/.test(inputs.phone.value.trim()), 'Add a number they can call.')
     if (bad) {
       nope(bad)
@@ -454,7 +474,7 @@ export async function book(handle, slug) {
     const at = s.request ? s.request[0][0] : s.clip.ms
     const input = {
       handle: host.handle, event: event.slug,
-      name: inputs.name.value.trim(), email: inputs.email.value.trim(), notes: inputs.notes.value.trim(),
+      name: inputs.name.value.trim(), email: inputs.email.value.trim(), notes: inputs.notes.value.trim(), guests: inputs.guestList.values(),
       tz: s.zone, tzLabel: zoneName(s.zone, at), offset: offsetIn(s.zone, at), h24: t.clock24()
     }
     if (s.request) { input.request = true; input.ranges = s.request } else input.start = s.clip.ms
@@ -484,7 +504,7 @@ export async function book(handle, slug) {
         history.back()
         return
       }
-      if (/email/i.test(error.message)) { f.email.setError(error.message); nope(f.email) }
+      if (error.code === 'invalid_guest') { guests.setError(error.message); nope(guests) } else if (/email/i.test(error.message)) { f.email.setError(error.message); nope(f.email) }
       failure(error)
     }
   }
@@ -497,12 +517,14 @@ export async function book(handle, slug) {
     const where = placeLine(b.location, host.name, { revealed: true, phone: b.phone })
     const emailed = result.emailed && result.emailed.invitee
     const ranges = b.ranges && b.ranges.length ? b.ranges : s.request
+    const n = (b.guests || []).length
+    if (result.emailed && result.emailed.waiting) api.flush(b.id, result.emailed.waiting)
     fill(done,
       doneMark(asked ? 'wait' : 'good'),
       h('h1.done-title', old ? 'Booking moved' : asked ? 'Request sent' : 'You’re booked'),
       h('p.done-lead', asked
         ? [`${first} will pick a time from what you sent. `, emailed ? ['You’ll hear back at ', h('b', b.email), '.'] : 'We couldn’t send your copy by email just now.']
-        : emailed ? ['An invite is on its way to ', h('b', b.email), '.'] : 'Add it to your calendar below. We couldn’t send the email just now.'),
+        : emailed ? ['An invite is on its way to ', h('b', b.email), n ? ` and ${n === 1 ? 'your guest' : `your ${n} guests`}` : '', '.'] : 'Add it to your calendar below. We couldn’t send the email just now.'),
       h('div.ticket', { style: { '--event': color } },
         h('div.ticket-head', avatar({ key: host.handle, name: host.name, picture: host.picture, size: 40 }), h('div', h('b', b.event.title), h('span', `with ${host.name}`)), h('span.event-chip', { style: { '--event': color } })),
         asked
@@ -510,7 +532,8 @@ export async function book(handle, slug) {
           : h('ul.meta',
             metaRow('calendar', t.fullDate(b.start, s.zone)),
             metaRow('clock', t.range(b.start, b.end, s.zone), `${zoneName(s.zone, b.start)} · ${gmt(offsetIn(s.zone, b.start))}`),
-            where ? metaRow(where.icon, where.text, where.sub, where.href) : null)),
+            where ? metaRow(where.icon, where.text, where.sub, where.href) : null,
+            n ? metaRow('mail', b.guests.join(', '), n === 1 ? 'Your guest' : `Your ${n} guests`) : null)),
       asked ? null : h('p.cal-label', 'Add to your calendar'),
       asked ? null : calendarButtons(b.links),
       h('div.done-links',

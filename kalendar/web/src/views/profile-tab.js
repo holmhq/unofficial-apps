@@ -1,14 +1,16 @@
 // Profile: your page as guests see it at the top, then what's on it (your
 // name, what you do, where you are, a welcome note, your website and
-// profiles), your link, email about bookings, and the private calendar feed
-// of your bookings. Like your hours, it saves as you type.
-import { h, ic, fill, avatar, toggle, nope, copyText, confirm } from '../ui.js'
+// profiles), your link, email about bookings and the address it goes to,
+// and the private calendar feed of your bookings. Like your hours, it saves
+// as you type.
+import { h, ic, fill, avatar, toggle, nope, copyText, confirm, toast } from '../ui.js'
 import * as api from '../api.js'
 import * as store from '../store.js'
 import { state, failure, prettyURL, pageURL, share } from '../shell.js'
 import { sound } from '../sound.js'
 import { siteOf } from './profile.js'
 
+const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase()
 const withScheme = (v) => (/^https?:\/\//i.test(v) ? v : v ? 'https://' + v.replace(/^\/+/, '') : v)
 
 export function profileTab({ onSaved }) {
@@ -170,8 +172,83 @@ export function profileTab({ onSaved }) {
 
   /* ---- Email and calendar feed ---------------------------------------------------------------- */
 
-  const notify = h('label.rule', h('span', h('b', 'Email me about bookings'), h('small', x0.email || 'Your sign-in has no email address')),
+  const notify = h('label.rule', h('span', h('b', 'Email me about bookings'), h('small', 'New bookings, moves, cancellations and requests')),
     toggle(x0.notify, (v) => { sound.toggle(v); save({ notify: v }, 0) }, 'Email me about bookings'))
+
+  // Where that email goes: the sign-in address or another one, confirmed
+  // from its own inbox first. Guests see it as their invite's organizer.
+  const mails = h('div.group.mail-group')
+  let adding = false
+  const keep = (r) => { state.me.host = r.host; store.keep('me', state.me) }
+  function drawMails() {
+    const x = host()
+    const list = x.addresses || []
+    const choice = (address, sub, removable) => h('button.mail-row' + (same(x.sendTo, address) ? '.on' : ''), { type: 'button', 'aria-pressed': String(same(x.sendTo, address)), onclick: () => choose(address) },
+      h('span.tick', ic('check', 20, 2.6)),
+      h('span.grow', h('b', address), h('small', sub)),
+      removable ? h('button.icon-btn.small', { type: 'button', 'aria-label': `Remove ${address}`, onclick: (e) => { e.stopPropagation(); remove(address) } }, ic('x', 16, 2.2)) : null)
+    const waiting = (a) => h('div.mail-row',
+      h('span.tick'),
+      h('span.grow', h('b', a.address), h('small.wait', 'Not confirmed yet')),
+      h('button.link-btn', { type: 'button', onclick: (e) => addAddress(a.address, e.currentTarget) }, 'Resend'),
+      h('button.icon-btn.small', { type: 'button', 'aria-label': `Remove ${a.address}`, onclick: () => remove(a.address) }, ic('x', 16, 2.2)))
+    const rows = [
+      x.email ? choice(x.email, 'You sign in with this', false) : h('div.mail-row', h('span.tick'), h('span.grow', h('b', 'No sign-in address'), h('small', 'Add one below to get booking email'))),
+      ...list.map((a) => (a.verified ? choice(a.address, 'Confirmed', true) : waiting(a)))
+    ]
+    if (adding) {
+      const input = h('input.row-input', { type: 'email', inputmode: 'email', autocomplete: 'email', autocapitalize: 'off', spellcheck: false, placeholder: 'name@example.com', 'aria-label': 'Another email address' })
+      const send = h('button.btn.small.tinted', { type: 'submit' }, 'Send link')
+      const form = h('form.mail-add', { novalidate: true },
+        input, send,
+        h('button.icon-btn.small', { type: 'button', 'aria-label': 'Cancel', onclick: () => { adding = false; drawMails() } }, ic('x', 16, 2.2)))
+      form.addEventListener('submit', (e) => {
+        e.preventDefault()
+        const v = input.value.trim()
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { nope(form); sound.error(); input.focus(); return }
+        addAddress(v, send)
+      })
+      rows.push(form)
+      requestAnimationFrame(() => input.focus())
+    } else if (list.length < 4) {
+      rows.push(h('button.row-btn.add', { type: 'button', onclick: () => { adding = true; drawMails(); sound.pop() } }, ic('plus', 18, 2.2), h('span.grow', 'Add another address')))
+    }
+    fill(mails, rows)
+  }
+  async function choose(address) {
+    const x = host()
+    if (same(x.sendTo, address)) return
+    const was = x.sendTo
+    state.me.host = { ...x, sendTo: address }
+    drawMails()
+    sound.pick()
+    try { keep(await api.patch('/api/host', { sendTo: address })) } catch (error) { state.me.host = { ...host(), sendTo: was }; drawMails(); failure(error) }
+  }
+  async function addAddress(address, button) {
+    button.classList.add('busy')
+    try {
+      keep(await api.post('/api/host/addresses', { address }))
+      adding = false
+      drawMails()
+      sound.sent()
+      toast(`Sent. Open the link in ${address}’s inbox to confirm it.`)
+    } catch (error) { button.classList.remove('busy'); failure(error) }
+  }
+  async function remove(address) {
+    if (!await confirm({ title: `Remove ${address}?`, text: same(host().sendTo, address) ? 'Booking emails go back to the address you sign in with.' : 'You can add it again later.', action: 'Remove' })) return
+    try { keep(await api.del(`/api/host/addresses/${encodeURIComponent(address)}`)); drawMails(); sound.remove() } catch (error) { failure(error) }
+  }
+  drawMails()
+  // Back from the link in the email.
+  const confirmed = new URLSearchParams(location.search).get('confirmed')
+  if (confirmed !== null) {
+    history.replaceState(history.state, '', location.pathname)
+    if (confirmed === '0') toast('That link has expired or was already used. Add the address again.', { kind: 'bad' })
+    else {
+      toast(`${confirmed} is confirmed. Tap it to get booking emails there.`)
+      api.get('/api/me').then((r) => { if (r.host) { state.me.host = r.host; store.keep('me', state.me); drawMails() } }).catch(() => {})
+    }
+  }
   const feedBox = h('code.feed-url')
   const paintFeed = () => { feedBox.textContent = host().feed }
   paintFeed()
@@ -205,6 +282,9 @@ export function profileTab({ onSaved }) {
     status,
     h('h2.group-title', 'Email'),
     h('div.group', notify),
+    h('h2.group-title', 'Send it to'),
+    mails,
+    h('p.group-foot', 'Booking emails and calendar invites go to the ticked address, and guests see it as the organizer of their invite.'),
     h('h2.group-title', 'Calendar feed'),
     feed)
 
@@ -218,6 +298,7 @@ export function profileTab({ onSaved }) {
         if (document.activeElement !== field && !(key in pending)) field.value = x[key] || ''
       }
       if (document.activeElement !== handle) handle.value = x.handle
+      if (!mails.contains(document.activeElement)) drawMails()
       paintFeed()
       paintCard()
       fit()

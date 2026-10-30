@@ -6,9 +6,9 @@
 import { reject, text, longText, email as cleanEmail, int, randomId, sha256, hmac, sameHash, cleanTag, MIN, DAY, HOUR } from './lib.js'
 import { offsetAt, cleanZone, cleanZoneLabel } from './tz.js'
 import { slotsFor } from './slots.js'
-import { hostByHandle, publicHost } from './hosts.js'
+import { hostByHandle, publicHost, mailbox } from './hosts.js'
 import { eventBySlug, eventDTO, stepOf } from './events.js'
-import { inviteeMail, hostMail, send } from './mail.js'
+import { inviteeMail, hostMail, guestMail, send } from './mail.js'
 import { calendar, googleLink, outlookLink } from './ics.js'
 
 const ds = (env) => env.holm.app.ds
@@ -113,7 +113,7 @@ function placeText(b) {
 // The event as a calendar shows it, for the invitee or for the host.
 function calendarEntry(b, host, base, manage, forHost) {
   const description = forHost
-    ? [`${b.name} <${b.email}>`, b.phone ? `Phone: ${b.phone}` : '', b.notes ? `Notes:\n${b.notes}` : '', `Booked through Kalendar: ${base}/`].filter(Boolean).join('\n\n')
+    ? [`${b.name} <${b.email}>`, guestsOf(b).length ? `Guests: ${guestsOf(b).join(', ')}` : '', b.phone ? `Phone: ${b.phone}` : '', b.notes ? `Notes:\n${b.notes}` : '', `Booked through Kalendar: ${base}/`].filter(Boolean).join('\n\n')
     : [`${b.eventTitle} with ${host.name}.`, b.location && b.location.kind === 'video' && b.location.value ? `Join: ${b.location.value}` : '', manage ? `Reschedule or cancel: ${manage}` : ''].filter(Boolean).join('\n\n')
   return {
     id: b.uid || b.id, start: b.start, end: b.end, updated: b.updatedAt || b.createdAt,
@@ -124,18 +124,22 @@ function calendarEntry(b, host, base, manage, forHost) {
 }
 
 // The invite that rides in a booking email, so Mail, Gmail and Outlook show
-// their own card and put it on the calendar. The guest's names the host as
-// organizer, so Accept or Decline goes to them, and a cancellation takes the
-// event off again. Requests and declines aren't on anyone's calendar, so
-// they carry none.
+// their own card and put it on the calendar. The guests' names the host as
+// organizer (at the address they get booking email), so Accept or Decline
+// goes to them, and a cancellation takes the event off again. Everyone the
+// booker invited is on it; only the booker's copy links to changing it.
+// Requests and declines aren't on anyone's calendar, so they carry none.
 const INVITED = ['confirmed', 'accepted', 'rescheduled', 'cancelled']
-export function guestInvite(kind, b, host, base, manage) {
+const guestsOf = (b) => (Array.isArray(b.guests) ? b.guests : [])
+export function guestInvite(kind, b, host, base, manage, only = null) {
   if (!INVITED.includes(kind)) return null
   const entry = calendarEntry(b, host, base, manage, false)
   const domain = new URL(base).host
-  if (!host.email) return { method: 'PUBLISH', ics: calendar([entry], { domain }) }
+  const organizer = mailbox(host)
+  if (!organizer) return { method: 'PUBLISH', ics: calendar([entry], { domain }) }
   const method = kind === 'cancelled' ? 'CANCEL' : 'REQUEST'
-  const invite = { ...entry, organizer: { name: host.name, email: host.email }, attendee: { name: b.name, email: b.email } }
+  const attendees = only ? [{ email: only }] : [{ name: b.name, email: b.email }, ...guestsOf(b).map((email) => ({ email }))]
+  const invite = { ...entry, cancelled: method === 'CANCEL', organizer: { name: host.name, email: organizer }, attendees }
   return { method, ics: calendar([invite], { domain, method }) }
 }
 
@@ -148,18 +152,83 @@ export function hostInvite(kind, b, host, base, sender = null) {
   if (!INVITED.includes(kind)) return null
   const entry = calendarEntry(b, host, base, null, true)
   const domain = new URL(base).host
-  if (!sender || !host.email) return { method: 'PUBLISH', ics: calendar([entry], { domain }) }
+  const to = mailbox(host)
+  if (!sender || !to) return { method: 'PUBLISH', ics: calendar([entry], { domain }) }
   const method = kind === 'cancelled' ? 'CANCEL' : 'REQUEST'
-  const invite = { ...entry, id: `${entry.id}-host`, organizer: sender, attendee: { name: host.name, email: host.email, accepted: true } }
+  const invite = { ...entry, id: `${entry.id}-host`, organizer: sender, attendees: [{ name: host.name, email: to, accepted: true }] }
   return { method, ics: calendar([invite], { domain, method }) }
 }
 
 async function mailBoth(env, kind, b, host, base, token, old = null) {
+  const started = Date.now()
   const c = { b, host, base, links: links(env, base, b, host, token), hostOffset: offsetAt(host.tzTable, b.start), hostTable: host.tzTable, old }
   const invitee = send(env, b.email, { ...inviteeMail(kind, c), calendar: guestInvite(kind, b, host, base, c.links.manage) })
   const hostLinkSet = { dashboard: `${base}/`, review: `${base}/?r=${b.id}` }
-  const hostSent = host.notify !== false && host.email ? send(env, host.email, { ...hostMail(kind, { ...c, links: hostLinkSet }), calendar: hostInvite(kind, b, host, base, invitee.from) }) : { ok: false, code: 'OFF' }
-  return { invitee: invitee.ok, host: hostSent.ok, code: invitee.ok ? null : invitee.code }
+  const to = mailbox(host)
+  const hostSent = host.notify !== false && to ? send(env, to, { ...hostMail(kind, { ...c, links: hostLinkSet }), calendar: hostInvite(kind, b, host, base, invitee.from) }) : { ok: false, code: 'OFF' }
+  const waiting = INVITED.includes(kind) ? tellGuests(env, b, host, base, guestKinds(kind, b, old), started) : 0
+  return { invitee: invitee.ok, host: hostSent.ok, code: invitee.ok ? null : invitee.code, waiting }
+}
+
+/* ---- The booker's guests ------------------------------------------------------- */
+
+// Up to five more people the booker invites, by address: not the booker or
+// the host, no repeats.
+const MAX_GUESTS = 5
+function cleanGuests(value, booker, host) {
+  if (value === undefined || value === null) return []
+  if (!Array.isArray(value) || value.length > MAX_GUESTS) reject(400, 'invalid_input', `Invite up to ${MAX_GUESTS} people.`)
+  const out = []
+  for (const v of value) {
+    let address
+    try { address = cleanEmail(v, 'Guest') } catch { reject(400, 'invalid_guest', `${String(v).slice(0, 80)} doesn’t look like an email address.`) }
+    if (address === booker || (host.email && address === host.email.toLowerCase()) || out.includes(address)) continue
+    out.push(address)
+  }
+  return out
+}
+
+// Who hears what: the guests now on it, and on a move, anyone the booker
+// took off the list.
+function guestKinds(kind, b, old) {
+  const now = guestsOf(b).map((to) => ({ to, kind: kind === 'accepted' ? 'confirmed' : kind === 'rescheduled' && old && !guestsOf(old).includes(to) ? 'confirmed' : kind }))
+  const gone = kind === 'rescheduled' && old ? guestsOf(old).filter((to) => !guestsOf(b).includes(to)).map((to) => ({ to, kind: 'removed' })) : []
+  return [...now, ...gone]
+}
+
+// Guests' emails go out after the booker's and the host's, while the request
+// has time (Holm sends one at a time, and a request stops near five
+// seconds). The rest wait on the booking, newest news per address, for
+// POST /api/b/:id/flush from the page, or the next change.
+const SEND_FOR = 2500
+function tellGuests(env, b, host, base, jobs, started) {
+  const queue = (Array.isArray(b.outbox) ? b.outbox : []).filter((j) => !jobs.some((n) => n.to === j.to))
+  queue.push(...jobs)
+  return sendGuests(env, b, host, base, queue, started)
+}
+
+function sendGuests(env, b, host, base, queue, started) {
+  let n = 0
+  while (n < queue.length && Date.now() - started < SEND_FOR) {
+    const { to, kind } = queue[n++]
+    const removed = kind === 'removed'
+    const mailKind = removed ? 'cancelled' : kind
+    send(env, to, { ...guestMail(mailKind, { b, host, base, removed }), calendar: guestInvite(mailKind, b, host, base, null, removed ? to : null) })
+  }
+  const rest = queue.slice(n)
+  if (rest.length || (Array.isArray(b.outbox) && b.outbox.length)) ds(env).update('bookings', { id: b.id }, { $set: { outbox: rest } })
+  b.outbox = rest
+  return rest.length
+}
+
+// Sends what's waiting for a booking's guests. Anyone may ask: it only
+// sends what's already due, to the addresses the booker gave.
+export function flushGuests(env, id, base) {
+  const b = typeof id === 'string' && id.length < 40 ? ds(env).findOne('bookings', id) : null
+  if (!b || !Array.isArray(b.outbox) || !b.outbox.length) return { waiting: 0 }
+  const host = ds(env).findOne('hosts', b.host)
+  if (!host) return { waiting: 0 }
+  return { waiting: sendGuests(env, b, host, base, b.outbox, Date.now()) }
 }
 
 /* ---- Requests ---------------------------------------------------------------- */
@@ -259,6 +328,7 @@ export async function createBooking(env, input, now, base) {
   if (start === null ? !asking : !Number.isInteger(start)) reject(400, 'invalid_input', 'Pick a time.')
   const name = text(input.name, 80, 'Your name', true)
   const address = cleanEmail(input.email)
+  let guests = cleanGuests(input.guests, address, host)
   const notes = longText(input.notes, 1000, 'Notes')
   const location = event.location || { kind: 'none', value: '' }
   const phone = text(input.phone, 32, 'Phone number', location.kind === 'phone')
@@ -275,6 +345,8 @@ export async function createBooking(env, input, now, base) {
     oldToken = input.reschedule.token
     if (old.host !== host.id) reject(400, 'invalid_input', 'That booking is with someone else.')
     if (old.status !== 'confirmed') reject(410, 'gone', 'That booking was cancelled, so there’s nothing to move.')
+    // A move without a guest list keeps the one it had.
+    if (input.guests === undefined) guests = guestsOf(old)
   }
   // The link that brought them (?ref=), for the host's stats. A bad one is
   // dropped, never a reason to refuse the booking; a move keeps the first.
@@ -292,7 +364,7 @@ export async function createBooking(env, input, now, base) {
   if (!open) {
     if (!asking) reject(409, 'slot_taken', 'That time just went. Pick another.')
     if (event.requests === false) reject(409, 'slot_taken', `${host.name} only takes the times shown.`)
-    return createRequest(env, { host, event, input, start, now, base, name, address, notes, location, phone, tz, tzLabel, offset, h24, ref })
+    return createRequest(env, { host, event, input, start, now, base, name, address, guests, notes, location, phone, tz, tzLabel, offset, h24, ref })
   }
 
   const end = start + event.duration * MIN
@@ -300,7 +372,7 @@ export async function createBooking(env, input, now, base) {
   const doc = {
     host: host.id, event: event.id, slug: event.slug, eventTitle: event.title, duration: event.duration, color: event.color || 'blue',
     location, start, end, from: start - s.before * MIN, to: end + s.after * MIN,
-    name, email: address, phone, notes, tz, tzLabel, offset, h24, ref,
+    name, email: address, guests, phone, notes, tz, tzLabel, offset, h24, ref,
     tokenHash: await sha256(token), status: 'confirmed', sequence: 0, createdAt: now,
     rescheduledFrom: old ? old.id : null,
     // A move is the same calendar event at a new time: same UID, one
@@ -313,7 +385,7 @@ export async function createBooking(env, input, now, base) {
       .filter((b) => !old || b.id !== old.id)
     if (clash.length) reject(409, 'slot_taken', 'That time just went. Pick another.')
     id = tx.insert('bookings', doc)
-    if (old) tx.update('bookings', { id: old.id }, { $set: { status: 'cancelled', cancelledBy: 'invitee', reason: '', cancelledAt: now, rescheduledTo: id, sequence: (old.sequence || 0) + 1, updatedAt: now } })
+    if (old) tx.update('bookings', { id: old.id }, { $set: { status: 'cancelled', cancelledBy: 'invitee', reason: '', cancelledAt: now, rescheduledTo: id, sequence: (old.sequence || 0) + 1, updatedAt: now, outbox: [] } })
   })
   const b = { ...doc, id }
   const emailed = await mailBoth(env, old ? 'rescheduled' : 'confirmed', b, host, base, token, old)
@@ -332,7 +404,7 @@ async function createRequest(env, c) {
     host: host.id, event: event.id, slug: event.slug, eventTitle: event.title, duration: event.duration, color: event.color || 'blue',
     location: c.location, start: first, end: first + event.duration * MIN, from: first, to: first + event.duration * MIN,
     ranges, until: ranges[ranges.length - 1][1], asked: true,
-    name: c.name, email: c.address, phone: c.phone, notes: c.notes, tz: c.tz, tzLabel: c.tzLabel, offset: c.offset, h24: c.h24, ref: c.ref,
+    name: c.name, email: c.address, guests: c.guests, phone: c.phone, notes: c.notes, tz: c.tz, tzLabel: c.tzLabel, offset: c.offset, h24: c.h24, ref: c.ref,
     tokenHash: await sha256(token), pendingToken: token, status: 'requested', sequence: 0, createdAt: now, rescheduledFrom: null
   }
   const id = ds(env).insert('bookings', doc)
@@ -351,7 +423,7 @@ export async function cancelByInvitee(env, input, now, base) {
     const set = { status: 'cancelled', cancelledBy: 'invitee', reason, cancelledAt: now, sequence: (b.sequence || 0) + 1, updatedAt: now, pendingToken: null }
     ds(env).update('bookings', { id: b.id }, { $set: set })
     const done = { ...b, ...set }
-    const sent = host && host.notify !== false && host.email ? send(env, host.email, hostMail('withdrawn', { b: done, host, base, hostOffset: offsetAt(host.tzTable, b.start), hostTable: host.tzTable, links: { dashboard: `${base}/` } })) : { ok: false }
+    const sent = host && host.notify !== false && mailbox(host) ? send(env, mailbox(host), hostMail('withdrawn', { b: done, host, base, hostOffset: offsetAt(host.tzTable, b.start), hostTable: host.tzTable, links: { dashboard: `${base}/` } })) : { ok: false }
     return { ok: true, withdrawn: true, emailed: { invitee: false, host: sent.ok } }
   }
   if (b.status !== 'confirmed') return { ok: true, already: true }
@@ -369,13 +441,15 @@ export async function cancelByHost(env, host, id, input, now, base) {
   const reason = longText(input.reason, 500, 'Note')
   const done = { ...b, status: 'cancelled', cancelledBy: 'host', reason, cancelledAt: now, sequence: (b.sequence || 0) + 1, updatedAt: now }
   ds(env).update('bookings', { id }, { $set: { status: 'cancelled', cancelledBy: 'host', reason, cancelledAt: now, sequence: done.sequence, updatedAt: now } })
+  const started = Date.now()
   const c = { b: done, host, base, links: { rebook: `${base}/@${host.handle}/${b.slug}` } }
   const sent = send(env, b.email, { ...inviteeMail('cancelled', c), calendar: guestInvite('cancelled', done, host, base, null) })
   // Takes it off the host's calendar too, when an invite put it there.
-  if (sent.from && host.notify !== false && host.email) {
-    send(env, host.email, { ...hostMail('cancelled', { ...c, hostOffset: offsetAt(host.tzTable, b.start), links: { dashboard: `${base}/` } }), calendar: hostInvite('cancelled', done, host, base, sent.from) })
+  if (sent.from && host.notify !== false && mailbox(host)) {
+    send(env, mailbox(host), { ...hostMail('cancelled', { ...c, hostOffset: offsetAt(host.tzTable, b.start), links: { dashboard: `${base}/` } }), calendar: hostInvite('cancelled', done, host, base, sent.from) })
   }
-  return { ok: true, emailed: sent.ok }
+  const waiting = tellGuests(env, done, host, base, guestKinds('cancelled', done, null), started)
+  return { ok: true, emailed: sent.ok, waiting }
 }
 
 /* ---- Reading ----------------------------------------------------------------- */
@@ -387,7 +461,7 @@ export function inviteeDTO(b, host, l) {
     event: { title: b.eventTitle, slug: b.slug, duration: b.duration, color: b.color },
     host: publicHost(host), location: { kind: location.kind, value: location.value },
     cancelledBy: b.cancelledBy || null, reason: b.reason || '', rescheduledTo: b.rescheduledTo || null,
-    ranges: b.ranges || null, asked: !!b.asked, h24: !!b.h24, tz: b.tz || null,
+    ranges: b.ranges || null, asked: !!b.asked, h24: !!b.h24, tz: b.tz || null, guests: guestsOf(b),
     links: !l ? null : l.ics ? { ics: l.ics, google: l.google, outlook: l.outlook, reschedule: l.reschedule, manage: l.manage, rebook: l.rebook } : { manage: l.manage, rebook: l.rebook }
   }
 }
@@ -429,7 +503,7 @@ export function hostDTO(b) {
     tz: b.tz, tzLabel: b.tzLabel, cancelledBy: b.cancelledBy || null, reason: b.reason || '', cancelledAt: b.cancelledAt || null,
     rescheduledFrom: b.rescheduledFrom || null, rescheduledTo: b.rescheduledTo || null, createdAt: b.createdAt,
     ranges: b.ranges || null, asked: !!b.asked, acceptedAt: b.acceptedAt || null, declinedAt: b.declinedAt || null,
-    ref: b.ref || null
+    ref: b.ref || null, guests: guestsOf(b), waiting: Array.isArray(b.outbox) ? b.outbox.length : 0
   }
 }
 

@@ -14,7 +14,8 @@ import { toUtc, offsetAt, clockRange, longDate, parts } from '../api/tz.js'
 import { calendar } from '../api/ics.js'
 import { cleanTag } from '../api/lib.js'
 import { guestInvite, hostInvite } from '../api/bookings.js'
-import { inviteeMail, hostMail, senderOf } from '../api/mail.js'
+import { inviteeMail, hostMail, guestMail, senderOf } from '../api/mail.js'
+import { mailbox } from '../api/hosts.js'
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 
 const DAY = 86400000
@@ -183,6 +184,34 @@ for (const zone of ZONES) {
   }
   assert.match(hostMail('cancelled', { ...c, b: { ...c.b, cancelledBy: 'host' } }).subject, /^Cancelled: Bo, Ito/)
   assert.match(hostMail('cancelled', { ...c, b: { ...c.b, cancelledBy: 'host' } }).text, /^You cancelled Intro; call with Bo, Ito/)
+
+  // Guests are on everyone's invite, without a name; theirs has no link to
+  // change it. Booking email goes to a confirmed address the host picked.
+  const party = { ...b, guests: ['cy@example.net', 'di@example.net'] }
+  const all = check(guestInvite('confirmed', party, host, base, `${base}/b/bk1?t=x`), 'REQUEST')
+  assert.match(all, /^ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:cy@example\.net$/m)
+  assert.equal(all.match(/^ATTENDEE/gm).length, 3)
+  assert.match(all, /Reschedule or cancel/)
+  const theirs = check(guestInvite('confirmed', party, host, base, null), 'REQUEST')
+  assert.doesNotMatch(theirs, /Reschedule or cancel|\?t=/)
+  const gone1 = check(guestInvite('cancelled', party, host, base, null, 'di@example.net'), 'CANCEL')
+  assert.deepEqual(gone1.match(/^ATTENDEE.*$/gm), ['ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:di@example.net'])
+  // Off the list on a move: the booking still stands, the invite says cancelled.
+  assert.match(check(guestInvite('cancelled', party, host, base, null, 'di@example.net'), 'CANCEL'), /^STATUS:CANCELLED$/m)
+  assert.match(check(hostInvite('confirmed', party, host, base, sender), 'REQUEST', sender.email), /Guests: cy@example\.net\\, di@example\.net/)
+  const picked = { ...host, addresses: [{ address: 'work@example.com', verified: true }, { address: 'new@example.com', verified: false }] }
+  assert.equal(mailbox({ ...picked, sendTo: 'work@example.com' }), 'work@example.com')
+  assert.equal(mailbox({ ...picked, sendTo: 'new@example.com' }), 'avery@example.com')
+  assert.equal(mailbox({ ...picked, sendTo: 'gone@example.com' }), 'avery@example.com')
+  check(guestInvite('confirmed', b, { ...picked, sendTo: 'work@example.com' }, base, null), 'REQUEST', 'work@example.com')
+  const gc = { ...c, b: { ...c.b, guests: party.guests } }
+  for (const kind of ['confirmed', 'rescheduled', 'cancelled']) {
+    const mail = guestMail(kind, gc)
+    assert.doesNotMatch(mail.html + mail.text, /\?t=|undefined|Reschedule<\/a>/, kind)
+  }
+  assert.match(guestMail('confirmed', gc).subject, /^Invitation: Intro; call with/)
+  assert.match(guestMail('cancelled', { ...gc, removed: true }).text, /took you off the guest list/)
+  assert.match(inviteeMail('confirmed', gc).text, /Guests: cy@example\.net, di@example\.net/)
 }
 
 // The service worker installs a version all or nothing: it must list every

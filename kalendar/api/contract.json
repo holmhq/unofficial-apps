@@ -7,7 +7,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Book a time with a Kalendar host, no account needed",
-      "description": "Read the open times first (GET /api/u/<handle>/<event>/slots?from=<ms>&to=<ms>), then send one of them as start (Unix ms) with the invitee's name and email, their IANA time zone, its offset in minutes at that time and its long name. Emails a calendar invitation to the invitee and a note to the host. Pass reschedule { id, token } from a booking's link to move it instead. To ask for other times, send request: true with ranges [[startMs, endMs], ...] the invitee could meet in; the host accepts at a time inside them or declines. Solve the Holm challenge first; six a minute from one address.",
+      "description": "Read the open times first (GET /api/u/<handle>/<event>/slots?from=<ms>&to=<ms>), then send one of them as start (Unix ms) with the invitee's name and email, their IANA time zone, its offset in minutes at that time and its long name. Emails a calendar invitation to the invitee, and to any guests they add, and a note to the host. Pass reschedule { id, token } from a booking's link to move it instead. To ask for other times, send request: true with ranges [[startMs, endMs], ...] the invitee could meet in; the host accepts at a time inside them or declines. Solve the Holm challenge first; six a minute from one address.",
       "limits": {
         "rate": {
           "requests": 6,
@@ -98,6 +98,15 @@
             "type": "string",
             "maxLength": 60,
             "description": "The tag of the link that brought the guest (?ref= on the page address), for the host's stats. Optional; a malformed one is ignored."
+          },
+          "guests": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Up to five more people to invite, by email address. They get the calendar invite and hear about moves and cancellations; only the invitee can change the booking. On a move, leave it out to keep the guests the booking had."
           }
         },
         "required": [

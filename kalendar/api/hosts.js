@@ -3,7 +3,8 @@
 // (each weekday can be paused and keep its hours), days with other hours or
 // none, saved links that tag where visits come from, and a private
 // calendar feed.
-import { reject, text, longText, randomId, displayName, cleanTag, MIN, DAY } from './lib.js'
+import { reject, text, longText, randomId, displayName, cleanTag, email as cleanEmail, sha256, sameHash, MIN, DAY } from './lib.js'
+import { verifyMail, send } from './mail.js'
 import { cleanTable, cleanZone, cleanZoneLabel, offsetAt } from './tz.js'
 import { createDefaults, eventsOf } from './events.js'
 
@@ -139,6 +140,59 @@ function cleanLinks(value) {
   return out
 }
 
+/* ---- Email addresses ------------------------------------------------------------------ */
+
+// Booking email goes to the sign-in address, or to another the host added
+// and confirmed from its inbox. Guests see it as their invite's organizer.
+const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase()
+const extras = (host) => (Array.isArray(host.addresses) ? host.addresses : [])
+
+export function mailbox(host) {
+  const pick = host.sendTo
+  if (pick && (same(pick, host.email) || extras(host).some((a) => a.verified && same(a.address, pick)))) return pick
+  return host.email || null
+}
+
+// Adds an address (or sends its link again) with a link to confirm it,
+// good for a week. Four besides the sign-in one; five links a day.
+export async function addAddress(env, m, host, input, now, base) {
+  const address = cleanEmail(input && input.address)
+  if (same(address, m.email)) reject(400, 'invalid_input', 'That’s the address you sign in with.')
+  const list = extras(host)
+  const had = list.find((a) => same(a.address, address))
+  if (had && had.verified) reject(409, 'already', 'That address is already confirmed.')
+  if (!had && list.length >= 4) reject(400, 'too_many', 'You can add up to four addresses. Remove one first.')
+  const day = new Date(now).toISOString().slice(0, 10)
+  if (env.holm.app.kv.increment(`cap:verify:${host.id}:${day}`, 1) > 5) reject(429, 'too_many', 'That’s enough links for today. Try again tomorrow.')
+  const token = randomId(24)
+  const entry = { address, verified: false, tokenHash: await sha256(token), sentAt: now }
+  const next = had ? list.map((a) => (a === had ? entry : a)) : [...list, entry]
+  const sent = send(env, address, verifyMail({ base, host, address, link: `${base}/confirm-email?h=${host.id}&t=${token}` }))
+  if (!sent.ok) reject(502, 'not_sent', 'The link couldn’t be sent. Try again in a moment.')
+  hosts(env).update('hosts', { id: host.id }, { $set: { addresses: next } })
+  return { ...host, addresses: next }
+}
+
+export function removeAddress(env, host, address) {
+  const next = extras(host).filter((a) => !same(a.address, address))
+  const set = { addresses: next }
+  if (same(host.sendTo, address)) set.sendTo = null
+  hosts(env).update('hosts', { id: host.id }, { $set: set })
+  return { ...host, ...set }
+}
+
+// The link in the email: marks that address confirmed.
+export async function confirmAddress(env, hostId, token, now) {
+  const host = typeof hostId === 'string' && hostId.length < 60 ? hosts(env).findOne('hosts', hostId) : null
+  const hash = typeof token === 'string' && token.length < 80 ? await sha256(token) : ''
+  const list = host ? extras(host) : []
+  const hit = list.find((a) => a.tokenHash && sameHash(a.tokenHash, hash))
+  if (!hit || now - (hit.sentAt || 0) > 7 * DAY) reject(404, 'not_found', 'This link has expired or was already used. Add the address again in Kalendar.')
+  const next = list.map((a) => (a === hit ? { address: a.address, verified: true, verifiedAt: now } : a))
+  hosts(env).update('hosts', { id: host.id }, { $set: { addresses: next } })
+  return hit.address
+}
+
 // What the host's own pages see.
 export function privateHost(env, host, base) {
   return {
@@ -156,6 +210,8 @@ export function privateHost(env, host, base) {
     overrides: host.overrides || {},
     tags: Array.isArray(host.tags) ? host.tags : [],
     notify: host.notify !== false,
+    addresses: extras(host).map((a) => ({ address: a.address, verified: !!a.verified })),
+    sendTo: mailbox(host),
     feed: base + '/feed/' + host.feed + '.ics'
   }
 }
@@ -205,6 +261,11 @@ export function updateHost(env, m, host, input, now) {
   if ('website' in input) set.website = cleanURL(input.website, 'Website')
   if ('links' in input) set.links = cleanLinks(input.links)
   if ('notify' in input) set.notify = input.notify !== false
+  if ('sendTo' in input) {
+    const pick = String(input.sendTo || '')
+    if (!same(pick, m.email) && !extras(host).some((a) => a.verified && same(a.address, pick))) reject(400, 'invalid_input', 'Pick your sign-in address or one you’ve confirmed.')
+    set.sendTo = same(pick, m.email) ? null : extras(host).find((a) => same(a.address, pick)).address
+  }
   if ('tz' in input || 'tzTable' in input) Object.assign(set, zoneFields(input))
   if ('weekly' in input) set.weekly = cleanWeekly(input.weekly)
   if ('paused' in input) set.paused = cleanPaused(input.paused)

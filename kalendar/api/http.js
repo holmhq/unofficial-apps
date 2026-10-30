@@ -21,15 +21,19 @@
 //   GET    /api/b/:id?t=                   a booking, from the link in its email
 //   GET    /b/:id/calendar?t=              that booking as a calendar file (?h= the host's copy)
 //   GET    /feed/:secret.ics               the host's private calendar feed
+//   POST   /api/b/:id/flush                send guests' emails still waiting
+//   POST   /api/host/addresses             add an address for booking email { address }, or resend its link
+//   DELETE /api/host/addresses/:address    remove one
+//   GET    /confirm-email?h=&t=            the link that confirms an added address
 //
 // Booking and cancelling with an emailed link are named operations
 // (contract.json: bookings.create, bookings.cancel) behind Holm's challenge
 // and rate limits, and the host's own tools for Claude are named operations
 // too; see ops.js.
 import { json, errorResponse, readJSON, reject, requireMember, member, rememberOrigin, esc, displayName } from './lib.js'
-import { hostOf, hostByHandle, handleFree, createHost, updateHost, privateHost, publicHost } from './hosts.js'
+import { hostOf, hostByHandle, handleFree, createHost, updateHost, privateHost, publicHost, addAddress, removeAddress, confirmAddress } from './hosts.js'
 import { eventsOf, eventDTO, createEvent, updateEvent, deleteEvent } from './events.js'
-import { openSlots, bookingPage, bookingForInvitee, inviteIcs, hostIcs, listForHost, cancelByHost, counts, feedFor, nextOpen, acceptRequest, declineRequest } from './bookings.js'
+import { openSlots, bookingPage, bookingForInvitee, inviteIcs, hostIcs, listForHost, cancelByHost, counts, feedFor, nextOpen, acceptRequest, declineRequest, flushGuests } from './bookings.js'
 import { hit, statsFor } from './stats.js'
 import { icsResponse } from './ics.js'
 
@@ -60,6 +64,12 @@ export default {
         if (m) {
           const body = feedFor(env, m[0], url.origin, url.host, Date.now())
           return body ? icsResponse(body, 'kalendar.ics') : new Response('Not found', { status: 404 })
+        }
+        // An added address, confirmed from its inbox; back to Profile.
+        if (path === '/confirm-email') {
+          let address = ''
+          try { address = await confirmAddress(env, url.searchParams.get('h'), url.searchParams.get('t'), Date.now()) } catch (error) { if (!error.public) throw error }
+          return new Response(null, { status: 303, headers: { Location: `/profile?confirmed=${address ? encodeURIComponent(address) : '0'}`, 'Cache-Control': 'no-store' } })
         }
         m = match(path, /^\/@([A-Za-z0-9._-]{1,30})(?:\/([a-z0-9-]{1,40}))?\/?$/)
         if (m) return await hostPage(request, env, m[0], m[1])
@@ -126,6 +136,8 @@ async function api(request, env, url) {
   }
   p = match(path, /^\/api\/b\/([a-z0-9-]{6,40})$/)
   if (p && method === 'GET') return json(await bookingForInvitee(env, p[0], url.searchParams.get('t'), base))
+  p = match(path, /^\/api\/b\/([a-z0-9-]{6,40})\/flush$/)
+  if (p && method === 'POST') return json(flushGuests(env, p[0], base))
 
   // A host's own pages.
   const m = requireMember(env)
@@ -139,6 +151,9 @@ async function api(request, env, url) {
   const host = hostOf(env, m.id)
   if (!host) reject(409, 'no_host', 'Choose your link first.')
   if (route === 'PATCH /api/host') return json({ host: privateHost(env, updateHost(env, m, host, body, now), base) })
+  if (route === 'POST /api/host/addresses') return json({ host: privateHost(env, await addAddress(env, m, host, body, now, base), base) })
+  p = match(path, /^\/api\/host\/addresses\/([^/]+)$/)
+  if (p && method === 'DELETE') return json({ host: privateHost(env, removeAddress(env, host, p[0]), base) })
 
   if (route === 'GET /api/events') return json({ events: eventsOf(env, host.id).map((e) => eventDTO(e, { mine: true })) })
   if (route === 'POST /api/events') return json({ event: eventDTO(createEvent(env, host, body), { mine: true }) }, 201)

@@ -1,6 +1,6 @@
 {
   "name": "kalendar",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "title": "Kalendar",
   "shortName": "Kalendar",
   "description": "Share one link and let people book time with you, on a timeline of your free time. Guests can ask for other times; you can run it from Claude.",

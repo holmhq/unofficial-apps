@@ -39,7 +39,8 @@ export async function manage(id) {
           metaRow('calendar', t.fullDate(b.start, zone)),
           metaRow('clock', t.range(b.start, b.end, zone), `${zoneName(zone, b.start)} · ${gmt(offsetIn(zone, b.start))}`),
           where && live ? metaRow(where.icon, where.text, where.sub, where.href) : null,
-          metaRow('user', b.name, b.email))),
+          metaRow('user', b.name, b.email),
+          b.guests && b.guests.length ? metaRow('mail', b.guests.join(', '), b.guests.length === 1 ? 'Guest' : `${b.guests.length} guests`) : null)),
       live && !past ? [
         h('p.cal-label', 'Add to your calendar'),
         calendarButtons(b.links),
@@ -91,7 +92,8 @@ export async function manage(id) {
     })
     if (!ok) return
     try {
-      await api.op('bookings.cancel', { id: b.id, token, reason: reason.value.trim() })
+      const r = await api.op('bookings.cancel', { id: b.id, token, reason: reason.value.trim() })
+      if (r && r.emailed && r.emailed.waiting) api.flush(b.id, r.emailed.waiting)
       b = { ...b, requested: b.status === 'requested', status: 'cancelled', cancelledBy: 'invitee', reason: reason.value.trim() }
       sound.remove()
       draw()
