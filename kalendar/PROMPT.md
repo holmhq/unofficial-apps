@@ -53,9 +53,12 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   inline styles, dark mode) plus plain text, with Add to Calendar links for
   Google, Outlook.com and a hosted calendar file whose link doesn't end in
   .ics (Apple Mail offers to subscribe to those). The host's links add the
-  host's own copy, named for the guest. Emailed links let the guest move or
-  cancel; the host can cancel from their list. Give the host a private
-  calendar feed.
+  host's own copy, named for the guest. Each booking email also carries a
+  calendar invite through email.send's calendar option: a REQUEST to the
+  guest with the host as organizer, a CANCEL when it's off, a PUBLISH copy
+  for the host, one UID per booking even when it moves. Emailed links let the
+  guest move or cancel; the host can cancel from their list. Give the host a
+  private calendar feed.
 - An Apple-quality UI on phone and desktop, with a fixed shell where only
   panels scroll: a round avatar button top right
   (signed out too) whose menu holds light/dark/auto, sounds, 24-hour time
@@ -163,3 +166,8 @@ reply was:
 
 > The current hero is fake 3d; can we implement it as normal straight component
 > - and use 3d transforms to acheive true 3d effect?
+
+**Kalendar 0.5.0: booking emails carry a real calendar invite**
+
+> Kalendar app's email no more has the provision to add to mobile calendars?
+> - i was hoping Mail app will automatically be able to detect & create events in calendar

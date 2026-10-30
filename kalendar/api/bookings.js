@@ -125,18 +125,38 @@ function calendarEntry(b, host, base, manage, forHost) {
     ? [`${b.name} <${b.email}>`, b.phone ? `Phone: ${b.phone}` : '', b.notes ? `Notes:\n${b.notes}` : '', `Booked through Kalendar: ${base}/`].filter(Boolean).join('\n\n')
     : [`${b.eventTitle} with ${host.name}.`, b.location && b.location.kind === 'video' && b.location.value ? `Join: ${b.location.value}` : '', manage ? `Reschedule or cancel: ${manage}` : ''].filter(Boolean).join('\n\n')
   return {
-    id: b.id, start: b.start, end: b.end, updated: b.updatedAt || b.createdAt,
+    id: b.uid || b.id, start: b.start, end: b.end, updated: b.updatedAt || b.createdAt,
     title: forHost ? `${b.eventTitle} with ${b.name}` : `${b.eventTitle} with ${host.name}`,
     description, location: placeText(b), url: forHost ? `${base}/` : manage,
     cancelled: b.status === 'cancelled', sequence: b.sequence || 0
   }
 }
 
+// The invite that rides in a booking email, so Mail, Gmail and Outlook show
+// their own card and put it on the calendar. The guest's names the host as
+// organizer, so Accept or Decline goes to them, and a cancellation takes the
+// event off again. The host's own copy just publishes it. Requests and
+// declines aren't on anyone's calendar, so they carry none.
+const INVITED = ['confirmed', 'accepted', 'rescheduled', 'cancelled']
+export function guestInvite(kind, b, host, base, manage) {
+  if (!INVITED.includes(kind)) return null
+  const entry = calendarEntry(b, host, base, manage, false)
+  const domain = new URL(base).host
+  if (!host.email) return { method: 'PUBLISH', ics: calendar([entry], { domain }) }
+  const method = kind === 'cancelled' ? 'CANCEL' : 'REQUEST'
+  const invite = { ...entry, organizer: { name: host.name, email: host.email }, attendee: { name: b.name, email: b.email } }
+  return { method, ics: calendar([invite], { domain, method }) }
+}
+export function hostInvite(kind, b, host, base) {
+  if (!INVITED.includes(kind)) return null
+  return { method: 'PUBLISH', ics: calendar([calendarEntry(b, host, base, null, true)], { domain: new URL(base).host }) }
+}
+
 async function mailBoth(env, kind, b, host, base, token, old = null) {
   const c = { b, host, base, links: links(env, base, b, host, token), hostOffset: offsetAt(host.tzTable, b.start), hostTable: host.tzTable, old }
-  const invitee = send(env, b.email, inviteeMail(kind, c))
+  const invitee = send(env, b.email, { ...inviteeMail(kind, c), calendar: guestInvite(kind, b, host, base, c.links.manage) })
   const hostLinkSet = b.status === 'confirmed' || b.status === 'cancelled' ? await hostLinks(base, b, host) : { dashboard: `${base}/`, review: `${base}/?r=${b.id}` }
-  const hostSent = host.notify !== false && host.email ? send(env, host.email, hostMail(kind, { ...c, links: hostLinkSet })) : { ok: false, code: 'OFF' }
+  const hostSent = host.notify !== false && host.email ? send(env, host.email, { ...hostMail(kind, { ...c, links: hostLinkSet }), calendar: hostInvite(kind, b, host, base) }) : { ok: false, code: 'OFF' }
   return { invitee: invitee.ok, host: hostSent.ok, code: invitee.ok ? null : invitee.code }
 }
 
@@ -280,7 +300,10 @@ export async function createBooking(env, input, now, base) {
     location, start, end, from: start - s.before * MIN, to: end + s.after * MIN,
     name, email: address, phone, notes, tz, tzLabel, offset, h24, ref,
     tokenHash: await sha256(token), status: 'confirmed', sequence: 0, createdAt: now,
-    rescheduledFrom: old ? old.id : null
+    rescheduledFrom: old ? old.id : null,
+    // A move is the same calendar event at a new time: same UID, one
+    // version on, so calendars move it rather than add a second.
+    ...(old ? { uid: old.uid || old.id, sequence: (old.sequence || 0) + 1 } : {})
   }
   let id
   ds(env).transaction((tx) => {
@@ -345,7 +368,7 @@ export async function cancelByHost(env, host, id, input, now, base) {
   const done = { ...b, status: 'cancelled', cancelledBy: 'host', reason, cancelledAt: now, sequence: (b.sequence || 0) + 1, updatedAt: now }
   ds(env).update('bookings', { id }, { $set: { status: 'cancelled', cancelledBy: 'host', reason, cancelledAt: now, sequence: done.sequence, updatedAt: now } })
   const c = { b: done, host, base, links: { rebook: `${base}/@${host.handle}/${b.slug}` } }
-  const sent = send(env, b.email, inviteeMail('cancelled', c))
+  const sent = send(env, b.email, { ...inviteeMail('cancelled', c), calendar: guestInvite('cancelled', done, host, base, null) })
   return { ok: true, emailed: sent.ok }
 }
 
@@ -370,10 +393,14 @@ export async function bookingForInvitee(env, id, token, base) {
   return inviteeDTO(b, host, links(env, base, b, host, token))
 }
 
-const onCalendar = (b) => b.status === 'confirmed' || (b.status === 'cancelled' && !(b.asked && !b.acceptedAt))
+// A booking that moved hands its calendar event to the new one, so it's no
+// longer a calendar entry of its own.
+const onCalendar = (b) => !b.rescheduledTo && (b.status === 'confirmed' || (b.status === 'cancelled' && !(b.asked && !b.acceptedAt)))
+const moved = (b) => { if (b.rescheduledTo) reject(410, 'gone', 'This booking moved. Use the calendar link in the email about the new time.') }
 
 export async function inviteIcs(env, id, token, base, domain) {
   const b = await withToken(env, id, token)
+  moved(b)
   if (!onCalendar(b)) reject(404, 'not_found', 'This isn’t booked yet.')
   const host = ds(env).findOne('hosts', b.host)
   if (!host) reject(404, 'not_found', 'This booking’s host has left Kalendar.')
@@ -384,6 +411,7 @@ export async function hostIcs(env, id, key, base, domain) {
   const b = typeof id === 'string' && id.length < 40 ? ds(env).findOne('bookings', id) : null
   const host = b && ds(env).findOne('hosts', b.host)
   if (!host || typeof key !== 'string' || !sameHash(key, await hostKey(host, b.id))) reject(404, 'not_found', 'This link doesn’t open a booking. Check the email it came in.')
+  moved(b)
   if (!onCalendar(b)) reject(404, 'not_found', 'This isn’t booked yet.')
   return calendar([calendarEntry(b, host, base, null, true)], { domain })
 }

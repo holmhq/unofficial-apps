@@ -1,10 +1,18 @@
 // iCalendar files (RFC 5545): one booking for the invitee's "Add to
-// calendar", and the host's private feed of every booking. Plus the links
-// Google Calendar and Outlook.com open to add an event.
+// calendar", the host's private feed of every booking, and the invite that
+// rides in each booking email (RFC 5546: REQUEST, CANCEL or PUBLISH). Plus
+// the links Google Calendar and Outlook.com open to add an event.
 
 const stamp = (ms) => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
 
-const escapeText = (value) => String(value ?? '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+// Text drops control characters other than tabs and line ends, which
+// become \n.
+const escapeText = (value) => String(value ?? '').replace(/\r\n?/g, '\n').replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '')
+  .replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n')
+
+// A parameter value, such as a name: quoted, with no quotes or control
+// characters inside.
+const param = (value) => '"' + String(value ?? '').replace(/[\x00-\x1f\x7f"]/g, '').trim() + '"'
 
 // Lines longer than 75 bytes continue on the next line after a space.
 function fold(line) {
@@ -34,6 +42,8 @@ function vevent(e, domain) {
     e.description ? `DESCRIPTION:${escapeText(e.description)}` : null,
     e.location ? `LOCATION:${escapeText(e.location)}` : null,
     e.url ? `URL:${e.url}` : null,
+    e.organizer ? `ORGANIZER;CN=${param(e.organizer.name)}:mailto:${e.organizer.email}` : null,
+    e.attendee ? `ATTENDEE;CN=${param(e.attendee.name)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${e.attendee.email}` : null,
     `STATUS:${e.cancelled ? 'CANCELLED' : 'CONFIRMED'}`,
     `SEQUENCE:${e.sequence || 0}`,
     'TRANSP:OPAQUE'
@@ -43,8 +53,8 @@ function vevent(e, domain) {
   return lines.filter(Boolean)
 }
 
-export function calendar(events, { domain, name = null } = {}) {
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Kalendar//Holm//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH']
+export function calendar(events, { domain, name = null, method = 'PUBLISH' } = {}) {
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Kalendar//Holm//EN', 'CALSCALE:GREGORIAN', `METHOD:${method}`]
   if (name) lines.push(`X-WR-CALNAME:${escapeText(name)}`, 'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H')
   for (const e of events) lines.push(...vevent(e, domain))
   lines.push('END:VCALENDAR')

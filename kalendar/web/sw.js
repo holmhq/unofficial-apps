@@ -13,7 +13,7 @@
 // of pages (/@avery, /hours, /b/…) all open the same shell, which draws the
 // page itself.
 
-const VERSION = '0.4.1'
+const VERSION = '0.5.0'
 const CACHE = 'kalendar-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',

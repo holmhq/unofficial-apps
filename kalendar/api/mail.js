@@ -310,14 +310,25 @@ export function hostMail(kind, c) {
   }
 }
 
+function attempt(env, request) {
+  try {
+    return env.holm.email.send(request) || { ok: false }
+  } catch (error) {
+    return { ok: false, code: 'EMAIL_FAILED', message: String(error && error.message || error) }
+  }
+}
+
+// Sends one email, with its calendar invite when it has one. If Holm turns
+// the invite down, the email still goes, without it; a node from before
+// invites ignores the field and sends it plain.
 export function send(env, to, mail) {
   if (!to) return { ok: false, code: 'NO_ADDRESS' }
-  try {
-    const result = env.holm.email.send({ to, subject: mail.subject, body: mail.text, html: mail.html })
-    if (!result || !result.ok) env.holm.log.warn(`email not sent: ${result && result.code}`)
-    return result && result.ok ? { ok: true } : { ok: false, code: (result && result.code) || 'EMAIL_FAILED' }
-  } catch (error) {
-    env.holm.log.warn('email failed: ' + String(error && error.message || error).slice(0, 200))
-    return { ok: false, code: 'EMAIL_FAILED' }
+  const plain = { to, subject: mail.subject, body: mail.text, html: mail.html }
+  let result = attempt(env, mail.calendar ? { ...plain, calendar: mail.calendar } : plain)
+  if (mail.calendar && !result.ok && (result.code === 'EMAIL_SEND_INVALID_REQUEST' || /calendar/i.test(result.message || ''))) {
+    env.holm.log.warn('invite refused: ' + String(result.message || result.code).slice(0, 200))
+    result = attempt(env, plain)
   }
+  if (!result.ok) env.holm.log.warn(`email not sent: ${result.code} ${String(result.message || '').slice(0, 200)}`)
+  return result.ok ? { ok: true } : { ok: false, code: result.code || 'EMAIL_FAILED' }
 }

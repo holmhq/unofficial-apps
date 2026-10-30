@@ -68,7 +68,9 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   page, the time in their zone, where to meet, Google, Apple and Outlook
   buttons and links to reschedule or cancel. The host gets one with the
   guest's details and notes. Requests, accepting, declining, moving and
-  cancelling each send matching emails.
+  cancelling each send matching emails. A booking's emails carry a real
+  calendar invite, so Mail, Gmail and Outlook show their own card and put it
+  on the calendar; a move updates that event and a cancellation removes it.
 - **Changing a booking.** The emailed link opens the booking: add it to a
   calendar, reschedule (the old time is freed and the new one booked in one
   step) or cancel with a note; a request can be withdrawn. Hosts cancel from
@@ -197,7 +199,8 @@ Holm primitives it uses:
   `/_holm/challenge.js` while the guest types) and six calls a minute, with an
   optional `Idempotency-Key` so a retried booking isn't made twice.
   `bookings.cancel` takes the booking's secret from its email link.
-- **`env.holm.email.send`** with `html` and `body` for every email.
+- **`env.holm.email.send`** with `html` and `body` for every email, and
+  `calendar: { method, ics }` for a booking's invite.
 - **`env.holm.web.fetch`** for the page, with `/@handle` and `/@handle/event`
   given the host's name in the title and social card.
 - **`__HOLM_SURFACES__`**: for the node's and the app's owners and admins,
@@ -222,16 +225,29 @@ checks over 140,000 open times against Node's `Intl`.
 
 ### Calendar invitations
 
-Holm's `email.send` takes `html` and `body` but no attachments, so the emails
-can't carry an `.ics` file or a `text/calendar` part, and Apple Mail, Gmail and
-Outlook won't show their own invite card. Instead they link to the booking's
-calendar file (`/b/<id>/calendar?t=…`), to Google Calendar's and Outlook.com's
-add-event pages, and to the host's feed. The file's link doesn't end in `.ics`
-on purpose: Apple Mail hands such a link to Calendar as a calendar to
-subscribe to, not an event to add. The host's email links to the host's own
-copy (`?h=…`, keyed with the feed secret, so a new feed link retires it),
-named for the guest and with their details. Links from emails sent before
-0.1.1 (`/b/<id>/invite.ics?t=…`) still work.
+Each booking email carries an iCalendar invite through `email.send`'s
+`calendar` option (`api/bookings.js`, `api/ics.js`), which Holm sends the way
+mail apps expect, so Apple Mail, Gmail and Outlook show their own card:
+
+- The guest's confirmation, acceptance or move is a `REQUEST` with the host as
+  organizer and the guest as attendee, so it lands on their calendar and
+  Accept or Decline goes to the host. A cancellation is a `CANCEL`, which takes
+  it off. A host with no email address sends a plain `PUBLISH` instead.
+- The host's own email carries a `PUBLISH` copy, named for the guest.
+- Every invite for a booking keeps one UID and counts up `SEQUENCE`. A move
+  is a new booking that inherits the old one's UID, so calendars move the
+  event rather than add a second, and the old booking's calendar file answers
+  "moved".
+- If Holm turns an invite down, the email goes without it (`api/mail.js`).
+
+The emails also link to the booking's calendar file (`/b/<id>/calendar?t=…`),
+to Google Calendar's and Outlook.com's add-event pages, and to the host's
+feed. The file's link doesn't end in `.ics` on purpose: Apple Mail hands such
+a link to Calendar as a calendar to subscribe to, not an event to add. The
+host's email links to the host's own copy (`?h=…`, keyed with the feed secret,
+so a new feed link retires it). Links from emails sent before 0.1.1
+(`/b/<id>/invite.ics?t=…`) still work. `node tools/check.mjs` checks each
+kind of invite against the rules `email.send` applies.
 
 ## Deploy your own
 
@@ -289,7 +305,11 @@ only give to `https://` and `localhost` pages. On a local node, add a
 
 ## Known limits
 
-- **No email attachments** (above): invitations are links, not RSVP cards.
+- **Invites show the host's email address** to guests, as the organizer, so
+  their Accept or Decline reaches the host. Kalendar doesn't show it anywhere
+  else.
+- **A node that can't send invites** sends the email without one; the links
+  still work.
 - **No two-way calendar sync.** Kalendar doesn't read your Google or Apple
   calendar for busy times; block them with days off or hours, and subscribe
   to the feed to see bookings there. Video links are the one you paste, not

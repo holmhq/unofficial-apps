@@ -4,7 +4,8 @@
 // offset table the host's browser builds (web/src/zones.js). This builds
 // tables with Node's Intl, runs the server's slot engine (api/slots.js) and
 // checks every slot against Intl: right wall-clock time, nothing in a clock
-// gap, nothing doubled in a repeated hour. It also checks the calendar file.
+// gap, nothing doubled in a repeated hour. It also checks the calendar file
+// and the invites in booking emails (ICS_OUT=<dir> writes them out too).
 
 import assert from 'node:assert/strict'
 import { offsetTable, offsetIn } from '../web/src/zones.js'
@@ -12,7 +13,8 @@ import { slotsFor } from '../api/slots.js'
 import { toUtc, offsetAt, clockRange, longDate, parts } from '../api/tz.js'
 import { calendar } from '../api/ics.js'
 import { cleanTag } from '../api/lib.js'
-import { readFileSync, readdirSync } from 'node:fs'
+import { guestInvite, hostInvite } from '../api/bookings.js'
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 
 const DAY = 86400000
 const wall = (zone, ms) => new Intl.DateTimeFormat('en-GB', { timeZone: zone, hourCycle: 'h23', weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(ms)
@@ -103,6 +105,58 @@ for (const zone of ZONES) {
   assert.ok(ics.endsWith('END:VCALENDAR\r\n'))
 }
 
+// Booking emails carry an invite Holm's email.send takes: one VCALENDAR whose
+// METHOD matches, a UID on each VEVENT, a mailto ORGANIZER for REQUEST and
+// CANCEL, no control characters, under 64 KiB. Requests carry none, and a
+// move keeps the event's UID one version on.
+{
+  const host = { name: 'Avery "AC" Chen, Studio', email: 'avery@example.com', handle: 'avery' }
+  const b = {
+    id: 'bk1', start: Date.UTC(2026, 10, 2, 9), end: Date.UTC(2026, 10, 2, 9, 30), eventTitle: 'Intro; call', name: 'Bo, Ito', email: 'bo@example.org',
+    status: 'confirmed', sequence: 0, notes: 'Hi\tthere\r\nsecond\u0007 line', location: { kind: 'video', value: 'https://meet.example.com/x' }, createdAt: 0
+  }
+  const base = 'https://kalendar.example.com'
+  const check = (invite, method) => {
+    const { ics } = invite
+    assert.equal(invite.method, method)
+    assert.ok(Buffer.byteLength(ics) <= 65536)
+    assert.ok(!/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(ics), 'control characters')
+    for (const line of ics.split('\r\n')) assert.ok(Buffer.byteLength(line) <= 75, `line too long: ${line}`)
+    // Unfolded, with plain line ends.
+    const flat = ics.replace(/\r\n[ \t]/g, '').replace(/\r\n/g, '\n')
+    assert.equal(flat.match(/^BEGIN:VCALENDAR$/gm).length, 1)
+    assert.deepEqual(flat.match(/^METHOD:.*$/gm), [`METHOD:${method}`])
+    const events = flat.split('BEGIN:VEVENT').slice(1)
+    assert.ok(events.length >= 1)
+    for (const e of events) {
+      assert.match(e, /^UID:.+@kalendar\.example\.com$/m)
+      if (method !== 'PUBLISH') assert.match(e, /^ORGANIZER;CN="[^"]*":mailto:avery@example\.com$/m)
+      else assert.doesNotMatch(e, /^ORGANIZER/m)
+    }
+    return flat
+  }
+  const out = process.env.ICS_OUT
+  const keep = (name, invite) => { if (out) writeFileSync(`${out}/${name}.${invite.method}.ics`, invite.ics) }
+  for (const kind of ['confirmed', 'accepted', 'rescheduled']) {
+    const flat = check(guestInvite(kind, b, host, base, `${base}/b/bk1?t=x`), 'REQUEST')
+    assert.match(flat, /^ATTENDEE;CN="Bo, Ito";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:bo@example\.org$/m)
+    keep(`guest-${kind}`, guestInvite(kind, b, host, base, `${base}/b/bk1?t=x`))
+    check(hostInvite(kind, b, host, base), 'PUBLISH')
+  }
+  const gone = { ...b, status: 'cancelled', sequence: 1 }
+  assert.match(check(guestInvite('cancelled', gone, host, base, null), 'CANCEL'), /^STATUS:CANCELLED$/m)
+  assert.match(check(hostInvite('cancelled', gone, host, base), 'PUBLISH'), /^SEQUENCE:1$/m)
+  keep('guest-cancelled', guestInvite('cancelled', gone, host, base, null))
+  keep('host-confirmed', hostInvite('confirmed', b, host, base))
+  for (const kind of ['requested', 'declined', 'withdrawn']) assert.equal(guestInvite(kind, b, host, base, null), null)
+  check(guestInvite('confirmed', b, { ...host, email: null }, base, null), 'PUBLISH')
+  // A moved booking is the same calendar event, one version on.
+  const movedTo = { ...b, id: 'bk2', uid: 'bk1', sequence: 1 }
+  const flat = check(guestInvite('rescheduled', movedTo, host, base, null), 'REQUEST')
+  assert.match(flat, /^UID:bk1@kalendar\.example\.com$/m)
+  assert.match(flat, /^SEQUENCE:1$/m)
+}
+
 // The service worker installs a version all or nothing: it must list every
 // page file, and carry the app's version so a deploy installs the new set.
 {
@@ -117,4 +171,4 @@ for (const zone of ZONES) {
   assert.equal(sw.match(/const VERSION = '([^']+)'/)[1], version, 'sw.js VERSION must match holm.json')
 }
 
-console.log(`ok: ${checked} slots across ${ZONES.length} zones match Intl; weekly hours, paused days, busy times, tags, email dates, calendar files and the app shell check out`)
+console.log(`ok: ${checked} slots across ${ZONES.length} zones match Intl; weekly hours, paused days, busy times, tags, email dates, calendar files, email invites and the app shell check out`)
