@@ -50,15 +50,16 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
 - The server has no Intl, so have the host's browser send its zone's UTC
   offsets for the next year and turn hours into real times on the server.
 - Email both sides with env.holm.email: beautifully designed HTML (tables,
-  inline styles, dark mode) plus plain text, with Add to Calendar links for
-  Google, Outlook.com and a hosted calendar file whose link doesn't end in
-  .ics (Apple Mail offers to subscribe to those). The host's links add the
-  host's own copy, named for the guest. Each booking email also carries a
-  calendar invite through email.send's calendar option: a REQUEST to the
-  guest with the host as organizer, a CANCEL when it's off, a PUBLISH copy
-  for the host, one UID per booking even when it moves. Emailed links let the
-  guest move or cancel; the host can cancel from their list. Give the host a
-  private calendar feed.
+  inline styles, dark mode) plus plain text. Each booking email carries a
+  calendar invite through email.send's calendar option, and no Add to
+  Calendar buttons: a REQUEST to the guest with the host as organizer, and a
+  REQUEST to the host named for the guest, organized by the sender address
+  email.send reports and already accepted; a CANCEL to both when it's off,
+  one UID per booking even when it moves. The booking page offers Google,
+  Outlook.com and a hosted calendar file whose link doesn't end in .ics
+  (Apple Mail offers to subscribe to those). Emailed links let the guest move
+  or cancel; the host can cancel from their list. Give the host a private
+  calendar feed.
 - An Apple-quality UI on phone and desktop, with a fixed shell where only
   panels scroll: a round avatar button top right
   (signed out too) whose menu holds light/dark/auto, sounds, 24-hour time
@@ -171,3 +172,14 @@ reply was:
 
 > Kalendar app's email no more has the provision to add to mobile calendars?
 > - i was hoping Mail app will automatically be able to detect & create events in calendar
+
+**Kalendar 0.5.1: the host's email is an invitation too, without browser buttons**
+
+After a test where the guest's invite landed on its own and the host's copy
+didn't (an address is replaced here):
+
+> And those buttons google/apple/outlook takes me out of the Mail app to default browser (Brave)
+> - looks those links will only work in Safari?
+> - plus such links arent there in other invites from say Google/Calendly
+> - i think ics is enough?
+> - but i wonder why it didn't show up or get recognised like how it did with [my other] email

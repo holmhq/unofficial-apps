@@ -14,6 +14,7 @@ import { toUtc, offsetAt, clockRange, longDate, parts } from '../api/tz.js'
 import { calendar } from '../api/ics.js'
 import { cleanTag } from '../api/lib.js'
 import { guestInvite, hostInvite } from '../api/bookings.js'
+import { inviteeMail, hostMail, senderOf } from '../api/mail.js'
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 
 const DAY = 86400000
@@ -108,7 +109,8 @@ for (const zone of ZONES) {
 // Booking emails carry an invite Holm's email.send takes: one VCALENDAR whose
 // METHOD matches, a UID on each VEVENT, a mailto ORGANIZER for REQUEST and
 // CANCEL, no control characters, under 64 KiB. Requests carry none, and a
-// move keeps the event's UID one version on.
+// move keeps the event's UID one version on. The host's copy comes from
+// Kalendar's sender, already accepted, under a UID of its own.
 {
   const host = { name: 'Avery "AC" Chen, Studio', email: 'avery@example.com', handle: 'avery' }
   const b = {
@@ -116,7 +118,7 @@ for (const zone of ZONES) {
     status: 'confirmed', sequence: 0, notes: 'Hi\tthere\r\nsecond\u0007 line', location: { kind: 'video', value: 'https://meet.example.com/x' }, createdAt: 0
   }
   const base = 'https://kalendar.example.com'
-  const check = (invite, method) => {
+  const check = (invite, method, organizer = 'avery@example.com') => {
     const { ics } = invite
     assert.equal(invite.method, method)
     assert.ok(Buffer.byteLength(ics) <= 65536)
@@ -130,11 +132,17 @@ for (const zone of ZONES) {
     assert.ok(events.length >= 1)
     for (const e of events) {
       assert.match(e, /^UID:.+@kalendar\.example\.com$/m)
-      if (method !== 'PUBLISH') assert.match(e, /^ORGANIZER;CN="[^"]*":mailto:avery@example\.com$/m)
+      if (method !== 'PUBLISH') assert.ok(e.includes(`":mailto:${organizer}\n`) && /^ORGANIZER;CN="[^"]*":mailto:/m.test(e), 'organizer')
       else assert.doesNotMatch(e, /^ORGANIZER/m)
     }
     return flat
   }
+  // Holm reports its sender as `Name <address>` or the bare address.
+  const sender = senderOf('Kalendar <kalendar-example@example.net>')
+  assert.deepEqual(sender, { name: 'Kalendar', email: 'kalendar-example@example.net' })
+  assert.deepEqual(senderOf('"Kal, Endar" <k@example.net>'), { name: 'Kal, Endar', email: 'k@example.net' })
+  assert.deepEqual(senderOf('k@example.net'), { name: 'Kalendar', email: 'k@example.net' })
+  for (const bad of [undefined, '', 'Kalendar', 'a b@c', '<x@y> z']) assert.equal(senderOf(bad), null)
   const out = process.env.ICS_OUT
   const keep = (name, invite) => { if (out) writeFileSync(`${out}/${name}.${invite.method}.ics`, invite.ics) }
   for (const kind of ['confirmed', 'accepted', 'rescheduled']) {
@@ -142,12 +150,18 @@ for (const zone of ZONES) {
     assert.match(flat, /^ATTENDEE;CN="Bo, Ito";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:bo@example\.org$/m)
     keep(`guest-${kind}`, guestInvite(kind, b, host, base, `${base}/b/bk1?t=x`))
     check(hostInvite(kind, b, host, base), 'PUBLISH')
+    const own = check(hostInvite(kind, b, host, base, sender), 'REQUEST', sender.email)
+    assert.match(own, /^UID:bk1-host@kalendar\.example\.com$/m)
+    assert.match(own, /^ATTENDEE;CN="Avery AC Chen, Studio";ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;RSVP=FALSE:mailto:avery@example\.com$/m)
+    keep(`host-${kind}`, hostInvite(kind, b, host, base, sender))
   }
   const gone = { ...b, status: 'cancelled', sequence: 1 }
   assert.match(check(guestInvite('cancelled', gone, host, base, null), 'CANCEL'), /^STATUS:CANCELLED$/m)
   assert.match(check(hostInvite('cancelled', gone, host, base), 'PUBLISH'), /^SEQUENCE:1$/m)
+  assert.match(check(hostInvite('cancelled', gone, host, base, sender), 'CANCEL', sender.email), /^UID:bk1-host@/m)
   keep('guest-cancelled', guestInvite('cancelled', gone, host, base, null))
-  keep('host-confirmed', hostInvite('confirmed', b, host, base))
+  keep('host-cancelled', hostInvite('cancelled', gone, host, base, sender))
+  keep('host-published', hostInvite('confirmed', b, host, base))
   for (const kind of ['requested', 'declined', 'withdrawn']) assert.equal(guestInvite(kind, b, host, base, null), null)
   check(guestInvite('confirmed', b, { ...host, email: null }, base, null), 'PUBLISH')
   // A moved booking is the same calendar event, one version on.
@@ -155,6 +169,20 @@ for (const zone of ZONES) {
   const flat = check(guestInvite('rescheduled', movedTo, host, base, null), 'REQUEST')
   assert.match(flat, /^UID:bk1@kalendar\.example\.com$/m)
   assert.match(flat, /^SEQUENCE:1$/m)
+  const hostMoved = check(hostInvite('rescheduled', movedTo, host, base, sender), 'REQUEST', sender.email)
+  assert.match(hostMoved, /^UID:bk1-host@kalendar\.example\.com$/m)
+  assert.match(hostMoved, /^SEQUENCE:1$/m)
+  // The invite adds it to the calendar, so the emails carry no web links to.
+  const zone = { tzLabel: 'London', offset: 0, h24: false }
+  const c = { b: { ...b, ...zone, duration: 30, slug: 'intro' }, host: { ...host, tzLabel: 'London' }, base, hostOffset: 0,
+    links: { manage: `${base}/b/bk1?t=x`, reschedule: `${base}/r`, rebook: `${base}/@avery/intro`, dashboard: `${base}/`, review: `${base}/?r=bk1` } }
+  for (const kind of ['confirmed', 'accepted', 'rescheduled']) {
+    for (const mail of [inviteeMail(kind, c), hostMail(kind, c)]) {
+      assert.doesNotMatch(mail.html + mail.text, /calendar\.google\.com|outlook\.live\.com|Add to your calendar|undefined/, kind)
+    }
+  }
+  assert.match(hostMail('cancelled', { ...c, b: { ...c.b, cancelledBy: 'host' } }).subject, /^Cancelled: Bo, Ito/)
+  assert.match(hostMail('cancelled', { ...c, b: { ...c.b, cancelledBy: 'host' } }).text, /^You cancelled Intro; call with Bo, Ito/)
 }
 
 // The service worker installs a version all or nothing: it must list every

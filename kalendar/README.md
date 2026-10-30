@@ -5,8 +5,8 @@ Your page lives at your own address (`/@avery`), with a link for each kind of
 meeting you offer. Your free time lies on a strip of days, time running left to
 right like a video editor's timeline: people drop the meeting into it, or paint
 when suits them and let you pick. No account, no back-and-forth. Both of you get
-an email with Add to Calendar buttons, the person who booked can move or cancel
-from it, and you can run all of it from Claude.
+an email whose calendar invite puts the meeting on your calendar, the person who
+booked can move or cancel from it, and you can run all of it from Claude.
 
 It was built from the request quoted in [`PROMPT.md`](PROMPT.md), which also
 has a reusable version of it. Try it at [kalendar.zyt.app](https://kalendar.zyt.app).
@@ -65,12 +65,12 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   meeting to a time inside them and accept, or say no with a note. Both
   answers are emailed.
 - **Emails.** The guest gets a confirmation with the day as a little calendar
-  page, the time in their zone, where to meet, Google, Apple and Outlook
-  buttons and links to reschedule or cancel. The host gets one with the
-  guest's details and notes. Requests, accepting, declining, moving and
-  cancelling each send matching emails. A booking's emails carry a real
-  calendar invite, so Mail, Gmail and Outlook show their own card and put it
-  on the calendar; a move updates that event and a cancellation removes it.
+  page, the time in their zone, where to meet and links to reschedule or
+  cancel. The host gets one with the guest's details and notes. Requests,
+  accepting, declining, moving and cancelling each send matching emails. Both
+  sides' booking emails carry a real calendar invite, so Gmail, iCloud and
+  Outlook put the meeting on the calendar by themselves and Mail shows its own
+  card; a move updates that event and a cancellation removes it.
 - **Changing a booking.** The emailed link opens the booking: add it to a
   calendar, reschedule (the old time is freed and the new one booked in one
   step) or cancel with a note; a request can be withdrawn. Hosts cancel from
@@ -233,21 +233,28 @@ mail apps expect, so Apple Mail, Gmail and Outlook show their own card:
   organizer and the guest as attendee, so it lands on their calendar and
   Accept or Decline goes to the host. A cancellation is a `CANCEL`, which takes
   it off. A host with no email address sends a plain `PUBLISH` instead.
-- The host's own email carries a `PUBLISH` copy, named for the guest.
+- The host's own email carries a `REQUEST` too, named for the guest, from
+  Kalendar's own address (the `from` that `email.send` reports) as organizer,
+  with the host already accepted. It has a UID of its own, since Kalendar
+  organizes it, and a `CANCEL` takes it off, including when the host cancels
+  in Kalendar. Until Kalendar knows its address (the guest's email didn't
+  go), the host gets a plain `PUBLISH` copy.
 - Every invite for a booking keeps one UID and counts up `SEQUENCE`. A move
   is a new booking that inherits the old one's UID, so calendars move the
   event rather than add a second, and the old booking's calendar file answers
   "moved".
 - If Holm turns an invite down, the email goes without it (`api/mail.js`).
 
-The emails also link to the booking's calendar file (`/b/<id>/calendar?t=…`),
-to Google Calendar's and Outlook.com's add-event pages, and to the host's
-feed. The file's link doesn't end in `.ics` on purpose: Apple Mail hands such
-a link to Calendar as a calendar to subscribe to, not an event to add. The
-host's email links to the host's own copy (`?h=…`, keyed with the feed secret,
-so a new feed link retires it). Links from emails sent before 0.1.1
-(`/b/<id>/invite.ics?t=…`) still work. `node tools/check.mjs` checks each
-kind of invite against the rules `email.send` applies.
+The emails carry no Add to Calendar buttons: on a phone they leave Mail for
+the browser, and with the invite they'd add the meeting twice. The booking
+page keeps them, for the booking's calendar file (`/b/<id>/calendar?t=…`) and
+Google Calendar's and Outlook.com's add-event pages. The file's link doesn't
+end in `.ics` on purpose: Apple Mail hands such a link to Calendar as a
+calendar to subscribe to, not an event to add. Links from older emails still
+work: the host's own copy (`?h=…`, keyed with the feed secret, so a new feed
+link retires it) and, from before 0.1.1, `/b/<id>/invite.ics?t=…`.
+`node tools/check.mjs` checks each kind of invite against the rules
+`email.send` applies.
 
 ## Deploy your own
 
@@ -308,8 +315,14 @@ only give to `https://` and `localhost` pages. On a local node, add a
 - **Invites show the host's email address** to guests, as the organizer, so
   their Accept or Decline reaches the host. Kalendar doesn't show it anywhere
   else.
-- **A node that can't send invites** sends the email without one; the links
-  still work.
+- **The host's Accept or Decline goes nowhere.** Their invite is organized by
+  Kalendar's sending address, which Kalendar can't read, so it comes already
+  accepted; declining it in a calendar doesn't cancel the booking. Cancel in
+  Kalendar, which tells the guest and takes it off both calendars.
+- **Invites and the feed together show each booking twice**, once in each
+  calendar. Use one, or hide the feed's calendar.
+- **A node that can't send invites** sends the email without one; the
+  booking page's calendar buttons still work.
 - **No two-way calendar sync.** Kalendar doesn't read your Google or Apple
   calendar for busy times; block them with days off or hours, and subscribe
   to the feed to see bookings there. Video links are the one you paste, not

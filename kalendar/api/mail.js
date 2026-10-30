@@ -111,12 +111,6 @@ function rows(items) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;">${cells}</table>`
 }
 
-function pills(links) {
-  const cells = links.map(([label, href]) => `<td class="pill btn" style="border:1px solid ${C.line};border-radius:999px;background:#ffffff;"><a href="${esc(href)}" style="display:inline-block;padding:9px 15px;font-size:14px;font-weight:600;letter-spacing:-0.006em;color:${C.ink};text-decoration:none;">${esc(label)}</a></td><td width="8"></td>`).join('')
-  return `<p class="ink3" style="margin:26px 0 10px;font-size:12px;font-weight:620;letter-spacing:0.05em;text-transform:uppercase;color:${C.ink3};">Add to your calendar</p>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table>`
-}
-
 function button(label, href) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;"><tr>
 <td class="btn" style="background:${C.accent};border-radius:13px;"><a href="${esc(href)}" style="display:inline-block;padding:13px 22px;font-size:15px;font-weight:620;letter-spacing:-0.008em;color:#ffffff;text-decoration:none;">${esc(label)}</a></td>
@@ -222,17 +216,15 @@ export function inviteeMail(kind, c) {
     when(time) +
     (moved && c.old ? `<p class="ink3" style="margin:10px 0 0 82px;font-size:13px;color:${C.ink3};">Was <span style="text-decoration:line-through;">${esc(at(c.old.start, offset, b.h24))}</span></p>` : '') +
     rows([place ? ['Where', place] : null, ['Host', `${esc(host.name)}`], ['Invitee', `${esc(b.name)} · ${esc(b.email)}`]]) +
-    pills([['Google', c.links.google], ['Apple', c.links.ics], ['Outlook', c.links.outlook]]) +
     changeBox(c.links)
   return {
     subject: moved ? `Rescheduled: ${b.eventTitle} with ${host.name} — now ${at(b.start, offset, b.h24)}` : `${accepted ? 'Accepted' : 'Confirmed'}: ${b.eventTitle} with ${host.name} — ${at(b.start, offset, b.h24)}`,
-    html: layout({ base, title: moved ? 'Rescheduled' : accepted ? 'Accepted' : 'Confirmed', preheader: `${longDate(parts(b.start, offset))}, ${clockRange(b.start, b.end, offset, b.h24)}. Add it to your calendar.`, body, footer }),
+    html: layout({ base, title: moved ? 'Rescheduled' : accepted ? 'Accepted' : 'Confirmed', preheader: `${longDate(parts(b.start, offset))}, ${clockRange(b.start, b.end, offset, b.h24)}.`, body, footer }),
     text: [
       moved ? `Your ${b.eventTitle} with ${host.name} moved.` : accepted ? `${host.name} said yes: ${b.eventTitle}.` : `You're booked: ${b.eventTitle} with ${host.name}.`,
       `${longDate(parts(b.start, offset))}\n${clockRange(b.start, b.end, offset, b.h24)} (${b.tzLabel}, ${gmt(offset)})`,
       moved && c.old ? `Was: ${at(c.old.start, offset, b.h24)}` : '',
       plainPlace(b.location, host.name, b.phone) ? `Where: ${plainPlace(b.location, host.name, b.phone)}` : '',
-      `Add to your calendar:\nGoogle: ${c.links.google}\nApple or Outlook (.ics): ${c.links.ics}\nOutlook.com: ${c.links.outlook}`,
       `Reschedule: ${c.links.reschedule}\nCancel: ${c.links.manage}`
     ].filter(Boolean).join('\n\n')
   }
@@ -274,15 +266,16 @@ export function hostMail(kind, c) {
     }
   }
   if (kind === 'cancelled') {
+    const byYou = b.cancelledBy === 'host'
     const body = badge('Cancelled', C.red, C.redSoft) +
-      heading(`${b.name} cancelled`, `${esc(b.eventTitle)} · ${b.duration} min. The time is free again.`) +
+      heading(byYou ? `You cancelled with ${b.name}` : `${b.name} cancelled`, `${esc(b.eventTitle)} · ${b.duration} min. ${byYou ? 'They’ve been told, and the' : 'The'} time is free again.`) +
       when({ ...time, struck: true }) +
       rows([['Invitee', who], b.reason ? ['Note', quote(b.reason)] : null]) +
       button('Open Kalendar', c.links.dashboard)
     return {
       subject: `Cancelled: ${b.name} — ${at(b.start, offset, h24)}`,
-      html: layout({ base, title: 'Cancelled', preheader: `${b.name} cancelled ${b.eventTitle} on ${at(b.start, offset, h24)}.`, body, footer }),
-      text: [`${b.name} (${b.email}) cancelled ${b.eventTitle}.`, `Was: ${longDate(parts(b.start, offset))}, ${clockRange(b.start, b.end, offset, h24)}`, b.reason ? `Note: ${b.reason}` : '', `Kalendar: ${c.links.dashboard}`].filter(Boolean).join('\n\n')
+      html: layout({ base, title: 'Cancelled', preheader: `${byYou ? 'You cancelled' : `${b.name} cancelled`} ${b.eventTitle} on ${at(b.start, offset, h24)}.`, body, footer }),
+      text: [byYou ? `You cancelled ${b.eventTitle} with ${b.name} (${b.email}). They've been told.` : `${b.name} (${b.email}) cancelled ${b.eventTitle}.`, `Was: ${longDate(parts(b.start, offset))}, ${clockRange(b.start, b.end, offset, h24)}`, b.reason ? `Note: ${b.reason}` : '', `Kalendar: ${c.links.dashboard}`].filter(Boolean).join('\n\n')
     }
   }
   const moved = kind === 'rescheduled'
@@ -292,7 +285,6 @@ export function hostMail(kind, c) {
     when(time) +
     (moved && c.old ? `<p class="ink3" style="margin:10px 0 0 82px;font-size:13px;color:${C.ink3};">Was <span style="text-decoration:line-through;">${esc(at(c.old.start, offset, h24))}</span></p>` : '') +
     rows([['Invitee', who], place ? ['Where', place] : null, b.phone && b.location.kind !== 'phone' ? ['Phone', esc(b.phone)] : null, b.notes ? ['Notes', quote(b.notes)] : null, ['Their zone', `${esc(b.tzLabel)} · ${gmt(b.offset)}`]]) +
-    pills([['Google', c.links.google], ['Apple', c.links.ics], ['Outlook', c.links.outlook]]) +
     button('Open Kalendar', c.links.dashboard)
   return {
     subject: moved ? `Rescheduled: ${b.name} — now ${at(b.start, offset, h24)}` : `${accepted ? 'Accepted' : 'New booking'}: ${b.name} — ${at(b.start, offset, h24)}`,
@@ -304,7 +296,6 @@ export function hostMail(kind, c) {
       `Invitee: ${b.name} <${b.email}>`,
       b.phone ? `Phone: ${b.phone}` : '',
       b.notes ? `Notes:\n${b.notes}` : '',
-      `Add to your calendar (.ics): ${c.links.ics}`,
       `Kalendar: ${c.links.dashboard}`
     ].filter(Boolean).join('\n\n')
   }
@@ -330,5 +321,13 @@ export function send(env, to, mail) {
     result = attempt(env, plain)
   }
   if (!result.ok) env.holm.log.warn(`email not sent: ${result.code} ${String(result.message || '').slice(0, 200)}`)
-  return result.ok ? { ok: true } : { ok: false, code: result.code || 'EMAIL_FAILED' }
+  return result.ok ? { ok: true, from: senderOf(result.from) } : { ok: false, code: result.code || 'EMAIL_FAILED' }
+}
+
+// Holm reports the address it sent from, as `Name <address>` or the bare
+// address. The host's invites name it as their organizer.
+export function senderOf(from) {
+  const text = String(from || '').trim()
+  const m = /^"?([^"<]*?)"?\s*<([^<>\s@]+@[^<>\s@]+)>$/.exec(text) || /^()([^<>\s@"]+@[^<>\s@"]+)$/.exec(text)
+  return m ? { name: m[1] || 'Kalendar', email: m[2] } : null
 }
