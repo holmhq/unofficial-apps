@@ -63,7 +63,10 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   sheets that don't shrink as a search narrows; fine motion, quiet Web Audio
   sounds, and Inter weights that mean something. The signed-out home shows
   a booking card that plays itself: a pointer books a time, then asks for
-  another.
+  another. The card is an ordinary flat component set in a real CSS 3D
+  scene, with its edge and shadow behind it and the pointer and result
+  hovering in front, standing up as it scrolls into view and turning toward
+  the mouse.
   It must open and move like a native app, with no flicker: a versioned
   service worker that serves the whole shell offline, pages drawn at once
   from the last answers kept in the browser and refreshed quietly, motion
@@ -155,3 +158,8 @@ reply was:
 > - isnt swapping between the tracks on drag a better mechanic?
 > - dont do holm-app branding in avatar popup menu; clicking the icon again should dismiss it
 > - can you create the hero animated?
+
+**Kalendar 0.4.1: the home page's card in real 3D**
+
+> The current hero is fake 3d; can we implement it as normal straight component
+> - and use 3d transforms to acheive true 3d effect?

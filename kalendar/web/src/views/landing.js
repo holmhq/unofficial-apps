@@ -24,6 +24,12 @@ function claimURL(handle) {
 // where it meets the host's. Where motion is welcome it plays out: a pointer
 // drops the meeting in, drags it to another day and books it, then paints
 // times to ask for. It rests while it's out of sight.
+//
+// The card itself is flat, as on a booking page. The depth is a real 3D
+// scene around it: a rig in perspective that carries the card's edge and its
+// shadow behind it, and the pointer and the result hovering in front. The
+// rig stands up as the card scrolls to the middle of the screen and turns a
+// little toward the mouse, so the layers part as it moves.
 function demo() {
   const zone = here()
   const today = t.wall(Date.now(), zone).key
@@ -80,22 +86,35 @@ function demo() {
 
   let setMode = () => {}
   const seg = segmented([{ value: 'clip', label: 'Pick a time' }, { value: 'strips', label: 'Suggest times' }], 'clip', (v) => setMode(v), { label: 'How to choose' })
-  const done = h('div.demo-done', { 'aria-hidden': 'true' })
-  const pointer = h('div.demo-pointer' + (matchMedia('(pointer: coarse)').matches ? '.touch' : ''), { html: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 2.5v17.2l4.6-4.4 2.9 6.6 2.8-1.2-2.9-6.5 6.3-.3Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>' })
+  // The result is a sheet that rises off the card, over a veil that blurs
+  // the card beneath it.
+  const veil = h('div.demo-veil')
+  const done = h('div.demo-done')
+  const lifted = h('div.demo-float', h('div.demo-done-shade'), done)
+  // The pointer hovers above the card and comes down onto it to press,
+  // with its shadow on the card closing in as it lands.
+  const touch = matchMedia('(pointer: coarse)').matches
+  const arrow = (paint) => touch ? '' : `<svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 2.5v17.2l4.6-4.4 2.9 6.6 2.8-1.2-2.9-6.5 6.3-.3Z" ${paint}/></svg>`
+  const pointer = h('div.demo-pointer' + (touch ? '.touch' : ''),
+    h('span.pointer-ring'),
+    h('span.pointer-shade', { html: arrow('fill="#000"') }),
+    h('span.pointer-hand', { html: arrow('fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"') }))
   const pick = h('section.book-pick',
     h('div.pick-head', h('div.mode-wrap', seg)),
     h('div.tl-wrap', tl.el),
     bar,
-    done)
+    veil)
   const card = h('div.book-card.demo-card', { style: { '--event': '#007aff' } },
     h('aside.book-info',
       h('span.host-line', avatar({ key: 'ac', name: 'Avery Chen', size: 28 }), h('span', 'Avery Chen')),
       h('h1.event-title', 'Intro call'),
       h('ul.meta', h('li', ic('clock', 18, 1.9), h('div', h('span', '30 min'))), h('li', ic('video', 18, 1.9), h('div', h('span', 'Video call'), h('small', 'The link comes with your invite')))),
       h('div.legend', h('span', h('i.key.shade'), 'Avery is free'), h('span', h('i.key.mine'), 'Your times'), h('span', h('i.key.glow'), 'Both free'))),
-    pick,
-    pointer)
-  const el = h('div.demo', { 'aria-hidden': 'true', inert: true }, card)
+    pick)
+  // Behind the card, thin plates make its edge and a blur its shadow.
+  const edge = [5, 4, 3, 2, 1].map((i) => h('div.demo-edge', { style: { transform: `translateZ(${-i * 2.4}px)` } }))
+  const rig = h('div.demo-rig', h('div.demo-shadow'), ...edge, card, pointer, lifted)
+  const el = h('div.demo', { 'aria-hidden': 'true', inert: true }, rig)
   if (still) return el
 
   /* ---- The reel ------------------------------------------------------------------ */
@@ -122,8 +141,9 @@ function demo() {
     return span ? at : null
   }
 
-  // Where a minute of a day, or a control, sits inside the card. Measured
-  // through offsets, not the screen, so the card's tilt doesn't skew it.
+  // Where a minute of a day, or a control, sits on the card, which is where
+  // the pointer's layer starts too. Measured through offsets, not the
+  // screen, so the rig's turn doesn't skew it.
   function spot(node) {
     let x = node.offsetWidth / 2
     let y = node.offsetHeight / 2
@@ -160,6 +180,36 @@ function demo() {
       if (awake()) left -= step
     }
   }
+  // The rig's turn: upright when the card is in the middle of the screen,
+  // lying back below it and tipping forward past it, plus a few degrees
+  // toward the mouse and a lean while a result floats above the card.
+  let mouse = null
+  let lean = 0
+  const turn = { x: 0, y: 0, lean: 0 }
+  const quit = new AbortController()
+  if (matchMedia('(pointer: fine)').matches) addEventListener('pointermove', (e) => { mouse = { x: e.clientX, y: e.clientY } }, { passive: true, signal: quit.signal })
+  const clamp = (v) => Math.max(-1, Math.min(1, v))
+  let shown = false
+  let last = ''
+  ;(function frame() {
+    if (el.isConnected) shown = true
+    else if (shown) { quit.abort(); return }
+    if (awake()) {
+      const r = el.getBoundingClientRect()
+      const mid = clamp((r.top + r.height / 2 - innerHeight / 2) / (innerHeight / 2))
+      const ax = mouse ? clamp((mouse.x - r.left - r.width / 2) / (innerWidth / 2)) : 0
+      const ay = mouse ? clamp((mouse.y - r.top - r.height / 2) / (innerHeight / 2)) : 0
+      turn.x += (ax - turn.x) * .06
+      turn.y += (ay - turn.y) * .06
+      turn.lean += (lean - turn.lean) * .05
+      const rx = (mid > 0 ? 18 * mid : 6 * mid) - 4 * turn.y + 4 * turn.lean
+      const ry = 7 * turn.x - 6 * turn.lean
+      const next = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`
+      if (next !== last) rig.style.transform = last = next
+    }
+    requestAnimationFrame(frame)
+  })()
+
   // The day and minute under a point of the card.
   function under(p) {
     let best = null
@@ -192,7 +242,7 @@ function demo() {
       if (k >= 1) return
     }
   }
-  const press = async () => { pointer.classList.add('down'); await wait(160); pointer.classList.remove('down') }
+  const press = async () => { pointer.classList.add('down'); await wait(200); pointer.classList.remove('down') }
   const segTo = (v) => seg.querySelector(`button:nth-of-type(${v === 'clip' ? 1 : 2})`).click()
 
   function finale(kind) {
@@ -203,7 +253,13 @@ function demo() {
       h('b', kind === 'ask' ? 'Request sent' : 'You’re booked'),
       h('span', kind === 'ask' ? 'Avery picks a time in what you painted.' : 'An invite is on its way to you and Avery.'),
       kind === 'ask' ? null : h('div.demo-cals', h('span', 'Google'), h('span', 'Apple'), h('span', 'Outlook')))
-    done.classList.add('show')
+    lifted.style.left = pick.offsetLeft + 'px'
+    result(true)
+  }
+  function result(on) {
+    lifted.classList.toggle('show', on)
+    veil.classList.toggle('show', on)
+    lean = on ? 1 : 0
   }
 
   async function reel() {
@@ -211,7 +267,7 @@ function demo() {
     const [a, b, , d] = tracks.map((x) => x.key)
     for (;;) {
       // Start clean, with the pointer resting below the card.
-      done.classList.remove('show')
+      result(false)
       if (tl.mode !== 'clip') segTo('clip')
       setPaint(null)
       setClip(null)
@@ -224,8 +280,9 @@ function demo() {
       place(at(a, 615), 900)
       await wait(1000)
       pointer.classList.add('down')
+      await wait(140)
       setClip(a, 600)
-      await wait(420)
+      await wait(300)
 
       // Drag it to Sunday, late morning; it snaps to open times as it goes.
       await drag([[a, 600], [b, 660]], 1300, (key, m) => {
@@ -247,7 +304,7 @@ function demo() {
       finale('book')
       pointer.classList.remove('show')
       await wait(2600)
-      done.classList.remove('show')
+      result(false)
       await wait(350)
 
       // Suggest times: paint when you're free, even past Avery's hours.

@@ -135,6 +135,12 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   drops a meeting in, drags it to another day and books it, then paints
   times to ask for. It rests while it's out of sight, and holds still for
   anyone who asks for less motion.
+- The home page's card is a flat component in a real CSS 3D scene
+  (`perspective` and `preserve-3d`): thin plates behind it make its edge, a
+  blur further back its shadow, and the pointer hovers above it, coming down
+  to press, while the result rises off it as a sheet. It stands up as it
+  scrolls to the middle of the screen and turns a few degrees toward the
+  mouse, so the layers part as it moves.
 - Sound: quiet Web Audio cues for a tap, a pick, a snap, a step, a booking (a
   small chime), a request sent and a mistake; off with one switch.
 - Phones get one step per screen and a tab bar; wide screens get a card with
