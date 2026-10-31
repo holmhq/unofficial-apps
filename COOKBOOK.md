@@ -276,5 +276,7 @@ couldn't check.
       budget with large input.
 - [ ] After deploying, pull the app back and compare it with your files.
       Check the app's node settings.
-- [ ] `PROMPT.md` quotes the request word for word, `README.md` is current,
-      and the version, `whatsNew` and `index.json` are updated.
+- [ ] `PROMPT.md` quotes the request word for word (names of people
+      replaced), `README.md` is current, and the version and `whatsNew` are
+      updated. `node scripts/index.mjs` runs last, after the final edit to
+      any file in the app, or CI finds `index.json` stale.
