@@ -60,7 +60,7 @@ served as files: `api/` and `holm.json` are not public URLs.
 ### How it feels
 
 A native-app shell: the window never scrolls, bars stay put, and only the
-panel moves. A sidebar of places on a desk, a tab bar on a phone, a frosted
+panel moves. A sidebar of places on a desk, which hides with one click, a tab bar on a phone, a frosted
 selection bar, and sheets that rise. Tiles show the photo's colours from
 its ThumbHash before the thumbnail arrives, and fade in without jumping.
 Light and dark, with photos on black in the dark, and less motion when the

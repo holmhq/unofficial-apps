@@ -41,6 +41,7 @@ export function createApp() {
 
   const brand = h('a.brand', { href: '/', 'aria-label': 'Roll, your library', onclick: (e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); go('/') } },
     h('span.brand-mark', mark(17)), h('span.brand-name', 'Roll'))
+  const sideBtn = h('button.icon-btn.side-btn', { type: 'button', 'aria-label': 'Hide sidebar', title: 'Hide sidebar', onclick: () => toggleSide() }, ic('panelLeft', 20, 1.9))
   const backBtn = h('button.icon-btn.top-back', { type: 'button', 'aria-label': 'Back', onclick: () => back() }, ic('chevronLeft', 24, 2.2))
   const smallTitle = h('div.top-title.small-title')
   const searchInput = h('input.search-input', { type: 'search', placeholder: 'Search places, cameras, months…', 'aria-label': 'Search your photos', enterkeyhint: 'search', autocomplete: 'off', spellcheck: 'false' })
@@ -49,7 +50,7 @@ export function createApp() {
   const addBtn = h('button.icon-btn.add-btn', { type: 'button', 'aria-label': 'Add photos', onclick: () => pickFiles(currentAlbum() ? currentAlbum().id : null) }, ic('plus', 24, 2.2))
   const selectBtn = h('button.btn.plain.select-btn', { type: 'button', onclick: () => startSelecting() }, 'Select')
   const top = h('header.top.glass',
-    h('div.top-l', backBtn, brand, selectBtn),
+    h('div.top-l', sideBtn, backBtn, brand, selectBtn),
     smallTitle,
     searchBox,
     h('div.top-r', uploadBtn, addBtn, accountButton()))
@@ -67,6 +68,15 @@ export function createApp() {
   const actbar = h('nav.actbar.glass', { 'aria-label': 'Selected photos' })
   const main = h('main.main')
   const root = h('div.app', top, selbar, h('div.body', side, main), tabbar, actbar)
+
+  // The sidebar hides with one click on a desk, and stays as it was left.
+  function toggleSide(hidden = !root.classList.contains('is-side-hidden')) {
+    root.classList.toggle('is-side-hidden', hidden)
+    sideBtn.setAttribute('aria-label', hidden ? 'Show sidebar' : 'Hide sidebar')
+    sideBtn.title = hidden ? 'Show sidebar' : 'Hide sidebar'
+    try { localStorage.setItem('roll:side', hidden ? 'hidden' : 'shown') } catch {}
+  }
+  try { if (localStorage.getItem('roll:side') === 'hidden') toggleSide(true) } catch {}
 
   /* ---- Pages ----------------------------------------------------------------------- */
 
