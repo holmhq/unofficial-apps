@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Domains · find a short domain that’s actually free</title>
+<meta name="description" content="Type a name. Domains tries shorter spellings, sound-alikes and AI ideas across two- and three-letter extensions, and shows what’s free as the answers come in.">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Domains">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Domains">
+<meta property="og:title" content="Domains · find a short domain that’s actually free">
+<meta property="og:description" content="Shorter spellings, sound-alikes and AI ideas, checked live across two- and three-letter extensions.">
+<meta property="og:url" content="__ORIGIN__/">
+<meta property="og:image" content="__ORIGIN__/social_preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Domains: find a short domain that’s actually free">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="__ORIGIN__/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.png" type="image/png" sizes="48x48">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/data/tlds.json" as="fetch" crossorigin>
+<link rel="stylesheet" href="/src/styles.css?v=0.1.0">
+<link rel="modulepreload" href="/src/main.js?v=0.1.0">
+<script>
+  // The saved theme before the first paint, so nothing flashes.
+  (function () {
+    var saved = null;
+    try { saved = localStorage.getItem('domains:theme'); } catch (e) {}
+    var dark = saved === 'dark' || (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+</head>
+<body>
+<div id="root"><div class="boot"><svg class="i mark" width="34" height="34" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="1" y="9.5" width="10.5" height="5" rx="2.5"/><circle cx="14.25" cy="12.25" r="2.25" fill="#30d158"/><rect x="17" y="9.5" width="6" height="5" rx="2.5" opacity=".55"/></svg></div></div>
+<noscript><p style="text-align:center;margin-top:30vh;font-family:system-ui">Domains needs JavaScript.</p></noscript>
+<script type="module" src="/src/main.js?v=0.1.0"></script>
+</body>
+</html>

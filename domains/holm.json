@@ -1,0 +1,46 @@
+{
+  "name": "domains",
+  "version": "0.1.0",
+  "title": "Domains",
+  "shortName": "Domains",
+  "description": "Find a short domain that's actually free: shorter spellings, sound-alikes and AI ideas, checked live across two- and three-letter extensions.",
+  "themeColor": "#1d1d1f",
+  "iconStyle": "soft",
+  "surfaces": {
+    "web": {
+      "renderer": "off"
+    }
+  },
+  "web": {
+    "spa": false,
+    "inject": {
+      "analytics": true
+    },
+    "headers": [
+      {
+        "path": "/*",
+        "set": {
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "strict-origin-when-cross-origin"
+        }
+      },
+      {
+        "path": "/fonts/*",
+        "set": {
+          "Cache-Control": "public, max-age=31536000, immutable"
+        }
+      }
+    ]
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://domains.zyt.app"
+    }
+  }
+}

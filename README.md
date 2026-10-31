@@ -61,6 +61,7 @@ ten-minute local start in section 4 of <https://holmhq.com/llms-full.txt>.
 | [`deck`](deck/) | [deck-staging.zyt.app](https://deck-staging.zyt.app) | Decks you make with Claude: workspaces and invites, MCP tools with `auth: "user"`, live saves over realtime, seven layouts edited in place, revisions, share links and embeds |
 | [`kalendar`](kalendar/) | [kalendar.zyt.app](https://kalendar.zyt.app) | Booking without sign-up on a timeline of your free time: guests drop a meeting in or paint times to request, a week you rearrange and zoom, a profile page, cookieless insights with tracked links and QR codes, an offline app shell that draws from cache, double-booking-proof transactions, public operations behind Holm's challenge, MCP tools for the host, HTML emails with calendar links, an .ics feed |
 | [`ralk`](ralk/) | [ralk.zyt.app](https://ralk.zyt.app) | Your agents, out loud: MCP tools Claude calls to play a sound, show a browser notification and speak a line on every tab you have open; sounds rendered from code in a worker, text-to-speech through `net.fetch` and a file handle into storage, a per-person realtime channel |
+| [`domains`](domains/) | [domains.zyt.app](https://domains.zyt.app) | Short domains that are actually free: names made shorter in the browser and by AI, checked live and shortest first through provider adapters (Namecheap's search socket from the page under the app's own CSP, RDAP over `net.fetch` as a fallback), filters for free, premium and price, saved names synced for members |
 
 ## Layout of an app
 
