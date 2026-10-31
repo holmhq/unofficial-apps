@@ -24,8 +24,9 @@ with their licences, keeping 3dsvg's licence and credit.
   (with trimming and MP4 or WebM through ffmpeg.wasm) and 3D model exports,
   the embed code, and the same look. Fix what you find on the way.
 - Signed out, keep the design in localStorage. Add sign-in: a round avatar
-  at the top right whose menu holds Light, Dark or System, Send feedback
-  and Sign out.
+  at the top right whose menu holds Light, Dark or System as three icons,
+  Send feedback and Sign out, and closes when it's tapped again. Holm
+  branding and the source link stay in the footer.
 - Signed in, Save keeps a shape in member storage with a thumbnail. My
   shapes lists them to open, rename and delete. Mark unsaved changes.
 - Any saved shape can get a revocable read-only share link, copied into
@@ -59,3 +60,11 @@ to a coding agent:
 The agent then asked three questions, and these options were picked: for the
 name, "Keep 3dsvg"; for saving, "Private + share link (Recommended)"; for
 video, "Full parity".
+
+A later patch release came from these messages, written while reviewing
+another app's account menu (Domains), and applied here:
+
+> how is it sensible to show Holm app in the avatar popup menu
+> - clicking it again doesnt dismiss it
+
+> yes, fix ralk, zend and 3dsvg; then /close

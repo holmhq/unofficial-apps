@@ -85,13 +85,7 @@ export function accountButton({ extra = () => [] } = {}) {
       surfaces?.analytics && h('a', { class: 'menu-row', href: surfaces.analytics, target: '_blank', rel: 'noopener' }, icon('chart-column', 16), h('span', {}, 'Analytics')),
       me
         ? h('button', { class: 'menu-row', type: 'button', onclick: signOut }, icon('log-out', 16), h('span', {}, 'Sign out'))
-        : me === null && h('button', { class: 'menu-row', type: 'button', onclick: signIn }, icon('log-in', 16), h('span', {}, 'Sign in')),
-      h('hr', { class: 'menu-sep' }),
-      h('p', { class: 'menu-note' },
-        'Based on ', h('a', { href: 'https://github.com/renatoworks/3dsvg', target: '_blank', rel: 'noopener' }, '3dsvg'),
-        ' (MIT). ',
-        h('a', { href: 'https://github.com/holmhq/unofficial-apps/tree/main/3dsvg', target: '_blank', rel: 'noopener' }, 'Source'),
-        ' · ', h('a', { href: 'https://holmhq.com', target: '_blank', rel: 'noopener' }, 'A Holm app')))
+        : me === null && h('button', { class: 'menu-row', type: 'button', onclick: signIn }, icon('log-in', 16), h('span', {}, 'Sign in')))
     wrap.append(menu)
     button.setAttribute('aria-expanded', 'true')
   }

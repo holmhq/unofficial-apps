@@ -141,7 +141,8 @@ the original's code. A few things changed on the way:
   from the bottom and lift the stage so the shape stays in view.
 - Accounts, saved shapes, share links and the avatar menu are new. The
   original's feedback button and GitHub badge are gone; Send feedback is in
-  the menu.
+  the menu, and the footer carries the Holm credit, the source and the
+  original's link.
 
 ## Deploy your own
 
