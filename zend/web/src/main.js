@@ -226,13 +226,13 @@ function avatarOf(member) {
 function accountMenu(anchor) {
   const member = store.me.member
   const seg = segmented(
-    [{ value: 'light', label: 'Light', icon: 'sun' }, { value: 'dark', label: 'Dark', icon: 'moon' }, { value: 'system', label: 'Auto', icon: 'monitor' }],
+    [{ value: 'light', label: 'Light', icon: 'sun' }, { value: 'dark', label: 'Dark', icon: 'moon' }, { value: 'system', label: 'Match this device', icon: 'monitor' }],
     theme.mode(),
     (value) => {
       const r = seg.querySelector(`[aria-pressed="true"]`).getBoundingClientRect()
       theme.setMode(value, { x: r.left + r.width / 2, y: r.top + r.height / 2 })
     },
-    { label: 'Appearance' })
+    { label: 'Appearance', icons: true })
   const soundRow = h('button.menu-item', { type: 'button', role: 'menuitemcheckbox', 'aria-checked': String(sound.on), onclick: () => {
     sound.set(!sound.on)
     soundRow.setAttribute('aria-checked', String(sound.on))
@@ -248,9 +248,7 @@ function accountMenu(anchor) {
     surfaces && surfaces.analytics ? { label: 'Analytics', icon: 'chart', onclick: () => { location.href = surfaces.analytics } } : null,
     feedback ? { label: 'Send feedback', icon: 'feedback', onclick: () => feedback.open() } : null,
     { label: 'Rules for texting', icon: 'shield', onclick: () => go('/phone#rules') },
-    { label: 'Sign out', icon: 'logout', onclick: signOut },
-    'sep',
-    footNote()
+    { label: 'Sign out', icon: 'logout', onclick: signOut }
   ])
 }
 

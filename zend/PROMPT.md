@@ -41,8 +41,9 @@ runtime CDN; vendor the font and icons with their licences.
   and on a desktop: a tab bar on phones, a rail with the conversation list
   beside the open conversation on wide screens, frosted bars, large titles,
   bubbles with tails and the time inside, sheets that slide up, a round
-  avatar account button even when signed out, light/dark/auto, motion and
-  quiet sounds. Installable, with a network-first service worker.
+  avatar account button even when signed out, whose menu closes when it's
+  tapped again and holds light/dark/auto as three icons (Holm branding stays
+  in the footer), motion and quiet sounds. Installable, with a network-first service worker.
 - For this repository's store, use holm.json version, holm.symbol.svg (one
   black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,
   category, description, whatsNew and sample screenshots. These are repo
@@ -87,3 +88,13 @@ build had planned.
 > show me some preview before full build
 
 > Yes, the direction in UI (layout / functionality) is correct, but the refinement of UI is terrible. We need exceptional attention to detail. So make it so. And rename to Zend; and avoid the Indian-ising on design; make it more like apple-esque or Telegram like or Relay like […]
+
+A later patch release came from these messages, written while reviewing
+another app's account menu (Domains), and applied here:
+
+> how is it sensible to show Holm app in the avatar popup menu
+> - clicking it again doesnt dismiss it
+
+> Avoid the labels for light/dark/auto; its stupidly makes the memu wider
+
+> yes, fix ralk, zend and 3dsvg; then /close
