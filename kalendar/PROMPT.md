@@ -85,7 +85,8 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   hovering in front, standing up as it scrolls into view and turning toward
   the mouse.
   It must open and move like a native app, with no flicker: a versioned
-  service worker that serves the whole shell offline, pages drawn at once
+  service worker that serves the whole shell offline (an address that names
+  a file, such as an icon, still opens that file), pages drawn at once
   from the last answers kept in the browser and refreshed quietly, motion
   only for changes. Public pages end in a frosted footer: A Holm app, Source,
   Send feedback (the repo's feedback app, embed.js vendored).

@@ -125,6 +125,8 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
 - It opens like an app on a phone. A service worker keeps every file of the
   version you have and opens straight from them, so nothing waits on the
   network; a new version installs in the background and takes over next time.
+  An address that names a file, such as `/icon-512.png`, still opens the
+  file itself, not the app.
   Each page draws at once from what your browser saw last (your bookings,
   your insights, a host's page and its open times) and the server's answer
   slips in behind it only if something changed. Tabs keep their place while

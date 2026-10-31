@@ -249,6 +249,14 @@ for (const zone of ZONES) {
   for (const file of listed) if (file !== '/') readFileSync(new URL('.' + file, web))
   const version = JSON.parse(readFileSync(new URL('../holm.json', import.meta.url), 'utf8')).version
   assert.equal(sw.match(/const VERSION = '([^']+)'/)[1], version, 'sw.js VERSION must match holm.json')
+  // A file typed into the address bar is that file; every page address,
+  // dotted handles and slugs included, opens the shell.
+  const [, body, flags] = sw.match(/const FILE = \/(.+)\/([a-z]*)\n/)
+  const file = new RegExp(body, flags)
+  for (const path of ['/icon-512.png', '/favicon.svg', '/manifest.webmanifest', '/icons/teal.png', '/vendor/qrcode/qrcode.mjs'])
+    assert.ok(file.test(path), `sw.js opens the shell for the file ${path}`)
+  for (const path of ['/', '/hours', '/insights', '/@avery', '/@bo.test', '/@bo.test/intro.call', '/@avery/intro', '/b/3f2a-9c'])
+    assert.ok(!file.test(path), `sw.js treats the page ${path} as a file`)
   // Each colour has a tab icon, kept with the version, and the page's first
   // script knows every colour.
   const others = THEMES.filter((t) => t !== 'red')

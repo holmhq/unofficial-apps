@@ -11,9 +11,11 @@
 // for with cache: 'no-store' is ever cached or answered from the cache:
 // bookings stay on the server, and Holm's own pages stay Holm's. Addresses
 // of pages (/@avery, /hours, /b/…) all open the same shell, which draws the
-// page itself.
+// page itself. An address that ends like a file (/icon-512.png,
+// /manifest.webmanifest) is that file, even typed into the address bar;
+// handles and event slugs may hold dots, so /@… is always a page.
 
-const VERSION = '0.8.0'
+const VERSION = '0.8.1'
 const CACHE = 'kalendar-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
@@ -27,6 +29,7 @@ const FILES = [
   '/src/views/event-sheet.js', '/src/views/profile-tab.js', '/src/views/insights.js', '/src/views/link-sheet.js',
   '/vendor/qrcode/qrcode.mjs'
 ]
+const FILE = /^\/(?!@).*\.[a-z0-9]+$/i
 const PASS = /^\/(_[^/]*|api|auth|feed|\.well-known|confirm-email)(\/|$)|^\/b\/[^/]+\/(calendar|invite\.ics)$|^\/sw\.js$/
 
 self.addEventListener('install', (event) => {
@@ -50,7 +53,7 @@ self.addEventListener('fetch', (event) => {
 
 async function answer(request, url) {
   const cache = await caches.open(CACHE)
-  if (request.mode === 'navigate') {
+  if (request.mode === 'navigate' && !FILE.test(url.pathname)) {
     const shell = await cache.match('/')
     if (shell) return shell
     return fetch(request)
