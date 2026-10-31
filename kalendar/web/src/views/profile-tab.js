@@ -7,6 +7,7 @@ import { h, ic, fill, avatar, toggle, nope, copyText, confirm, toast } from '../
 import * as api from '../api.js'
 import * as store from '../store.js'
 import { state, failure, prettyURL, pageURL, share } from '../shell.js'
+import * as theme from '../theme.js'
 import { sound } from '../sound.js'
 import { siteOf } from './profile.js'
 
@@ -67,6 +68,33 @@ export function profileTab({ onSaved }) {
       h('button.btn.small.tinted', { type: 'button', onclick: () => { copyText(pageURL(host().handle), 'Link copied'); sound.pop() } }, ic('copy', 15, 2.2), 'Copy link'),
       h('button.btn.small.tinted', { type: 'button', onclick: () => share(host().handle) }, ic('share', 15, 2.2), 'Share'),
       h('a.btn.small.tinted', { href: pageURL(host().handle), target: '_blank', rel: 'noopener', onclick: (e) => { e.currentTarget.href = pageURL(host().handle) } }, ic('externalLink', 15, 2.2), 'Open')))
+
+  /* ---- Colour -------------------------------------------------------------------------- */
+
+  // The colour of your pages: this dashboard, your page, its booking pages
+  // and your emails. It changes here at once, spreading from the swatch.
+  const accents = h('div.accents', { role: 'radiogroup', 'aria-label': 'Colour of your pages' })
+  const mineOf = () => host().theme || 'red'
+  function paintAccents() {
+    fill(accents, theme.ACCENTS.map(({ id, name }) => h('button.accent-pick', {
+      type: 'button', role: 'radio', 'aria-checked': String(mineOf() === id), 'data-accent': id,
+      onclick: (e) => pickAccent(id, e.currentTarget)
+    }, h('span.accent-dot', ic('check', 18, 3)), h('span.accent-name', name))))
+  }
+  function pickAccent(id, button) {
+    if (id === mineOf()) return
+    const r = button.querySelector('.accent-dot').getBoundingClientRect()
+    theme.setAccent(id, { scope: 'me', origin: { x: r.left + r.width / 2, y: r.top + r.height / 2 } })
+    // Your own page opens in it from now on, here too.
+    const handle = host().handle.toLowerCase()
+    theme.remember('@' + handle, id)
+    store.forget((k) => k === 'u:' + handle || k.startsWith('u:' + handle + '/'))
+    state.me.host = { ...host(), theme: id }
+    paintAccents()
+    sound.pick()
+    save({ theme: id }, 0)
+  }
+  paintAccents()
 
   /* ---- About you ----------------------------------------------------------------------- */
 
@@ -268,6 +296,9 @@ export function profileTab({ onSaved }) {
   const el = h('section.tab-page.profile-page',
     h('div.title-row', h('h1.large-title', 'Profile'), saved),
     card,
+    h('h2.group-title', 'Colour'),
+    h('div.group', accents),
+    h('p.group-foot', 'Your page, its booking pages, your emails and this dashboard wear it, in light and in dark.'),
     h('h2.group-title', 'About you'),
     h('div.group.form-group', row('Name', name), row('What you do', role), row('Company', company), row('City', place)),
     h('p.group-foot', 'Your city is shown with your local time. Leave it empty to use your time zone’s.'),
@@ -299,6 +330,7 @@ export function profileTab({ onSaved }) {
       }
       if (document.activeElement !== handle) handle.value = x.handle
       if (!mails.contains(document.activeElement)) drawMails()
+      if (!('theme' in pending)) paintAccents()
       paintFeed()
       paintCard()
       fit()

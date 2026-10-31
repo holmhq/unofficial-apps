@@ -50,7 +50,9 @@ async function render(dir = 'none') {
   if (current && current.leave) current.leave()
   const next = await view(path)
   current = next
-  const swap = () => fill(root, next.el)
+  // A page wears its host's colour: the host's own tabs theirs, a host's
+  // page and its booking pages that host's; every other page red.
+  const swap = () => { theme.setAccent(next.accent, { scope: theme.scopeOf(path) }); fill(root, next.el) }
   if (dir !== 'none' && document.startViewTransition && !reduced()) {
     document.documentElement.dataset.vt = dir
     const t = document.startViewTransition(swap)

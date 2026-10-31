@@ -32,6 +32,12 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   then the fields, your link, email and calendar feed, saved as you type.
   Booking email can go to another address than the one you sign in with:
   add it, open the link Kalendar sends there, and tick it.
+- **Your colour.** Pick one of six for your pages under Profile: red, amber,
+  teal, blue, violet or graphite. Your dashboard, your page, its booking
+  pages and the emails people get from it all wear it, in light and in dark.
+  Each colour has its own light and dark shades and the text that reads on
+  it, dark on amber or on graphite in the dark, and when your colour sits
+  near the blue a guest's own times are drawn in, theirs turn orange.
 - **Event types.** Each has a name, its own link (`/@handle/intro`), a length,
   where you'll meet (a video link, a phone call to the guest, an address,
   anything else, or decide later), a description and a colour. Rules per type:
@@ -117,13 +123,18 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   slips in behind it only if something changed. Tabs keep their place while
   you're on another, and the first page's data is asked for while the code
   is still loading.
-- An Apple-like look: greys, one red accent from the Calendar app, frosted
+- An Apple-like look: greys, one accent (the Calendar app's red, or the
+  host's own colour), frosted
   bars, large titles, sheets that rise on a phone and dialogs on a desk, a
   segmented control, switches, and a round avatar button at the top right,
   signed out too, holding light/dark/auto, sounds and 24-hour time (tap it
   again to close it). Sheets grow with what's in them but don't shrink while
   open, so narrowing a search doesn't drop the sheet down the screen. A
   colour marks each event type with a dot or a tinted tile, never a stripe.
+- A page opens in its host's colour from the first frame: each kind of page
+  (your tabs, a host's page, a booking) remembers the colour it last wore,
+  and the page applies it before anything draws, the way it applies light or
+  dark. Picking a colour spreads it from the swatch you tapped.
 - Inter's weights carry meaning: 720 for titles, 620 for anything you can
   pick (open days, times, names), 520 for labels, 430 for reading and 360
   for context (the year beside the month, the date beside the weekday, end
@@ -329,6 +340,9 @@ only give to `https://` and `localhost` pages. On a local node, add a
 
 ## Known limits
 
+- **Some things stay red** whatever colour a host picks: the app's icon, the
+  sign-in page Holm hosts, the feedback form, and the home page and sign-up,
+  which belong to no host yet.
 - **Invites show the host's email address** to guests, as the organizer, so
   their Accept or Decline reaches the host. Kalendar doesn't show it anywhere
   else.

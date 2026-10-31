@@ -115,7 +115,7 @@ export function opMe(input, env) {
     const p = privateHost(env, host, origin(env))
     return {
       link: link(env, host), handle: host.handle, name: host.name,
-      profile: { bio: p.bio, role: p.role, company: p.company, place: p.place, website: p.website, links: p.links },
+      profile: { bio: p.bio, role: p.role, company: p.company, place: p.place, website: p.website, links: p.links, theme: p.theme },
       zone: host.tz, zone_label: host.tzLabel, now: iso(host, now), emails_on: host.notify !== false,
       counts: c,
       next_meeting: up ? meeting(host, up) : null,
@@ -130,11 +130,11 @@ export function opMe(input, env) {
 export function opProfile(input, env) {
   return tool(env, ({ m, host }, now) => {
     const change = {}
-    for (const k of ['name', 'bio', 'role', 'company', 'place', 'website', 'links', 'notify']) if (k in input) change[k] = input[k]
+    for (const k of ['name', 'bio', 'role', 'company', 'place', 'website', 'links', 'notify', 'theme']) if (k in input) change[k] = input[k]
     if (!Object.keys(change).length) reject(400, 'invalid_input', 'Send at least one field to change.')
     const next = updateHost(env, m, host, change, now)
     const p = privateHost(env, next, origin(env))
-    return { link: link(env, next), name: p.name, bio: p.bio, role: p.role, company: p.company, place: p.place, website: p.website, links: p.links, emails_on: p.notify }
+    return { link: link(env, next), name: p.name, bio: p.bio, role: p.role, company: p.company, place: p.place, website: p.website, links: p.links, theme: p.theme, emails_on: p.notify }
   })
 }
 

@@ -3,6 +3,7 @@
 import { h, ic, fill, avatar } from '../ui.js'
 import * as api from '../api.js'
 import * as store from '../store.js'
+import * as theme from '../theme.js'
 import { topBar, link, holmFooter, state, share } from '../shell.js'
 import * as t from '../time.js'
 import { city } from '../zones.js'
@@ -59,6 +60,7 @@ export async function profile(handle) {
   asking.then((fresh) => {
     if (!store.keep(key, fresh)) return
     page = fresh
+    theme.setAccent(page.host.theme, { scope: theme.scopeOf(location.pathname) })
     seed(page)
     const next = body(page, visit)
     main.replaceWith(next)
@@ -66,6 +68,7 @@ export async function profile(handle) {
   }).catch(() => {})
   return {
     el,
+    accent: page.host.theme,
     leave: () => visit.leave(),
     me() { const next = bar(); top.replaceWith(next); top = next }
   }

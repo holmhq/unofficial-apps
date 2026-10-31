@@ -103,5 +103,5 @@ export async function manage(id) {
   }
 
   draw()
-  return { el, clock: draw }
+  return { el, accent: b.host.theme, clock: draw }
 }

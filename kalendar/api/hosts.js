@@ -12,6 +12,10 @@ const RESERVED = new Set(('about admin api app apps assets auth b book booking b
   'edit events feed help holm home hours kalendar login logout me new null privacy root settings signin signup ' +
   'src static support terms undefined user users vendor www').split(' '))
 
+// The colours a host can give their pages and emails (web/src/theme.js).
+export const THEMES = ['red', 'amber', 'teal', 'blue', 'violet', 'graphite']
+const themeOf = (host) => (THEMES.includes(host.theme) ? host.theme : 'red')
+
 export const WORKWEEK = [[], [[540, 1020]], [[540, 1020]], [[540, 1020]], [[540, 1020]], [[540, 1020]], []]
 
 export function cleanHandle(value) {
@@ -202,6 +206,7 @@ export function privateHost(env, host, base) {
     email: host.email || null,
     bio: host.bio || '',
     ...profileOf(host),
+    theme: themeOf(host),
     tz: host.tz,
     tzLabel: host.tzLabel,
     tableEnd: host.tzTable && host.tzTable.length ? host.tableEnd || 0 : 0,
@@ -218,7 +223,7 @@ export function privateHost(env, host, base) {
 
 // What anyone with the link sees.
 export function publicHost(host) {
-  return { handle: host.handle, name: host.name, picture: host.picture || null, bio: host.bio || '', ...profileOf(host), tz: host.tz, tzLabel: host.tzLabel }
+  return { handle: host.handle, name: host.name, picture: host.picture || null, bio: host.bio || '', ...profileOf(host), theme: themeOf(host), tz: host.tz, tzLabel: host.tzLabel }
 }
 
 function zoneFields(input) {
@@ -261,6 +266,10 @@ export function updateHost(env, m, host, input, now) {
   if ('website' in input) set.website = cleanURL(input.website, 'Website')
   if ('links' in input) set.links = cleanLinks(input.links)
   if ('notify' in input) set.notify = input.notify !== false
+  if ('theme' in input) {
+    if (!THEMES.includes(input.theme)) reject(400, 'invalid_input', `Pick a colour: ${THEMES.join(', ')}.`)
+    set.theme = input.theme
+  }
   if ('sendTo' in input) {
     const pick = String(input.sendTo || '')
     if (!same(pick, m.email) && !extras(host).some((a) => a.verified && same(a.address, pick))) reject(400, 'invalid_input', 'Pick your sign-in address or one you’ve confirmed.')

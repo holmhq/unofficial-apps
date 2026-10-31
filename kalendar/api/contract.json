@@ -265,7 +265,7 @@
       "auth": "user",
       "risk": "write",
       "summary": "Change your public profile",
-      "description": "Change any of name, bio, role, company, place (a city), website and links (profile URLs) shown on your page, and whether booking emails are on. Send only what changes.",
+      "description": "Change any of name, bio, role, company, place (a city), website and links (profile URLs) shown on your page, the colour of your pages and emails, and whether booking emails are on. Send only what changes.",
       "input": {
         "type": "object",
         "properties": {
@@ -308,6 +308,11 @@
           "notify": {
             "type": "boolean",
             "description": "Email me when someone books."
+          },
+          "theme": {
+            "type": "string",
+            "enum": ["red", "amber", "teal", "blue", "violet", "graphite"],
+            "description": "The colour of your page, its booking pages, your emails and your dashboard."
           }
         },
         "additionalProperties": false

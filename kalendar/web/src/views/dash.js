@@ -7,6 +7,7 @@
 import { h, ic, fill, avatar, sheet, menu, segmented, toggle, toast, haptic, copyText, flip, nope, collapsing, reduced, wide } from '../ui.js'
 import * as api from '../api.js'
 import * as store from '../store.js'
+import * as theme from '../theme.js'
 import { state, topBar, go, failure, prettyURL, pageURL, share, holmFooter, mine } from '../shell.js'
 import { sound } from '../sound.js'
 import * as t from '../time.js'
@@ -855,6 +856,7 @@ export function dash(tab) {
 
   return {
     el,
+    accent: host().theme,
     tabs(path) {
       const x = TABS.find((y) => y.path === path)
       if (!x) return false
@@ -863,6 +865,6 @@ export function dash(tab) {
     },
     leave() { document.removeEventListener('visibilitychange', onVisible); for (const page of pages.values()) if (page.leave) page.leave() },
     clock() { rebuild() },
-    me() { paintLink(); badges() }
+    me() { paintLink(); badges(); theme.setAccent(host().theme, { scope: 'me' }) }
   }
 }

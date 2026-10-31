@@ -72,7 +72,10 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   (signed out too) whose menu holds light/dark/auto, sounds, 24-hour time
   and Holm's analytics link for admins, and closes when it's tapped again;
   sheets that don't shrink as a search narrows; fine motion, quiet Web Audio
-  sounds, and Inter weights that mean something. The signed-out home shows
+  sounds, and Inter weights that mean something. The host picks their
+  pages' colour (red, amber, teal, blue, violet, graphite): their dashboard,
+  page, booking pages and emails wear it, each colour tuned for light and
+  dark with readable text on it. The signed-out home shows
   a booking card that plays itself: a pointer books a time, then asks for
   another. The card is an ordinary flat component set in a real CSS 3D
   scene, with its edge and shadow behind it and the pointer and result
@@ -197,6 +200,19 @@ didn't (an address is replaced here):
 > - add additional emails? and select with one to send email to
 > - so that it can be changed, one can be used for sign-in & another can be used to receive
 > - also, wish multiple people can be added to invite with comma? (may be have a nice iOS like email selection interaction when adding comma)
+
+**Kalendar 0.7.0: a colour for your pages, and initials you can read**
+
+> Lets do refinements in Kalendar:
+> - the Meeting booking view: for someone
+> - the red color in dark mode has gray test thats hard to see
+> - i also wonder whether we can use a few color theme, so that some can pick a theme color they like to theme the site
+> - while you are it, make sure the light / dark modes work well
+> - you can just provide a few themes: Say ~5 or so, which tests light/dark mode across all combinations very well
+
+Asked about the first line, they pointed to a screenshot of the next meeting
+in dark mode, a guest's initials in grey on a red avatar; asked who picks the
+colour, they chose the host, for their own pages.
 
 Asked who adds the extra people, the answer was the guest, on the booking
 form.

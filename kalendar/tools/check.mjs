@@ -14,7 +14,7 @@ import { toUtc, offsetAt, clockRange, longDate, parts } from '../api/tz.js'
 import { calendar } from '../api/ics.js'
 import { cleanTag } from '../api/lib.js'
 import { guestInvite, hostInvite } from '../api/bookings.js'
-import { inviteeMail, hostMail, guestMail, senderOf } from '../api/mail.js'
+import { inviteeMail, hostMail, guestMail, verifyMail, senderOf } from '../api/mail.js'
 import { mailbox } from '../api/hosts.js'
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 
@@ -177,6 +177,15 @@ for (const zone of ZONES) {
   const zone = { tzLabel: 'London', offset: 0, h24: false }
   const c = { b: { ...b, ...zone, duration: 30, slug: 'intro' }, host: { ...host, tzLabel: 'London' }, base, hostOffset: 0,
     links: { manage: `${base}/b/bk1?t=x`, reschedule: `${base}/r`, rebook: `${base}/@avery/intro`, dashboard: `${base}/`, review: `${base}/?r=bk1` } }
+  // Each email wears its host's colour, on buttons and links and in dark
+  // mode; one it doesn't know, or none, is red.
+  for (const [theme, fill, on, text] of [['graphite', '#1d1d1f', '#ffffff', '#1d1d1f'], ['amber', '#f5a00a', '#1d1d1f', '#b25000'], ['nope', '#e0352b', '#ffffff', '#e0352b'], [undefined, '#e0352b', '#ffffff', '#e0352b']]) {
+    const v = verifyMail({ base, host: { ...host, theme }, address: 'x@example.com', link: `${base}/c` }).html
+    assert.ok(v.includes(`background:${fill};border-radius:13px`) && v.includes(`color:${on};text-decoration:none;">Confirm address`), `${theme} button`)
+    const m = inviteeMail('confirmed', { ...c, host: { ...c.host, theme } }).html
+    assert.ok(m.includes(`<a class="acc" href="${base}/r" style="color:${text};`), `${theme} links`)
+    assert.match(m, /@media \(prefers-color-scheme: dark\)[^]*\.acc \{ color: #[0-9a-f]{6} !important; \}/, `${theme} dark links`)
+  }
   for (const kind of ['confirmed', 'accepted', 'rescheduled']) {
     for (const mail of [inviteeMail(kind, c), hostMail(kind, c)]) {
       assert.doesNotMatch(mail.html + mail.text, /calendar\.google\.com|outlook\.live\.com|Add to your calendar|undefined/, kind)

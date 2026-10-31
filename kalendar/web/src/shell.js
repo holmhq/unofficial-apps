@@ -87,6 +87,7 @@ export function signIn() {
 
 export async function signOut() {
   store.forget()
+  theme.forgetMine()
   try { await fetch(state.me.logoutURL, { method: 'POST', headers: { accept: 'application/json' } }) } catch {}
   location.href = '/'
 }

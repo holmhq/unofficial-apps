@@ -7,6 +7,7 @@
 import { h, fill, ic, avatar, toast, haptic, nope, reduced, wide, segmented } from '../ui.js'
 import * as api from '../api.js'
 import * as store from '../store.js'
+import * as theme from '../theme.js'
 import { state, topBar, go, link, failure, holmFooter, signIn } from '../shell.js'
 import { sound } from '../sound.js'
 import * as t from '../time.js'
@@ -48,6 +49,7 @@ export async function book(handle, slug) {
   // A changed event (a new length, say) redraws the page, unless the guest
   // has already started choosing.
   asking.then((fresh) => {
+    if (location.pathname === `/@${handle}/${slug}`) theme.setAccent(fresh.host.theme, { scope: theme.scopeOf(location.pathname) })
     if (store.keep(key, fresh) && page !== fresh && s.step === 'pick' && !s.clip && !s.paint.length && location.pathname === `/@${handle}/${slug}`) go(location.pathname + location.search, { replace: true, dir: 'none' })
   }).catch(() => {})
   const { host, event } = page
@@ -637,6 +639,7 @@ export async function book(handle, slug) {
 
   return {
     el,
+    accent: host.theme,
     ready: () => opening,
     clock: redrawClocks,
     leave: () => { visit.leave(); tl.destroy() },

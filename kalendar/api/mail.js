@@ -11,6 +11,23 @@ const C = {
   accent: '#e0352b', green: '#1f8a3b', greenSoft: '#e7f6eb', red: '#d70015', redSoft: '#fdecec', blue: '#0a66d8', blueSoft: '#e8f0fc',
   amber: '#a35200', amberSoft: '#fdf1e1', well: '#f5f5f7'
 }
+
+// The host's colour (THEMES in hosts.js, the app's theme.js): a fill for
+// buttons, the text on it, and the colour of links, in light and in dark.
+// Each email wears its host's, set as it starts (wear).
+const ACCENTS = {
+  red: { fill: '#e0352b', on: '#ffffff', text: '#e0352b', soft: '#fdeceb', dark: { fill: '#ff453a', on: '#ffffff', text: '#ff6961' } },
+  amber: { fill: '#f5a00a', on: '#1d1d1f', text: '#b25000', soft: '#fdf1dc', dark: { fill: '#ffb340', on: '#1d1d1f', text: '#ffb340' } },
+  teal: { fill: '#0b8a8f', on: '#ffffff', text: '#007a80', soft: '#e3f3f3', dark: { fill: '#3cc8c8', on: '#00292b', text: '#5fd4d4' } },
+  blue: { fill: '#0a66d8', on: '#ffffff', text: '#0060d0', soft: '#e6effb', dark: { fill: '#0a84ff', on: '#ffffff', text: '#4ca2ff' } },
+  violet: { fill: '#7b45e6', on: '#ffffff', text: '#6d36d9', soft: '#efe9fc', dark: { fill: '#a37dff', on: '#160a33', text: '#b79bff' } },
+  graphite: { fill: '#1d1d1f', on: '#ffffff', text: '#1d1d1f', soft: '#ececee', dark: { fill: '#f5f5f7', on: '#000000', text: '#f5f5f7' } }
+}
+let A = ACCENTS.red
+function wear(host) {
+  A = ACCENTS[host && host.theme] || ACCENTS.red
+  C.accent = A.text
+}
 const FONT = "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 
 function layout({ base, title, preheader, body, footer }) {
@@ -39,6 +56,9 @@ a { color: ${C.accent}; }
   .pill a { color: #f5f5f7 !important; }
   .quote { background: #2c2c2e !important; }
   .ask { background: #2c2c2e !important; }
+  .acc { color: ${A.dark.text} !important; }
+  .btn { background: ${A.dark.fill} !important; }
+  .btn a { color: ${A.dark.on} !important; }
 }
 @media (max-width: 620px) {
   .pad { padding: 28px 22px !important; }
@@ -91,7 +111,7 @@ function when({ start, end, offset, h24, zone, struck = false }) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 4px;"><tr>
 <td width="66" style="vertical-align:top;">
   <table role="presentation" width="66" cellpadding="0" cellspacing="0" border="0" class="tile" style="border:1px solid ${C.line};border-radius:15px;background:#ffffff;border-collapse:separate;">
-    <tr><td style="padding:8px 0 0;text-align:center;font-size:11px;line-height:1;font-weight:700;letter-spacing:0.08em;color:${struck ? C.ink3 : C.accent};">${days[p.weekday]}</td></tr>
+    <tr><td style="padding:8px 0 0;text-align:center;font-size:11px;line-height:1;font-weight:700;letter-spacing:0.08em;color:${struck ? C.ink3 : C.accent};"${struck ? '' : ' class="acc"'}>${days[p.weekday]}</td></tr>
     <tr><td class="ink" style="padding:3px 0 9px;text-align:center;font-size:32px;line-height:1;font-weight:300;letter-spacing:-0.03em;color:${struck ? C.ink3 : C.ink};${strike}">${p.day}</td></tr>
   </table>
 </td>
@@ -116,7 +136,7 @@ const guestRow = (b) => (guestsOf(b).length ? ['Guests', guestsOf(b).map(esc).jo
 
 function button(label, href) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;"><tr>
-<td class="btn" style="background:${C.accent};border-radius:13px;"><a href="${esc(href)}" style="display:inline-block;padding:13px 22px;font-size:15px;font-weight:620;letter-spacing:-0.008em;color:#ffffff;text-decoration:none;">${esc(label)}</a></td>
+<td class="btn" style="background:${A.fill};border-radius:13px;"><a href="${esc(href)}" style="display:inline-block;padding:13px 22px;font-size:15px;font-weight:620;letter-spacing:-0.008em;color:${A.on};text-decoration:none;">${esc(label)}</a></td>
 </tr></table>`
 }
 
@@ -140,16 +160,16 @@ const plainStretches = (ranges, offsetOf, h24) => ranges.map(([a, z]) => `- ${sh
 function changeBox(links) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;"><tr>
 <td class="line ink2" style="border-top:1px solid ${C.line};padding-top:18px;font-size:14px;line-height:1.5;color:${C.ink2};">
-Need a change? <a href="${esc(links.reschedule)}" style="color:${C.accent};font-weight:600;text-decoration:none;">Reschedule</a>
-&nbsp;or&nbsp; <a href="${esc(links.manage)}" style="color:${C.accent};font-weight:600;text-decoration:none;">cancel</a>
+Need a change? <a class="acc" href="${esc(links.reschedule)}" style="color:${C.accent};font-weight:600;text-decoration:none;">Reschedule</a>
+&nbsp;or&nbsp; <a class="acc" href="${esc(links.manage)}" style="color:${C.accent};font-weight:600;text-decoration:none;">cancel</a>
 </td></tr></table>`
 }
 
 function where(location, { hostName, phone, forHost }) {
   const l = location || { kind: 'none' }
-  if (l.kind === 'video') return l.value ? `Video call · <a href="${esc(l.value)}" style="color:${C.accent};text-decoration:none;font-weight:600;">Join</a><br><span class="ink2" style="font-size:13px;color:${C.ink2};word-break:break-all;">${esc(l.value)}</span>` : 'Video call · the link will follow'
-  if (l.kind === 'phone') return forHost ? `Phone call · call <a href="tel:${esc(phone)}" style="color:${C.accent};text-decoration:none;">${esc(phone)}</a>` : `Phone call · ${esc(hostName)} will call you at ${esc(phone)}`
-  if (l.kind === 'place') return `${esc(l.value)}<br><a href="https://maps.apple.com/?q=${encodeURIComponent(l.value)}" style="color:${C.accent};text-decoration:none;font-size:13px;font-weight:600;">Open in Maps</a>`
+  if (l.kind === 'video') return l.value ? `Video call · <a class="acc" href="${esc(l.value)}" style="color:${C.accent};text-decoration:none;font-weight:600;">Join</a><br><span class="ink2" style="font-size:13px;color:${C.ink2};word-break:break-all;">${esc(l.value)}</span>` : 'Video call · the link will follow'
+  if (l.kind === 'phone') return forHost ? `Phone call · call <a class="acc" href="tel:${esc(phone)}" style="color:${C.accent};text-decoration:none;">${esc(phone)}</a>` : `Phone call · ${esc(hostName)} will call you at ${esc(phone)}`
+  if (l.kind === 'place') return `${esc(l.value)}<br><a class="acc" href="https://maps.apple.com/?q=${encodeURIComponent(l.value)}" style="color:${C.accent};text-decoration:none;font-size:13px;font-weight:600;">Open in Maps</a>`
   if (l.kind === 'custom') return esc(l.value)
   return null
 }
@@ -167,6 +187,7 @@ const at = (start, offset, h24) => `${shortDate(parts(start, offset))} at ${cloc
 // To the person who booked: confirmed, rescheduled or cancelled.
 export function inviteeMail(kind, c) {
   const { b, host, base } = c
+  wear(host)
   const offset = b.offset
   const time = { start: b.start, end: b.end, offset, h24: b.h24, zone: b.tzLabel }
   const footer = `Sent by Kalendar for ${esc(host.name)}. You booked at <a href="${esc(base)}/@${esc(host.handle)}" style="color:${C.ink3};">${esc(base.replace(/^https?:\/\//, ''))}/@${esc(host.handle)}</a>.`
@@ -180,7 +201,7 @@ export function inviteeMail(kind, c) {
       `<p class="ink2" style="margin:10px 0 0;font-size:13px;color:${C.ink2};">${esc(b.tzLabel)} · ${gmt(offset)}</p>` +
       (b.notes ? rows([['Notes', quote(b.notes)]]) : '') +
       `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;"><tr>
-<td class="line ink2" style="border-top:1px solid ${C.line};padding-top:18px;font-size:14px;line-height:1.5;color:${C.ink2};">Changed your mind? <a href="${esc(c.links.manage)}" style="color:${C.accent};font-weight:600;text-decoration:none;">Withdraw the request</a></td></tr></table>`
+<td class="line ink2" style="border-top:1px solid ${C.line};padding-top:18px;font-size:14px;line-height:1.5;color:${C.ink2};">Changed your mind? <a class="acc" href="${esc(c.links.manage)}" style="color:${C.accent};font-weight:600;text-decoration:none;">Withdraw the request</a></td></tr></table>`
     return {
       subject: `Request sent: ${b.eventTitle} with ${host.name}`,
       html: layout({ base, title: 'Request sent', preheader: `${host.name} will pick a time from what you offered, or let you know.`, body, footer }),
@@ -237,11 +258,12 @@ export function inviteeMail(kind, c) {
 // To the host: a new booking, a moved one, or a cancelled one.
 export function hostMail(kind, c) {
   const { b, host, base } = c
+  wear(host)
   const offset = c.hostOffset
   const h24 = false
   const time = { start: b.start, end: b.end, offset, h24, zone: host.tzLabel }
   const footer = `You get these because people book you at <a href="${esc(base)}/@${esc(host.handle)}" style="color:${C.ink3};">${esc(base.replace(/^https?:\/\//, ''))}/@${esc(host.handle)}</a>. Turn them off in Kalendar.`
-  const who = `${esc(b.name)}<br><a href="mailto:${esc(b.email)}" style="color:${C.accent};text-decoration:none;">${esc(b.email)}</a>`
+  const who = `${esc(b.name)}<br><a class="acc" href="mailto:${esc(b.email)}" style="color:${C.accent};text-decoration:none;">${esc(b.email)}</a>`
   const place = where(b.location, { hostName: host.name, phone: b.phone, forHost: true })
   const ranges = b.ranges || [[b.start, b.end]]
   const hostOffset = (ms) => (c.hostTable ? offsetAt(c.hostTable, ms) : offset)
@@ -284,7 +306,7 @@ export function hostMail(kind, c) {
   }
   const moved = kind === 'rescheduled'
   const accepted = kind === 'accepted'
-  const body = (moved ? badge('Rescheduled', C.blue, C.blueSoft) : accepted ? badge('Accepted', C.green, C.greenSoft) : badge('New booking', C.accent, '#fdeceb')) +
+  const body = (moved ? badge('Rescheduled', C.blue, C.blueSoft) : accepted ? badge('Accepted', C.green, C.greenSoft) : badge('New booking', C.accent, A.soft)) +
     heading(moved ? `${b.name} moved their time` : accepted ? `You’re meeting ${b.name}` : `${b.name} booked you`, `${esc(b.eventTitle)} · ${b.duration} min`) +
     when(time) +
     (moved && c.old ? `<p class="ink3" style="margin:10px 0 0 82px;font-size:13px;color:${C.ink3};">Was <span style="text-decoration:line-through;">${esc(at(c.old.start, offset, h24))}</span></p>` : '') +
@@ -310,6 +332,7 @@ export function hostMail(kind, c) {
 // change it, which only the booker has.
 export function guestMail(kind, c) {
   const { b, host, base } = c
+  wear(host)
   const offset = b.offset
   const time = { start: b.start, end: b.end, offset, h24: b.h24, zone: b.tzLabel }
   const footer = `Sent by Kalendar for ${esc(host.name)}, because ${esc(b.name)} invited you.`
@@ -347,6 +370,7 @@ export function guestMail(kind, c) {
 
 // The link that confirms an address a host added for booking email.
 export function verifyMail({ base, host, address, link }) {
+  wear(host)
   const body = heading('Confirm this address', `${esc(host.name)} wants Kalendar’s booking emails at <b style="font-weight:620;">${esc(address)}</b>. Confirm it’s yours.`) +
     button('Confirm address', link) +
     `<p class="ink3" style="margin:22px 0 0;font-size:13px;line-height:1.5;color:${C.ink3};">The link works for a week. If you didn’t ask for this, ignore it, and nothing will be sent here.</p>`

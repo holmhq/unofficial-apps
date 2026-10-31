@@ -28,17 +28,24 @@
   <link rel="modulepreload" href="/src/sound.js">
   <link rel="modulepreload" href="/src/time.js">
   <script>
-    // Apply the saved theme before the first paint, and ask for this page's
-    // data now, while the code loads (api.js picks the answers up).
+    // Apply the saved theme and the colour this page last wore (theme.js)
+    // before the first paint, and ask for this page's data now, while the
+    // code loads (api.js picks the answers up).
     (function () {
-      var mode = 'system'
-      try { mode = localStorage.getItem('kalendar:theme') || 'system' } catch (e) {}
+      var mode = 'system', accent = null, path = location.pathname, m
+      try {
+        mode = localStorage.getItem('kalendar:theme') || 'system'
+        var scope = (m = /^\/@([^/]+)/.exec(path)) ? '@' + decodeURIComponent(m[1]).toLowerCase()
+          : (m = /^\/b\/([a-z0-9-]+)/.exec(path)) ? 'b:' + m[1]
+          : /^\/(events|hours|insights|profile)?$/.test(path) ? 'me' : null
+        if (scope) accent = localStorage.getItem('kalendar:accent:' + scope)
+      } catch (e) {}
       var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
       if (dark) document.documentElement.classList.add('dark')
+      if (accent) document.documentElement.setAttribute('data-accent', accent)
       document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#000000' : '#f5f5f7')
       var boot = window.__kalendarBoot = {}
       var ask = function (path) { boot[path] = fetch(path, { headers: { accept: 'application/json' } }); boot[path].catch(function () {}) }
-      var path = location.pathname, m
       ask('/api/me?next=' + encodeURIComponent(path + location.search))
       if ((m = /^\/@([^/]+)\/([^/]+)\/?$/.exec(path))) ask('/api/u/' + m[1] + '/' + m[2])
       else if ((m = /^\/@([^/]+)\/?$/.exec(path))) ask('/api/u/' + m[1])
