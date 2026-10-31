@@ -177,6 +177,13 @@ after the first deploy.
   picked up the filter preset's `height: 28px`, and a star's `.pop` bounce
   picked up the popover's `position: absolute`. Name states `is-…` or make
   them specific, and search the stylesheet before reusing a short name.
+- **Nothing invisible takes a tap.** A control that fades out must stop
+  taking pointer events too. Roll's date rail, hidden on a phone until you
+  scroll, sat over the right edge of the grid and swallowed taps on photos.
+- **`replaceChildren(null)` writes "null".** DOM methods turn `null` into
+  text, so a page head showed the word "null" where an optional part was
+  missing. Build children through a helper that skips empty values (the
+  `fill` and `h` helpers in each app's `ui.js`).
 
 ## Holm runtime notes
 

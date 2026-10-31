@@ -1,0 +1,51 @@
+{
+  "name": "roll",
+  "version": "0.1.0",
+  "title": "Roll",
+  "shortName": "Roll",
+  "description": "Your photo library on your own server: every day on a timeline, memories from past years, and albums you share by link.",
+  "themeColor": "#f0592a",
+  "iconStyle": "soft",
+  "surfaces": {
+    "web": {
+      "renderer": "off"
+    }
+  },
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    },
+    "headers": [
+      {
+        "path": "/*",
+        "set": {
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "strict-origin-when-cross-origin"
+        }
+      },
+      {
+        "path": "/fonts/*",
+        "set": {
+          "Cache-Control": "public, max-age=31536000, immutable"
+        }
+      }
+    ]
+  },
+  "ds": {
+    "search": {
+      "exclude": ["photos", "albums"]
+    }
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://roll.zyt.app"
+    }
+  }
+}

@@ -1179,6 +1179,72 @@
       "history": []
     },
     {
+      "name": "roll",
+      "path": "roll",
+      "version": "0.1.0",
+      "tag": "roll/v0.1.0",
+      "h1": "h1:dhDt7pPyGv6GQLAvwnw9ogZsKUckGvQgvZG6VeyEJKw=",
+      "files": 61,
+      "size": 2123244,
+      "title": "Roll",
+      "description": "Your photo library on your own server: every day on a timeline, memories from past years, and albums you share by link.",
+      "themeColor": "#f0592a",
+      "symbol": "M 0 12 C 0 5.372583 5.372583 0 12 0 C 18.627417 0 24 5.372583 24 12 C 24 18.627417 18.627417 24 12 24 C 5.372583 24 0 18.627417 0 12 Z M 9.113208 5.716981 C 9.113208 7.311313 10.405669 8.603774 12 8.603774 C 13.594331 8.603774 14.886792 7.311313 14.886792 5.716981 C 14.886792 4.12265 13.594331 2.830189 12 2.830189 C 10.405669 2.830189 9.113208 4.12265 9.113208 5.716981 Z M 15.088302 10.058491 C 15.088302 11.652822 16.380763 12.945283 17.975094 12.945283 C 19.569426 12.945283 20.861887 11.652822 20.861887 10.058491 C 20.861887 8.464159 19.569426 7.171698 17.975094 7.171698 C 16.380763 7.171698 15.088302 8.464159 15.088302 10.058491 Z M 12.806038 17.083019 C 12.806038 18.67735 14.098499 19.969811 15.69283 19.969811 C 17.287162 19.969811 18.579623 18.67735 18.579623 17.083019 C 18.579623 15.488687 17.287162 14.196226 15.69283 14.196226 C 14.098499 14.196226 12.806038 15.488687 12.806038 17.083019 Z M 5.420377 17.083019 C 5.420377 18.67735 6.712838 19.969811 8.30717 19.969811 C 9.901501 19.969811 11.193962 18.67735 11.193962 17.083019 C 11.193962 15.488687 9.901501 14.196226 8.30717 14.196226 C 6.712838 14.196226 5.420377 15.488687 5.420377 17.083019 Z M 3.138113 10.058491 C 3.138113 11.652822 4.430574 12.945283 6.024906 12.945283 C 7.619237 12.945283 8.911698 11.652822 8.911698 10.058491 C 8.911698 8.464159 7.619237 7.171698 6.024906 7.171698 C 4.430574 7.171698 3.138113 8.464159 3.138113 10.058491 Z M 10.471698 12 C 10.471698 12.54601 10.762991 13.050543 11.235849 13.323548 C 11.708707 13.596553 12.291293 13.596553 12.764151 13.323548 C 13.237009 13.050543 13.528302 12.54601 13.528302 12 C 13.528302 11.45399 13.237009 10.949457 12.764151 10.676452 C 12.291293 10.403447 11.708707 10.403447 11.235849 10.676452 C 10.762991 10.949457 10.471698 11.45399 10.471698 12 Z",
+      "demo": "https://roll.zyt.app",
+      "listing": {
+        "subtitle": "Your photo library, on your own server",
+        "category": "Photos",
+        "description": "Roll keeps your photos on a timeline of the days you took them, by the camera's own clock. Each month and day has a heading with its place, and the days flow along rows that fill the screen. A date rail jumps through the years, and a pinch makes the photos bigger or smaller.\n\nOn this day brings back photos from today's date in earlier years, as a short story that drifts from one photo to the next.\n\nDrop photos anywhere, choose them or paste them. Roll reads each one's date, camera, exposure and location in your browser, names the place without asking any service, skips photos it already has, and keeps the original. The viewer grows out of the photo you tap, swipes and zooms, and shows the details beside the photo.\n\nCollect photos into albums and share one by link: anyone with it sees the album, no account needed, without places, cameras or file names. Places, favourites, a Trash that waits 30 days, and search over places, cameras, months and more.\n\nIt feels like an app: frosted bars that stay put, a tab bar on your phone and a sidebar on a desk, light and dark, with photos on black.",
+        "whatsNew": "The first release: a timeline of every day, On this day stories, a viewer that zooms, albums you share by link, places, search, favourites and a Trash.",
+        "featured": true,
+        "screenshots": [
+          {
+            "path": "listing/library.webp",
+            "alt": "The library on a phone: On this day cards for one, two and three years ago, then today and yesterday in Lisbon",
+            "width": 780,
+            "height": 1688,
+            "hash": "2230c2b589a6"
+          },
+          {
+            "path": "listing/viewer.webp",
+            "alt": "A photo of houses on a cliff above the sea in the viewer, with its date, place and time, and buttons to favourite, see details, download and delete",
+            "width": 780,
+            "height": 1688,
+            "hash": "f615c651c9d1"
+          },
+          {
+            "path": "listing/places.webp",
+            "alt": "Places: Lisbon, Cascais, Valais and California as cards with a photo each and how many photos were taken there",
+            "width": 780,
+            "height": 1688,
+            "hash": "ab111bcd61bd"
+          },
+          {
+            "path": "listing/story.webp",
+            "alt": "An On this day story from a year ago in California: a beach with rocks, filling the screen, with progress bars across the top",
+            "width": 780,
+            "height": 1688,
+            "hash": "cd38119dfe59"
+          },
+          {
+            "path": "listing/shared-dark.webp",
+            "alt": "A shared album in dark mode, Lisbon weekend, as anyone with the link sees it: who shared it, six photos and Download all",
+            "width": 780,
+            "height": 1688,
+            "hash": "5a13dd5b6ff7"
+          }
+        ],
+        "cover": {
+          "path": "listing/cover.png",
+          "width": 1200,
+          "height": 630,
+          "hash": "07abca25ceb7"
+        }
+      },
+      "prompt": "Build \"Roll\", a photo library for your own server in the spirit of Immich or\nGoogle Photos, using only https://holmhq.com/llms-full.txt for Holm. Read its\nv1 sections 9–12, \"Keep uploads under the node's limits\", \"Shrink photos\nbefore upload\", \"Make an app feel finished\" and \"Make it feel native\" first.\nMake holm.json (web.spa true), public web/ files and api/main.js exporting\ndefault { fetch(request, env) }. No build step or third-party runtime CDN;\nvendor Inter and ThumbHash with their licences.\n\n- Sign in with the node's accounts. Each member's photos and albums are\n  theirs alone, in shared storage with an owner on every record. A quota per\n  member (QUOTA_MB in the app's environment); app admins have none.\n- Uploads: pick files, drop them anywhere or paste them. In the browser,\n  read EXIF (date with its time zone, camera, lens, exposure, GPS), a\n  SHA-256 fingerprint to skip photos already there, a 2048 px preview and a\n  thumbnail made on a canvas (no metadata), and a ThumbHash placeholder.\n  Name the place offline from GeoNames towns of 15,000 people or more\n  (bigger towns win within 25 km, else the region). Send the copies first so\n  the tile appears at once with a progress ring, then the original in its\n  own request; keep the copy if the original is too large. A tray shows\n  progress, what was skipped and why.\n- The library: photos by the date they were taken (the camera's own wall\n  clock), a heading per month and per day with the day's place, days flowing\n  into each other in rows justified to the width, rendered virtually so huge\n  libraries scroll smoothly, a date rail to jump through the years, ThumbHash\n  colours before thumbnails load, and zoom with ctrl+wheel or a pinch.\n- \"On this day\" cards for earlier years that play as a story with a slow\n  drift, bars, tap to move, hold to pause.\n- A viewer that grows out of the tile and back, swipes, zooms (wheel, pinch,\n  double tap; the original loads when you look closer), closes on a pull\n  down, and shows details (date, file, camera and exposure, place with a map\n  link, albums) beside the photo on a desk and in a sheet on a phone.\n- Select with a tick, shift-click ranges, select a whole day, long-press on a\n  phone: favourite, add to an album, download (several as one ZIP made in the\n  browser), move to the Trash with Undo. The Trash keeps photos 30 days.\n- Albums with covers; add from the library with a picker; share by link: a\n  public page with the album's title, who shared it and the photos (no\n  places, cameras or file names, never originals), its own link preview.\n- Places as cards, and search over places, cameras, months, years, albums\n  and words like portrait, night or favorite, with suggestion chips.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places on a desk, a tab\n  bar on a phone; a round avatar button with a three-icon theme switch and\n  storage use; Holm's credit only in the footer. A versioned service worker\n  precaches the app and keeps thumbnails.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/ with screenshots of sample photos only.",
+      "history": []
+    },
+    {
       "name": "snake",
       "path": "snake",
       "version": "0.1.1",

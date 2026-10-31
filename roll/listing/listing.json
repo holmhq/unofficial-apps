@@ -1,0 +1,29 @@
+{
+  "subtitle": "Your photo library, on your own server",
+  "category": "Photos",
+  "featured": true,
+  "description": "Roll keeps your photos on a timeline of the days you took them, by the camera's own clock. Each month and day has a heading with its place, and the days flow along rows that fill the screen. A date rail jumps through the years, and a pinch makes the photos bigger or smaller.\n\nOn this day brings back photos from today's date in earlier years, as a short story that drifts from one photo to the next.\n\nDrop photos anywhere, choose them or paste them. Roll reads each one's date, camera, exposure and location in your browser, names the place without asking any service, skips photos it already has, and keeps the original. The viewer grows out of the photo you tap, swipes and zooms, and shows the details beside the photo.\n\nCollect photos into albums and share one by link: anyone with it sees the album, no account needed, without places, cameras or file names. Places, favourites, a Trash that waits 30 days, and search over places, cameras, months and more.\n\nIt feels like an app: frosted bars that stay put, a tab bar on your phone and a sidebar on a desk, light and dark, with photos on black.",
+  "whatsNew": "The first release: a timeline of every day, On this day stories, a viewer that zooms, albums you share by link, places, search, favourites and a Trash.",
+  "screenshots": [
+    {
+      "file": "library.webp",
+      "alt": "The library on a phone: On this day cards for one, two and three years ago, then today and yesterday in Lisbon"
+    },
+    {
+      "file": "viewer.webp",
+      "alt": "A photo of houses on a cliff above the sea in the viewer, with its date, place and time, and buttons to favourite, see details, download and delete"
+    },
+    {
+      "file": "places.webp",
+      "alt": "Places: Lisbon, Cascais, Valais and California as cards with a photo each and how many photos were taken there"
+    },
+    {
+      "file": "story.webp",
+      "alt": "An On this day story from a year ago in California: a beach with rocks, filling the screen, with progress bars across the top"
+    },
+    {
+      "file": "shared-dark.webp",
+      "alt": "A shared album in dark mode, Lisbon weekend, as anyone with the link sees it: who shared it, six photos and Download all"
+    }
+  ]
+}

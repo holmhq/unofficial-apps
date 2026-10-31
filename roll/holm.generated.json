@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:81f769bb3ccd18c4d13d41cbf133963bf3676e97177539a04ca5e6057e6648c7",
+  "inputs": {
+    "symbolHash": "sha256:e4b26e71e1d7b6379416647b2117ef3162e51de082f6b6c4ef9574c4b78b4242",
+    "themeColor": "#f0592a",
+    "name": "Roll",
+    "subtitle": "Your photo library on your own server: every day on a timeline, memories from past years, and albums you share by link.",
+    "iconStyle": "soft"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.274.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:e897b8b4e69091a37e968cf2daf7de0c79142463a13fbc57355c45757afaa775",
+    "web/apple-touch-icon.png": "sha256:79a3253501c7a8a45040d6dd32d236e5a1851aa39885a2a866674c050058f4b3",
+    "web/favicon.ico": "sha256:746105cb5fee3adf7f01863437fd4a27773467b719234dc1fc7a440ff78d4fa4",
+    "web/favicon.png": "sha256:5f8ca5397b613b3a3e197f0ef0b122022899abce78ff4b783fec0fa84af615cf",
+    "web/favicon.svg": "sha256:83be78ed9e6b14e806c101828c58554644273194b05204f4e6b1c1fce0e32291",
+    "web/icon-192.png": "sha256:af647247097afe7a5f038f79efa409c16842819317665c6847fc738fe312a45b",
+    "web/icon-512.png": "sha256:734ec5b684954608fa63a75b908a24b69213cbb794e7a96566a1856a44b8a1c3",
+    "web/icon-maskable-512.png": "sha256:1b989435ba801a8f7a4fe9a0e5c37f343bd35d4281ae54a0c19e967f814540c0",
+    "web/manifest.webmanifest": "sha256:4a35ecd78e222a00b2003d7e7ee4e1e71a5055d9cce0fa04bd5cc7e7e0c56414",
+    "web/social_preview.png": "sha256:02e1ff691defa19633a15a57878cc1e3ca63c209ec2b721e3e6950eb9f5b6f72"
+  }
+}
