@@ -28,7 +28,8 @@ references.
 - **The window never scrolls.** Bars are fixed and frosted, only panels
   scroll, and no scroll bar shows. Nothing may scroll sideways on an iPhone.
 - **Phones get a tab bar, desks a sidebar.** A sidebar holds places (Search,
-  Saved, lists, pages), not filters or settings. It can be hidden. Settings
+  Saved, lists, pages), not filters or settings. It can be hidden, and in
+  an app whose main screen is a search it starts hidden. Settings
   people rarely touch go in a menu or a sheet.
 - **The layout holds still.** Moving between pages doesn't shift the frame,
   and loading data doesn't push things around. When a choice is switched off,
@@ -38,7 +39,10 @@ references.
   goes.
 - **Search-first apps put the search in the navbar.** The first search can
   start from a big field in a hero, which then moves up into the navbar while
-  the rest of the hero fades away.
+  the rest of the hero fades away. A moving element must land exactly on
+  its final size and place, so measure the destination before animating.
+- **Start empty.** Never type into a field by itself to demo the app, and
+  keep real people's names out of example searches.
 - **Scroll the panel yourself.** `scrollIntoView()` and `#anchor` links also
   scroll the fixed shell and push the header away. Scroll the nearest panel
   by hand, and use buttons in place of in-page anchors.
@@ -104,9 +108,10 @@ references.
   result flashes, a sheet comes up, a live dot pulses. Respect
   `prefers-reduced-motion`.
 - **Results arrive as a calm, even stream.** Lookups come back in bursts, so
-  queue the results and reveal one card at a time, about every 35–65 ms
+  queue the results and reveal one card at a time, about every 15–30 ms
   (quicker when many are waiting), appended in order. Each card fades and
-  rises a few pixels, its details a beat later. Don't reshuffle cards that
+  rises a few pixels over about 0.4 s, its details a beat later. It should
+  feel snappy as well as orderly: 35–65 ms between cards felt slow. Don't reshuffle cards that
   are already showing, and don't flash them. A single soft placeholder at
   the end shows more is coming.
 - **Nothing replays on refresh.** Animate changes of state, or play a one-time
@@ -222,6 +227,8 @@ couldn't check.
 - [ ] Hover is subtle (nothing grows or underlines), separators meet, and
       every dropdown is designed.
 - [ ] Controls are quiet: no wall of equal-weight switches or grey chips.
+- [ ] Fields start empty, with no auto-typed demo, and anything that moves
+      lands on its final size and place.
 - [ ] Chip rows stay on one line and scroll sideways. No line restates
       what's on screen. Status words can't be misread ("Available").
 
