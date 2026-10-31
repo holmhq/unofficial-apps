@@ -34,7 +34,7 @@ served as files: `api/` and `holm.json` are not public URLs.
   across the top, tap either side to move, hold to pause, pull down to close.
 - **Adding photos.** Choose them, drop them anywhere on the page or paste
   them. Each photo's date, time zone, camera, lens, exposure and location are
-  read from its EXIF in the browser. Photos already in the library are
+  read from its EXIF in the browser, from JPEG or HEIC. Photos already in the library are
   skipped, matched by fingerprint. The tile shows at once with a progress
   ring, and a tray says how many were added, which were skipped and why.
   Dropping photos on an album adds them to that album.
@@ -160,7 +160,8 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#f0592a'
 
 - **Photos only.** Videos and other files are turned away with a note.
 - **HEIC** works where the browser can open it (Safari). Elsewhere, export
-  as JPEG first; iPhones usually send JPEG to web pages anyway.
+  as JPEG first. The file picker asks for `image/*`, so an iPhone sends its
+  photos as JPEG with their EXIF.
 - **No faces, maps or AI search.** Search matches words: places, cameras,
   dates, albums and a few kinds of photo.
 - **One owner per photo.** Albums can't be shared for others to add to, and

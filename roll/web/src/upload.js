@@ -335,7 +335,10 @@ export function acceptDrops(target, canAdd) {
 }
 
 export function pickFiles(album = null) {
-  const input = h('input', { type: 'file', accept: 'image/*,.heic,.heif', multiple: true, hidden: true })
+  // Plain image/*: an iPhone then hands over its photos as JPEG, the way every browser can
+  // show them, with their EXIF intact. A HEIC file chosen on a desk still works where the
+  // browser can open it.
+  const input = h('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true })
   input.addEventListener('change', () => { if (input.files.length) addFiles(input.files, { album }); input.remove() })
   document.body.append(input)
   input.click()

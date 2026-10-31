@@ -1,22 +1,105 @@
-// Reads what a camera wrote into a JPEG: when it was taken (and the time zone, when the
-// camera said), the camera and lens, the exposure and where. Only the first 256 KB of the
-// file are read; anything unexpected gives up quietly and the photo goes in without it.
+// Reads what a camera wrote into a photo: when it was taken (and the time zone, when the
+// camera said), the camera and lens, the exposure and where. JPEG keeps it in an APP1
+// segment near the start; HEIC and AVIF keep it as an "Exif" item that the file's meta box
+// points to. Only those few bytes are read, and anything unexpected gives up quietly: the
+// photo goes in without it.
 
 export async function readExif(file) {
   try {
     const buffer = await file.slice(0, 262144).arrayBuffer()
     const view = new DataView(buffer)
-    if (view.getUint16(0) !== 0xffd8) return {}
-    let at = 2
-    while (at + 4 < view.byteLength) {
-      if (view.getUint8(at) !== 0xff) return {}
-      const marker = view.getUint8(at + 1)
-      const length = view.getUint16(at + 2)
-      if (marker === 0xe1 && view.getUint32(at + 4) === 0x45786966) return parseTiff(view, at + 10)
-      if (marker === 0xda || marker === 0xd9) return {}
-      at += 2 + length
-    }
+    if (view.getUint16(0) === 0xffd8) return fromJpeg(view)
+    if (view.byteLength > 12 && view.getUint32(4) === 0x66747970) return await fromHeif(view, file)
   } catch {}
+  return {}
+}
+
+function fromJpeg(view) {
+  let at = 2
+  while (at + 4 < view.byteLength) {
+    if (view.getUint8(at) !== 0xff) return {}
+    const marker = view.getUint8(at + 1)
+    const length = view.getUint16(at + 2)
+    if (marker === 0xe1 && view.getUint32(at + 4) === 0x45786966) return parseTiff(view, at + 10)
+    if (marker === 0xda || marker === 0xd9) return {}
+    at += 2 + length
+  }
+  return {}
+}
+
+// ISO base media boxes: [size][type], a size of 1 meaning a 64-bit size follows.
+function boxes(view, start, end) {
+  const out = []
+  let at = start
+  while (at + 8 <= end) {
+    let size = view.getUint32(at)
+    const type = String.fromCharCode(view.getUint8(at + 4), view.getUint8(at + 5), view.getUint8(at + 6), view.getUint8(at + 7))
+    let head = 8
+    if (size === 1) { size = Number(view.getBigUint64(at + 8)); head = 16 }
+    if (size === 0) size = end - at
+    if (size < head) break
+    out.push({ type, start: at + head, end: Math.min(end, at + size) })
+    at += size
+  }
+  return out
+}
+
+async function fromHeif(view, file) {
+  const meta = boxes(view, 0, view.byteLength).find((b) => b.type === 'meta')
+  if (!meta) return {}
+  const inner = boxes(view, meta.start + 4, meta.end)
+  const iinf = inner.find((b) => b.type === 'iinf')
+  const iloc = inner.find((b) => b.type === 'iloc')
+  if (!iinf || !iloc) return {}
+  // Which item is the Exif block.
+  const v = view.getUint8(iinf.start)
+  let id = null
+  for (const infe of boxes(view, iinf.start + 4 + (v === 0 ? 2 : 4), iinf.end)) {
+    if (infe.type !== 'infe') continue
+    const iv = view.getUint8(infe.start)
+    if (iv < 2) continue
+    const itemId = iv === 2 ? view.getUint16(infe.start + 4) : view.getUint32(infe.start + 4)
+    const typeAt = infe.start + 4 + (iv === 2 ? 2 : 4) + 2
+    const type = String.fromCharCode(view.getUint8(typeAt), view.getUint8(typeAt + 1), view.getUint8(typeAt + 2), view.getUint8(typeAt + 3))
+    if (type === 'Exif') { id = itemId; break }
+  }
+  if (id == null) return {}
+  // Where that item's bytes are.
+  let at = iloc.start
+  const lv = view.getUint8(at)
+  at += 4
+  const sizes = view.getUint16(at)
+  at += 2
+  const offSize = sizes >> 12
+  const lenSize = (sizes >> 8) & 15
+  const baseSize = (sizes >> 4) & 15
+  const idxSize = lv === 1 || lv === 2 ? sizes & 15 : 0
+  const read = (n) => {
+    let value = 0
+    if (n === 4) value = view.getUint32(at)
+    else if (n === 8) value = Number(view.getBigUint64(at))
+    else if (n === 2) value = view.getUint16(at)
+    at += n
+    return value
+  }
+  const count = lv < 2 ? read(2) : read(4)
+  for (let k = 0; k < count; k++) {
+    const itemId = lv < 2 ? read(2) : read(4)
+    if (lv === 1 || lv === 2) read(2)
+    read(2)
+    const base = read(baseSize)
+    const extents = read(2)
+    let first = null
+    for (let e = 0; e < extents; e++) {
+      if (idxSize) read(idxSize)
+      const offset = read(offSize)
+      const length = read(lenSize)
+      if (!first) first = { offset: base + offset, length }
+    }
+    if (itemId !== id || !first || first.length < 12 || first.length > 1048576) continue
+    const block = new DataView(await file.slice(first.offset, first.offset + first.length).arrayBuffer())
+    return parseTiff(block, 4 + block.getUint32(0))
+  }
   return {}
 }
 
