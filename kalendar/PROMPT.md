@@ -75,7 +75,10 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   sounds, and Inter weights that mean something. The host picks their
   pages' colour (red, amber, teal, blue, violet, graphite): their dashboard,
   page, booking pages, emails and browser tab icon wear it, each colour
-  tuned for light and dark with readable text on it. The signed-out home shows
+  tuned for light and dark with readable text on it. A shared link to their
+  page shows a cover in that colour with their name, what they do and their
+  photo when it's a real one (not Holm's drawn avatar), drawn in their
+  browser and drawn again whenever those details change. The signed-out home shows
   a booking card that plays itself: a pointer books a time, then asks for
   another. The card is an ordinary flat component set in a real CSS 3D
   scene, with its edge and shadow behind it and the pointer and result
@@ -220,3 +223,12 @@ colour, they chose the host, for their own pages.
 **Kalendar 0.7.1: the tab icon wears the colour**
 
 > Is it possible to change the favicon based on theme color?
+
+**Kalendar 0.8.0: a cover for a shared link**
+
+> Great, can we have cover images with the person's name / photo (only where there is a valid one, not a generated one) for their page?
+>
+> It should change when the person changes details
+
+Shown three looks, they chose the host's colour edge to edge with the name
+large and the photo in a ring.

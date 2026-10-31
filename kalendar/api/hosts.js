@@ -215,6 +215,8 @@ export function privateHost(env, host, base) {
     overrides: host.overrides || {},
     tags: Array.isArray(host.tags) ? host.tags : [],
     notify: host.notify !== false,
+    cover: host.cover || null,
+    coverKey: coverKey(host),
     addresses: extras(host).map((a) => ({ address: a.address, verified: !!a.verified })),
     sendTo: mailbox(host),
     feed: base + '/feed/' + host.feed + '.ics'
@@ -254,6 +256,17 @@ export function createHost(env, m, input, now) {
   })
   if (created) createDefaults(env, host)
   return host
+}
+
+// Sign-in details change on Holm's side too (a new photo, a new address):
+// bring them over when the host next opens Kalendar.
+export function syncMember(env, host, m) {
+  const set = {}
+  if ((host.picture || null) !== (m.picture || null)) set.picture = m.picture || null
+  if ((host.email || null) !== (m.email || null)) set.email = m.email || null
+  if (!Object.keys(set).length) return host
+  hosts(env).update('hosts', { id: host.id }, { $set: set })
+  return { ...host, ...set }
 }
 
 export function updateHost(env, m, host, input, now) {
@@ -297,4 +310,39 @@ export function updateHost(env, m, host, input, now) {
   }
   hosts(env).update('hosts', { id: host.id }, { $set: set })
   return { ...host, ...set }
+}
+
+/* ---- The cover ------------------------------------------------------------------
+   The picture a shared link to a host's page shows. The host's browser draws
+   it (web/src/cover.js) and sends it here. Its key names what's on it, so a
+   cover drawn from details the host has since changed is never shown, and
+   their dashboard draws a new one. */
+
+const COVER_LOOK = 1 // Raise it when cover.js draws differently: every cover redraws.
+
+export function coverKey(host) {
+  const s = JSON.stringify([COVER_LOOK, host.name || '', host.role || '', host.company || '', host.handle, themeOf(host), host.picture || ''])
+  let a = 0x811c9dc5
+  let b = 0x01000193
+  for (let i = 0; i < s.length; i++) {
+    a = Math.imul(a ^ s.charCodeAt(i), 0x01000193) >>> 0
+    b = Math.imul(b ^ s.charCodeAt(i), 0x5bd1e995) >>> 0
+  }
+  return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0')
+}
+
+export const coverReady = (host) => !!host.cover && host.cover === coverKey(host)
+
+export function saveCover(env, host, bytes, key) {
+  if (key !== coverKey(host)) reject(409, 'stale', 'Your details changed while the cover was drawn.')
+  const b = new Uint8Array(bytes)
+  if (b.length < 1000 || b.length > 800000 || b[0] !== 0xff || b[1] !== 0xd8 || b[2] !== 0xff) {
+    reject(400, 'invalid_input', 'Send the cover as a JPEG under 800 KB.')
+  }
+  env.holm.app.s3.put(`covers/${host.id}`, bytes, 'image/jpeg')
+  hosts(env).update('hosts', { id: host.id }, { $set: { cover: key } })
+}
+
+export function coverFile(env, host) {
+  return host.cover ? env.holm.app.s3.get(`covers/${host.id}`) : null
 }

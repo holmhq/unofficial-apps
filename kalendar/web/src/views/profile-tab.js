@@ -1,13 +1,14 @@
-// Profile: your page as guests see it at the top, then what's on it (your
-// name, what you do, where you are, a welcome note, your website and
-// profiles), your link, email about bookings and the address it goes to,
-// and the private calendar feed of your bookings. Like your hours, it saves
-// as you type.
+// Profile: your page as guests see it at the top, its colour and the cover
+// a shared link to it shows, then what's on it (your name, what you do,
+// where you are, a welcome note, your website and profiles), your link,
+// email about bookings and the address it goes to, and the private calendar
+// feed of your bookings. Like your hours, it saves as you type.
 import { h, ic, fill, avatar, toggle, nope, copyText, confirm, toast } from '../ui.js'
 import * as api from '../api.js'
 import * as store from '../store.js'
 import { state, failure, prettyURL, pageURL, share } from '../shell.js'
 import * as theme from '../theme.js'
+import * as cover from '../cover.js'
 import { sound } from '../sound.js'
 import { siteOf } from './profile.js'
 
@@ -37,6 +38,8 @@ export function profileTab({ onSaved }) {
         state.me.host = r.host
         store.keep('me', state.me)
         onSaved(body)
+        cover.keep()
+        paintCover()
         fill(saved, ic('check', 14, 2.6), 'Saved')
         saved.className = 'saved show good'
         fade = setTimeout(() => { saved.className = 'saved' }, 1600)
@@ -95,6 +98,23 @@ export function profileTab({ onSaved }) {
     save({ theme: id }, 0)
   }
   paintAccents()
+
+  /* ---- The cover a shared link shows ---------------------------------------------------- */
+
+  // The one drawn here a moment ago, or the server's, while a new one is
+  // drawn after a change, the last one, faded.
+  const coverImg = h('img', { alt: 'The cover a link to your page shows', width: '1200', height: '630', decoding: 'async' })
+  const coverBox = h('div.cover-box', coverImg)
+  function paintCover() {
+    const x = host()
+    let src = null
+    if (cover.latest && cover.latest.key === x.coverKey) src = cover.latest.url
+    else if (x.cover && x.cover === x.coverKey) src = `/api/u/${encodeURIComponent(x.handle)}/cover.jpg?v=${x.cover}`
+    coverBox.classList.toggle('drawing', !src)
+    if (src && coverImg.getAttribute('src') !== src) coverImg.src = src
+  }
+  addEventListener('kalendar:cover', paintCover)
+  paintCover()
 
   /* ---- About you ----------------------------------------------------------------------- */
 
@@ -188,6 +208,8 @@ export function profileTab({ onSaved }) {
       state.me.host = r.host
       store.keep('me', state.me)
       onSaved({ handle: v })
+      cover.keep()
+      paintCover()
       handle.value = r.host.handle
       change.hidden = true
       status.className = 'group-foot handle-note good'
@@ -299,6 +321,9 @@ export function profileTab({ onSaved }) {
     h('h2.group-title', 'Colour'),
     h('div.group', accents),
     h('p.group-foot', 'Your page, its booking pages, your emails and this dashboard wear it, in light and in dark.'),
+    h('h2.group-title', 'When your link is shared'),
+    coverBox,
+    h('p.group-foot', 'Messages and posts show this with a link to your page. It follows your name, what you do and your colour, and your photo from signing in when it’s a real photo.'),
     h('h2.group-title', 'About you'),
     h('div.group.form-group', row('Name', name), row('What you do', role), row('Company', company), row('City', place)),
     h('p.group-foot', 'Your city is shown with your local time. Leave it empty to use your time zone’s.'),
@@ -333,9 +358,11 @@ export function profileTab({ onSaved }) {
       if (!('theme' in pending)) paintAccents()
       paintFeed()
       paintCard()
+      paintCover()
       fit()
     },
     leave() {
+      removeEventListener('kalendar:cover', paintCover)
       // Save what's waiting now, rather than lose it.
       if (timer && Object.keys(pending).length) { clearTimeout(timer); api.patch('/api/host', pending).then((r) => { state.me.host = r.host; store.keep('me', state.me) }).catch(() => {}) }
     }

@@ -15,7 +15,7 @@ import { calendar } from '../api/ics.js'
 import { cleanTag } from '../api/lib.js'
 import { guestInvite, hostInvite } from '../api/bookings.js'
 import { inviteeMail, hostMail, guestMail, verifyMail, senderOf } from '../api/mail.js'
-import { mailbox, THEMES } from '../api/hosts.js'
+import { mailbox, THEMES, coverKey } from '../api/hosts.js'
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 
 const DAY = 86400000
@@ -223,6 +223,20 @@ for (const zone of ZONES) {
   assert.match(inviteeMail('confirmed', gc).text, /Guests: cy@example\.net, di@example\.net/)
 }
 
+// A cover's key follows what's drawn on it, and nothing else.
+{
+  const host = { handle: 'avery', name: 'Avery Chen', role: 'Designer', company: 'Northwind', theme: 'teal', picture: 'https://example.com/a.jpg', bio: 'Hi', weekly: [] }
+  const key = coverKey(host)
+  assert.match(key, /^[0-9a-f]{16}$/)
+  for (const [field, value] of [['name', 'Avery C'], ['role', 'Writer'], ['company', ''], ['handle', 'avery2'], ['theme', 'blue'], ['picture', null]]) {
+    assert.notEqual(coverKey({ ...host, [field]: value }), key, `cover key ignores ${field}`)
+  }
+  for (const [field, value] of [['bio', 'Hello'], ['place', 'Lisbon'], ['weekly', null], ['cover', key]]) {
+    assert.equal(coverKey({ ...host, [field]: value }), key, `cover key follows ${field}`)
+  }
+  assert.equal(coverKey({ ...host, theme: 'nope' }), coverKey({ ...host, theme: undefined }), 'an unknown colour draws red')
+}
+
 // The service worker installs a version all or nothing: it must list every
 // page file, and carry the app's version so a deploy installs the new set.
 {
@@ -243,4 +257,4 @@ for (const zone of ZONES) {
   assert.deepEqual(boot.sort(), [...others].sort(), 'index.html must know every colour')
 }
 
-console.log(`ok: ${checked} slots across ${ZONES.length} zones match Intl; weekly hours, paused days, busy times, tags, email dates, calendar files, email invites, the app shell and its tab icons check out`)
+console.log(`ok: ${checked} slots across ${ZONES.length} zones match Intl; weekly hours, paused days, busy times, tags, email dates, calendar files, email invites, cover keys, the app shell and its tab icons check out`)

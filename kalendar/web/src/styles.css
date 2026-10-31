@@ -1099,6 +1099,13 @@ blockquote, .quote { margin: 0; padding: 11px 14px; border-radius: 14px; backgro
 .page-card-text b { font-size: 19px; font-weight: var(--w-title); letter-spacing: -.02em; line-height: 1.25; }
 .page-card-text span { font-size: 14.5px; color: var(--ink-2); line-height: 1.35; }
 .page-card-text span.muted { color: var(--ink-3); }
+
+/* The cover a shared link shows: a new one fades in over the last. */
+.cover-box { position: relative; aspect-ratio: 1200 / 630; border-radius: 16px; overflow: hidden; background: var(--accent-soft); box-shadow: var(--shadow-1); }
+.cover-box img { display: block; width: 100%; height: 100%; object-fit: cover; transition: opacity .3s var(--ease-out); }
+.cover-box img:not([src]) { opacity: 0; }
+.cover-box.drawing img { opacity: .5; }
+.cover-box.drawing::after { content: ''; position: absolute; inset: 0; margin: auto; width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, var(--accent) 30%, transparent); border-top-color: var(--accent); animation: spin .8s linear infinite; }
 .page-card-text .page-card-link { margin-top: 3px; color: var(--accent-text); font-size: 14px; font-weight: var(--w-label); }
 .page-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 

@@ -8,6 +8,7 @@ import { h, ic, fill, avatar, sheet, menu, segmented, toggle, toast, haptic, cop
 import * as api from '../api.js'
 import * as store from '../store.js'
 import * as theme from '../theme.js'
+import * as cover from '../cover.js'
 import { state, topBar, go, failure, prettyURL, pageURL, share, holmFooter, mine } from '../shell.js'
 import { sound } from '../sound.js'
 import * as t from '../time.js'
@@ -834,6 +835,8 @@ export function dash(tab) {
 
   paintLink()
   show(tab)
+  // The cover a shared link to your page shows follows your details.
+  cover.keep(2500)
 
   // Keep the zone table fresh: it covers about 15 months from when it was made.
   const hst = host()
@@ -865,6 +868,6 @@ export function dash(tab) {
     },
     leave() { document.removeEventListener('visibilitychange', onVisible); for (const page of pages.values()) if (page.leave) page.leave() },
     clock() { rebuild() },
-    me() { paintLink(); badges(); theme.setAccent(host().theme, { scope: 'me' }) }
+    me() { paintLink(); badges(); theme.setAccent(host().theme, { scope: 'me' }); cover.keep() }
   }
 }

@@ -18,7 +18,9 @@ on the signed-in person's own Kalendar only. Call `me_get` first.
 - `me_get`: their link, profile, zone, counts (upcoming, today, requests) and the next meeting.
 - `profile_update`: name, bio (up to 600 characters), role, company, place (a city), website,
   links (up to 8 profile URLs: LinkedIn, X, GitHub…), `theme` (the colour of their pages and
-  emails: red, amber, teal, blue, violet or graphite), and whether booking emails are on.
+  emails: red, amber, teal, blue, violet or graphite), and whether booking emails are on. The
+  cover a shared link to their page shows (name, role, company, colour, photo) is drawn by their
+  own browser, so after a change here it's redrawn the next time they open Kalendar.
 - `hours_get` / `hours_update`: weekly hours by day (`mon`…`sun`, each a list of
   `["09:00","17:00"]` ranges, `[]` for a day off), plus single days off
   (`days_off_add`, `days_off_remove`, as `YYYY-MM-DD`). Only the days you send change.

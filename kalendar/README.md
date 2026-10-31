@@ -39,6 +39,12 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   Each colour has its own light and dark shades and the text that reads on
   it, dark on amber or on graphite in the dark, and when your colour sits
   near the blue a guest's own times are drawn in, theirs turn orange.
+- **A cover for your link.** Share your page in a message or a post and it
+  shows a cover in your colour: your name, what you do, and your photo when
+  you have a real one. Holm's drawn stand-in avatar, or a sign-in service's
+  letter on a colour, is left off. Profile shows it under "When your link is
+  shared", and it's drawn again whenever you change your name, what you do,
+  your colour, your link or your photo. Your event pages share it too.
 - **Event types.** Each has a name, its own link (`/@handle/intro`), a length,
   where you'll meet (a video link, a phone call to the guest, an address,
   anything else, or decide later), a description and a colour. Rules per type:
@@ -191,6 +197,7 @@ web/src/store.js   what the page last saw, so it draws at once and catches up
 web/src/timeline.js  the strip of days: shading, spans, the meeting clip, zoom, swaps and trades
 web/src/track.js   the visit beacon: views, clicks, picks, time on page, the link's tag
 web/src/qr.js      QR codes for tracked links (SVG and PNG)
+web/src/cover.js   draws the cover a shared link shows, and sends a new one when it changes
 web/src/countries.js each time zone's country, for Insights (generated)
 tools/check.mjs    time-maths, calendar-file and app-shell checks (not deployed)
 tools/book.mjs     books sample meetings through the real operation (not deployed)
@@ -221,7 +228,18 @@ Holm primitives it uses:
 - **`env.holm.email.send`** with `html` and `body` for every email, and
   `calendar: { method, ics }` for a booking's invite.
 - **`env.holm.web.fetch`** for the page, with `/@handle` and `/@handle/event`
-  given the host's name in the title and social card.
+  given the host's name in the title and social card, their own address as
+  `og:url` and the canonical link, and the host's cover as the card's picture.
+- **`env.holm.app.s3`** keeps each host's cover. The node can't draw, so the
+  host's browser does, on a canvas: whenever their dashboard finds that the
+  cover's key (a hash of the name, role, company, link, colour and picture
+  address, `api/hosts.js`) doesn't match the last one sent, it draws a JPEG
+  and sends it with `PUT /api/host/cover?key=`. The server keeps it only if
+  the key still matches, and puts it in the social card only while it does,
+  so a cover never shows details the host has changed. Its address carries
+  the key, so it's cached for good. The member's `picture` is Holm's address
+  for their avatar; the page reads it, and leaves it off unless it's a JPEG,
+  PNG or WebP of more than a few flat colours.
 - **`__HOLM_SURFACES__`**: for the node's and the app's owners and admins,
   Holm writes the address of the app's analytics page into the page, and the
   avatar menu links to it. Holm puts that page under a path of its choosing
@@ -347,6 +365,14 @@ only give to `https://` and `localhost` pages. On a local node, add a
   page Holm hosts, the feedback form, and the home page and sign-up, which
   belong to no host yet. Safari may keep showing the first tab icon it saw
   until the page is reopened.
+- **A cover is drawn by the host's own browser**, so a change made through
+  Claude, or a new photo in Holm, reaches it the next time the host opens
+  Kalendar. Until then a shared link shows Kalendar's own card rather than an
+  out-of-date cover. Chat apps keep a link's preview for a while after
+  they first show it, so an older cover can linger there. The server checks
+  that a cover is a JPEG of a sensible size, not what's on it: a host could
+  send any picture as their own cover. A photo of a logo or anything else in
+  a few flat colours is taken for a drawn stand-in and left off.
 - **Invites show the host's email address** to guests, as the organizer, so
   their Accept or Decline reaches the host. Kalendar doesn't show it anywhere
   else.

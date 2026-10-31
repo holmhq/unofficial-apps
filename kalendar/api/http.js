@@ -16,6 +16,8 @@
 //   GET    /api/stats?days=                7 | 30 | 90 days of page stats
 //   POST   /api/hit                        a page beacon from a visitor (stats.js)
 //   GET    /api/u/:handle                  a host's public page
+//   GET    /api/u/:handle/cover.jpg?v=     the picture a shared link to it shows
+//   PUT    /api/host/cover?key=            the host's browser sends a new one (JPEG)
 //   GET    /api/u/:handle/:slug            one event type, for booking
 //   GET    /api/u/:handle/:slug/slots      open times { from, to, skip?, t? }
 //   GET    /api/b/:id?t=                   a booking, from the link in its email
@@ -31,7 +33,7 @@
 // and rate limits, and the host's own tools for Claude are named operations
 // too; see ops.js.
 import { json, errorResponse, readJSON, reject, requireMember, member, rememberOrigin, esc, displayName } from './lib.js'
-import { hostOf, hostByHandle, handleFree, createHost, updateHost, privateHost, publicHost, addAddress, removeAddress, confirmAddress } from './hosts.js'
+import { hostOf, hostByHandle, handleFree, createHost, updateHost, privateHost, publicHost, addAddress, removeAddress, confirmAddress, coverReady, saveCover, coverFile, syncMember } from './hosts.js'
 import { eventsOf, eventDTO, createEvent, updateEvent, deleteEvent } from './events.js'
 import { openSlots, bookingPage, bookingForInvitee, inviteIcs, hostIcs, listForHost, cancelByHost, counts, feedFor, nextOpen, acceptRequest, declineRequest, flushGuests } from './bookings.js'
 import { hit, statsFor } from './stats.js'
@@ -95,7 +97,8 @@ async function api(request, env, url) {
   if (route === 'GET /api/me') {
     const m = member(env)
     const next = url.searchParams.get('next') || '/'
-    const host = m ? hostOf(env, m.id) : null
+    const found = m ? hostOf(env, m.id) : null
+    const host = found && syncMember(env, found, m)
     return json({
       member: m ? { id: m.id, name: displayName(m), email: m.email || null, picture: m.picture || null } : null,
       host: host ? privateHost(env, host, base) : null,
@@ -122,6 +125,17 @@ async function api(request, env, url) {
     const events = active.map((e) => ({ ...eventDTO(e, { hostName: host.name }), next: next[e.id] ?? null }))
     return json({ host: publicHost(host), events }, 200, { 'Cache-Control': 'no-store' })
   }
+  // A host's cover. Its address names the version, so it keeps for good.
+  p = match(path, /^\/api\/u\/([^/]+)\/cover\.jpg$/)
+  if (p && (method === 'GET' || method === 'HEAD')) {
+    const host = hostByHandle(env, p[0])
+    const file = host && coverFile(env, host)
+    if (!file) return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } })
+    const kept = url.searchParams.get('v') === host.cover
+    return new Response(method === 'HEAD' ? null : file.data, {
+      headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': kept ? 'public, max-age=31536000, immutable' : 'public, max-age=300', 'X-Content-Type-Options': 'nosniff' }
+    })
+  }
   p = match(path, /^\/api\/u\/([^/]+)\/([^/]+)$/)
   if (p && method === 'GET') return json(bookingPage(env, p[0], p[1]))
   p = match(path, /^\/api\/u\/([^/]+)\/([^/]+)\/slots$/)
@@ -141,6 +155,13 @@ async function api(request, env, url) {
 
   // A host's own pages.
   const m = requireMember(env)
+  if (route === 'PUT /api/host/cover') {
+    const host = hostOf(env, m.id)
+    if (!host) reject(409, 'no_host', 'Choose your link first.')
+    const key = url.searchParams.get('key')
+    saveCover(env, host, await request.arrayBuffer(), key)
+    return json({ cover: key })
+  }
   const body = ['POST', 'PATCH', 'PUT'].includes(method) ? await readJSON(request) : {}
   if (route === 'GET /api/handle') return json(handleFree(env, url.searchParams.get('h'), m.id))
   if (route === 'POST /api/host') {
@@ -181,8 +202,10 @@ async function api(request, env, url) {
 }
 
 // The page for /@handle and /@handle/slug, with the host's name and the
-// event in its title and social card. It's always the app's shell from /:
-// a handle with a dot (/@bo.test) looks like a file to the static server.
+// event in its title and social card, the host's cover as its picture when
+// it shows their current details, and its own address as the canonical one.
+// It's always the app's shell from /: a handle with a dot (/@bo.test) looks
+// like a file to the static server.
 async function hostPage(request, env, handle, slug) {
   const response = await env.holm.web.fetch(new Request(new URL('/', request.url), { method: 'GET', headers: request.headers }))
   const type = response.headers.get('content-type') || ''
@@ -199,6 +222,15 @@ async function hostPage(request, env, handle, slug) {
     .replace(/(<meta (?:property|name)="(?:og|twitter):title" content=")[^"]*(")/g, `$1${t}$2`)
     .replace(/(<meta (?:property|name)="(?:og|twitter):image:alt" content=")[^"]*(")/g, `$1${t}$2`)
     .replace(/(<meta (?:property|name)="(?:og:|twitter:)?description" content=")[^"]*(")/g, `$1${d}$2`)
+  const origin = new URL(request.url).origin
+  const here = esc(`${origin}/@${host.handle}${event ? '/' + event.slug : ''}`)
+  html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${here}$2`)
+    .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${here}$2`)
+  if (coverReady(host)) {
+    const picture = esc(`${origin}/api/u/${encodeURIComponent(host.handle)}/cover.jpg?v=${host.cover}`)
+    html = html.replace(/(<meta (?:property|name)="(?:og|twitter):image" content=")[^"]*(")/g, `$1${picture}$2`)
+      .replace(/(<meta property="og:image:type" content=")[^"]*(")/, '$1image/jpeg$2')
+  }
   const headers = new Headers(response.headers)
   headers.delete('content-length')
   headers.delete('etag')
