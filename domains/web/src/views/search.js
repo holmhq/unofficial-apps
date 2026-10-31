@@ -1,457 +1,419 @@
-// The search page. Before a search: what this is, the field, names to try. During and after:
-// the field docks at the top with a progress line, the shortest free names gather in a row
-// of tiles, and every name tried has a card whose extensions settle from waiting to free or
-// taken as the answers come in.
+// Search: a hero with one big field; the first search flies that field up into the navbar.
+// Under the navbar, one row of the ideas tried (tap one to see only its names), then the
+// available names. Lookups answer in bursts, so cards are revealed one at a time at an even
+// pace, appended in order; premium names come last.
 
-import { h, ic, flip, reduced, haptic, nope, menu, fill } from '../ui.js'
-import { mark, starFilled } from '../icons.js'
+import { $, $$, esc, act, toast, reduced, phone, rel } from '../dom.js'
+import { svg } from '../icons.js'
 import * as catalog from '../catalog.js'
-import { settings, set, setKind, on as onSettings, SEARCH_KEYS, changed, MAX_ANY } from '../settings.js'
-import { Search, HACKS, PASS } from '../search.js'
 import * as saved from '../saved.js'
-import { openDomain, dn } from './detail.js'
-import { openFilters, openTlds } from './filters.js'
-import namecheap from '../providers/namecheap.js'
-import { holmFooter, go } from '../shell.js'
+import { settings, on as onSettings, changed, SEARCH_KEYS, MAX_ANY } from '../settings.js'
+import { Search, HACKS } from '../search.js'
+import { provider as providerById } from '../providers/index.js'
+import { state, openLayer, closeLayer, isOpen, render } from '../shell.js'
+import { cardHTML, fromCell, onChange } from './cards.js'
+import { summary } from './filters.js'
 
-const EXAMPLES = ['Zacharia', 'harbour labs', 'photon', 'flicker']
-const AI_KIND = { nickname: 'Nickname', spelling: 'Other spelling', short: 'Short form', blend: 'Blend', coined: 'New word' }
-const TILES = 12
-const TILE_KIND = { exact: 'Your word', short: 'Shorter', sound: 'Sound-alike', affix: 'Prefix or suffix', hack: 'Domain hack', ai: 'AI idea' }
+const S = { search: null, q: '', seq: [], deferred: [], revealed: 0, revealT: null, drained: false, focus: null, morphing: false, cards: new Map(), dropped: new Set() }
+export const query = () => S.q
+export const hasResults = () => !!S.search
 
-export function searchView() {
-  let search = null
-  let query = ''
-  let groups = new Map() // key -> { el, pills, count, map: domain -> pill, g, order }
-  let tiles = new Map() // domain -> tile
-  let frame = 0
-  let quiet = false
-  let rerun = 0
-  let tilesTouched = false
+/* ---- Markup ---- */
 
-  /* ---- The field, docked or not ---------------------------------------------------- */
+export function fieldHTML(nav, hold = false) {
+  return `<form class="field${nav ? ' nav' : ''}${hold ? ' hold' : ''}" id="form" role="search" autocomplete="off">${svg('search', nav ? 16 : 19, 2)}
+    <input id="q" name="q" value="${esc(S.q)}" placeholder="A name or an idea" spellcheck="false" autocapitalize="off" aria-label="Name to search for" enterkeyhint="search" maxlength="60">
+    ${S.q && nav ? `<button type="button" class="icon-btn sm" data-act="clear" aria-label="Clear and start over" title="Clear">${svg('x', 15, 2)}</button>` : ''}
+    <span class="f-sep"></span>
+    <button type="button" class="icon-btn${nav ? ' sm' : ''}${changed() ? ' dot' : ''}" id="filter-btn" data-act="filters" aria-label="Filters: ${esc(summary())}" title="Filters">${svg('slidersHorizontal', nav ? 16 : 18, 2)}</button>
+    <i class="bar" id="bar"></i></form>`
+}
 
-  const input = h('input', { type: 'search', name: 'q', placeholder: 'Your name or an idea', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: false, enterkeyhint: 'search', 'aria-label': 'Name to search for', maxlength: 80 })
-  const clear = h('button.icon-btn.clear', { type: 'button', 'aria-label': 'Clear', hidden: true, onclick: () => { input.value = ''; clear.hidden = true; input.focus() } }, ic('x', 16, 2.6))
-  const field = h('form.field', { role: 'search', onsubmit: (e) => { e.preventDefault(); submit() } },
-    ic('search', 20, 2.2), input, clear, h('button.btn.primary.go-btn', { type: 'submit' }, 'Search'))
-  let warmed = false
-  input.addEventListener('input', () => {
-    clear.hidden = !input.value
-    if (!warmed && input.value.length > 1) { warmed = true; if (settings.provider === 'namecheap') namecheap.warm() }
+export function heroHTML({ animateIn = false, hold = false } = {}) {
+  return `<div class="panel hero-panel"><div class="hero${animateIn ? ' in' : ''}" id="hero">
+    <h1>Find a short domain that’s still available.</h1>
+    <p>Type a name. Shorter spellings, sound-alikes and AI ideas, checked live. Only available names show.</p>
+    ${fieldHTML(false, hold)}
+    <div class="try">Try <button type="button" data-act="try" data-q="photon">photon</button><button type="button" data-act="try" data-q="harbour labs">harbour labs</button><button type="button" data-act="try" data-q="orbit">orbit</button></div>
+  </div></div>`
+}
+
+export function resultsHTML() {
+  return `<div class="ideas-bar"><div class="wrap"><div class="chips" id="chips"><span class="ai-mark" title="">${svg('sparkles', 16, 2)}</span><button type="button" class="chip on" data-act="chip" data-l="">All <span class="n">0</span></button></div></div></div>
+    <div class="panel" id="panel"><div class="wrap"><div class="note-line" id="note-line" hidden></div><div class="grid" id="grid"></div><div id="after"></div></div></div>
+    <p class="sr" id="status" aria-live="polite"></p>`
+}
+
+export function mainHTML(o = {}) { return S.search ? resultsHTML() : heroHTML(o) }
+
+/* ---- One search ---- */
+
+const passes = (n) => (!settings.maxPrice || (typeof n.price === 'number' && n.price <= settings.maxPrice)) && !(settings.hidePremium && n.premium)
+const visible = (n) => passes(n) && (!S.focus || n.group === S.focus)
+
+function stop() {
+  if (S.search) S.search.cancel()
+  clearTimeout(S.revealT)
+  S.revealT = null
+}
+
+export function start(q) {
+  stop()
+  S.q = q.trim()
+  S.seq = []; S.deferred = []; S.revealed = 0; S.drained = false; S.focus = null; S.cards.clear(); S.dropped.clear()
+  if (!S.q) { S.search = null; return }
+  const search = new Search(S.q, settings, (type, payload) => listen(search, type, payload))
+  S.search = search
+  if (search.empty) { S.search = null; return }
+  const p = providerById(settings.provider)
+  if (p.warm) p.warm()
+  search.start()
+  document.title = `${S.q} · Domains`
+}
+
+function listen(search, type, payload) {
+  if (S.search !== search) return
+  if (type === 'cell') {
+    const cell = payload
+    if (cell.state !== 'free' && cell.state !== 'maybe') return
+    const n = fromCell(cell)
+    if (n.premium) S.deferred.push(n)
+    else S.seq.push(n)
+    pump()
+  } else if (type === 'groups') chips(true)
+  else if (type === 'ai') { chips(true); if (search.ai === 'error' && search.aiNote) note(search.aiNote) }
+  else if (type === 'progress') { progress(); settle() }
+  else if (type === 'provider') toast(`${payload.from.name} can’t be reached; checking with ${payload.to.name}`)
+}
+
+// When the lookups are done, premium names join the end of the stream.
+function settle() {
+  const s = S.search
+  if (!s || !s.idle) return
+  if (S.deferred.length) { S.seq.push(...S.deferred.sort((a, b) => a.price - b.price)); S.deferred = [] }
+  pump()
+}
+
+function cardFor(n) {
+  let el = S.cards.get(n.domain)
+  if (!el) {
+    const t = document.createElement('div')
+    t.innerHTML = cardHTML(n, 'search')
+    el = t.firstElementChild
+    el.addEventListener('animationend', (e) => { if (e.target === el) { el.classList.remove('in'); el.style.removeProperty('--d') } })
+    S.cards.set(n.domain, el)
+  }
+  return el
+}
+
+function ghost(on) {
+  const grid = $('#grid')
+  if (!grid) return
+  let g = $('.ghost', grid)
+  if (on && !g) { g = document.createElement('div'); g.className = 'ghost'; g.setAttribute('aria-hidden', 'true'); grid.append(g) }
+  if (on && g) g.classList.remove('out')
+  if (!on && g && !g.classList.contains('out')) { g.classList.add('out'); g.addEventListener('animationend', () => g.remove(), { once: true }) }
+}
+
+// One card at a time: quick when many are waiting, never a burst.
+function pump() {
+  if (!S.search || S.morphing || S.revealT) return
+  const tick = () => {
+    S.revealT = null
+    if (!S.search || S.morphing) return
+    const grid = $('#grid')
+    while (S.revealed < S.seq.length) {
+      const n = S.seq[S.revealed++]
+      if (!visible(n)) continue
+      if (grid) { const el = cardFor(n); el.classList.add('in'); grid.insertBefore(el, $('.ghost', grid)); if (!S.drained) ghost(true) }
+      chips(false)
+      const left = S.seq.length - S.revealed
+      S.revealT = setTimeout(tick, left > 12 ? 14 : left > 5 ? 22 : 32)
+      return
+    }
+    chips(false)
+    const s = S.search
+    if (s.idle && !S.deferred.length) finish()
+    else if (grid && S.revealed === 0) ghost(true)
+  }
+  tick()
+}
+
+function finish() {
+  if (S.drained) return
+  S.drained = true
+  ghost(false)
+  chipsFinal()
+  after()
+  const n = S.seq.filter(visible).length
+  const sr = $('#status'); if (sr) sr.textContent = `${n} available ${n === 1 ? 'name' : 'names'} for ${S.q}.`
+}
+
+function progress() {
+  const bar = $('#bar'), s = S.search
+  if (!bar || !s) return
+  const total = s.sent + s.waiting
+  bar.style.width = (total ? Math.min(1, s.done / Math.max(1, s.sent)) * 100 : 0) + '%'
+  bar.classList.toggle('done', s.idle)
+}
+
+function note(text) {
+  const el = $('#note-line')
+  if (!el) return
+  el.textContent = text
+  el.hidden = !text
+}
+
+/* ---- Chips: the ideas tried, one row ---- */
+
+function counts() {
+  const m = new Map()
+  let total = 0
+  for (let i = 0; i < S.revealed; i++) { const n = S.seq[i]; if (passes(n)) { m.set(n.group, (m.get(n.group) || 0) + 1); total++ } }
+  return { m, total }
+}
+
+function chipHTML(g, n, extra = '') {
+  const label = g.key === HACKS ? 'Domain hacks' : g.label
+  return `<button type="button" class="chip${S.focus === g.key ? ' on' : ''}${n ? '' : ' zero'}${extra}" data-act="chip" data-l="${esc(g.key)}" title="${esc(g.why || '')}">${g.kind === 'ai' ? svg('sparkles', 12, 2) : ''}${esc(label)} <span class="n">${n}</span></button>`
+}
+
+function chips(animate) {
+  const row = $('#chips'), s = S.search
+  if (!row || !s) return
+  const { m, total } = counts()
+  const mark = $('.ai-mark', row)
+  mark.classList.toggle('on', s.ai === 'thinking')
+  mark.title = s.aiRead || (s.ai === 'thinking' ? 'Reading what you typed…' : s.ai === 'off' ? 'AI ideas are off' : '')
+  const all = $('.chip[data-l=""]', row)
+  all.classList.toggle('on', !S.focus)
+  const an = $('.n', all); if (an.textContent !== String(total)) an.textContent = total
+  let k = 0
+  const before = $('.chip.more, .chip.check', row)
+  for (const g of s.groups.values()) {
+    if (S.dropped.has(g.key)) continue
+    const n = m.get(g.key) || 0
+    let ch = row.querySelector(`.chip[data-l="${CSS.escape(g.key)}"]`)
+    if (!ch) {
+      const t = document.createElement('div')
+      t.innerHTML = chipHTML(g, n, animate ? ' new' : '')
+      ch = t.firstElementChild
+      if (animate) ch.style.setProperty('--d', (k++ * 25) + 'ms')
+      row.insertBefore(ch, before)
+      continue
+    }
+    const ne = $('.n', ch); if (ne.textContent !== String(n)) ne.textContent = n
+    ch.classList.toggle('zero', !n)
+  }
+}
+
+function collapse(el) {
+  if (!el) return
+  const w = el.offsetWidth
+  el.style.overflow = 'hidden'
+  if (reduced()) { el.remove(); return }
+  el.animate([{ opacity: 1, width: w + 'px' }, { opacity: 0, width: '0px', paddingLeft: '0px', paddingRight: '0px', borderWidth: '0px', marginRight: '-6px' }], { duration: 340, easing: 'cubic-bezier(.32,.72,0,1)', fill: 'forwards' }).onfinish = () => el.remove()
+}
+
+// At the end: ideas with nothing available fold away; then a way to ask for more.
+function chipsFinal() {
+  const row = $('#chips'), s = S.search
+  if (!row || !s) return
+  const { m } = counts()
+  for (const g of s.groups.values()) {
+    if (S.dropped.has(g.key) || m.get(g.key) || S.focus === g.key) continue
+    S.dropped.add(g.key)
+    collapse(row.querySelector(`.chip[data-l="${CSS.escape(g.key)}"]`))
+  }
+  for (const el of $$('.chip.more, .chip.check', row)) el.remove()
+  if (s.waiting) row.insertAdjacentHTML('beforeend', `<button type="button" class="chip check new" data-act="check-more" title="Check the longer names this search hasn’t asked about yet">Check ${s.waiting} more</button>`)
+  if (settings.kinds.ai && s.ai !== 'error' && s.aiRounds < 3) row.insertAdjacentHTML('beforeend', `<button type="button" class="chip more new" data-act="more" title="Ask the AI for names like the available ones and the ones you starred">${svg('sparkles', 12, 2)}<span>More like these</span></button>`)
+}
+
+function after() {
+  const el = $('#after')
+  if (!el || !S.search) return
+  const none = S.drained && !S.seq.some(visible)
+  el.innerHTML = none ? `<div class="empty"><span>${S.focus ? 'Nothing available for this idea with these filters.' : 'Nothing available with these filters.'}</span>${changed() ? '<button type="button" class="btn sm" data-act="f-reset-search">Reset filters</button>' : ''}</div>` : ''
+}
+
+/* ---- Drawing into a fresh shell ---- */
+
+export function mount() {
+  const row = $('#chips')
+  if (row) {
+    row.addEventListener('scroll', () => row.classList.toggle('scrolled', row.scrollLeft > 2), { passive: true })
+    row.addEventListener('wheel', (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { row.scrollLeft += e.deltaY; e.preventDefault() } }, { passive: false })
+  }
+  if (!S.search) return
+  const grid = $('#grid')
+  if (grid) {
+    for (const el of S.cards.values()) el.classList.remove('in')
+    for (let i = 0; i < S.revealed; i++) { const n = S.seq[i]; if (visible(n)) grid.append(cardFor(n)) }
+    ghost(!S.drained)
+  }
+  chips(false)
+  if (S.drained) chipsFinal()
+  after()
+  progress()
+  pump()
+}
+
+// A calm crossfade when what's shown changes, then a short stagger.
+function relayout() {
+  const grid = $('#grid')
+  if (!grid || !S.search) return
+  grid.classList.add('swap')
+  setTimeout(() => {
+    grid.innerHTML = ''
+    let k = 0
+    for (let i = 0; i < S.revealed; i++) {
+      const n = S.seq[i]
+      if (!visible(n)) continue
+      const el = cardFor(n)
+      el.classList.remove('in'); el.style.setProperty('--d', Math.min(k, 16) * 14 + 'ms'); void el.offsetWidth; el.classList.add('in')
+      grid.append(el); k++
+    }
+    if (!S.drained) ghost(true)
+    grid.classList.remove('swap')
+    chips(false)
+    after()
+  }, 150)
+}
+
+/* ---- The magic move ---- */
+
+function ghostField(text) {
+  const g = document.createElement('div')
+  g.className = 'morph-field'
+  g.innerHTML = `${svg('search', 18, 2)}<span class="g-t${text ? '' : ' ph'}">${esc(text || 'A name or an idea')}</span>${text ? `<span class="g-x">${svg('x', 15, 2)}</span>` : ''}<span class="g-sep"></span><span class="g-f">${svg('slidersHorizontal', 17, 2)}</span>`
+  document.body.append(g)
+  return g
+}
+function fly(g, from, to, dur) {
+  const at = (b) => ({ transform: `translate(${b.x}px, ${b.y}px)`, width: b.w + 'px', height: b.h + 'px', borderRadius: (b.h > 46 ? 16 : 11) + 'px', fontSize: (b.h > 46 ? 18 : 15) + 'px', paddingLeft: (b.h > 46 ? 18 : 12) + 'px', paddingRight: (b.h > 46 ? 8 : 3) + 'px', gap: (b.h > 46 ? 10 : 8) + 'px' })
+  return g.animate([at(from), at(to)], { duration: dur, easing: 'cubic-bezier(.32,.72,0,1)', fill: 'forwards' })
+}
+
+export function run(q, { push = true } = {}) {
+  q = q.trim()
+  if (!q) return
+  const url = '/?q=' + encodeURIComponent(q)
+  if (push) history.pushState({}, '', url)
+  closeLayer()
+  const hero = $('#hero'), field = hero && $('#form', hero)
+  if (state.view === 'search' && hero && field && !reduced()) return toResults(q, hero, field)
+  if (state.view === 'search' && S.search) return newSearch(q)
+  start(q)
+  render()
+}
+
+function toResults(q, hero, field) {
+  const from = rel(field)
+  const box = rel(hero)
+  const ov = document.createElement('div')
+  ov.className = 'morph-ov'
+  const clone = hero.cloneNode(true)
+  clone.removeAttribute('id'); clone.classList.remove('in')
+  clone.style.cssText = `position:absolute;left:${box.x}px;top:${box.y}px;width:${box.w}px;margin:0;padding:0`
+  for (const el of $$('[id]', clone)) el.removeAttribute('id')
+  $('form', clone).style.visibility = 'hidden'
+  ov.append(clone)
+  S.morphing = true
+  start(q)
+  render({ entering: true, hold: true })
+  document.body.append(ov)
+  const target = $('#form')
+  const to = rel(target)
+  const g = ghostField(S.q)
+  const dur = 640
+  fly(g, from, to, dur)
+  ;[...clone.children].forEach((el, i) => {
+    if (el.tagName === 'FORM') return
+    el.animate([{ opacity: 1, transform: 'none', filter: 'blur(0)' }, { opacity: 0, transform: `translateY(${i < 2 ? -18 : 14}px) scale(.98)`, filter: 'blur(6px)' }], { duration: 360, delay: i * 40, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' })
   })
-  const badge = h('span.badge')
-  const filtersBtn = h('button.filters-btn', { type: 'button', 'aria-label': 'Filters', onclick: () => { haptic(); openFilters() } }, ic('slidersHorizontal', 20, 2), badge)
-  const quick = h('div.quick', { role: 'toolbar', 'aria-label': 'Quick filters' })
-  const bar = h('i')
-  const progress = h('div.progress', { 'aria-hidden': 'true' }, bar)
-  const dock = h('div.dock', h('div.dock-in', h('div.field-row', field, filtersBtn), quick, progress))
+  setTimeout(() => { S.morphing = false; const sh = $('.shell'); if (sh) sh.classList.remove('entering'); pump() }, dur * 0.6)
+  setTimeout(() => { target.classList.remove('hold'); g.remove(); ov.remove() }, dur)
+}
 
-  /* ---- Before a search ------------------------------------------------------------- */
+export function toHero({ push = true } = {}) {
+  const nav = $('#form')
+  closeLayer()
+  stop()
+  S.search = null; S.q = ''; S.focus = null
+  if (push) history.pushState({}, '', '/')
+  document.title = 'Domains · find a short domain that’s still available'
+  if (!nav || reduced() || state.view !== 'search') { state.view = 'search'; render({ animateIn: true }); focus(); return }
+  const from = rel(nav)
+  const main = $('#main')
+  const box = rel(main)
+  const ov = document.createElement('div')
+  ov.className = 'morph-ov'
+  const clone = main.cloneNode(true)
+  for (const el of $$('[id]', clone)) el.removeAttribute('id')
+  clone.style.cssText = `position:absolute;left:${box.x}px;top:${box.y}px;width:${box.w}px;height:${box.h}px;display:flex;flex-direction:column;background:var(--bg)`
+  ov.append(clone)
+  render({ animateIn: true, hold: true })
+  document.body.append(ov)
+  clone.animate([{ opacity: 1, filter: 'blur(0)' }, { opacity: 0, filter: 'blur(6px)' }], { duration: 300, easing: 'ease-out', fill: 'forwards' })
+  const target = $('#form')
+  const to = rel(target)
+  const g = ghostField('')
+  const dur = 600
+  fly(g, from, to, dur)
+  setTimeout(() => { target.classList.remove('hold'); g.remove(); ov.remove(); focus() }, dur)
+}
 
-  const hero = h('section.hero.enter',
-    h('div.hero-mark', mark(34, { dot: '#30d158' })),
-    h('h1', 'Find a short domain', h('br'), 'that’s ', h('em', 'actually free.')),
-    h('p.lead', 'Type a name. Domains tries shorter spellings, sound-alikes and AI ideas across two- and three-letter extensions, and shows what’s free as the answers come in.'))
-  const tryRow = h('div.try', h('span', 'Try'), EXAMPLES.map((q) => h('button', { type: 'button', onclick: () => { haptic(); input.value = q; submit() } }, q)))
-  const how = h('div.how',
-    step('scissors', '', 'Shorter, on purpose', 'Zacharia becomes zach, zack, zak and zchr: clipped forms, sound-alikes and initials, made in your browser.'),
-    step('sparkles', '.ai', 'Ideas from AI', 'A model adds nicknames, other spellings and new words that keep the sense of your name and stay short.'),
-    step('zap', '.go', 'Free comes first', 'Each name is checked live with Namecheap. The shortest free ones rise to the top as answers arrive.'))
-  const intro = h('div.intro', tryRow, how,
-    h('p.foot-note', { style: { 'margin-top': '22px' } }, 'Lookups go through a Namecheap adapter today. Domains is built on adapters, so another lookup service can take its place. ',
-      h('a', { href: '/about', onclick: (e) => { e.preventDefault(); go('/about') } }, 'How it works')))
+function focus() { const q = $('#q'); if (q && !phone()) q.focus({ preventScroll: true }) }
 
-  /* ---- Results ----------------------------------------------------------------------- */
+// A search from the navbar: the grid fades and the new names stream in.
+function newSearch(q) {
+  const grid = $('#grid')
+  if (grid) grid.classList.add('swap')
+  setTimeout(() => {
+    start(q)
+    const main = $('#main')
+    main.innerHTML = resultsHTML()
+    mount()
+    const form = $('#form')
+    if (form) form.outerHTML = fieldHTML(true)
+  }, grid ? 150 : 0)
+}
 
-  const status = h('div.status', { 'aria-live': 'polite' })
-  const notice = h('div')
-  const tilesCount = h('span')
-  const tilesEl = h('div.tiles', { role: 'list', 'aria-label': 'Shortest free names' })
-  for (const type of ['pointerdown', 'wheel', 'touchstart']) tilesEl.addEventListener(type, () => { tilesTouched = true }, { passive: true })
-  const groupsCount = h('span')
-  const groupsEl = h('div.groups')
-  const moreEl = h('div.more')
-  const footNote = h('p.foot-note')
-  const results = h('div.page.results',
-    status, notice,
-    h('div.sec-head', h('h2', 'Shortest free'), tilesCount), tilesEl,
-    h('div.sec-head', h('h2', 'Every name'), groupsCount), groupsEl,
-    moreEl, footNote)
+/* ---- Filters change: new names to check, or just a different view of these ---- */
 
-  const panel = h('div.panel.search-panel', hero, dock, intro, results, holmFooter())
-  results.hidden = true
+let rerunTimer = null
+onSettings((patch) => {
+  const fb = $('#filter-btn')
+  if (fb) { fb.classList.toggle('dot', changed()); fb.setAttribute('aria-label', 'Filters: ' + summary()) }
+  if (!S.search) return
+  if (Object.keys(patch).some((k) => SEARCH_KEYS.includes(k))) { clearTimeout(rerunTimer); rerunTimer = setTimeout(() => newSearch(S.q), 380) }
+  else relayout()
+})
 
-  /* ---- Running a search --------------------------------------------------------------- */
+// A star or a list changed somewhere: keep the visible card's star current.
+onChange(() => {})
 
-  function submit() {
-    const q = input.value.trim()
-    if (!q) { nope(field); input.focus(); return }
-    if (matchMedia('(pointer: coarse)').matches) input.blur()
-    const url = '/?q=' + encodeURIComponent(q)
-    if (q === query && search) { start(q, { quiet: true }); return }
-    go(url)
-  }
-
-  // Called by the page for every address: /?q=… searches, / shows the start.
-  function show(q) {
-    q = (q || '').trim()
-    if (q === query && (search || !q)) return
-    if (!q) {
-      swap(() => {
-        if (search) search.cancel()
-        search = null
-        query = ''
-        input.value = ''
-        clear.hidden = true
-        panel.classList.remove('searching')
-        hero.hidden = false
-        intro.hidden = false
-        results.hidden = true
-        hero.classList.remove('enter')
-      })
-      return
-    }
-    input.value = q
-    clear.hidden = false
-    swap(() => start(q))
-  }
-
-  function swap(change) {
-    const docking = !panel.classList.contains('searching') !== !query
-    if (!docking || !document.startViewTransition || reduced()) { change(); return }
-    document.documentElement.dataset.vt = 'dock'
-    const t = document.startViewTransition(change)
-    t.finished.finally(() => { if (document.documentElement.dataset.vt === 'dock') delete document.documentElement.dataset.vt })
-  }
-
-  function start(q, { quiet: keep = false } = {}) {
-    if (search) search.cancel()
-    query = q
-    quiet = keep
-    panel.classList.add('searching')
-    hero.hidden = true
-    intro.hidden = true
-    results.hidden = false
-    groups = new Map()
-    tiles = new Map()
-    groupsEl.replaceChildren()
-    tilesEl.replaceChildren()
-    tilesEl.scrollLeft = 0
-    tilesTouched = false
-    fill(notice)
-    if (!keep) panel.scrollTop = 0
-    search = new Search(q, settings, onEvent)
-    if (search.empty) {
-      fill(status, h('span', 'Type a name with letters or numbers in it.'))
-      paintTiles()
-      return
-    }
-    search.start()
-    schedule()
-    requestAnimationFrame(() => { quiet = false })
-  }
-
-  function onEvent(type, payload) {
-    if (type === 'groups') addGroups(payload)
-    else if (type === 'cell') paintCell(payload)
-    else if (type === 'provider') {
-      fill(notice, h('div.notice', ic('info', 17, 2.2), h('span', `${payload.from.name} couldn’t be reached from this browser, so the registries are being asked directly (RDAP). Answers are a little slower and carry no premium prices.`)))
-    } else if (type === 'ai') {
-      if (search.ai === 'error' && search.aiNote) notice.append(h('div.notice', ic('sparkles', 17, 2.2), h('span', search.aiNote)))
-    }
-    schedule()
-  }
-
-  /* ---- Groups and pills ------------------------------------------------------------------ */
-
-  const orderOf = (g) => (g.kind === 'exact' ? -1e6 + g.score : g.key === HACKS ? -1e5 : g.score)
-
-  function addGroups(list) {
-    const insert = () => {
-      let n = 0
-      for (const g of list) {
-        const ge = makeGroup(g)
-        groups.set(g.key, ge)
-        if (!quiet && !reduced()) {
-          ge.el.classList.add('enter')
-          ge.el.style.setProperty('--d', Math.min(n++, 14) * 35 + 'ms')
-          ge.el.addEventListener('animationend', () => ge.el.classList.remove('enter'), { once: true })
-        }
-        const after = [...groupsEl.children].find((el) => groups.get(el.dataset.key).order > ge.order)
-        groupsEl.insertBefore(ge.el, after || null)
-      }
-    }
-    if (groupsEl.children.length && !quiet) flip(groupsEl, insert)
-    else insert()
-  }
-
-  function makeGroup(g) {
-    const hack = g.key === HACKS
-    const count = h('span.grp-count')
-    const pills = h('div.pills')
-    const why = g.kind === 'ai' ? [AI_KIND[g.aiKind] || 'AI idea', g.why].filter(Boolean).join(' · ') : g.why
-    const el = h('div.grp' + (hack ? '.hacks' : ''), { 'data-key': g.key, role: 'group', 'aria-label': hack ? 'Domain hacks' : g.label },
-      h('div.grp-head',
-        h('span.grp-label', hack ? 'Domain hacks' : g.label),
-        hack ? null : h('span.grp-len', { title: `${g.label.length} characters` }, String(g.label.length)),
-        g.kind === 'ai' ? h('span.chip.ai', ic('sparkles', 11, 2.4), 'AI') : null,
-        h('span.grp-why', why || ''),
-        count),
-      pills)
-    const ge = { el, pills, count, map: new Map(), g, order: orderOf(g), hack }
-    syncPills(ge)
-    return ge
-  }
-
-  // Draw a pill for every name the group has (hacks can join later).
-  function syncPills(ge) {
-    let i = ge.map.size
-    for (const cell of ge.g.cells) {
-      if (ge.map.has(cell.domain)) continue
-      const b = h('button.pill', { type: 'button', style: { '--i': i++ }, onclick: () => open(cell) })
-      ge.map.set(cell.domain, b)
-      paintPill(b, cell, ge.hack, false)
-      ge.pills.append(b)
-    }
-    paintGroup(ge)
-  }
-
-  function priceOf(cell) {
-    const p = cell.result ? catalog.priceOf(cell.result, cell.tld) : null
-    return p ? p.first : null
-  }
-
-  // Free, but hidden by "Hide premium" or the price limit.
-  function filteredOut(cell) {
-    const premium = cell.result && cell.result.premium
-    if (settings.hidePremium && premium) return true
-    if (settings.maxPrice) { const p = priceOf(cell); if (p != null && p > settings.maxPrice) return true }
-    return false
-  }
-
-  function paintPill(b, cell, hack, animate) {
-    const r = cell.result
-    const premium = !!(r && r.premium && cell.state === 'free')
-    const isSaved = saved.has(cell.domain)
-    b.className = 'pill ' + cell.state + (premium ? ' premium' : '') + (isSaved ? ' saved' : '') + (cell.state === 'free' && filteredOut(cell) ? ' over' : '')
-    const text = hack ? cell.domain : '.' + cell.tld
-    const price = cell.state === 'free' ? priceOf(cell) : null
-    b.replaceChildren(...[text, price != null ? h('small', catalog.money(price, { short: true })) : null].filter(Boolean))
-    const words = { queued: 'not checked yet', checking: 'checking', free: premium ? 'free, premium price' : 'free', taken: 'taken', maybe: 'probably free', unknown: 'no answer' }
-    b.setAttribute('aria-label', `${cell.domain}: ${words[cell.state] || cell.state}${price != null ? ', ' + catalog.money(price) : ''}`)
-    if (animate && !reduced() && (cell.state === 'free' || cell.state === 'taken')) {
-      b.classList.add('settle')
-      b.addEventListener('animationend', (e) => { if (e.animationName === 'settle') b.classList.remove('settle') }, { once: false })
-    }
-  }
-
-  function paintGroup(ge) {
-    let free = 0
-    let pending = 0
-    for (const cell of ge.g.cells) {
-      if (cell.state === 'free' && !filteredOut(cell)) free++
-      else if (cell.state === 'checking') pending++
-    }
-    ge.count.textContent = free ? `${free} free` : ''
-    ge.count.classList.toggle('on', free > 0)
-    ge.el.classList.toggle('none', !free && !pending)
-  }
-
-  function paintCell(cell) {
-    const ge = groups.get(cell.group)
-    if (!ge) return
-    let b = ge.map.get(cell.domain)
-    if (!b) { syncPills(ge); b = ge.map.get(cell.domain) }
-    if (b) paintPill(b, cell, ge.hack, !quiet)
-    paintGroup(ge)
-  }
-
-  function open(cell) {
-    haptic()
-    const item = () => ({ ...cell, at: cell.result ? Date.now() : null })
-    openDomain(item(), {
-      recheck: async () => {
-        const s = search
-        await s.recheck(cell.domain)
-        return item()
-      },
-    }).then(() => {
-      // The star may have changed.
-      const ge = groups.get(cell.group)
-      const b = ge && ge.map.get(cell.domain)
-      if (b) paintPill(b, cell, ge.hack, false)
-      schedule()
-    })
-  }
-
-  /* ---- Status, tiles, more ------------------------------------------------------------------ */
-
-  function schedule() {
-    if (frame) return
-    frame = requestAnimationFrame(() => { frame = 0; paintStatus(); paintTiles(); paintMore() })
-  }
-
-  function paintStatus() {
-    const s = search
-    if (!s || s.empty) return
-    const running = s.done < s.sent
-    const secs = s.finished ? ((s.finished - s.started) / 1000).toFixed(1).replace(/\.0$/, '') : ''
-    const freeShown = [...s.cells.values()].filter((c) => c.state === 'free' && !filteredOut(c)).length
-    fill(status,
-      h('span.pulse' + (running ? '' : '.idle')),
-      running
-        ? h('span', 'Checking ', h('b.num', String(s.done)), ' of ', h('span.num', String(s.sent)))
-        : h('span', h('b.num', String(s.done)), s.done === 1 ? ' name checked' : ' names checked', secs && !s.switched ? ` in ${secs} s` : ''),
-      h('span.sep'),
-      h('span', h('b.num.free-n', String(freeShown)), ' free'),
-      h('span.sep'),
-      h('span.via', 'with ' + s.provider.name),
-      aiState(s))
-    bar.style.width = (s.sent ? (s.done / s.sent) * 100 : 0) + '%'
-    progress.classList.toggle('run', running)
-    progress.classList.toggle('done', !running && s.done > 0)
-    groupsCount.textContent = `${s.groups.size} ${s.groups.size === 1 ? 'name' : 'names'} · ${catalog.tldsFor(settings).length} extensions`
-    fill(footNote,
-      'Free means a registry would register the name right now; nothing is held for you until you buy it. Prices are ',
-      catalog.registrar.name, '’s list prices for the first year (', catalog.updatedLabel(), '). Looked up with the ', s.provider.name, ' adapter; other lookup services can plug in. ',
-      h('a', { href: '/about', onclick: (e) => { e.preventDefault(); go('/about') } }, 'How it works'))
-  }
-
-  function aiState(s) {
-    if (s.ai === 'off') return null
-    if (s.ai === 'thinking') return h('span.ai-state.thinking', ic('sparkles', 13, 2.2), 'Thinking of shorter names…')
-    if (s.ai === 'done') return h('span.ai-state', ic('sparkles', 13, 2.2), `${s.aiCount} AI ${s.aiCount === 1 ? 'idea' : 'ideas'}`)
-    if (s.ai === 'empty') return h('span.ai-state', ic('sparkles', 13, 2.2), 'No new AI ideas')
-    return h('span.ai-state', ic('sparkles', 13, 2.2), 'AI ideas unavailable')
-  }
-
-  function paintTiles() {
-    const s = search
+act({
+  try: (el) => { const q = $('#q'); if (q) q.value = el.dataset.q; run(el.dataset.q) },
+  clear: () => toHero(),
+  filters: () => { if (isOpen('filters')) closeLayer(); else openLayer({ kind: 'filters', sel: '#form' }) },
+  chip: (el) => {
+    const key = el.dataset.l || null
+    S.focus = S.focus === key ? null : key
+    for (const c of $$('#chips .chip[data-l]')) c.classList.toggle('on', (c.dataset.l || null) === S.focus)
+    relayout()
+  },
+  more: (el) => {
+    const s = S.search
     if (!s) return
-    const best = s.empty ? [] : s.best((c) => !filteredOut(c), TILES)
-    const running = s.done < s.sent || s.ai === 'thinking'
-    const freeShown = [...s.cells.values()].filter((c) => c.state === 'free' && !filteredOut(c)).length
-    tilesCount.textContent = freeShown > TILES ? `${TILES} of ${freeShown}` : ''
-    if (!best.length) {
-      tiles = new Map()
-      if (running) {
-        if (!tilesEl.querySelector('.ghost')) tilesEl.replaceChildren(...[0, 1, 2].map(() => h('div.tile.ghost', h('i'), h('i'))))
-      } else {
-        tilesEl.replaceChildren(h('div.tiles-none', s.empty ? '' : 'Nothing free yet in these extensions. ',
-          s.empty ? null : h('a', { href: '#', style: { color: 'var(--ink)', 'font-weight': 'var(--w-strong)' }, onclick: (e) => { e.preventDefault(); set({ preset: settings.preset === 'three' ? 'two' : 'three' }) } }, settings.preset === 'three' ? 'Try every two-letter one' : 'Try every three-letter one'),
-          s.empty || settings.max >= MAX_ANY ? null : [', or ', h('a', { href: '#', style: { color: 'var(--ink)', 'font-weight': 'var(--w-strong)' }, onclick: (e) => { e.preventDefault(); set({ max: Math.min(MAX_ANY, settings.max + 2) }) } }, 'allow longer names'), '.']))
-      }
-      return
-    }
-    const keep = new Set(best.map((c) => c.domain))
-    const reorder = () => {
-      for (const el of [...tilesEl.children]) if (!el.dataset.key || !keep.has(el.dataset.key)) el.remove()
-      for (const [d, el] of tiles) if (!keep.has(d)) tiles.delete(d)
-      best.forEach((cell, i) => {
-        let el = tiles.get(cell.domain)
-        if (!el) {
-          el = tile(cell)
-          tiles.set(cell.domain, el)
-          if (!quiet && !reduced()) { el.classList.add('enter'); el.addEventListener('animationend', () => el.classList.remove('enter'), { once: true }) }
-        } else paintTile(el, cell)
-        if (tilesEl.children[i] !== el) tilesEl.insertBefore(el, tilesEl.children[i] || null)
-      })
-    }
-    if (tilesEl.querySelector('.tile:not(.ghost)') && !quiet) flip(tilesEl, reorder)
-    else reorder()
-    // New finds go in at the front; keep the row at its start unless someone scrolled it.
-    if (!tilesTouched) tilesEl.scrollLeft = 0
-  }
-
-  function tile(cell) {
-    const el = h('button.tile', { type: 'button', role: 'listitem', 'data-key': cell.domain, onclick: () => open(cell) })
-    paintTile(el, cell)
-    return el
-  }
-
-  function paintTile(el, cell) {
-    const r = cell.result || {}
-    const premium = !!r.premium
-    const price = priceOf(cell)
-    const isSaved = saved.has(cell.domain)
-    const kind = TILE_KIND[cell.kind] || ''
-    el.classList.toggle('saved', isSaved)
-    el.setAttribute('aria-label', `${cell.domain}, free${price != null ? ', ' + catalog.money(price) + ' first year' : ''}`)
-    el.replaceChildren(
-      dn(cell.domain, cell.tld),
-      h('span.meta', h('span.price' + (premium ? '.premium' : ''), price != null ? catalog.money(price) : ''), h('span.kind', premium ? 'Premium' : kind)),
-      isSaved ? h('span.saved-star', starFilled(14)) : h('span.free-dot' + (premium ? '.premium' : '')))
-  }
-
-  function paintMore() {
-    const s = search
-    if (!s || s.empty || s.done < s.sent || !s.waiting) { fill(moreEl); return }
-    const n = Math.min(PASS, s.waiting)
-    fill(moreEl,
-      h('span', `${s.waiting} longer ${s.waiting === 1 ? 'name hasn’t' : 'names haven’t'} been checked yet.`),
-      h('button.btn.tinted', { type: 'button', onclick: () => { haptic(); s.more(); schedule() } }, ic('search', 17, 2.2), `Check ${n} more`))
-  }
-
-  /* ---- Filters that only change what's shown -------------------------------------------------- */
-
-  function applyView() {
-    results.classList.toggle('only-free', settings.onlyFree)
-    results.classList.toggle('hide-premium', settings.hidePremium)
-    for (const ge of groups.values()) {
-      for (const cell of ge.g.cells) { const b = ge.map.get(cell.domain); if (b) paintPill(b, cell, ge.hack, false) }
-      paintGroup(ge)
-    }
-    schedule()
-  }
-
-  function paintQuick() {
-    const p = catalog.preset(settings.preset)
-    const chip = (label, icon, on, onclick, extra = {}) => h('button' + (on ? '.on' : ''), { type: 'button', 'aria-pressed': on == null ? null : String(on), onclick, ...extra }, icon ? ic(icon, 15, 2.2) : null, label)
-    fill(quick,
-      chip(p.name, null, null, (e) => presetMenu(e.currentTarget), { 'aria-haspopup': 'menu' }),
-      chip(settings.max >= MAX_ANY ? 'Any length' : `Up to ${settings.max} letters`, null, null, (e) => lengthMenu(e.currentTarget), { 'aria-haspopup': 'menu' }),
-      chip('Only free', null, settings.onlyFree, () => { haptic(); set({ onlyFree: !settings.onlyFree }) }),
-      chip('AI ideas', 'sparkles', settings.kinds.ai, () => { haptic(); setKind('ai', !settings.kinds.ai) }),
-      chip('Hide premium', null, settings.hidePremium, () => { haptic(); set({ hidePremium: !settings.hidePremium }) }))
-    for (const b of quick.querySelectorAll('button:not([aria-pressed])')) b.append(ic('chevronDown', 14, 2.4))
-    const n = changed()
-    badge.textContent = n ? String(n) : ''
-    badge.hidden = !n
-  }
-
-  function presetMenu(anchor) {
-    menu(anchor, [
-      ...catalog.PRESETS.filter((p) => p.id !== 'custom').map((p) => ({ label: p.name, checked: settings.preset === p.id, onclick: () => set({ preset: p.id }) })),
-      'sep',
-      { label: settings.preset === 'custom' ? `Your own (${settings.custom.length})` : 'Pick your own…', icon: 'plus', checked: settings.preset === 'custom', onclick: openTlds },
-    ], { align: 'start' })
-  }
-
-  function lengthMenu(anchor) {
-    menu(anchor, [3, 4, 5, 6, 8, 10, 12, MAX_ANY].map((n) => ({ label: n >= MAX_ANY ? 'Any length' : `Up to ${n} letters`, checked: settings.max === n, onclick: () => set({ max: n }) })), { align: 'start' })
-  }
-
-  onSettings((patch) => {
-    paintQuick()
-    applyView()
-    if (query && Object.keys(patch).some((k) => SEARCH_KEYS.includes(k))) {
-      clearTimeout(rerun)
-      rerun = setTimeout(() => start(query, { quiet: true }), 380)
-    }
-  })
-  saved.on(() => { if (search) applyView() })
-
-  paintQuick()
-  applyView()
-
-  return {
-    el: panel,
-    show,
-    focus: () => { input.focus(); input.select() },
-  }
-}
-
-function step(icon, tone, title, text) {
-  return h('div.how-step', h('span.how-ic' + tone, ic(icon, 19, 2)), h('b', title), h('p', text))
-}
+    el.classList.add('thinking'); const t = $('span', el); if (t) t.textContent = 'Finding more…'
+    S.drained = false
+    ghost(true)
+    const like = [...new Set([...saved.list().map((i) => catalog.split(i.domain).label), ...S.seq.slice(0, 30).map((n) => n.label)])]
+    s.moreIdeas(like)
+    setTimeout(() => collapse(el), 400)
+  },
+  'check-more': (el) => { const s = S.search; if (!s) return; S.drained = false; ghost(true); collapse(el); s.more() },
+  'f-reset-search': () => { import('../settings.js').then((m) => m.reset()) },
+})

@@ -1,96 +1,124 @@
-// Domains' page: one shell, three tabs that stay alive (so a search keeps its place).
+// Domains' page: one fixed shell. The search lives in the navbar once a search has run; a
+// sidebar of places (Search, Saved, your lists) hides with one tap; phones get a tab bar.
 //
-//   /            search; /?q=zacharia runs one
-//   /saved       names you starred
-//   /about       how it works
+//   /              search; /?q=photon runs one
+//   /saved         names you starred
+//   /lists         your lists; /lists/<id> one of them
+//   /about         how it works
+//   /s/<slug>      a shared list, for whoever has the link
 
-import { h, ic, haptic, reduced } from './ui.js'
-import { state, loadMe, setRenderer, topBar, go } from './shell.js'
+import { $, act, dispatch, phone } from './dom.js'
 import * as theme from './theme.js'
 import * as catalog from './catalog.js'
 import * as saved from './saved.js'
-import { filtersPanel } from './views/filters.js'
-import { searchView } from './views/search.js'
-
-const root = document.getElementById('root')
-const TABS = [
-  { id: 'search', path: '/', label: 'Search', icon: 'search' },
-  { id: 'saved', path: '/saved', label: 'Saved', icon: 'star' },
-  { id: 'about', path: '/about', label: 'About', icon: 'info' },
-]
+import * as lists from './lists.js'
+import { state, loadMe, setRenderer, topHTML, sideHTML, tabsHTML, drawLayer, closeLayer, go, paintSide } from './shell.js'
+import * as search from './views/search.js'
+import './views/filters.js'
+import { submitNewList, onChange } from './views/cards.js'
+import { savedHTML, listHTML, listsHTML, submitRename, rerender } from './views/collections.js'
+import { aboutHTML } from './views/about.js'
+import { sharedHTML, mountShared } from './views/shared.js'
 
 theme.apply()
+const root = document.getElementById('root')
 await Promise.all([catalog.load(), loadMe()])
-saved.connect(state.me)
+Promise.all([saved.connect(state.me), lists.connect(state.me)]).then(() => { paintSide(); rerender() })
 
-const views = { search: searchView() }
-const lazy = {
-  saved: async () => (await import('./views/saved.js')).savedView(),
-  about: async () => (await import('./views/about.js')).aboutView(),
-}
-
-const main = h('div.main', views.search.el)
-let lastSearch = '/'
-const pathOf = (tab) => (tab.id === 'search' ? lastSearch : tab.path)
-const counts = new Map()
-const navItem = (tab) => {
-  const n = tab.id === 'saved' ? h('span.n.num') : null
-  if (n) counts.set('side', n)
-  return h('button.side-item', { type: 'button', 'data-tab': tab.id, onclick: () => { haptic(); go(pathOf(tab)) } }, ic(tab.icon, 19, 2), tab.label, n)
-}
-const side = h('aside.side', { 'aria-label': 'Navigation and filters' }, h('nav.side-nav', TABS.map(navItem)), filtersPanel())
-const tabItem = (tab) => {
-  const n = tab.id === 'saved' ? h('span.tab-count.num') : null
-  if (n) counts.set('tab', n)
-  return h('button.tab', { type: 'button', 'data-tab': tab.id, onclick: () => { haptic(); go(pathOf(tab)) } }, h('span.tab-icon', ic(tab.icon, 24, 1.9), n), tab.label)
-}
-const tabbar = h('nav.tabbar', { 'aria-label': 'Tabs' }, TABS.map(tabItem))
-const app = h('div.app', topBar(), h('div.body', side, main), tabbar)
-root.replaceChildren(app)
-
-function paintCounts() {
-  const n = saved.count()
-  for (const el of counts.values()) { el.textContent = n ? String(n) : ''; el.hidden = !n }
-}
-saved.on(paintCounts)
-paintCounts()
-
-let current = null
-async function render(dir = 'none') {
+function route() {
   const path = location.pathname.replace(/\/+$/, '') || '/'
-  const tab = TABS.find((t) => t.path === path) || TABS[0]
-  if (!views[tab.id]) views[tab.id] = await lazy[tab.id]()
-  const view = views[tab.id]
-  if (current !== tab.id) {
-    const swap = () => {
-      for (const t of TABS) if (views[t.id] && views[t.id].el.parentNode !== main) main.append(views[t.id].el)
-      for (const t of TABS) if (views[t.id]) views[t.id].el.hidden = t.id !== tab.id
-      for (const b of app.querySelectorAll('[data-tab]')) b.classList.toggle('on', b.dataset.tab === tab.id)
-    }
-    if (current && document.startViewTransition && !reduced() && dir !== 'none') {
-      document.documentElement.dataset.vt = dir
-      const t = document.startViewTransition(swap)
-      t.finished.finally(() => { delete document.documentElement.dataset.vt })
-    } else swap()
-    current = tab.id
-  }
-  document.title = tab.id === 'search' ? (new URLSearchParams(location.search).get('q') ? `${new URLSearchParams(location.search).get('q')} · Domains` : 'Domains · find a short domain that’s actually free') : `${tab.label} · Domains`
-  if (tab.id === 'search') { lastSearch = location.pathname + location.search; view.show(new URLSearchParams(location.search).get('q') || '') }
-  else view.show()
+  if (path.startsWith('/s/')) return { view: 'shared', slug: path.slice(3) }
+  if (path === '/saved') return { view: 'saved' }
+  if (path === '/lists') return { view: 'lists' }
+  const m = /^\/lists\/([a-z0-9-]+)$/.exec(path)
+  if (m) return { view: 'list', listId: m[1] }
+  if (path === '/about') return { view: 'about' }
+  return { view: 'search', q: new URLSearchParams(location.search).get('q') || '' }
+}
+
+const TITLE = 'Domains · find a short domain that’s still available'
+
+function render(o = {}) {
+  const r = route()
+  if (r.view === 'shared') { root.innerHTML = sharedHTML(); mountShared(r.slug); return }
+  state.view = r.view
+  state.listId = r.listId || null
+  if (r.view === 'search' && r.q.trim() !== search.query()) search.start(r.q)
+  const hero = r.view === 'search' && !search.hasResults()
+  let main
+  if (r.view === 'search') main = hero ? search.heroHTML({ animateIn: o.animateIn, hold: o.hold }) : search.resultsHTML()
+  else if (r.view === 'saved') main = savedHTML()
+  else if (r.view === 'list') main = listHTML(r.listId)
+  else if (r.view === 'lists') main = listsHTML()
+  else main = aboutHTML()
+  const small = phone()
+  root.innerHTML = `<div class="shell${state.sideOn ? '' : ' side-off'}${o.entering ? ' entering' : ''}${small ? ' has-tabs' : ''}">
+    ${topHTML(hero ? '' : search.fieldHTML(true, o.hold && !hero))}
+    <div class="body"><aside class="side" id="side" aria-label="Places">${sideHTML()}</aside><main class="main" id="main">${main}</main></div>
+    ${small ? tabsHTML() : ''}
+    <div class="layer" id="layer"></div>
+    <div class="toast" id="toast" role="status"></div>
+  </div>`
+  if (r.view === 'search') search.mount()
+  drawLayer(true)
+  const l = r.view === 'list' && lists.get(r.listId)
+  document.title = r.view === 'search' ? (search.query() ? `${search.query()} · Domains` : TITLE)
+    : r.view === 'saved' ? 'Saved · Domains' : r.view === 'lists' ? 'Lists · Domains' : r.view === 'about' ? 'How it works · Domains' : `${l ? l.name : 'List'} · Domains`
 }
 
 setRenderer(render)
-addEventListener('popstate', () => render('none'))
-addEventListener('keydown', (e) => {
+
+act({
+  nav: (el, event) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey) return
+    event.preventDefault()
+    closeLayer()
+    const href = el.getAttribute('href')
+    if (href === '/' && state.view === 'search' && search.hasResults()) return
+    go(href === '/' && search.query() ? '/?q=' + encodeURIComponent(search.query()) : href)
+  },
+  home: (el, event) => {
+    if (event.metaKey || event.ctrlKey) return
+    event.preventDefault()
+    if (state.view === 'search' && search.hasResults()) search.toHero()
+    else go('/')
+  },
+})
+
+// A star or list changed: pages that show them redraw (not while a note is being typed).
+onChange(() => { if (['saved', 'list', 'lists'].includes(state.view)) rerender() })
+
+document.addEventListener('click', dispatch)
+document.addEventListener('submit', (e) => {
+  const f = e.target
+  e.preventDefault()
+  if (f.id === 'form') { const v = f.elements.q.value.trim(); if (v) { f.elements.q.blur(); search.run(v) } }
+  else if (f.dataset.form === 'newlist') submitNewList(f)
+  else if (f.dataset.form === 'rename') submitRename(f)
+})
+let noteTimer = null
+document.addEventListener('input', (e) => {
+  const t = e.target
+  if (t.dataset && t.dataset.note) { clearTimeout(noteTimer); const id = t.dataset.note, v = t.value; noteTimer = setTimeout(() => lists.setNote(id, v), 300) }
+})
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.layer) { closeLayer(); return }
   if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return
   const t = e.target
   if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return
-  e.preventDefault()
-  if (current !== 'search') go('/')
-  views.search.focus()
+  const q = $('#q')
+  if (q) { e.preventDefault(); q.focus(); q.select() }
 })
-await render()
+addEventListener('popstate', () => {
+  const r = route()
+  if (r.view === 'search' && !r.q && state.view === 'search' && search.hasResults()) search.toHero({ push: false })
+  else render()
+})
+let wasPhone = phone()
+addEventListener('resize', () => { if (phone() !== wasPhone) { wasPhone = phone(); closeLayer(); render() } })
+lists.on(() => {})
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('/sw.js').catch(() => {})
-}
+render({ animateIn: !new URLSearchParams(location.search).get('q') })
+if (route().view === 'search' && !search.hasResults() && !phone()) { const q = $('#q'); if (q) q.focus({ preventScroll: true }) }
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/sw.js').catch(() => {})

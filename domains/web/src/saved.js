@@ -35,9 +35,9 @@ export const has = (domain) => items.some((i) => i.domain === domain)
 export const get = (domain) => items.find((i) => i.domain === domain) || null
 export function on(fn) { listeners.add(fn); return () => listeners.delete(fn) }
 
-export function add(domain, { status, price } = {}) {
+export function add(domain, { status, price, premium } = {}) {
   if (has(domain)) return
-  items = [{ domain, at: Date.now(), ...(status ? { status } : {}), ...(typeof price === 'number' ? { price } : {}), checked: Date.now() }, ...items]
+  items = [{ domain, at: Date.now(), ...(status ? { status } : {}), ...(typeof price === 'number' ? { price } : {}), ...(premium ? { premium: true } : {}), checked: Date.now() }, ...items]
   write()
 }
 

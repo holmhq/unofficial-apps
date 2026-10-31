@@ -1,25 +1,29 @@
 {
-  "subtitle": "Short domains that are actually free",
+  "subtitle": "Short domains that are still available",
   "category": "Productivity",
   "featured": false,
-  "description": "Type a name and Domains tries the shorter versions of it: clipped forms, sound-alikes, initials, a dropped vowel, AI ideas and domain hacks. From Zacharia it makes zach, zack, zak and zchr; from flicker, flickr.\n\nEach label meets the extensions you pick: short ones like .io, .so and .sh, every two- or three-letter extension, or your own from Namecheap's 571 with their prices. Domains checks them all live, shortest first. Every name gets a card whose extensions wait, then settle to free or taken, and the shortest free ones gather as tiles at the top.\n\nOne switch hides what's taken, another hides premium names, and a price limit does the rest. Tap a name for its first-year and renewal prices, who holds it if it's taken, and a link to register it. Star the ones you like; sign in to keep them on every device.\n\nLookups go through adapters: a Namecheap adapter today, with the registries' own RDAP as a fallback, so another service can take their place.",
-  "whatsNew": "First release: shorter names, sound-alikes and AI ideas checked live across short extensions, shortest first, with a Namecheap adapter, an RDAP fallback, filters for free, premium and price, and saved names.",
+  "description": "Type a name and Domains tries the shorter versions of it: clipped forms, sound-alikes, initials, a dropped vowel, domain hacks and AI ideas, including real words from the same world. From harbour labs it finds harbr, quay and berth; from flicker, flickr. Names nobody could say are left out.\n\nEvery name is checked live with Namecheap, shortest first, and only the available ones show, as cards that settle in one after another. One row of ideas sits above them: tap one to see only its names, or ask for more like the ones you like.\n\nFilters open from the search field in one compact panel: extensions, length, which ideas to make, and price. Tap a name for its first-year and renewal prices and a link to register it.\n\nStar the good ones and collect them into lists, with a note. Sign in and share a list by link: whoever opens it sees every name on one page, checked again live, no account needed.",
+  "whatsNew": "A calmer redesign. The search moves into the navbar, only available names show, and they arrive in a steady stream. One row of ideas replaces the long list, with an AI that also suggests words from the same world and a More like these round. Filters live in one compact panel. New: lists you can share by link, which open for anyone without signing in.",
   "screenshots": [
     {
       "file": "results.webp",
-      "alt": "A search for Zacharia on a phone: the shortest free names as tiles, and a card per name whose extensions settle to free or taken"
+      "alt": "A search for photon on a phone: one row of ideas tried, then the available names as cards with their prices"
     },
     {
       "file": "detail.webp",
-      "alt": "One free name up close: its first-year and renewal prices, why it was suggested, and Register at Namecheap"
+      "alt": "One available name up close: its first-year and renewal prices, why it was suggested, and Register at Namecheap"
     },
     {
       "file": "filters.webp",
-      "alt": "The filters: extension presets, a length limit, which ideas to make, only free names, premium names and a price limit"
+      "alt": "The filters in one panel: extension presets and the extensions themselves, a length ruler, which ideas to make, and a price ruler"
+    },
+    {
+      "file": "lists.webp",
+      "alt": "A list for a friend, with a note and a Share button, holding six short names"
     },
     {
       "file": "home-dark.webp",
-      "alt": "The start page in dark mode: find a short domain that's actually free"
+      "alt": "The start page in dark mode: find a short domain that's still available"
     }
   ]
 }

@@ -7,7 +7,7 @@
 
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { parse, labels, expand } from '../web/src/gen.js'
+import { parse, labels, expand, sayable } from '../web/src/gen.js'
 
 const WEB = new URL('../web/', import.meta.url).pathname
 const holm = JSON.parse(readFileSync(new URL('../holm.json', import.meta.url), 'utf8'))
@@ -18,8 +18,9 @@ const check = (ok, what) => { if (!ok) { failed++; console.error('FAIL', what) }
 
 // Names.
 const zach = labels(parse('Zacharia', isTld), { max: 8, kinds: { affix: false } }).map((l) => l.label)
-for (const want of ['zacharia', 'zach', 'zack', 'zak', 'zac', 'zchr']) check(zach.includes(want), `Zacharia gives ${want}`)
-check(!zach.includes('sac'), 'Zacharia does not give sac')
+for (const want of ['zacharia', 'zach', 'zack', 'zak', 'zac']) check(zach.includes(want), `Zacharia gives ${want}`)
+for (const not of ['sac', 'zchr']) check(!zach.includes(not), `Zacharia does not give ${not}`)
+check(labels(parse('photon', isTld)).every((l) => l.kind === 'exact' || sayable(l.label)), 'every made label can be said')
 check(labels(parse('flicker', isTld)).some((l) => l.label === 'flickr'), 'flicker gives flickr')
 check(labels(parse('harbour labs', isTld)).some((l) => l.label === 'hl'), 'harbour labs gives hl')
 const typed = parse('https://www.Zoë.io', isTld)
@@ -44,7 +45,7 @@ for (const f of walk(join(WEB, 'src'))) check(files.includes('/' + relative(WEB,
 const shell = readFileSync(join(WEB, 'shell.html'), 'utf8')
 for (const m of shell.matchAll(/\?v=([\d.]+)/g)) check(m[1] === holm.version, `shell.html asks for ?v=${holm.version}`)
 const FILE = new RegExp(sw.match(/const FILE = \/(.+)\/i/)[1], 'i')
-for (const p of ['/', '/saved', '/about']) check(!FILE.test(p), `${p} opens the app`)
+for (const p of ['/', '/saved', '/about', '/lists', '/lists/for-a-friend-x1y2z', '/s/7fK2mQab']) check(!FILE.test(p), `${p} opens the app`)
 for (const p of ['/icon-512.png', '/manifest.webmanifest', '/data/tlds.json']) check(FILE.test(p), `${p} is a file`)
 
 console.log(failed ? `${failed} failed` : 'all checks passed')

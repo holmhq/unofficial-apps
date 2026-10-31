@@ -1,9 +1,9 @@
-// Domains: find a short domain that's actually free.
+// Domains: find a short domain that's still available.
 //
 // The page does the searching. It makes the names to try, asks a lookup provider which are
-// free and shows them as they come in; providers are adapters in web/src/providers/. The
+// available and shows them as they come in; providers are adapters in web/src/providers/. The
 // server here only does what a page can't: AI ideas, registry lookups for the RDAP adapter,
-// who is signed in and their saved names (http.js).
+// who is signed in, their saved names and lists, and shared lists (http.js).
 //
 // This file stays small, since Holm loads it for every request; the routes load with
 // import(). Static files in web/ are served by Holm without running any of this.
@@ -12,7 +12,8 @@
 // social tags and its own Content-Security-Policy. The Namecheap adapter talks to Namecheap's
 // search socket from the browser, so connect-src names that one origin; everything else
 // stays on this origin.
-const PAGES = new Set(['/', '/saved', '/about'])
+const PAGES = new Set(['/', '/saved', '/lists', '/about'])
+const isPage = (path) => PAGES.has(path) || /^\/lists\/[a-z0-9-]{1,48}$/.test(path) || /^\/s\/[A-Za-z0-9]{6,16}$/.test(path)
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
@@ -31,7 +32,7 @@ const CSP = [
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
-    if ((request.method === 'GET' || request.method === 'HEAD') && PAGES.has(url.pathname)) return shell(request, env)
+    if ((request.method === 'GET' || request.method === 'HEAD') && isPage(url.pathname)) return shell(request, env)
     if (url.pathname.startsWith('/api/')) {
       const http = await import('./http.js')
       return http.default.fetch(request, env)
@@ -42,8 +43,25 @@ export default {
 
 async function shell(request, env) {
   const response = await env.holm.web.fetch(new Request(new URL('/shell', request.url), { method: 'GET', headers: request.headers }))
-  const origin = new URL(request.url).origin
-  const html = (await response.text()).replaceAll('__ORIGIN__', origin)
+  const url = new URL(request.url)
+  const origin = url.origin
+  let html = (await response.text()).replaceAll('__ORIGIN__', origin)
+  // A shared list unfurls as itself: its name and how many names, with its own address.
+  if (url.pathname.startsWith('/s/')) {
+    const { readShare } = await import('./http.js')
+    const shared = readShare(env, url.pathname.slice(3))
+    if (shared) {
+      const n = shared.list.items.length
+      const title = esc(`${shared.list.name} · ${n} ${n === 1 ? 'domain' : 'domains'}`)
+      const text = esc(shared.list.note || `${n} short ${n === 1 ? 'domain' : 'domains'}, picked for you and checked live.`)
+      html = html.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+        .replace(/(<meta property="og:title" content=")[^"]*/, `$1${title}`)
+        .replace(/(<meta property="og:description" content=")[^"]*/, `$1${text}`)
+        .replace(/(<meta name="description" content=")[^"]*/, `$1${text}`)
+        .replace(/(<meta property="og:url" content=")[^"]*/, `$1${origin}${url.pathname}`)
+        .replace(/(<link rel="canonical" href=")[^"]*/, `$1${origin}${url.pathname}`)
+    }
+  }
   // Holm's page-view beacon posts to the node's own address; let it through.
   let csp = CSP
   const beacon = /var u="(https?:\/\/[^"/]+)\/track"/.exec(html)
@@ -54,4 +72,8 @@ async function shell(request, env) {
   headers.delete('etag')
   headers.set('Cache-Control', 'no-cache')
   return new Response(request.method === 'HEAD' ? null : html, { status: response.status, headers })
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 }

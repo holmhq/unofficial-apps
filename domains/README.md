@@ -1,14 +1,14 @@
 # Domains
 
-Find a short domain that's actually free. Type a name and Domains tries the
-shorter versions of it: clipped forms, sound-alikes, initials, a dropped
-vowel, AI ideas and domain hacks. It pairs each with the two- and three-letter
-extensions you pick and checks them all live, shortest first. Free names rise
-into a row at the top as the answers arrive. It runs on
-[Holm](https://holmhq.com).
+Find a short domain that's still available. Type a name and Domains tries
+the shorter versions of it: clipped forms, sound-alikes, initials, a dropped
+vowel, AI ideas and domain hacks. It pairs each with the extensions you pick,
+checks them all live, shortest first, and shows only the available ones.
+Star the good ones, collect them into lists, and share a list by link. It
+runs on [Holm](https://holmhq.com).
 
-It was built from the request quoted in [`PROMPT.md`](PROMPT.md), which also has
-a reusable version of it. Try it at [domains.zyt.app](https://domains.zyt.app).
+It was built from the requests quoted in [`PROMPT.md`](PROMPT.md), which also
+has a reusable version of them. Try it at [domains.zyt.app](https://domains.zyt.app).
 
 ## Holm App Spec v1
 
@@ -24,41 +24,47 @@ served as files: `api/` and `holm.json` are not public URLs.
 
 ## What it does
 
-- **Names, made shorter.** From "Zacharia" it makes zach, zack, zak, zac,
-  zakk, zchr and more. From "flicker" it makes flickr; from "harbour labs",
-  hl and hlabs. All of this happens in your browser (`web/src/gen.js`).
-  Prefixes and suffixes (getzach, zachhq) and domain hacks (inter.net, da.sh)
-  are switches. A length limit (2 letters to any) keeps the list short.
-- **AI ideas.** The node's AI model adds nicknames, other spellings, clipped
-  forms, blends and a few new words. They are grouped by kind and stay within
-  the length limit, so a name you'd never have typed still gets checked.
-- **Extensions you choose.** Presets: Short picks (.com .io .co .ai .so .sh
-  .me .to .app .dev .xyz .net), every 2-letter or 3-letter extension, Classic,
-  Tech, Under $5. Or pick your own from all 571 Namecheap sells, each shown
-  with its price.
-- **Shortest first, live.** Names are checked in order of their whole length.
-  Every label gets a card whose extensions wait, then settle to free (with
-  the price) or taken. The shortest free names gather as tiles at the top. A
-  search tries up to 300 names, with **Check more** for the longer rest.
-- **Filters that hide the noise:** only free names, no premium names, a
-  first-year price limit. They apply at once, without asking again.
-- **One name up close:** the first-year and renewal prices, the country of the
-  extension, and why it was suggested, with **Register at Namecheap**. For a
-  taken name: since when, at which registrar, and in how many other extensions
-  the label is taken.
-- **Saved names** with a star. They are kept in the browser, or on the
+- **Names, made shorter.** From "Zacharia" it makes zach, zack, zak, zac and
+  zakk; from "flicker", flickr; from "harbour labs", hl and harbr. All of this
+  happens in your browser (`web/src/gen.js`), and labels nobody could say
+  (zchr) are left out. Prefixes and suffixes (getzach, zachhq) and domain
+  hacks (inter.net) are options, and a length ruler keeps the list short.
+- **AI ideas.** The node's AI model reads what you typed (the row of ideas
+  shows its one-line reading on hover) and adds nicknames, other spellings,
+  short forms, real words from the same world (harbour: quay, berth, moor),
+  blends and a few new words. **More like these** asks again, for names in
+  the style of the ones that came back available and the ones you starred.
+- **Only available names, as cards.** Every name is checked live, shortest
+  first. Lookups answer in bursts, so the cards are revealed one at a time at
+  an even pace, appended in order, with premium names last; nothing
+  reshuffles. One row of ideas sits above them, with a count each: tap one to
+  see only its names. Ideas with nothing available fold away at the end.
+- **The search moves into the navbar.** The first search starts in a big
+  field, which flies up into the navbar as the rest of the start page fades.
+- **Filters in one compact panel**, from a button in the search field:
+  extension presets (short, every 2- or 3-letter extension, classic, tech,
+  cheap) above the extensions themselves, a length ruler, which ideas to make,
+  a first-year price ruler and "hide premium names". They apply at once.
+- **One name up close:** first-year and renewal prices, why it was
+  suggested, **Register at Namecheap**, save and add to a list.
+- **Saved names and lists.** A star saves a name. Lists collect names for a
+  friend or a project, with a note. Both stay in the browser, or with your
   account when you sign in, and can be checked again in one go.
+- **Share a list.** Signed in, a list gets a link that opens for anyone
+  without signing in: every name on one page, checked again live as it
+  opens, each with a link to register. The link's preview shows the list's
+  name and note. Stop sharing and the link stops working.
 
 ### How it feels
 
 A native-app shell: the window never scrolls, bars stay put, and only the
-panel moves. Phones get a tab bar and a row of quick filters; desks get a
-sidebar with every filter. While answers come in, the waiting extensions
-breathe in a wave across each card. Free ones settle with a small green pulse
-and taken ones fade and strike through. New finds slide into the tiles, a
-thin line under the field shows progress, and the AI chip shimmers while it
-thinks. Light and dark, and less motion when the device asks for it. Answers
-are kept for 15 minutes, so changing a filter redraws at once.
+panel moves. A sidebar of places (Search, Saved, your lists) hides with one
+tap and starts hidden; phones get a tab bar. The round avatar button holds
+sign-in and a three-icon theme switch, and closes when tapped again. Cards
+rise into place, the AI mark breathes while it thinks, and a thin line under
+the field shows progress. Light and dark, and less motion when the device
+asks for it. Answers are kept for 15 minutes, so changing a filter redraws
+at once.
 
 ## How it's built
 
@@ -87,24 +93,31 @@ are kept for 15 minutes, so changing a filter redraws at once.
   `tools/catalog.mjs` into `web/data/tlds.json`. Premium prices come live
   from the lookup.
 - **AI ideas:** `POST /api/ideas` calls `env.holm.ai.chat`.
-  - **Speed:** a short prompt asks for labels grouped by kind (about two
-    seconds).
-  - **Cache:** answers are kept in `env.holm.app.kv` for 30 days per text and
-    length.
+  - **Speed:** a short prompt asks for a one-line reading and labels grouped
+    by kind (about two seconds). Labels that can't be said are dropped on
+    the server too.
+  - **More like these:** the same route with `like` (available and starred
+    labels) and `avoid` (everything tried) asks for names in that style.
+  - **Cache:** answers are kept in `env.holm.app.kv` for 30 days per text,
+    length and round.
   - **Cap:** a daily limit across everyone.
 - **Why plain `fetch` routes:** Holm hands these routes no client address,
   and named operations may not call out to the network. So ideas and RDAP
   lookups are plain routes in `api/http.js`, with app-wide caps: AI ideas per
   day, RDAP lookups per minute, and RDAP answers kept 10 minutes.
-- **Sign-in and storage:** sign-in is `env.holm.auth`. Saved names live in
-  `env.holm.app.kv` under the member's id.
+- **Sign-in and storage:** sign-in is `env.holm.auth`. Saved names and
+  lists live in `env.holm.app.kv` under the member's id (`saved:<id>`,
+  `lists:<id>`). A shared list gets an eight-character slug, and
+  `share:<slug>` points at its owner and list; `GET /api/share/<slug>` is
+  the one route anyone can read.
 - **The shell** is `web/shell.html`, served by `api/main.js` at `/`,
-  `/saved` and `/about`. It carries the page's CSP and this origin in its
-  social tags.
+  `/saved`, `/lists/…`, `/about` and `/s/<slug>`. It carries the page's CSP
+  and this origin in its social tags; for a shared list it also carries the
+  list's name and note, so the link unfurls as that list.
 - **Offline-ready:** a versioned service worker (`web/sw.js`) precaches every
   file, so the app opens without waiting on the network.
-- **Checks:** `node tools/check.mjs` tests the name generator and the
-  worker's file list.
+- **Checks:** `node tools/check.mjs` tests the name generator (including
+  that every made label can be said) and the worker's file list.
 
 ## Deploy your own copy
 
@@ -154,9 +167,11 @@ the RDAP list, run `node domains/tools/rdap.mjs`.
   or close without notice. The search then falls back to RDAP and says so. A
   supported integration would be an adapter for Namecheap's official API,
   which needs an account, an API key and an allowlisted server address.
-- **Free means free right now.** Nothing is held for you, and checkout has
-  the final price. RDAP's "free" means only that the registry has no record:
-  the name may still be reserved or premium.
+- **Available means available right now.** Nothing is held for you, and
+  checkout has the final price. RDAP's answers show as "Likely": the registry
+  has no record, but the name may still be reserved or premium.
+- **A shared link is a capability.** Anyone who has it can see the list's
+  names and note. Stopping sharing deletes the link.
 - **Prices are a snapshot** (`updated` in `web/data/tlds.json`), in US
   dollars, for one year.
 - **Open routes, shared caps.** With no client address to count per person,

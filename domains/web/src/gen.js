@@ -24,6 +24,20 @@ const hasVowel = (s) => /[aeiouy]/.test(s)
 export const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/
 const ok = (s) => s.length >= 2 && LABEL.test(s) && !/^..--/.test(s)
 
+// Easy to say: a vowel, no run of four consonants, and runs of three only where English has
+// them (str, chr, nch…). Labels nobody can say (zchr) aren't worth a lookup.
+export function sayable(w) {
+  if (!/[aeiouy]/.test(w) || /[^aeiouy0-9-]{4,}/.test(w)) return false
+  const re = /[^aeiouy0-9-]{3}/g
+  let m
+  while ((m = re.exec(w))) {
+    if (/^(chr|sch|str|spr|scr|thr|shr|nch|ght|tch|rst|ngs|nks|lts|rds|rks|cks|ndr|ntr|mpl|nst|rld|rth|lth)$/.test(m[0])) continue
+    if (m.index + 3 === w.length && m[0].endsWith('r')) continue // a dropped last vowel: flickr, harbr
+    return false
+  }
+  return true
+}
+
 // What was typed, as words of a-z, 0-9 and hyphens. Accents fold away (Zoë -> zoe), a
 // pasted address loses its scheme and www, and a typed extension (zack.io) is kept aside
 // when `isTld` knows it.
@@ -90,13 +104,6 @@ function clips(word, two = true) {
   return out
 }
 
-// The word without its vowels, keeping the first letter: zacharia -> zchr.
-function skeleton(word) {
-  let s = word[0]
-  for (const c of word.slice(1)) if (!isVowel(c) && c !== s[s.length - 1]) s += c
-  return s
-}
-
 // flicker -> flickr, harbour -> harbor: the vowel before a final consonant goes.
 function dropLastVowel(word) {
   const i = word.length - 2
@@ -113,6 +120,7 @@ export function labels({ words }, { max = 63, kinds = {}, limit = 30 } = {}) {
   const add = (label, kind, why, extra = 0) => {
     if (!ok(label)) return
     if (kind !== 'exact' && label.length > max) return
+    if (kind !== 'exact' && why !== 'Initials' && !sayable(label)) return
     const score = label.length * 10 + KIND[kind].weight + extra
     const was = found.get(label)
     if (!was || score < was.score) found.set(label, { label, kind, why, score })
@@ -139,7 +147,6 @@ export function labels({ words }, { max = 63, kinds = {}, limit = 30 } = {}) {
         add(c.label, 'short', 'The start of ' + base, c.extra)
         if (!c.extra && c.label.length <= 6) shorts.push(c.label)
       }
-      if (base.length > 4) add(skeleton(base), 'short', 'Without vowels', 4)
       const dropped = dropLastVowel(base)
       if (dropped !== base) add(dropped, 'short', 'Last vowel dropped', 1)
     }
@@ -194,7 +201,7 @@ export function aiLabels(ideas, have, max) {
   const out = []
   for (const idea of ideas || []) {
     const label = String(idea.label || '')
-    if (!ok(label) || label.length > max || have.has(label)) continue
+    if (!ok(label) || label.length > max || have.has(label) || !sayable(label)) continue
     have.add(label)
     out.push({ label, kind: 'ai', why: idea.why || 'An AI idea', aiKind: idea.kind, score: label.length * 10 + KIND.ai.weight + (idea.kind === 'coined' ? 3 : 0) })
   }

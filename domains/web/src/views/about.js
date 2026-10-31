@@ -1,37 +1,42 @@
 // How it works: where the names come from, who answers, what the prices mean, and what
-// leaves your browser.
+// leaves your browser. The lookup service can be picked here.
 
-import { h, ic, haptic } from '../ui.js'
+import { esc, act } from '../dom.js'
+import { svg, svgHolm } from '../icons.js'
 import * as catalog from '../catalog.js'
-import { settings, set, on as onSettings } from '../settings.js'
+import { settings, set } from '../settings.js'
 import { PROVIDERS } from '../providers/index.js'
-import { holmFooter, SOURCE } from '../shell.js'
+import { SOURCE } from '../shell.js'
 
-export function aboutView() {
-  const providers = h('div.group.prov')
-  const paint = () => {
-    providers.replaceChildren(...PROVIDERS.map((p) => h('button.row', { type: 'button', 'aria-pressed': String(settings.provider === p.id), onclick: () => { haptic(); set({ provider: p.id }) } },
-      h('span.row-icon', ic(p.id === 'namecheap' ? 'zap' : 'globe', 17, 2)),
-      h('span.row-main', h('b', p.name), h('small', p.about)),
-      settings.provider === p.id ? h('span.tag', 'In use') : null)))
-  }
-  onSettings(paint)
-  paint()
-
-  const page = h('div.page',
-    h('h1.large-title', 'How it works'),
-    h('div.prose',
-      h('p', h('b', 'Names first, then answers. '), 'What you type becomes a list of short labels in your browser: clipped forms (zach), sound-alikes (zak, zack), initials, a dropped vowel (flickr), and, if you like, prefixes, suffixes and domain hacks (inter.net). An AI model adds nicknames, other spellings and new words. Every label meets every extension you picked, and the shortest whole names are asked about first.')),
-    h('h3.group-title', 'Lookups'),
-    providers,
-    h('p.group-note', 'Domains talks to lookup services through adapters, so one can be swapped for another. It uses the Namecheap adapter today, which asks Namecheap’s own live search from your browser. If that can’t be reached it falls back to the RDAP adapter, which asks each registry’s public lookup through this app. Another service, such as a registrar’s official API, is one more adapter.'),
-    h('h3.group-title', 'Prices'),
-    h('div.prose', h('p', `Prices are ${catalog.registrar.name}’s list prices for one year, saved on ${catalog.updatedLabel()}, in US dollars. Many extensions cost less in the first year than after; each name shows both. A premium name has a price set by its registry, given by the lookup. Checkout always has the final price.`)),
-    h('h3.group-title', 'Free, taken, premium'),
-    h('div.prose', h('p', h('b', 'Free'), ' means the registry would register the name right now. Nothing is held for you: someone else can take it a minute later. ', h('b', 'Taken'), ' means someone has it; the name’s card says since when and with whom, when that’s known. ', h('b', 'Premium'), ' means free, at a higher price the registry sets.')),
-    h('h3.group-title', 'What leaves your browser'),
-    h('div.prose', h('p', 'The names to check go from your browser to Namecheap’s search (or, with RDAP, through this app to the registries). For AI ideas, what you typed goes to this app’s server and its AI model; ideas are kept for 30 days so the same name gets them at once, with nothing about who asked. Your filters stay in this browser. Saved names stay here too, unless you sign in, which keeps them with your account.')),
-    h('h3.group-title', 'Source'),
-    h('div.prose', h('p', 'Domains is an open-source Holm app: a page that does the searching, and a small server for sign-in, saved names, AI ideas and registry lookups. ', h('a', { href: SOURCE, target: '_blank', rel: 'noopener', style: { color: 'var(--ink)', 'font-weight': 'var(--w-strong)', 'text-decoration': 'underline', 'text-underline-offset': '2px', 'text-decoration-color': 'var(--line-2)' } }, 'Read the code'), '.')))
-  return { el: h('div.panel', page, holmFooter()), show() {} }
+export function aboutHTML() {
+  const providers = PROVIDERS.map((p) => `<button type="button" class="g-row prov" data-act="provider" data-v="${p.id}" aria-pressed="${settings.provider === p.id}"><span class="ck">${settings.provider === p.id ? svg('check', 17, 2.4) : ''}</span><span class="g-t"><b>${esc(p.name)}</b><small>${esc(p.about)}</small></span></button>`).join('')
+  return `<div class="panel"><div class="wrap prose-wrap">
+    <div class="col-h"><div class="col-t"><h1 class="lt">How it works</h1></div></div>
+    <div class="prose">
+      <h3>Names first, then answers</h3>
+      <p>What you type becomes short labels in your browser: clipped forms (zach), sound-alikes (zak, zack), initials, a dropped vowel (flickr) and, if you like, prefixes, suffixes and domain hacks (inter.net). Labels nobody could say out loud are left out. An AI model reads what you typed and adds nicknames, other spellings, words from the same world and a few new words. Every label meets every extension you picked, and the shortest whole names are asked about first. <b>More like these</b> asks the AI again, for names in the style of the ones that came back available and the ones you starred.</p>
+      <h3>Lookups</h3>
+    </div>
+    <div class="group">${providers}</div>
+    <div class="prose">
+      <p class="small">Domains talks to lookup services through adapters, so one can be swapped for another. The Namecheap adapter asks Namecheap’s own live search from your browser. If that can’t be reached, the search falls back to the RDAP adapter, which asks each registry’s public lookup through this app.</p>
+      <h3>Available, taken, premium</h3>
+      <p><b>Available</b> means the registry would register the name right now. Nothing is held for you: someone else can take it a minute later. <b>Likely</b> means RDAP found no registration, but the registry itself didn’t confirm it. <b>Premium</b> means available, at a higher price the registry sets. Taken names aren’t shown.</p>
+      <h3>Prices</h3>
+      <p>Prices are ${esc(catalog.registrar.name)}’s list prices for one year, saved on ${esc(catalog.updatedLabel())}, in US dollars. Many extensions cost less in the first year than after; each name shows both. Checkout always has the final price.</p>
+      <h3>Saved names and lists</h3>
+      <p>Star a name to keep it. Lists collect names for a friend or a project, with a note. Both stay in this browser, or with your account when you sign in. A shared list opens for anyone with its link, on one page, checked again when it’s opened; stop sharing and the link stops working.</p>
+      <h3>What leaves your browser</h3>
+      <p>The names to check go from your browser to Namecheap’s search (or, with RDAP, through this app to the registries). For AI ideas, what you typed goes to this app’s server and its AI model; ideas are kept for 30 days so the same name gets them at once, with nothing about who asked. Your filters stay in this browser.</p>
+      <p class="credit"><a href="https://holmhq.com" target="_blank" rel="noopener">${svgHolm(12)}<span>A Holm app</span></a><i></i><a href="${SOURCE}" target="_blank" rel="noopener">Source</a></p>
+    </div>
+  </div></div>`
 }
+
+act({
+  provider: (el) => {
+    set({ provider: el.dataset.v })
+    const main = document.getElementById('main')
+    if (main) main.innerHTML = aboutHTML()
+  },
+})

@@ -49,6 +49,8 @@ export class Search {
     this.free = 0
     this.ai = settings.kinds.ai && this.parsed.words.length ? 'thinking' : 'off'
     this.aiNote = ''
+    this.aiRead = ''
+    this.aiRounds = 0
     this.provider = providerById(settings.provider)
     this.switched = null
     this.started = Date.now()
@@ -58,6 +60,8 @@ export class Search {
 
   get empty() { return !this.parsed.words.length }
   get running() { return !this.controller.signal.aborted && this.done < this.sent }
+  // Nothing in flight: every name sent has an answer and the AI isn't thinking.
+  get idle() { return this.done >= this.sent && this.ai !== 'thinking' && (!this.queue.length || this.sent >= this.limit) }
   get waiting() { return this.queue.length }
 
   emit(type, payload) {
@@ -94,6 +98,7 @@ export class Search {
       }
       if (!g) continue
       cell.state = 'queued'
+      cell.aiKind = g.aiKind || null
       cell.result = null
       this.cells.set(cell.domain, cell)
       g.cells.push(cell)
@@ -163,13 +168,22 @@ export class Search {
     return cell
   }
 
-  async askAI() {
+  // A second AI round: names in the style of the ones that came back available (and the
+  // ones starred), leaving out every label already tried.
+  moreIdeas(like) {
+    if (this.ai === 'thinking') return
+    this.ai = 'thinking'
+    this.emit('ai', this)
+    this.askAI({ like: like.slice(0, 12), avoid: [...this.groups.keys()].filter((k) => k !== HACKS).slice(0, 40) })
+  }
+
+  async askAI(extra = {}) {
     let data = null
     try {
       const response = await fetch('/api/ideas', {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({ text: this.parsed.words.join(' ').slice(0, 60), max: Math.min(20, this.max) }),
+        body: JSON.stringify({ text: this.parsed.words.join(' ').slice(0, 60), max: Math.min(20, this.max), ...extra }),
         signal: this.controller.signal,
       })
       data = await response.json().catch(() => null)
@@ -184,14 +198,19 @@ export class Search {
     }
     const have = new Set(this.groups.keys())
     const list = gen.aiLabels(data && data.ideas, have, this.max)
-    this.ai = list.length ? 'done' : data && data.note ? 'error' : 'empty'
-    this.aiNote = (data && data.note) || (list.length ? '' : 'No new ideas this time.')
+    if (data && data.read && !this.aiRead) this.aiRead = data.read
+    this.aiRounds++
     this.aiCount = list.length
+    // Still 'thinking' while the new names are queued and sent, so nobody sees a gap where
+    // the search looks finished.
     const before = this.queue.length
     this.add(list)
     this.limit += Math.min(AI_EXTRA, this.queue.length - before)
-    this.emit('ai', this)
     this.pump()
+    this.ai = list.length ? 'done' : data && data.note ? 'error' : 'empty'
+    this.aiNote = (data && data.note) || (list.length ? '' : 'No new ideas this time.')
+    this.emit('ai', this)
+    this.emit('progress', this)
   }
 
   // Free names, shortest first, then cheapest; premium and very dear ones after the rest.

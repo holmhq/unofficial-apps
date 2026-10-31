@@ -1,9 +1,9 @@
 {
   "name": "domains",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "title": "Domains",
   "shortName": "Domains",
-  "description": "Find a short domain that's actually free: shorter spellings, sound-alikes and AI ideas, checked live across two- and three-letter extensions.",
+  "description": "Find a short domain that's still available: shorter spellings, sound-alikes and AI ideas, checked live. Save the good ones and share a list by link.",
   "themeColor": "#1d1d1f",
   "iconStyle": "soft",
   "surfaces": {

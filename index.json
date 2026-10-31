@@ -312,61 +312,74 @@
     {
       "name": "domains",
       "path": "domains",
-      "version": "0.1.0",
-      "tag": "domains/v0.1.0",
-      "h1": "h1:xiJ2BUz1zFAMsYMfuXsRrhCT6pjUa6EN16K73o7C3pU=",
-      "files": 44,
-      "size": 430202,
+      "version": "0.2.0",
+      "tag": "domains/v0.2.0",
+      "h1": "h1:6Gd4oU2xVjZuBx9zaE0Qk8ATkqUV+NV/8akr6tVZSJk=",
+      "files": 46,
+      "size": 433279,
       "title": "Domains",
-      "description": "Find a short domain that's actually free: shorter spellings, sound-alikes and AI ideas, checked live across two- and three-letter extensions.",
+      "description": "Find a short domain that's still available: shorter spellings, sound-alikes and AI ideas, checked live. Save the good ones and share a list by link.",
       "themeColor": "#1d1d1f",
       "symbol": "M 2.727273 9.272727 L 8.727273 9.272727 C 10.233504 9.272727 11.454545 10.493769 11.454545 12 L 11.454545 12 C 11.454545 13.506231 10.233504 14.727273 8.727273 14.727273 L 2.727273 14.727273 C 1.221042 14.727273 0 13.506231 0 12 L 0 12 C 0 10.493769 1.221042 9.272727 2.727273 9.272727 Z M 16.909091 12.272727 C 16.909091 13.628335 15.810153 14.727273 14.454545 14.727273 C 13.098937 14.727273 12 13.628335 12 12.272727 C 12 10.917119 13.098937 9.818182 14.454545 9.818182 C 15.810153 9.818182 16.909091 10.917119 16.909091 12.272727 Z M 20.181818 9.272727 L 21.272727 9.272727 C 22.778958 9.272727 24 10.493769 24 12 L 24 12 C 24 13.506231 22.778958 14.727273 21.272727 14.727273 L 20.181818 14.727273 C 18.675587 14.727273 17.454545 13.506231 17.454545 12 L 17.454545 12 C 17.454545 10.493769 18.675587 9.272727 20.181818 9.272727 Z",
       "demo": "https://domains.zyt.app",
       "listing": {
-        "subtitle": "Short domains that are actually free",
+        "subtitle": "Short domains that are still available",
         "category": "Productivity",
-        "description": "Type a name and Domains tries the shorter versions of it: clipped forms, sound-alikes, initials, a dropped vowel, AI ideas and domain hacks. From Zacharia it makes zach, zack, zak and zchr; from flicker, flickr.\n\nEach label meets the extensions you pick: short ones like .io, .so and .sh, every two- or three-letter extension, or your own from Namecheap's 571 with their prices. Domains checks them all live, shortest first. Every name gets a card whose extensions wait, then settle to free or taken, and the shortest free ones gather as tiles at the top.\n\nOne switch hides what's taken, another hides premium names, and a price limit does the rest. Tap a name for its first-year and renewal prices, who holds it if it's taken, and a link to register it. Star the ones you like; sign in to keep them on every device.\n\nLookups go through adapters: a Namecheap adapter today, with the registries' own RDAP as a fallback, so another service can take their place.",
-        "whatsNew": "First release: shorter names, sound-alikes and AI ideas checked live across short extensions, shortest first, with a Namecheap adapter, an RDAP fallback, filters for free, premium and price, and saved names.",
+        "description": "Type a name and Domains tries the shorter versions of it: clipped forms, sound-alikes, initials, a dropped vowel, domain hacks and AI ideas, including real words from the same world. From harbour labs it finds harbr, quay and berth; from flicker, flickr. Names nobody could say are left out.\n\nEvery name is checked live with Namecheap, shortest first, and only the available ones show, as cards that settle in one after another. One row of ideas sits above them: tap one to see only its names, or ask for more like the ones you like.\n\nFilters open from the search field in one compact panel: extensions, length, which ideas to make, and price. Tap a name for its first-year and renewal prices and a link to register it.\n\nStar the good ones and collect them into lists, with a note. Sign in and share a list by link: whoever opens it sees every name on one page, checked again live, no account needed.",
+        "whatsNew": "A calmer redesign. The search moves into the navbar, only available names show, and they arrive in a steady stream. One row of ideas replaces the long list, with an AI that also suggests words from the same world and a More like these round. Filters live in one compact panel. New: lists you can share by link, which open for anyone without signing in.",
         "featured": false,
         "screenshots": [
           {
             "path": "listing/results.webp",
-            "alt": "A search for Zacharia on a phone: the shortest free names as tiles, and a card per name whose extensions settle to free or taken",
+            "alt": "A search for photon on a phone: one row of ideas tried, then the available names as cards with their prices",
             "width": 780,
             "height": 1688,
-            "hash": "f5775803694f"
+            "hash": "3bcd7cd47b21"
           },
           {
             "path": "listing/detail.webp",
-            "alt": "One free name up close: its first-year and renewal prices, why it was suggested, and Register at Namecheap",
+            "alt": "One available name up close: its first-year and renewal prices, why it was suggested, and Register at Namecheap",
             "width": 780,
             "height": 1688,
-            "hash": "838f2e0bdf44"
+            "hash": "daf84cd1843b"
           },
           {
             "path": "listing/filters.webp",
-            "alt": "The filters: extension presets, a length limit, which ideas to make, only free names, premium names and a price limit",
+            "alt": "The filters in one panel: extension presets and the extensions themselves, a length ruler, which ideas to make, and a price ruler",
             "width": 780,
             "height": 1688,
-            "hash": "fe8d49dbec2d"
+            "hash": "95beaf912a58"
+          },
+          {
+            "path": "listing/lists.webp",
+            "alt": "A list for a friend, with a note and a Share button, holding six short names",
+            "width": 780,
+            "height": 1688,
+            "hash": "cbea74eee580"
           },
           {
             "path": "listing/home-dark.webp",
-            "alt": "The start page in dark mode: find a short domain that's actually free",
+            "alt": "The start page in dark mode: find a short domain that's still available",
             "width": 780,
             "height": 1688,
-            "hash": "17513e6dc023"
+            "hash": "262c186ddb49"
           }
         ],
         "cover": {
           "path": "listing/cover.png",
           "width": 1200,
           "height": 630,
-          "hash": "63955b824ef3"
+          "hash": "ab8abd546af5"
         }
       },
-      "prompt": "Build \"Domains\", an app for finding a short domain name that is actually free,\nusing only https://holmhq.com/llms-full.txt for Holm. Read its v1 sections\n9–12, \"Make an app feel finished\" and \"Make it feel native\" first. Make\nholm.json, public web/ files and api/main.js exporting\ndefault { fetch(request, env) }. No build step or third-party runtime CDN;\nvendor Inter with its licence.\n\n- From what someone types, make shorter labels in the browser: clipped forms,\n  sound-alikes (zach, zack, zak), initials, a dropped vowel (flickr), with\n  switches for prefixes/suffixes and domain hacks (inter.net), and a length\n  limit. Add AI ideas from env.holm.ai.chat (nicknames, other spellings,\n  blends, new words), cached in KV.\n- Pair every label with the extensions picked (presets for short, 2-letter,\n  3-letter, classic, tech and cheap ones, or your own from a price list) and\n  check the shortest whole names first.\n- Lookups go through provider adapters so a service can be swapped. The first\n  is Namecheap: its search page's WebSocket, from the browser, with the page's\n  CSP allowing that socket. Fall back to an RDAP adapter (IANA bootstrap,\n  env.holm.net.fetch) when it can't be reached.\n- Show answers as they arrive: a card per label whose extension pills wait,\n  then settle to free (with the price) or taken; the shortest free names in a\n  row of tiles at the top. Switches to show only free names or hide premium\n  ones, and a price limit. A sheet per name with prices, who holds a taken\n  one, and a link to register it. Star names to save them (in the browser, or\n  on the account when signed in).\n- Subtle motion that makes the wait pleasant. Apple-quality UI on phone and\n  desktop, light and dark, a round avatar button top right; native-like: the\n  window never scrolls, a tab bar on phones and a sidebar with the filters\n  on desks.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/listing.json with sample screenshots. These are repo conventions,\n  not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 domains. With my approval, deploy with\nholm @<peer> app deploy domains --spec-v1 --host domains.<my-domain>. Test a\nsearch end to end, the fallback, phone and desktop, light and dark.",
-      "history": []
+      "prompt": "Build \"Domains\", an app for finding a short domain name that is still\navailable, using only https://holmhq.com/llms-full.txt for Holm. Read its v1\nsections 9–12, \"Make an app feel finished\" and \"Make it feel native\" first.\nMake holm.json, public web/ files and api/main.js exporting\ndefault { fetch(request, env) }. No build step or third-party runtime CDN;\nvendor Inter with its licence.\n\n- From what someone types, make shorter labels in the browser: clipped forms,\n  sound-alikes (zach, zack, zak), initials, a dropped last vowel (flickr),\n  with switches for prefixes/suffixes and domain hacks (inter.net), and a\n  length limit. Leave out labels nobody could say (zchr). Add AI ideas from\n  env.holm.ai.chat, cached in KV: nicknames, other spellings, short forms,\n  real words from the same world (harbour: quay, berth, moor), blends and a\n  few new words, plus one short caption of how it read the input. A second\n  round, \"More like these\", asks for names in the style of the ones that came\n  back available and the ones starred.\n- Pair every label with the extensions picked and check the shortest whole\n  names first. Lookups go through provider adapters so a service can be\n  swapped. The first is Namecheap: its search page's WebSocket, from the\n  browser, with the page's CSP allowing that socket. Fall back to an RDAP\n  adapter (IANA bootstrap, env.holm.net.fetch) when it can't be reached.\n- Show only available names, as cards: the name on one line (smaller type\n  for longer names), its first-year price, why it was suggested, a star to\n  save it and a button to add it to a list. Lookups answer in bursts, so\n  reveal the cards one at a time at an even, quick pace, appended in order,\n  premium names last; nothing reshuffles. Above them, one row of the ideas\n  tried with a count each, never more than one line (it scrolls sideways):\n  tap one to see only its names; ideas with nothing available fold away at\n  the end. No line that repeats what the screen shows. Say \"Available\",\n  never \"free\".\n- Start on a hero with one big search field and a few example searches. The\n  first search moves that field up into the navbar while the rest of the\n  hero fades; clearing it goes back the same way, landing exactly.\n- Filters open from a button in the search field as one compact panel:\n  extension presets above the extensions themselves, a length ruler, which\n  ideas to make, a first-year price ruler and \"hide premium names\". Changes\n  apply as they're made.\n- A name up close: first-year and renewal prices, why it was suggested, a\n  link to register it, save and add to a list. Saved names and lists live in\n  the browser, or on the account when signed in. A list has a name and a\n  note; sharing it makes a link that opens for anyone without signing in: all\n  its names on one page, checked again live, each with a link to register,\n  and a link preview with the list's name.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places (Search, Saved,\n  lists) that starts hidden on desktop, a tab bar on phones; a round avatar\n  button top right whose menu toggles closed when tapped again, holds a\n  light/dark/auto switch as three icons and sign-in, and never Holm branding\n  (that goes in the sidebar's foot and the About page).\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/listing.json with sample screenshots. These are repo conventions,\n  not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 domains. With my approval, deploy with\nholm @<peer> app deploy domains --spec-v1 --host domains.<my-domain>. Test a\nsearch end to end, More like these, the fallback, saving, a shared list\nopened signed out, phone and desktop, light and dark.",
+      "history": [
+        {
+          "version": "0.1.0",
+          "date": "2026-10-31",
+          "whatsNew": "First release: shorter names, sound-alikes and AI ideas checked live across short extensions, shortest first, with a Namecheap adapter, an RDAP fallback, filters for free, premium and price, and saved names."
+        }
+      ]
     },
     {
       "name": "feedback",
