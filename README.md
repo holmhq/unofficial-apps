@@ -34,6 +34,9 @@ The `open` skill gets you to a good starting point:
   from a prompt.
 - It asks before installing anything or accepting a licence.
 
+Before you change an app, read [`COOKBOOK.md`](COOKBOOK.md): the bar every
+app here meets, with a checklist to run before you call it done.
+
 When you're done, type `/close`. It records your request in the app's
 `PROMPT.md`, checks nothing private is about to be published, and commits.
 It then pushes or offers to open a pull request.

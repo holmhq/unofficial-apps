@@ -36,7 +36,9 @@ changed and any new ones. If nothing changed, say so and stop.
    screenshots with sample data. Then run `node scripts/index.mjs`
    and `node scripts/index.mjs --check`. The check fails if a released
    version's files changed. CI tags the new version once it reaches `main`.
-5. **Checks:** run whatever the app ships with, such as `scripts/smoke.sh`.
+5. **Cookbook:** run the checklist at the end of `COOKBOOK.md` on the app,
+   in a real browser, and list what you checked and what you couldn't.
+6. **Checks:** run whatever the app ships with, such as `scripts/smoke.sh`.
    Its README says what it needs; Holm test databases ask for explicit licence
    acceptance, so let the person decide. If a local node is running, offer to
    redeploy (`holm @local app deploy <app> --host <app>.holm.localhost --spa --no-build --force`)

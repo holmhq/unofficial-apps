@@ -59,6 +59,11 @@ or opens a pull request.
 
 ## Work
 
+- Read `COOKBOOK.md` before designing or changing an app. It is the bar every
+  app here meets: the native shell, the account menu, the look, speed and the
+  Holm runtime notes. Before calling any work done, run its checklist on every
+  app you touched and say what you checked. When a review catches something
+  new, add the rule there in the same session.
 - No third-party runtime CDN. Vendor libraries into the app and keep their
   licenses next to them. Holm's own libraries in `holmhq/cdn` are the
   exception: load them from jsDelivr, pinned to a commit and a `v-X.Y.Z/`
