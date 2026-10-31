@@ -233,3 +233,9 @@ colour, they chose the host, for their own pages.
 
 Shown three looks, they chose the host's colour edge to edge with the name
 large and the photo in a ring.
+
+**Kalendar 0.8.1: a file's address opens the file**
+
+> Is there a standard way to get a holm app's icons?
+
+> But I am unable to get from Kalendar? "<kalendar.>/icon-512.png"
