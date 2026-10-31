@@ -36,6 +36,9 @@ references.
 - **Footer:** small, frosted, stuck to the bottom, with a tiny Holm mark
   ("A Holm app"), Source and Feedback. This is the only place Holm branding
   goes.
+- **Search-first apps put the search in the navbar.** The first search can
+  start from a big field in a hero, which then moves up into the navbar while
+  the rest of the hero fades away.
 - **Scroll the panel yourself.** `scrollIntoView()` and `#anchor` links also
   scroll the fixed shell and push the header away. Scroll the nearest panel
   by hand, and use buttons in place of in-page anchors.
@@ -67,6 +70,17 @@ references.
 - **Quiet controls.** Walls of equal-weight controls look dirty. So do grey
   fills on every chip and big switches stacked in rows. Prefer check-mark
   menus, a few clear choices and plain text that turns bold when chosen.
+- **A row of chips is one line.** Suggestions, tags and filters scroll
+  sideways with a soft fade at the edge; they never wrap onto a second line.
+- **No lines that repeat what the screen already shows**, such as a count
+  of results above the results, or a sentence explaining the chips under it.
+  Put a count inside a chip ("All 16") and longer explanations in a tooltip.
+- **Filters are one compact panel** opened from one button, with each row a
+  single control: presets above toggleable tokens, a segmented ruler for a
+  number, and toggle tokens for options. Changes apply as they're made, and
+  a dot on the button shows when filters differ from the defaults.
+- **Use words that can't be misread.** A domain you can register is
+  "Available", never "free", which reads as "costs nothing".
 - **Design every dropdown.** Don't leave a bare native `<select>` in a styled
   app.
 - **Hover is subtle.** Icons don't grow, links in the chrome don't underline,
@@ -89,6 +103,12 @@ references.
 - **Motion has to mean something:** a card rises when it arrives, a free
   result flashes, a sheet comes up, a live dot pulses. Respect
   `prefers-reduced-motion`.
+- **Results arrive as a calm, even stream.** Lookups come back in bursts, so
+  queue the results and reveal one card at a time, about every 35–65 ms
+  (quicker when many are waiting), appended in order. Each card fades and
+  rises a few pixels, its details a beat later. Don't reshuffle cards that
+  are already showing, and don't flash them. A single soft placeholder at
+  the end shows more is coming.
 - **Nothing replays on refresh.** Animate changes of state, or play a one-time
   entrance after a skeleton. Never replay a page's entrance on every load.
 - **Don't let motion jerk.** Animate from where the element is, with the
@@ -202,6 +222,8 @@ couldn't check.
 - [ ] Hover is subtle (nothing grows or underlines), separators meet, and
       every dropdown is designed.
 - [ ] Controls are quiet: no wall of equal-weight switches or grey chips.
+- [ ] Chip rows stay on one line and scroll sideways. No line restates
+      what's on screen. Status words can't be misread ("Available").
 
 **Motion and speed**
 
@@ -209,6 +231,8 @@ couldn't check.
       draws from cache at once.
 - [ ] Switching tabs or sections doesn't refetch or redraw the whole page.
 - [ ] Reduced motion is respected, and nothing jerks or jitters.
+- [ ] Results that arrive in bursts still appear as a steady, ordered
+      stream, with nothing reshuffling.
 - [ ] The service worker version follows `holm.json`, `/icon-512.png` opens
       the file, and `/_…` paths pass through.
 
