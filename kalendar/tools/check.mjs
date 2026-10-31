@@ -15,7 +15,7 @@ import { calendar } from '../api/ics.js'
 import { cleanTag } from '../api/lib.js'
 import { guestInvite, hostInvite } from '../api/bookings.js'
 import { inviteeMail, hostMail, guestMail, verifyMail, senderOf } from '../api/mail.js'
-import { mailbox } from '../api/hosts.js'
+import { mailbox, THEMES } from '../api/hosts.js'
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 
 const DAY = 86400000
@@ -235,6 +235,12 @@ for (const zone of ZONES) {
   for (const file of listed) if (file !== '/') readFileSync(new URL('.' + file, web))
   const version = JSON.parse(readFileSync(new URL('../holm.json', import.meta.url), 'utf8')).version
   assert.equal(sw.match(/const VERSION = '([^']+)'/)[1], version, 'sw.js VERSION must match holm.json')
+  // Each colour has a tab icon, kept with the version, and the page's first
+  // script knows every colour.
+  const others = THEMES.filter((t) => t !== 'red')
+  for (const t of others) for (const ext of ['svg', 'png']) assert.ok(listed.has(`/icons/${t}.${ext}`), `sw.js doesn't list /icons/${t}.${ext}`)
+  const boot = readFileSync(new URL('index.html', web), 'utf8').match(/\^\(([a-z|]+)\)\$/)[1].split('|')
+  assert.deepEqual(boot.sort(), [...others].sort(), 'index.html must know every colour')
 }
 
-console.log(`ok: ${checked} slots across ${ZONES.length} zones match Intl; weekly hours, paused days, busy times, tags, email dates, calendar files, email invites and the app shell check out`)
+console.log(`ok: ${checked} slots across ${ZONES.length} zones match Intl; weekly hours, paused days, busy times, tags, email dates, calendar files, email invites, the app shell and its tab icons check out`)

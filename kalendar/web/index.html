@@ -40,9 +40,14 @@
           : /^\/(events|hours|insights|profile)?$/.test(path) ? 'me' : null
         if (scope) accent = localStorage.getItem('kalendar:accent:' + scope)
       } catch (e) {}
+      if (!/^(amber|teal|blue|violet|graphite)$/.test(accent)) accent = null
       var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
       if (dark) document.documentElement.classList.add('dark')
-      if (accent) document.documentElement.setAttribute('data-accent', accent)
+      if (accent) {
+        document.documentElement.setAttribute('data-accent', accent)
+        document.querySelector('link[rel="icon"][type="image/svg+xml"]').href = '/icons/' + accent + '.svg'
+        document.querySelector('link[rel="icon"][type="image/png"]').href = '/icons/' + accent + '.png'
+      }
       document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#000000' : '#f5f5f7')
       var boot = window.__kalendarBoot = {}
       var ask = function (path) { boot[path] = fetch(path, { headers: { accept: 'application/json' } }); boot[path].catch(function () {}) }

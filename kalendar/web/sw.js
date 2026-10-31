@@ -13,10 +13,12 @@
 // of pages (/@avery, /hours, /b/…) all open the same shell, which draws the
 // page itself.
 
-const VERSION = '0.7.0'
+const VERSION = '0.7.1'
 const CACHE = 'kalendar-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
+  '/icons/amber.svg', '/icons/teal.svg', '/icons/blue.svg', '/icons/violet.svg', '/icons/graphite.svg',
+  '/icons/amber.png', '/icons/teal.png', '/icons/blue.png', '/icons/violet.png', '/icons/graphite.png',
   '/assets/inter-latin.woff2', '/src/styles.css',
   '/src/main.js', '/src/shell.js', '/src/ui.js', '/src/icons.js', '/src/api.js', '/src/store.js', '/src/theme.js',
   '/src/sound.js', '/src/time.js', '/src/zones.js', '/src/countries.js', '/src/timeline.js', '/src/track.js', '/src/qr.js', '/src/chips.js',

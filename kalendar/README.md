@@ -34,7 +34,8 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   add it, open the link Kalendar sends there, and tick it.
 - **Your colour.** Pick one of six for your pages under Profile: red, amber,
   teal, blue, violet or graphite. Your dashboard, your page, its booking
-  pages and the emails people get from it all wear it, in light and in dark.
+  pages, the emails people get from it and the icon in the browser tab all
+  wear it, in light and in dark.
   Each colour has its own light and dark shades and the text that reads on
   it, dark on amber or on graphite in the dark, and when your colour sits
   near the blue a guest's own times are drawn in, theirs turn orange.
@@ -134,7 +135,8 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
 - A page opens in its host's colour from the first frame: each kind of page
   (your tabs, a host's page, a booking) remembers the colour it last wore,
   and the page applies it before anything draws, the way it applies light or
-  dark. Picking a colour spreads it from the swatch you tapped.
+  dark, tab icon included. Picking a colour spreads it from the swatch you
+  tapped. The graphite tab icon turns light on a dark tab strip.
 - Inter's weights carry meaning: 720 for titles, 620 for anything you can
   pick (open days, times, names), 520 for labels, 430 for reading and 360
   for context (the year beside the month, the date beside the weekday, end
@@ -340,9 +342,11 @@ only give to `https://` and `localhost` pages. On a local node, add a
 
 ## Known limits
 
-- **Some things stay red** whatever colour a host picks: the app's icon, the
-  sign-in page Holm hosts, the feedback form, and the home page and sign-up,
-  which belong to no host yet.
+- **Some things stay red** whatever colour a host picks: the icon of an
+  installed app (a home screen keeps the one it was added with), the sign-in
+  page Holm hosts, the feedback form, and the home page and sign-up, which
+  belong to no host yet. Safari may keep showing the first tab icon it saw
+  until the page is reopened.
 - **Invites show the host's email address** to guests, as the organizer, so
   their Accept or Decline reaches the host. Kalendar doesn't show it anywhere
   else.

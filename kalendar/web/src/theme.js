@@ -77,9 +77,19 @@ export function setAccent(id, { scope = null, origin = null } = {}) {
   const paint = () => {
     if (next === 'red') delete document.documentElement.dataset.accent
     else document.documentElement.dataset.accent = next
+    tabIcon(next)
   }
   if (origin) reveal(paint, origin)
   else paint()
+}
+
+// The browser tab's icon wears the colour too (index.html sets it at start).
+// A home-screen icon is fixed when the app is added, so that one stays red.
+function tabIcon(id) {
+  const path = id === 'red' ? '/favicon' : '/icons/' + id
+  for (const link of document.querySelectorAll('link[rel="icon"][type^="image/"]')) {
+    link.href = path + (link.type === 'image/svg+xml' ? '.svg' : '.png')
+  }
 }
 
 // Signing out: the host's own tabs open in red again.
