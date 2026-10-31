@@ -12,8 +12,8 @@ import * as cover from '../cover.js'
 import { state, topBar, go, failure, prettyURL, pageURL, share, holmFooter, mine } from '../shell.js'
 import { sound } from '../sound.js'
 import * as t from '../time.js'
-import { zonePayload, city, gmt, offsetIn } from '../zones.js'
-import { zonePicker } from './zone-picker.js'
+import { zonePayload, city } from '../zones.js'
+import { hostZone } from './zone-picker.js'
 import { colorOf, LOCATIONS, placeLine, metaRow } from './common.js'
 import { eventSheet } from './event-sheet.js'
 import { timeline, merge, intersect, span } from '../timeline.js'
@@ -66,6 +66,7 @@ export function dash(tab) {
 
   // Profile's tab shows your picture, like an app's account tab.
   function face() { return h('span.tab-face', avatar({ key: host().handle, name: host().name, picture: host().picture })) }
+  function paintFaces() { for (const old of el.querySelectorAll('.tab-face')) old.replaceWith(face()) }
 
   function paintLink() { fill(linkText, h('span.link-host', `${location.host}/`), h('span.link-handle', `@${host().handle}`)) }
 
@@ -413,6 +414,7 @@ export function dash(tab) {
       zoom: 'settle',
       corner: h('span.tl-zone', city(zone)),
       glowLabel: 'Both free',
+      busyLabel: 'Booked',
       layers: (tr) => ({ shade: hoursOn(tr.key), busy: busyOn(tr.key), glow: intersect(theirs(tr.key), free(tr.key)).filter(([a, z]) => z - a >= dur) }),
       strips: { kind: 'guest', get: theirs, set() {}, editable: false },
       clip: { get: () => clip, set: (c) => { clip = c }, place: (key, start) => placeIn(key, start) },
@@ -446,7 +448,7 @@ export function dash(tab) {
             h('div', h('b', b.name), h('a', { href: `mailto:${b.email}` }, b.email), b.guests && b.guests.length ? h('small.req-guests', `With ${b.guests.join(', ')}`) : null),
             h('span.req-event', { style: { '--event': colorOf(b.event.color) } }, h('i.ev-dot'), `${b.event.title} · ${t.minutesLabel(dur)}`)),
           b.notes ? h('div.notes', h('small', 'Notes'), h('p', b.notes)) : null,
-          h('div.req-legend', h('span', h('i.key.mine'), `${first}’s times`), h('span', h('i.key.shade'), 'Your hours'), h('span', h('i.key.glow'), 'Both free'), h('span.grow'), tl.zoomControl()),
+          h('div.req-legend', h('span', h('i.key.mine'), `${first}’s times`), h('span', h('i.key.shade'), 'Your hours'), h('span', h('i.key.glow'), 'Both free'), h('span', h('i.key.busy'), 'Booked'), h('span.grow'), tl.zoomControl()),
           h('div.req-tl', tl.el),
           status,
           h('div.sheet-actions', accept, h('button.btn.block.danger', { type: 'button', onclick: () => close('decline') }, ic('x', 18, 2.2), 'Say no')),
@@ -590,9 +592,15 @@ export function dash(tab) {
     const paused = new Set(hst.paused || [])
     const overrides = { ...hst.overrides }
     const saved = h('span.saved', { 'aria-live': 'polite' })
-    const zoneRow = h('button.row-btn', { type: 'button', onclick: changeZone })
-    const paintZone = () => fill(zoneRow, ic('globe', 19, 2), h('span.grow', h('b', city(host().tz)), h('small', `${host().tzLabel} · ${gmt(offsetIn(host().tz, Date.now()))}`)), h('span.row-value.num', t.clock(Date.now(), host().tz)), ic('chevronRight', 17, 2.2))
-    paintZone()
+    // A new zone: the week stays as it is, in the new zone's time.
+    const zone = hostZone({
+      onChange(z) {
+        s.lists.clear()
+        const corner = tl.el.querySelector('.tl-zone')
+        if (corner) corner.textContent = city(z)
+        dropOthers('hours')
+      }
+    })
     const first = t.weekStart()
     const days = Array.from({ length: 7 }, (_, i) => (first + i) % 7)
     const offList = h('div.group.offs')
@@ -783,20 +791,7 @@ export function dash(tab) {
     }
     drawOffs()
 
-    async function changeZone() {
-      const z = await zonePicker(host().tz, { title: 'Your time zone' })
-      if (!z || z === host().tz) return
-      try {
-        const r = await api.patch('/api/host', zonePayload(z))
-        state.me.host = r.host
-        store.keep('me', state.me)
-        paintZone()
-        toast(`Hours now in ${city(z)} time`)
-        s.lists.clear()
-        const corner = tl.el.querySelector('.tl-zone')
-        if (corner) corner.textContent = city(z)
-      } catch (error) { failure(error) }
-    }
+
 
     const el = h('section.tab-page.hours-page',
       h('div.title-row', h('h1.large-title', 'Availability'), saved),
@@ -805,10 +800,10 @@ export function dash(tab) {
         : 'Hold and drag along a day to paint when you’re free, or tap a day to add two hours. Hold a span to move it, or a day’s name to swap it with another. Pinch to zoom.'),
       h('div.week-card', h('div.week-bar', tools, tl.zoomControl()), tl.el),
       h('h2.group-title', 'Time zone'),
-      h('div.group', zoneRow),
+      zone.el,
       h('h2.group-title', 'Days off'),
       offList)
-    return { el, leave: () => tl.destroy() }
+    return { el, leave: () => tl.destroy(), refresh: () => zone.paint() }
   }
 
   /* ---- Insights ------------------------------------------------------------------ */
@@ -819,16 +814,21 @@ export function dash(tab) {
 
   /* ---- Profile ------------------------------------------------------------------- */
 
-  // A new link redraws your link everywhere; the other tabs draw afresh
-  // when you next open them.
+  // A new link redraws your link everywhere, and a new photo your face;
+  // after a new link or zone the other tabs draw afresh when you next open them.
   function profileTab() {
     return profilePage({
       onSaved(change) {
-        if (!('handle' in change)) return
-        paintLink()
-        for (const [id, page] of pages) if (id !== 'profile') { if (page.leave) page.leave(); pages.delete(id) }
+        if ('photo' in change) paintFaces()
+        if ('tz' in change) s.lists.clear()
+        if ('handle' in change) paintLink()
+        if ('handle' in change || 'tz' in change) dropOthers('profile')
       }
     })
+  }
+
+  function dropOthers(keep) {
+    for (const [id, page] of pages) if (id !== keep) { if (page.leave) page.leave(); pages.delete(id) }
   }
 
   /* ---- Start -------------------------------------------------------------------- */
@@ -868,6 +868,6 @@ export function dash(tab) {
     },
     leave() { document.removeEventListener('visibilitychange', onVisible); for (const page of pages.values()) if (page.leave) page.leave() },
     clock() { rebuild() },
-    me() { paintLink(); badges(); theme.setAccent(host().theme, { scope: 'me' }); cover.keep() }
+    me() { paintLink(); paintFaces(); badges(); theme.setAccent(host().theme, { scope: 'me' }); cover.keep() }
   }
 }

@@ -197,12 +197,18 @@ export async function confirmAddress(env, hostId, token, now) {
   return hit.address
 }
 
+// The face on their page: a photo they chose here, or the one Holm has for
+// their account (often a drawn avatar).
+export const pictureOf = (host) => (host.photo ? `/api/u/${encodeURIComponent(host.handle)}/photo.jpg?v=${host.photo}` : host.picture || null)
+
 // What the host's own pages see.
 export function privateHost(env, host, base) {
   return {
     handle: host.handle,
     name: host.name,
-    picture: host.picture || null,
+    picture: pictureOf(host),
+    photo: !!host.photo,
+    accountPicture: host.picture || null,
     email: host.email || null,
     bio: host.bio || '',
     ...profileOf(host),
@@ -217,6 +223,8 @@ export function privateHost(env, host, base) {
     notify: host.notify !== false,
     cover: host.cover || null,
     coverKey: coverKey(host),
+    coverMode: ownCover(host) ? 'image' : 'drawn',
+    coverImage: host.coverImage ? `/api/u/${encodeURIComponent(host.handle)}/cover.jpg?v=i${host.coverImage}` : null,
     addresses: extras(host).map((a) => ({ address: a.address, verified: !!a.verified })),
     sendTo: mailbox(host),
     feed: base + '/feed/' + host.feed + '.ics'
@@ -225,7 +233,7 @@ export function privateHost(env, host, base) {
 
 // What anyone with the link sees.
 export function publicHost(host) {
-  return { handle: host.handle, name: host.name, picture: host.picture || null, bio: host.bio || '', ...profileOf(host), theme: themeOf(host), tz: host.tz, tzLabel: host.tzLabel }
+  return { handle: host.handle, name: host.name, picture: pictureOf(host), bio: host.bio || '', ...profileOf(host), theme: themeOf(host), tz: host.tz, tzLabel: host.tzLabel }
 }
 
 function zoneFields(input) {
@@ -283,6 +291,11 @@ export function updateHost(env, m, host, input, now) {
     if (!THEMES.includes(input.theme)) reject(400, 'invalid_input', `Pick a colour: ${THEMES.join(', ')}.`)
     set.theme = input.theme
   }
+  if ('coverMode' in input) {
+    if (input.coverMode !== 'drawn' && input.coverMode !== 'image') reject(400, 'invalid_input', 'The cover is "drawn" or your own "image".')
+    if (input.coverMode === 'image' && !host.coverImage) reject(400, 'invalid_input', 'Add an image for your cover first.')
+    set.coverMode = input.coverMode
+  }
   if ('sendTo' in input) {
     const pick = String(input.sendTo || '')
     if (!same(pick, m.email) && !extras(host).some((a) => a.verified && same(a.address, pick))) reject(400, 'invalid_input', 'Pick your sign-in address or one you’ve confirmed.')
@@ -313,15 +326,18 @@ export function updateHost(env, m, host, input, now) {
 }
 
 /* ---- The cover ------------------------------------------------------------------
-   The picture a shared link to a host's page shows. The host's browser draws
-   it (web/src/cover.js) and sends it here. Its key names what's on it, so a
-   cover drawn from details the host has since changed is never shown, and
-   their dashboard draws a new one. */
+   The picture a shared link to a host's page shows. Unless they chose an
+   image of their own, the host's browser draws it (web/src/cover.js) and
+   sends it here. Its key names what's on it, so a cover drawn from details
+   the host has since changed (a new photo, say) is never shown, and their
+   dashboard draws a new one. */
 
 const COVER_LOOK = 1 // Raise it when cover.js draws differently: every cover redraws.
 
+const ownCover = (host) => host.coverMode === 'image' && !!host.coverImage
+
 export function coverKey(host) {
-  const s = JSON.stringify([COVER_LOOK, host.name || '', host.role || '', host.company || '', host.handle, themeOf(host), host.picture || ''])
+  const s = JSON.stringify([COVER_LOOK, host.name || '', host.role || '', host.company || '', host.handle, themeOf(host), pictureOf(host) || ''])
   let a = 0x811c9dc5
   let b = 0x01000193
   for (let i = 0; i < s.length; i++) {
@@ -331,18 +347,72 @@ export function coverKey(host) {
   return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0')
 }
 
-export const coverReady = (host) => !!host.cover && host.cover === coverKey(host)
+// The version of the cover to show now (it names the file's address), or
+// null while the drawn one is out of date.
+export function coverVersion(host) {
+  if (ownCover(host)) return 'i' + host.coverImage
+  return host.cover && host.cover === coverKey(host) ? host.cover : null
+}
+export const coverReady = (host) => !!coverVersion(host)
+
+function jpeg(bytes, max, what) {
+  const b = new Uint8Array(bytes)
+  if (b.length < 1000 || b.length > max || b[0] !== 0xff || b[1] !== 0xd8 || b[2] !== 0xff) {
+    reject(400, 'invalid_input', `Send ${what} as a JPEG under ${Math.round(max / 1000)} KB.`)
+  }
+}
 
 export function saveCover(env, host, bytes, key) {
   if (key !== coverKey(host)) reject(409, 'stale', 'Your details changed while the cover was drawn.')
-  const b = new Uint8Array(bytes)
-  if (b.length < 1000 || b.length > 800000 || b[0] !== 0xff || b[1] !== 0xd8 || b[2] !== 0xff) {
-    reject(400, 'invalid_input', 'Send the cover as a JPEG under 800 KB.')
-  }
+  jpeg(bytes, 800000, 'the cover')
   env.holm.app.s3.put(`covers/${host.id}`, bytes, 'image/jpeg')
   hosts(env).update('hosts', { id: host.id }, { $set: { cover: key } })
 }
 
+// The file behind a version: the drawn cover or the host's own image. An
+// older version's address gets the current file, briefly cached.
 export function coverFile(env, host) {
-  return host.cover ? env.holm.app.s3.get(`covers/${host.id}`) : null
+  const v = coverVersion(host)
+  if (!v) return null
+  return env.holm.app.s3.get(v.startsWith('i') ? `cover-images/${host.id}` : `covers/${host.id}`)
+}
+
+// An image of their own for the cover, framed in their browser to 1200×630.
+export function saveCoverImage(env, host, bytes) {
+  jpeg(bytes, 900000, 'the cover')
+  const set = { coverImage: randomId(12), coverMode: 'image' }
+  env.holm.app.s3.put(`cover-images/${host.id}`, bytes, 'image/jpeg')
+  hosts(env).update('hosts', { id: host.id }, { $set: set })
+  return { ...host, ...set }
+}
+
+export function removeCoverImage(env, host) {
+  const set = { coverImage: null, coverMode: 'drawn' }
+  if (host.coverImage) env.holm.app.s3.delete(`cover-images/${host.id}`)
+  hosts(env).update('hosts', { id: host.id }, { $set: set })
+  return { ...host, ...set }
+}
+
+/* ---- Their photo ----------------------------------------------------------------
+   Holm gives most people a drawn avatar, and an app can't change it, so a
+   host can put a photo of their own here: cropped round in their browser
+   to 512 × 512. It shows on their page, booking pages and cover; removing
+   it brings back the one from their account. */
+
+export function savePhoto(env, host, bytes) {
+  jpeg(bytes, 400000, 'your photo')
+  const set = { photo: randomId(12) }
+  env.holm.app.s3.put(`photos/${host.id}`, bytes, 'image/jpeg')
+  hosts(env).update('hosts', { id: host.id }, { $set: set })
+  return { ...host, ...set }
+}
+
+export function removePhoto(env, host) {
+  if (host.photo) env.holm.app.s3.delete(`photos/${host.id}`)
+  hosts(env).update('hosts', { id: host.id }, { $set: { photo: null } })
+  return { ...host, photo: null }
+}
+
+export function photoFile(env, host) {
+  return host.photo ? env.holm.app.s3.get(`photos/${host.id}`) : null
 }

@@ -29,7 +29,17 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   (LinkedIn, X, GitHub and others get their own icons), and each kind of
   meeting with the next time that's open. You edit it under Profile, a tab
   of its own beside your bookings: your page as guests see it at the top,
-  then the fields, your link, email and calendar feed, saved as you type.
+  then the fields, your time zone, your link, email and calendar feed, saved
+  as you type.
+- **Your photo.** Tap your picture under Profile to choose a photo, then
+  drag and zoom it in a round frame. It shows on your page, your booking
+  pages, your cover and your account button, in place of the one from your
+  account (Holm draws one for people who have none). Remove it to go back.
+- **Your time zone.** Change it under Profile or Availability; your hours
+  keep their times of day in the new zone. When your device is in another
+  zone (you're travelling), a row offers to switch to it. Visitors read every
+  time in their own zone, and can pick another on your page or a booking
+  page; the choice follows them from one to the other.
   Booking email can go to another address than the one you sign in with:
   add it, open the link Kalendar sends there, and tick it.
 - **Your colour.** Pick one of six for your pages under Profile: red, amber,
@@ -40,11 +50,13 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   it, dark on amber or on graphite in the dark, and when your colour sits
   near the blue a guest's own times are drawn in, theirs turn orange.
 - **A cover for your link.** Share your page in a message or a post and it
-  shows a cover in your colour: your name, what you do, and your photo when
-  you have a real one. Holm's drawn stand-in avatar, or a sign-in service's
-  letter on a colour, is left off. Profile shows it under "When your link is
-  shared", and it's drawn again whenever you change your name, what you do,
-  your colour, your link or your photo. Your event pages share it too.
+  shows a cover. Drawn, it's your colour edge to edge with your name, what
+  you do, and your photo when you have a real one (Holm's drawn stand-in
+  avatar, or a sign-in service's letter on a colour, is left off); it's drawn
+  again whenever you change your name, what you do, your colour, your link
+  or your photo. Or choose "Your image" and frame a picture of your own to
+  the shape link previews use; Drawn brings the other back. Profile shows it
+  under "When your link is shared". Your event pages share it too.
 - **Event types.** Each has a name, its own link (`/@handle/intro`), a length,
   where you'll meet (a video link, a phone call to the guest, an address,
   anything else, or decide later), a description and a colour. Rules per type:
@@ -73,10 +85,13 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   Return turns an address into a bubble, a bad one stays red until it's
   fixed, and Backspace selects the last bubble, then removes it. Up to five
   guests get the invite and hear about moves and cancellations; only the
-  person who booked can change it. A time someone takes disappears
-  for everyone, and two people racing for the same slot can't both get it.
+  person who booked can change it. A time someone takes turns grey and
+  hatched, marked Busy, for everyone else: it can't be picked or asked for
+  (never who took it), and two people racing for the same slot can't both
+  get it.
 - **Asking for another time.** Dropped outside your shading, the meeting
-  becomes a request. Or a guest switches to "Suggest times" and paints when
+  becomes a request; dragged onto a busy time, it slides off to the nearest
+  side. Or a guest switches to "Suggest times" and paints when
   they're free, as many spans as they like, even when you aren't; where their
   paint meets your free time it glows (the way the Overlap app shows
   everyone's overlap), with a button to book that time at once. You see their
@@ -200,6 +215,7 @@ web/src/timeline.js  the strip of days: shading, spans, the meeting clip, zoom, 
 web/src/track.js   the visit beacon: views, clicks, picks, time on page, the link's tag
 web/src/qr.js      QR codes for tracked links (SVG and PNG)
 web/src/cover.js   draws the cover a shared link shows, and sends a new one when it changes
+web/src/framer.js  frames a photo or cover image: drag, pinch, wheel or slider, then a JPEG
 web/src/countries.js each time zone's country, for Insights (generated)
 tools/check.mjs    time-maths, calendar-file and app-shell checks (not deployed)
 tools/book.mjs     books sample meetings through the real operation (not deployed)
@@ -232,7 +248,11 @@ Holm primitives it uses:
 - **`env.holm.web.fetch`** for the page, with `/@handle` and `/@handle/event`
   given the host's name in the title and social card, their own address as
   `og:url` and the canonical link, and the host's cover as the card's picture.
-- **`env.holm.app.s3`** keeps each host's cover. The node can't draw, so the
+- **`env.holm.app.s3`** keeps each host's cover, and the photo and cover
+  image they chose. Those two are framed in the host's browser (the crop
+  and the zoom on a canvas) and sent as JPEGs with `PUT /api/host/photo`
+  (512 × 512) and `PUT /api/host/cover-image` (1200 × 630); each gets a new
+  version in its address, so it's cached for good too. The node can't draw, so the
   host's browser does, on a canvas: whenever their dashboard finds that the
   cover's key (a hash of the name, role, company, link, colour and picture
   address, `api/hosts.js`) doesn't match the last one sent, it draws a JPEG
@@ -241,7 +261,8 @@ Holm primitives it uses:
   so a cover never shows details the host has changed. Its address carries
   the key, so it's cached for good. The member's `picture` is Holm's address
   for their avatar; the page reads it, and leaves it off unless it's a JPEG,
-  PNG or WebP of more than a few flat colours.
+  PNG or WebP of more than a few flat colours. A photo the host chose here
+  takes its place, and changes the key, so the cover redraws with it.
 - **`__HOLM_SURFACES__`**: for the node's and the app's owners and admins,
   Holm writes the address of the app's analytics page into the page, and the
   avatar menu links to it. Holm puts that page under a path of its choosing
@@ -372,9 +393,12 @@ only give to `https://` and `localhost` pages. On a local node, add a
   Kalendar. Until then a shared link shows Kalendar's own card rather than an
   out-of-date cover. Chat apps keep a link's preview for a while after
   they first show it, so an older cover can linger there. The server checks
-  that a cover is a JPEG of a sensible size, not what's on it: a host could
-  send any picture as their own cover. A photo of a logo or anything else in
-  a few flat colours is taken for a drawn stand-in and left off.
+  that a cover, photo or cover image is a JPEG of a sensible size, not
+  what's on it. A photo of a logo or anything else in a few flat colours is
+  taken for a drawn stand-in and left off the drawn cover. Photos and cover
+  images are chosen in the app, not through Claude.
+- **Busy times are public.** Anyone with your link sees when you're booked
+  (with your buffers), though never by whom or for what.
 - **Invites show the host's email address** to guests, as the organizer, so
   their Accept or Decline reaches the host. Kalendar doesn't show it anywhere
   else.
@@ -406,6 +430,8 @@ only give to `https://` and `localhost` pages. On a local node, add a
   push a rate past what was counted, so rates stop at 100%.
 - **Claude can't do the first setup.** Choosing the link and changing the time
   zone happen in the app, because the zone's offsets come from the browser.
+  A host's zone doesn't follow them by itself when they travel; the app
+  offers it.
   Requests waiting for an answer don't expire by themselves; one whose times
   have passed stops showing.
 - Anyone can book, so anyone can make Kalendar email addresses they type, up

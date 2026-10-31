@@ -25,7 +25,8 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   left to right like a video editor's timeline, in the guest's own zone
   (12- or 24-hour): tap a shaded span to drop in a meeting the length of the
   event, drag it to adjust (it snaps to open times), then name, email and
-  notes. Never double-book; a taken time disappears.
+  notes. Never double-book; a taken time shows as busy to everyone else
+  (never who) and can't be picked or asked for.
 - Guests may also ask for other times, even outside the host's hours: drop
   the meeting outside the shading, or paint spans of their own free time
   (trim the ends, slide them) and see where they overlap the host's. The
@@ -39,7 +40,11 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   website and profile links with their icons, and each event type with its
   next open time. The host edits it under Profile, a tab of its own in the
   sidebar and tab bar, which saves as they type. Never a coloured stripe
-  down the side of a rounded card.
+  down the side of a rounded card. The photo is one the host chooses there,
+  dragged and zoomed into a circle in their browser, or else their
+  account's. The host changes their time zone under Profile or
+  Availability, and is offered their device's zone when it differs;
+  visitors pick their own zone on the profile or booking page.
 - Insights for the host without cookies: views, visitors, profile clicks,
   bookings, time on page, sources, devices, places from time zones, and a
   visit-to-booking funnel. Tracked links: /@handle?ref=tag (also #ref= and
@@ -78,7 +83,8 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   tuned for light and dark with readable text on it. A shared link to their
   page shows a cover in that colour with their name, what they do and their
   photo when it's a real one (not Holm's drawn avatar), drawn in their
-  browser and drawn again whenever those details change. The signed-out home shows
+  browser and drawn again whenever those details change, or an image of
+  their own, framed the same way to the link preview's shape. The signed-out home shows
   a booking card that plays itself: a pointer books a time, then asks for
   another. The card is an ordinary flat component set in a real CSS 3D
   scene, with its edge and shadow behind it and the pointer and result
@@ -239,3 +245,19 @@ large and the photo in a ring.
 > Is there a standard way to get a holm app's icons?
 
 > But I am unable to get from Kalendar? "<kalendar.>/icon-512.png"
+
+**Kalendar 0.9.0: your own photo and cover, your zone, and busy times**
+
+> lets do Kalendar refinement
+> - shouldnt someone be able to change their time zone?
+> - they should be able to edit their cover image?
+> - also, cant we have photos of the person in their calendar?
+> - should the booked slot appear unavailable for another person?
+
+Asked whose photo they meant and what editing a cover should allow, they
+answered:
+
+> Shouldnt the host have ability to change own profile photo & cover photo? ; if they change photo, shouldnt the cover photo automatically change? cant the cover photo have the profile photo?
+
+and chose a drawn cover by default, with an image of their own as the
+other choice.

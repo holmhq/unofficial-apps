@@ -53,6 +53,19 @@ export const post = (path, body = {}) => call('POST', path, body)
 export const patch = (path, body = {}) => call('PATCH', path, body)
 export const del = (path) => call('DELETE', path)
 
+// A picture, as it is: a JPEG the page made.
+export async function put(path, blob) {
+  let response
+  try {
+    response = await fetch(path, { method: 'PUT', headers: { accept: 'application/json', 'content-type': blob.type || 'image/jpeg' }, body: blob })
+  } catch {
+    throw new ApiError(0, 'offline', 'You seem to be offline. Check your connection and try again.')
+  }
+  const data = await response.json().catch(() => null)
+  if (!response.ok) throw fail(response, data)
+  return data
+}
+
 // Guests' emails that didn't fit in the request that made them go out now,
 // a few seconds' worth at a time.
 export async function flush(id, waiting) {

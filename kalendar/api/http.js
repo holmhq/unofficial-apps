@@ -17,9 +17,14 @@
 //   POST   /api/hit                        a page beacon from a visitor (stats.js)
 //   GET    /api/u/:handle                  a host's public page
 //   GET    /api/u/:handle/cover.jpg?v=     the picture a shared link to it shows
-//   PUT    /api/host/cover?key=            the host's browser sends a new one (JPEG)
+//   GET    /api/u/:handle/photo.jpg?v=     the photo the host chose here
+//   PUT    /api/host/cover?key=            the host's browser sends a newly drawn cover (JPEG)
+//   PUT    /api/host/cover-image           an image of their own for the cover (JPEG, 1200×630)
+//   DELETE /api/host/cover-image           back to the drawn cover
+//   PUT    /api/host/photo                 a photo of their own (JPEG, 512×512)
+//   DELETE /api/host/photo                 back to the photo from their account
 //   GET    /api/u/:handle/:slug            one event type, for booking
-//   GET    /api/u/:handle/:slug/slots      open times { from, to, skip?, t? }
+//   GET    /api/u/:handle/:slug/slots      open times and busy ones { from, to, skip?, t? }
 //   GET    /api/b/:id?t=                   a booking, from the link in its email
 //   GET    /b/:id/calendar?t=              that booking as a calendar file (?h= the host's copy)
 //   GET    /feed/:secret.ics               the host's private calendar feed
@@ -33,7 +38,7 @@
 // and rate limits, and the host's own tools for Claude are named operations
 // too; see ops.js.
 import { json, errorResponse, readJSON, reject, requireMember, member, rememberOrigin, esc, displayName } from './lib.js'
-import { hostOf, hostByHandle, handleFree, createHost, updateHost, privateHost, publicHost, addAddress, removeAddress, confirmAddress, coverReady, saveCover, coverFile, syncMember } from './hosts.js'
+import { hostOf, hostByHandle, handleFree, createHost, updateHost, privateHost, publicHost, addAddress, removeAddress, confirmAddress, coverVersion, saveCover, coverFile, saveCoverImage, removeCoverImage, savePhoto, removePhoto, photoFile, syncMember } from './hosts.js'
 import { eventsOf, eventDTO, createEvent, updateEvent, deleteEvent } from './events.js'
 import { openSlots, bookingPage, bookingForInvitee, inviteIcs, hostIcs, listForHost, cancelByHost, counts, feedFor, nextOpen, acceptRequest, declineRequest, flushGuests } from './bookings.js'
 import { hit, statsFor } from './stats.js'
@@ -125,13 +130,14 @@ async function api(request, env, url) {
     const events = active.map((e) => ({ ...eventDTO(e, { hostName: host.name }), next: next[e.id] ?? null }))
     return json({ host: publicHost(host), events }, 200, { 'Cache-Control': 'no-store' })
   }
-  // A host's cover. Its address names the version, so it keeps for good.
-  p = match(path, /^\/api\/u\/([^/]+)\/cover\.jpg$/)
+  // A host's cover and photo. Their addresses name the version, so the
+  // current one keeps for good.
+  p = match(path, /^\/api\/u\/([^/]+)\/(cover|photo)\.jpg$/)
   if (p && (method === 'GET' || method === 'HEAD')) {
     const host = hostByHandle(env, p[0])
-    const file = host && coverFile(env, host)
+    const file = host && (p[1] === 'cover' ? coverFile(env, host) : photoFile(env, host))
     if (!file) return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } })
-    const kept = url.searchParams.get('v') === host.cover
+    const kept = url.searchParams.get('v') === (p[1] === 'cover' ? coverVersion(host) : host.photo)
     return new Response(method === 'HEAD' ? null : file.data, {
       headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': kept ? 'public, max-age=31536000, immutable' : 'public, max-age=300', 'X-Content-Type-Options': 'nosniff' }
     })
@@ -161,6 +167,16 @@ async function api(request, env, url) {
     const key = url.searchParams.get('key')
     saveCover(env, host, await request.arrayBuffer(), key)
     return json({ cover: key })
+  }
+  // Pictures of their own: a photo, and an image for the cover.
+  if (/^(PUT|DELETE) \/api\/host\/(photo|cover-image)$/.test(route)) {
+    const host = hostOf(env, m.id)
+    if (!host) reject(409, 'no_host', 'Choose your link first.')
+    const photo = path.endsWith('/photo')
+    const next = method === 'PUT'
+      ? (photo ? savePhoto : saveCoverImage)(env, host, await request.arrayBuffer())
+      : (photo ? removePhoto : removeCoverImage)(env, host)
+    return json({ host: privateHost(env, next, base) })
   }
   const body = ['POST', 'PATCH', 'PUT'].includes(method) ? await readJSON(request) : {}
   if (route === 'GET /api/handle') return json(handleFree(env, url.searchParams.get('h'), m.id))
@@ -226,8 +242,9 @@ async function hostPage(request, env, handle, slug) {
   const here = esc(`${origin}/@${host.handle}${event ? '/' + event.slug : ''}`)
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${here}$2`)
     .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${here}$2`)
-  if (coverReady(host)) {
-    const picture = esc(`${origin}/api/u/${encodeURIComponent(host.handle)}/cover.jpg?v=${host.cover}`)
+  const version = coverVersion(host)
+  if (version) {
+    const picture = esc(`${origin}/api/u/${encodeURIComponent(host.handle)}/cover.jpg?v=${version}`)
     html = html.replace(/(<meta (?:property|name)="(?:og|twitter):image" content=")[^"]*(")/g, `$1${picture}$2`)
       .replace(/(<meta property="og:image:type" content=")[^"]*(")/, '$1image/jpeg$2')
   }

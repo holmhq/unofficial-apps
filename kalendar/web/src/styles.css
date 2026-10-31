@@ -372,6 +372,7 @@ input.switch:checked:active::after { transform: translateX(16px); }
 .key.shade { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-soft-2); }
 .key.mine { background: color-mix(in srgb, var(--mine) 14%, transparent); box-shadow: inset 0 0 0 1.5px var(--mine); }
 .key.glow { background: var(--accent); }
+.key.busy { background: repeating-linear-gradient(135deg, var(--fill) 0 3px, transparent 3px 6px) var(--fill-2); box-shadow: inset 0 0 0 1px var(--line-2); }
 
 .step-title { margin: 0 0 12px; font-size: 19px; font-weight: var(--w-strong); letter-spacing: -.018em; }
 
@@ -476,7 +477,9 @@ input.switch.mini:checked:active::after { transform: translateX(11px); }
 .tl-lane > * { position: absolute; top: 8px; bottom: 8px; }
 .tl-past { top: 0 !important; bottom: 0 !important; pointer-events: none; background: repeating-linear-gradient(135deg, transparent 0 7px, var(--fill-2) 7px 8px); }
 .tl-shade { border-radius: 10px; background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-soft-2); pointer-events: none; }
-.tl-busy { border-radius: 9px; pointer-events: none; background: repeating-linear-gradient(135deg, var(--fill) 0 5px, transparent 5px 10px); box-shadow: inset 0 0 0 1px var(--line-2); }
+/* Busy: a booked time, grey and hatched, so it reads as taken rather than as time outside someone's hours. */
+.tl-busy { border-radius: 10px; display: flex; align-items: center; justify-content: center; pointer-events: none; color: var(--ink-2); background: repeating-linear-gradient(135deg, var(--fill) 0 4px, transparent 4px 9px) var(--fill-2); box-shadow: inset 0 0 0 1px var(--line-2); }
+.tl-busy .tl-text { font-weight: var(--w-label); letter-spacing: 0; }
 .tl-mark { border-radius: 10px; pointer-events: none; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1.5px var(--mine); background: var(--mine-soft); color: var(--mine-text); }
 .tl-text { position: relative; padding: 0 12px; font-size: 12px; font-weight: var(--w-strong); letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; pointer-events: none; }
 .tl-strip { z-index: 2; display: flex; align-items: center; justify-content: center; border-radius: 10px; overflow: hidden; transition: box-shadow .2s; }
@@ -648,8 +651,9 @@ input.switch.mini:checked:active::after { transform: translateX(11px); }
 .next-open.none { color: var(--ink-3); }
 @media (hover: hover) { .event-card:hover { box-shadow: var(--shadow-card); transform: translateY(-1px); } .event-card:hover > svg { color: var(--accent); transform: translateX(3px); } }
 .event-card:active { transform: scale(.985); }
-.profile-zone { margin: 10px auto 0; max-width: 380px; font-size: 12.5px; color: var(--ink-2); text-align: center; text-wrap: balance; }
-.profile-zone svg { display: inline-block; vertical-align: -2px; margin-right: 5px; }
+.profile-zone { margin: 14px auto 0; max-width: 380px; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.profile-zone .zone-btn { margin: 0; }
+.profile-zone p { margin: 0; font-size: 12.5px; color: var(--ink-2); text-wrap: balance; }
 .empty-inline { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 30px; color: var(--ink-2); border-radius: 18px; background: var(--surface); }
 
 /* ---- Manage (/b/:id) ------------------------------------------------------------------- */
@@ -1090,17 +1094,32 @@ blockquote, .quote { margin: 0; padding: 11px 14px; border-radius: 14px; backgro
 /* ---- Profile (the host's tab) ------------------------------------------------------------------ */
 
 .page-card { display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-1); }
-.page-card-top { display: flex; align-items: center; gap: 14px; min-width: 0; color: inherit; text-decoration: none; border-radius: 12px; }
-.page-card-top > svg { flex: none; align-self: flex-start; color: var(--ink-3); transition: transform .25s var(--spring), color .15s; }
-@media (hover: hover) { .page-card-top:hover > svg { color: var(--accent-text); transform: translate(2px, -2px); } }
+.page-card-top { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.page-card-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; color: inherit; text-decoration: none; border-radius: 12px; }
+.page-card-open > svg { flex: none; align-self: flex-start; color: var(--ink-3); transition: transform .25s var(--spring), color .15s; }
+@media (hover: hover) { .page-card-open:hover > svg { color: var(--accent-text); transform: translate(2px, -2px); } }
 .page-card-face { flex: none; display: flex; }
 .page-card-face .avatar { box-shadow: 0 0 0 .5px var(--line-2); }
+/* Your photo: tap it to choose another. A camera on its edge says so. */
+.face-edit { flex: none; position: relative; display: flex; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; transition: transform .25s var(--spring); }
+.face-edit:active { transform: scale(.94); }
+.face-edit:focus-visible { outline-offset: 3px; }
+.face-badge { position: absolute; right: -2px; bottom: -2px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 2.5px var(--surface), 0 2px 6px rgba(0, 0, 0, .16); transition: transform .25s var(--spring); }
+@media (hover: hover) { .face-edit:hover .face-badge { transform: scale(1.1); } }
+.face-edit.busy { pointer-events: none; }
+.face-edit.busy .avatar { opacity: .6; }
+.face-edit.busy .face-badge { color: transparent; }
+.face-edit.busy .face-badge::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--on-accent) 35%, transparent); border-top-color: var(--on-accent); animation: spin .8s linear infinite; }
 .page-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .page-card-text b { font-size: 19px; font-weight: var(--w-title); letter-spacing: -.02em; line-height: 1.25; }
 .page-card-text span { font-size: 14.5px; color: var(--ink-2); line-height: 1.35; }
 .page-card-text span.muted { color: var(--ink-3); }
 
 /* The cover a shared link shows: a new one fades in over the last. */
+/* The cover: drawn, or your own image, chosen above it. */
+.cover-mode { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.cover-mode .seg { flex: 0 1 300px; }
+.cover-acts { margin-left: auto; display: flex; align-items: center; gap: 4px; }
 .cover-box { position: relative; aspect-ratio: 1200 / 630; border-radius: 16px; overflow: hidden; background: var(--accent-soft); box-shadow: var(--shadow-1); }
 .cover-box img { display: block; width: 100%; height: 100%; object-fit: cover; transition: opacity .3s var(--ease-out); }
 .cover-box img:not([src]) { opacity: 0; }
@@ -1331,3 +1350,23 @@ button.lk-tr:active { background: var(--fill-2); }
 .link-stats span { font-size: 12px; color: var(--ink-2); font-weight: var(--w-label); }
 .btn-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .btn.plain-danger { align-self: center; height: 40px; background: none; color: var(--red-text); font-size: 15px; }
+
+/* Your time zone, and the one this device is on when it differs. */
+.zone-group .row-btn + .row-btn { box-shadow: inset 0 .5px 0 var(--line); }
+.zone-group .zone-here { min-height: 52px; }
+.zone-group .zone-here b { color: var(--accent-text); font-size: 15px; }
+.zone-group .zone-here svg { color: var(--accent-text); }
+
+/* Framing a picture: it fills the frame, you drag and zoom it. */
+.framer { display: flex; flex-direction: column; gap: 14px; }
+.framer-stage { position: relative; width: 100%; overflow: hidden; border-radius: 16px; background: var(--fill-2); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.framer-stage.held { cursor: grabbing; }
+.framer-stage.round { width: min(100%, 340px); margin: 0 auto; border-radius: 20px; }
+.framer-stage:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; }
+.framer-canvas { display: block; width: 100%; height: 100%; }
+.framer-mask { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 1px var(--line-2); border-radius: inherit; }
+.framer-stage.round .framer-mask { background: radial-gradient(circle closest-side, transparent calc(100% - 1px), rgba(0, 0, 0, .5) 100%); }
+.framer-stage.round .framer-mask::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .85); }
+.framer-bar { display: flex; align-items: center; gap: 8px; max-width: 420px; width: 100%; margin: 0 auto; }
+.framer-zoom { flex: 1; min-width: 0; accent-color: var(--accent); }
+.framer-hint { margin: 0; text-align: center; font-size: 13px; line-height: 1.4; color: var(--ink-2); text-wrap: balance; }

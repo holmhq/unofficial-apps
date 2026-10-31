@@ -15,7 +15,7 @@
 // /manifest.webmanifest) is that file, even typed into the address bar;
 // handles and event slugs may hold dots, so /@… is always a page.
 
-const VERSION = '0.8.2'
+const VERSION = '0.9.0'
 const CACHE = 'kalendar-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
@@ -23,7 +23,7 @@ const FILES = [
   '/icons/amber.png', '/icons/teal.png', '/icons/blue.png', '/icons/violet.png', '/icons/graphite.png',
   '/assets/inter-latin.woff2', '/src/styles.css',
   '/src/main.js', '/src/shell.js', '/src/ui.js', '/src/icons.js', '/src/api.js', '/src/store.js', '/src/theme.js',
-  '/src/sound.js', '/src/time.js', '/src/cover.js', '/src/zones.js', '/src/countries.js', '/src/timeline.js', '/src/track.js', '/src/qr.js', '/src/chips.js',
+  '/src/sound.js', '/src/time.js', '/src/cover.js', '/src/framer.js', '/src/zones.js', '/src/countries.js', '/src/timeline.js', '/src/track.js', '/src/qr.js', '/src/chips.js',
   '/src/views/book.js', '/src/views/profile.js', '/src/views/manage.js', '/src/views/dash.js', '/src/views/landing.js',
   '/src/views/onboard.js', '/src/views/common.js', '/src/views/missing.js', '/src/views/zone-picker.js',
   '/src/views/event-sheet.js', '/src/views/profile-tab.js', '/src/views/insights.js', '/src/views/link-sheet.js',

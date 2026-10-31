@@ -44,6 +44,15 @@ export const here = () => {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' }
 }
 
+// The zone a visitor reads times in, on anyone's page: the one they chose
+// last, or this device's. Choosing this device's own zone again lets it
+// follow the device from then on.
+const PICKED = 'kalendar:zone'
+export const viewerZone = () => { try { return localStorage.getItem(PICKED) || here() } catch { return here() } }
+export function pickViewerZone(zone) {
+  try { if (zone === here()) localStorage.removeItem(PICKED); else localStorage.setItem(PICKED, zone) } catch {}
+}
+
 // "India Standard Time", "Pacific Daylight Time".
 export function zoneName(zone, ms = Date.now(), style = 'long') {
   try {

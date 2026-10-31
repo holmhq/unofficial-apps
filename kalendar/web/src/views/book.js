@@ -11,7 +11,7 @@ import * as theme from '../theme.js'
 import { state, topBar, go, link, failure, holmFooter, signIn } from '../shell.js'
 import { sound } from '../sound.js'
 import * as t from '../time.js'
-import { here, zoneName, gmt, offsetIn, city } from '../zones.js'
+import { zoneName, gmt, offsetIn, city, viewerZone, pickViewerZone } from '../zones.js'
 import { zonePicker } from './zone-picker.js'
 import { colorOf, placeLine, metaRow, calendarButtons, doneMark, field } from './common.js'
 import { missingHost } from './missing.js'
@@ -19,14 +19,12 @@ import { timeline, merge, intersect, span, short } from '../timeline.js'
 import { chipField } from '../chips.js'
 import * as track from '../track.js'
 
-const ZONE_KEY = 'kalendar:zone'
 const ME_KEY = 'kalendar:invitee'
 const DAY = 1440
 const MIN = 60000
 const SNAP = 20
 const enc = encodeURIComponent
 
-const savedZone = () => { try { return localStorage.getItem(ZONE_KEY) } catch { return null } }
 const remembered = () => { try { return JSON.parse(localStorage.getItem(ME_KEY) || 'null') || {} } catch { return {} } }
 
 // The page and its open times draw at once from what this browser saw
@@ -62,10 +60,12 @@ export async function book(handle, slug) {
   const slotsKey = old ? null : key + ':slots'
 
   const s = {
-    zone: savedZone() || here(),
+    zone: viewerZone(),
     step: 'pick',
     mode: 'clip',
     slots: [],
+    // Booked times (with the host's buffers), shown as busy: never who.
+    taken: [],
     byDay: new Map(),
     loadedTo: 0,
     until: Date.now() + 60 * 86400000,
@@ -91,6 +91,7 @@ export async function book(handle, slug) {
     old ? h('div.moving', ic('repeat', 16, 2), h('div', h('b', 'Moving your booking'), h('span', `${t.fullDate(old.start, s.zone)}, ${t.range(old.start, old.end, s.zone)}`))) : null,
     h('div.legend.only-wide',
       h('span', h('i.key.shade'), `${first} is free`),
+      h('span', h('i.key.busy'), 'Busy'),
       asks ? h('span', h('i.key.mine'), 'Your times') : null,
       asks ? h('span', h('i.key.glow'), 'Both free') : null))
 
@@ -111,9 +112,10 @@ export async function book(handle, slug) {
     clipLength: dur,
     keyStep: 15,
     corner: h('span.tl-zone', city(s.zone)),
+    busyLabel: 'Busy',
     layers: (tr) => {
       const shade = windows(tr.key)
-      const out = { shade }
+      const out = { shade, busy: takenOn(tr.key) }
       if (old) {
         const w = t.wall(old.start, s.zone)
         if (w.key === tr.key) out.mark = [[w.min, w.min + dur]]
@@ -144,6 +146,8 @@ export async function book(handle, slug) {
     onTap: (key, minute) => {
       if (s.mode !== 'clip') return
       const c = placeClip(key, Math.round(minute - dur / 2))
+      // A booked time: say so, rather than drop a request beside it.
+      if (takenOn(key).some(([a, b]) => minute >= a && minute < b) && (!c || c.mode !== 'open')) { busyThen(); return }
       if (!c) { sound.error(); return }
       setClip(c)
       tl.redrawTrack(key)
@@ -191,7 +195,8 @@ export async function book(handle, slug) {
       s.loadedTo = end
       // The first answer replaces what was kept; later ones add days to it.
       s.slots = first ? r.slots.slice() : [...new Set([...s.slots, ...r.slots])].sort((a, b) => a - b)
-      if (first && slotsKey) store.keep(slotsKey, { slots: r.slots, until: r.until })
+      s.taken = first ? (r.busy || []) : merge([...s.taken, ...(r.busy || [])])
+      if (first && slotsKey) store.keep(slotsKey, { slots: r.slots, busy: r.busy || [], until: r.until })
       group()
     }).finally(() => { s.loading = null; tl.el.classList.remove('loading') })
     return s.loading
@@ -208,6 +213,31 @@ export async function book(handle, slug) {
 
   const startsOn = (key) => s.byDay.get(key) || []
   const windows = (key) => merge(startsOn(key).map((m) => [m, Math.min(DAY, m + dur)]))
+
+  // Busy times on one day, in minutes of the guest's day.
+  function takenOn(key) {
+    const lo = t.instant(key, 0, s.zone)
+    const hi = t.instant(t.nextKey(key), 0, s.zone)
+    return s.taken.filter(([a, b]) => b > lo && a < hi).map(([a, b]) => [a <= lo ? 0 : t.wall(a, s.zone).min, b >= hi ? DAY : t.wall(b, s.zone).min])
+  }
+  // Would a meeting starting at ms, with its buffers, run into a booked time?
+  const before = (event.before || 0) * MIN
+  const after = (event.after || 0) * MIN
+  const clashes = (ms) => s.taken.some(([a, b]) => ms - before < b && ms + dur * MIN + after > a)
+  // Somewhere in these stretches the host could still say yes (api/bookings.js roomIn).
+  function room(ranges) {
+    const blocks = s.taken.map(([f, z]) => [f - dur * MIN - after, z + before]).sort((x, y) => x[0] - y[0])
+    return ranges.some(([a, b]) => {
+      let x = a
+      for (const [p, q] of blocks) { if (q <= x) continue; if (p >= x) break; x = q }
+      return x + dur * MIN <= b
+    })
+  }
+  function busyThen() {
+    sound.error()
+    haptic(12)
+    toast(`${first}’s busy then. Pick another time.`, { kind: 'info' })
+  }
 
   function tracks() {
     const today = t.wall(Date.now(), s.zone).key
@@ -255,10 +285,21 @@ export async function book(handle, slug) {
     const open = nearest !== null ? { key, start: nearest, end: nearest + dur, mode: 'open' } : null
     if (open && Math.abs(nearest - start) <= SNAP) return open
     if (!asks) return open
-    const m = Math.max(0, Math.min(DAY - dur, Math.round(start / 15) * 15))
+    const m = clear(key, Math.max(0, Math.min(DAY - dur, Math.round(start / 15) * 15)))
+    if (m === null) return open
     const ms = t.instant(key, m, s.zone)
     if (ms < Date.now() + 30 * MIN || ms > s.until) return open
     return { key, start: m, end: m + dur, mode: 'ask' }
+  }
+
+  // The nearest quarter hour to m that clears every booked time, or null.
+  function clear(key, m) {
+    const ok = (x) => x >= 0 && x <= DAY - dur && !clashes(t.instant(key, x, s.zone))
+    for (let d = 0; d <= DAY; d += 15) {
+      if (ok(m - d)) return m - d
+      if (ok(m + d)) return m + d
+    }
+    return null
   }
 
   function setClip(c) {
@@ -332,7 +373,7 @@ export async function book(handle, slug) {
 
   function paintBar() {
     if (s.mode === 'clip') {
-      fill(hint, asks ? `Tap a shaded time to pick it. Tap anywhere else to ask ${first} for that time instead.` : 'Tap a shaded time to pick it, then drag to fine-tune.')
+      fill(hint, asks ? `Tap a shaded time to pick it. Tap an empty time to ask ${first} for it instead.` : 'Tap a shaded time to pick it, then drag to fine-tune.')
       if (!s.clip) {
         const soon = soonest()
         setBar('pick' + (soon ? '-soon' : ''), h('div.bar-text', h('b', 'Pick a time'), h('span', s.slots.length || s.loading ? `Shaded is when ${first} is free.` : `${first} has nothing open right now.`)), soon)
@@ -391,6 +432,7 @@ export async function book(handle, slug) {
       s.request = s.clip.mode === 'ask' ? [[s.clip.ms, s.clip.ms + dur * MIN]] : null
     } else {
       if (!s.paint.length) { sound.error(); return }
+      if (!room(s.paint)) { sound.error(); toast(`${first} is busy for all of that. Paint some other times.`, { kind: 'info' }); return }
       s.request = s.paint.map((r) => r.slice())
     }
     api.prepare('bookings.create')
@@ -493,11 +535,12 @@ export async function book(handle, slug) {
       s.busy = false
       submit.classList.remove('busy')
       fill(submit, h('span', label))
-      if (error.status === 409 && error.code !== 'already_asked' && !s.request) {
+      if (error.status === 409 && (!s.request || /busy/i.test(error.message))) {
         // Someone took it first: back to the strip, without it.
         toast(error.message, { kind: 'bad' })
         sound.error()
         s.slots = []
+        s.taken = []
         s.loadedTo = 0
         s.clip = null
         await load(lastTrackEnd()).catch(() => {})
@@ -563,7 +606,7 @@ export async function book(handle, slug) {
     const zone = await zonePicker(s.zone)
     if (!zone || zone === s.zone) return
     s.zone = zone
-    try { localStorage.setItem(ZONE_KEY, zone) } catch {}
+    pickViewerZone(zone)
     group()
     paintZone()
     tl.setTracks(tracks())
@@ -617,6 +660,7 @@ export async function book(handle, slug) {
   if (kept && kept.slots) {
     s.seeded = true
     s.slots = kept.slots.filter((x) => x > Date.now())
+    s.taken = (kept.busy || []).filter(([, b]) => b > Date.now())
     s.until = kept.until || s.until
     group()
   }

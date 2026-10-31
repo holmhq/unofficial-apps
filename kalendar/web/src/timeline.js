@@ -16,6 +16,7 @@
 //     tracks: [{ key, label, sub, dim, today, paused }],
 //     mode: 'clip' | 'strips',
 //     layers: (track) => ({ shade, busy, glow, mark }),  minutes of the day, [[a, b]]
+//     busyLabel: 'Busy',                                 written on busy spans that have room
 //     strips: { get(key), set(key, ranges, { live }), kind: 'host' | 'guest', step, min, max, editable, across },
 //     clip: { get(), set(c), place(key, start) },        place() snaps, or returns null
 //     now: () => ({ key, minute }) | null,
@@ -167,7 +168,7 @@ export function timeline(o) {
     const now = o.now && o.now()
     if (now && now.key === track.key) kids.push(box('div.tl-past', 0, now.minute))
     for (const [a, b] of l.shade || []) kids.push(box('div.tl-shade', a, b))
-    for (const [a, b] of l.busy || []) kids.push(box('div.tl-busy', a, b))
+    for (const [a, b] of l.busy || []) kids.push(box('div.tl-busy', a, b, o.busyLabel && (b - a) * state.ppm > 52 ? [h('span.tl-text', o.busyLabel)] : []))
     for (const [a, b] of l.mark || []) kids.push(box('div.tl-mark', a, b, (b - a) * state.ppm > 64 ? [h('span.tl-text', o.markLabel || 'Booked now')] : []))
     const kind = o.strips ? o.strips.kind || 'host' : null
     if (o.strips) {

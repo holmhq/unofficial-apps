@@ -15,7 +15,8 @@ import { calendar } from '../api/ics.js'
 import { cleanTag } from '../api/lib.js'
 import { guestInvite, hostInvite } from '../api/bookings.js'
 import { inviteeMail, hostMail, guestMail, verifyMail, senderOf } from '../api/mail.js'
-import { mailbox, THEMES, coverKey } from '../api/hosts.js'
+import { mailbox, THEMES, coverKey, coverVersion, pictureOf } from '../api/hosts.js'
+import { roomIn } from '../api/bookings.js'
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 
 const DAY = 86400000
@@ -235,6 +236,38 @@ for (const zone of ZONES) {
     assert.equal(coverKey({ ...host, [field]: value }), key, `cover key follows ${field}`)
   }
   assert.equal(coverKey({ ...host, theme: 'nope' }), coverKey({ ...host, theme: undefined }), 'an unknown colour draws red')
+  // A photo chosen in Kalendar replaces the account's, on the page and the cover.
+  assert.equal(pictureOf(host), host.picture)
+  const own = { ...host, photo: 'p1' }
+  assert.equal(pictureOf(own), '/api/u/avery/photo.jpg?v=p1')
+  assert.notEqual(coverKey(own), key, 'a new photo draws a new cover')
+  assert.notEqual(coverKey({ ...host, photo: 'p2' }), coverKey(own), 'each photo draws its own cover')
+  // The cover shown: the drawn one while it's current, or their own image.
+  assert.equal(coverVersion({ ...host, cover: key }), key)
+  assert.equal(coverVersion({ ...host, cover: 'old' }), null)
+  assert.equal(coverVersion({ ...host, cover: key, coverImage: 'c1' }), key, 'an image waits until it is chosen')
+  assert.equal(coverVersion({ ...host, cover: 'old', coverImage: 'c1', coverMode: 'image' }), 'ic1')
+  assert.equal(coverVersion({ ...host, cover: key, coverImage: null, coverMode: 'image' }), key, 'no image: the drawn one')
+}
+
+// A request is only for time the host could still accept: some stretch of
+// it clear of bookings and their buffers, long enough for the meeting.
+{
+  const M = 60000
+  const s = { duration: 30, before: 0, after: 0 }
+  const busy = [[600 * M, 660 * M]] // 10:00–11:00
+  assert.equal(roomIn([[600 * M, 630 * M]], busy, s), false, 'a booked half hour')
+  assert.equal(roomIn([[600 * M, 660 * M]], busy, s), false, 'exactly the booked hour')
+  assert.equal(roomIn([[570 * M, 600 * M]], busy, s), true, 'ends as the booking starts')
+  assert.equal(roomIn([[660 * M, 690 * M]], busy, s), true, 'starts as the booking ends')
+  assert.equal(roomIn([[585 * M, 675 * M]], busy, s), false, 'neither side has 30 minutes')
+  assert.equal(roomIn([[585 * M, 690 * M]], busy, s), true, 'after it there is')
+  assert.equal(roomIn([[600 * M, 630 * M], [720 * M, 750 * M]], busy, s), true, 'one stretch is enough')
+  assert.equal(roomIn([[660 * M, 690 * M]], busy, { ...s, before: 10 }), false, 'the buffer before runs into it')
+  assert.equal(roomIn([[660 * M, 700 * M]], busy, { ...s, before: 10 }), true, 'later, the buffer fits')
+  assert.equal(roomIn([[560 * M, 600 * M]], busy, { ...s, after: 15 }), false, 'the buffer after runs into it')
+  assert.equal(roomIn([[600 * M, 720 * M]], [[600 * M, 630 * M], [630 * M, 690 * M]], s), true, 'room after two bookings')
+  assert.equal(roomIn([[600 * M, 720 * M]], [[600 * M, 650 * M], [670 * M, 720 * M]], s), false, 'a 20-minute gap is too short')
 }
 
 // The service worker installs a version all or nothing: it must list every
@@ -265,4 +298,4 @@ for (const zone of ZONES) {
   assert.deepEqual(boot.sort(), [...others].sort(), 'index.html must know every colour')
 }
 
-console.log(`ok: ${checked} slots across ${ZONES.length} zones match Intl; weekly hours, paused days, busy times, tags, email dates, calendar files, email invites, cover keys, the app shell and its tab icons check out`)
+console.log(`ok: ${checked} slots across ${ZONES.length} zones match Intl; weekly hours, paused days, busy times, requests for booked times, tags, email dates, calendar files, email invites, cover keys and photos, the app shell and its tab icons check out`)

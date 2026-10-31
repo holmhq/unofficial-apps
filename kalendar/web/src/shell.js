@@ -119,16 +119,19 @@ export function topBar({ left = null, title = null, right = [], glass = true } =
 // server says someone else is signed in.
 const buttons = new Set()
 
+// A host who chose a photo here sees it on their account button too.
+const pictureOf = (me) => (me.host && me.host.photo && me.host.picture) || me.member.picture
+
 function paintAccount(btn) {
   const m = state.me && state.me.member
-  const face = m ? (m.picture || '') + m.name : ''
+  const face = m ? (pictureOf(state.me) || '') + m.name : ''
   if (btn.dataset.face === face && btn.firstChild) return
   btn.dataset.face = face
   btn.setAttribute('aria-label', m ? `Account: ${m.name}` : 'Account and settings')
-  fill(btn, m ? avatar({ key: m.id, name: m.name, picture: m.picture }) : h('span.avatar.ghost', ic('user', 17, 2)))
+  fill(btn, m ? avatar({ key: m.id, name: m.name, picture: pictureOf(state.me) }) : h('span.avatar.ghost', ic('user', 17, 2)))
 }
 
-function paintAccounts() {
+export function paintAccounts() {
   for (const btn of buttons) {
     if (!btn.isConnected) buttons.delete(btn)
     else paintAccount(btn)
@@ -163,7 +166,7 @@ function accountMenu(anchor) {
   const analytics = me.admin && surfaces && typeof surfaces.analytics === 'string' ? surfaces.analytics : null
   const items = [
     m
-      ? h('div.me', avatar({ key: m.id, name: m.name, picture: m.picture }), h('div.grow', h('b.trunc', m.name), h('small.trunc', host ? prettyURL(host.handle) : m.email || '')))
+      ? h('div.me', avatar({ key: m.id, name: m.name, picture: pictureOf(me) }), h('div.grow', h('b.trunc', m.name), h('small.trunc', host ? prettyURL(host.handle) : m.email || '')))
       : h('div.me', h('span.avatar.ghost', ic('user', 22, 2)), h('div.grow', h('b', 'Not signed in'), h('small', 'Sign in to get your own link'))),
     'sep',
     themes,

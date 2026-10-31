@@ -1,16 +1,20 @@
-// Profile: your page as guests see it at the top, its colour and the cover
-// a shared link to it shows, then what's on it (your name, what you do,
-// where you are, a welcome note, your website and profiles), your link,
-// email about bookings and the address it goes to, and the private calendar
-// feed of your bookings. Like your hours, it saves as you type.
-import { h, ic, fill, avatar, toggle, nope, copyText, confirm, toast } from '../ui.js'
+// Profile: your page as guests see it at the top, with your photo (tap it
+// to choose another), its colour and the cover a shared link to it shows
+// (drawn for you, or an image of your own), then what's on it (your name,
+// what you do, where you are, your time zone, a welcome note, your website
+// and profiles), your link, email about bookings and the address it goes
+// to, and the private calendar feed of your bookings. Like your hours, it
+// saves as you type.
+import { h, ic, fill, avatar, toggle, nope, copyText, confirm, toast, menu, segmented } from '../ui.js'
 import * as api from '../api.js'
 import * as store from '../store.js'
-import { state, failure, prettyURL, pageURL, share } from '../shell.js'
+import { state, failure, prettyURL, pageURL, share, paintAccounts } from '../shell.js'
 import * as theme from '../theme.js'
 import * as cover from '../cover.js'
+import * as framer from '../framer.js'
 import { sound } from '../sound.js'
 import { siteOf } from './profile.js'
+import { hostZone } from './zone-picker.js'
 
 const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase()
 const withScheme = (v) => (/^https?:\/\//i.test(v) ? v : v ? 'https://' + v.replace(/^\/+/, '') : v)
@@ -53,24 +57,81 @@ export function profileTab({ onSaved }) {
   const cardRole = h('span.trunc')
   const cardLink = h('span.page-card-link.trunc')
   const cardFace = h('span.page-card-face')
+  let showing = null // a photo on its way up, shown meanwhile
   function paintCard() {
     const x = host()
-    fill(cardFace, avatar({ key: x.handle, name: x.name, picture: x.picture, size: 64 }))
+    const picture = showing || x.picture
+    if (cardFace.dataset.src !== (picture || '') || !cardFace.firstChild) {
+      cardFace.dataset.src = picture || ''
+      fill(cardFace, avatar({ key: x.handle, name: x.name, picture, size: 64 }))
+    }
     cardName.textContent = name.value.trim() || x.name
     const line = [role.value.trim(), company.value.trim()].filter(Boolean).join(' · ')
     cardRole.textContent = line || 'Add what you do below'
     cardRole.classList.toggle('muted', !line)
     cardLink.textContent = prettyURL(x.handle)
   }
+  const faceBtn = h('button.face-edit', { type: 'button', 'aria-label': 'Change your photo', onclick: (e) => photoMenu(e.currentTarget) },
+    cardFace, h('span.face-badge', { 'aria-hidden': 'true' }, ic('camera', 13, 2.4)))
   const card = h('div.page-card',
-    h('a.page-card-top', { href: pageURL(host().handle), target: '_blank', rel: 'noopener', onclick: (e) => { e.currentTarget.href = pageURL(host().handle) } },
-      cardFace,
-      h('span.page-card-text', cardName, cardRole, cardLink),
-      ic('arrowUpRight', 18, 2.2)),
+    h('div.page-card-top',
+      faceBtn,
+      h('a.page-card-open', { href: pageURL(host().handle), target: '_blank', rel: 'noopener', onclick: (e) => { e.currentTarget.href = pageURL(host().handle) } },
+        h('span.page-card-text', cardName, cardRole, cardLink),
+        ic('arrowUpRight', 18, 2.2))),
     h('div.page-card-actions',
       h('button.btn.small.tinted', { type: 'button', onclick: () => { copyText(pageURL(host().handle), 'Link copied'); sound.pop() } }, ic('copy', 15, 2.2), 'Copy link'),
       h('button.btn.small.tinted', { type: 'button', onclick: () => share(host().handle) }, ic('share', 15, 2.2), 'Share'),
       h('a.btn.small.tinted', { href: pageURL(host().handle), target: '_blank', rel: 'noopener', onclick: (e) => { e.currentTarget.href = pageURL(host().handle) } }, ic('externalLink', 15, 2.2), 'Open')))
+
+  /* ---- Your photo ------------------------------------------------------------------------ */
+
+  // A photo of your own, framed in a circle here. Without one, your page
+  // shows the picture from your account, often a drawn one.
+  function photoMenu(button) {
+    if (!host().photo) { changePhoto(); return }
+    menu(button, [
+      { label: 'Choose a new photo', icon: 'camera', onclick: changePhoto },
+      { label: 'Remove photo', icon: 'trash', danger: true, onclick: removePhoto }
+    ], { align: 'start' })
+  }
+  async function changePhoto() {
+    const file = await framer.choose()
+    if (!file) return
+    const blob = await framer.frame(file, { shape: 'round', out: [512, 512], title: 'Your photo' })
+    if (!blob) return
+    showing = URL.createObjectURL(blob)
+    paintCard()
+    faceBtn.classList.add('busy')
+    try {
+      pictures((await api.put('/api/host/photo', blob)).host)
+      sound.pop()
+      toast('Your photo is on your page')
+    } catch (error) { failure(error) }
+    const was = showing
+    showing = null
+    faceBtn.classList.remove('busy')
+    paintCard()
+    setTimeout(() => URL.revokeObjectURL(was), 4000)
+  }
+  async function removePhoto() {
+    if (!await confirm({ title: 'Remove your photo?', text: 'Your page goes back to the picture from your account.', action: 'Remove' })) return
+    try { pictures((await api.del('/api/host/photo')).host); sound.remove() } catch (error) { failure(error) }
+  }
+  // A new photo or cover: everywhere it shows here, your page as others
+  // see it next, and a cover drawn with it.
+  function pictures(next) {
+    state.me.host = next
+    store.keep('me', state.me)
+    const handle = next.handle.toLowerCase()
+    store.forget((k) => k === 'u:' + handle || k.startsWith('u:' + handle + '/'))
+    onSaved({ photo: true })
+    paintAccounts()
+    paintCard()
+    cover.keep(300)
+    paintCover()
+    paintCoverMode()
+  }
 
   /* ---- Colour -------------------------------------------------------------------------- */
 
@@ -101,20 +162,78 @@ export function profileTab({ onSaved }) {
 
   /* ---- The cover a shared link shows ---------------------------------------------------- */
 
-  // The one drawn here a moment ago, or the server's, while a new one is
-  // drawn after a change, the last one, faded.
+  // Drawn: the one drawn here a moment ago, or the server's, while a new
+  // one is drawn after a change, the last one, faded. Or an image of your
+  // own, framed to the shape link previews use.
   const coverImg = h('img', { alt: 'The cover a link to your page shows', width: '1200', height: '630', decoding: 'async' })
   const coverBox = h('div.cover-box', coverImg)
+  const coverMode = h('div.cover-mode')
+  const coverFoot = h('p.group-foot')
+  let coverUp = null // an image of your own on its way up
   function paintCover() {
     const x = host()
     let src = null
-    if (cover.latest && cover.latest.key === x.coverKey) src = cover.latest.url
+    if (coverUp) src = coverUp
+    else if (x.coverMode === 'image' && x.coverImage) src = x.coverImage
+    else if (cover.latest && cover.latest.key === x.coverKey) src = cover.latest.url
     else if (x.cover && x.cover === x.coverKey) src = `/api/u/${encodeURIComponent(x.handle)}/cover.jpg?v=${x.cover}`
-    coverBox.classList.toggle('drawing', !src)
+    coverBox.classList.toggle('drawing', !src || !!coverUp)
     if (src && coverImg.getAttribute('src') !== src) coverImg.src = src
+  }
+  function paintCoverMode() {
+    const x = host()
+    const own = x.coverMode === 'image'
+    fill(coverMode,
+      segmented([{ value: 'drawn', label: 'Drawn', icon: 'sparkles' }, { value: 'image', label: 'Your image', icon: 'image' }], x.coverMode, pickCover, { label: 'Cover' }),
+      own ? h('div.cover-acts',
+        h('button.btn.small.tinted', { type: 'button', onclick: addCover }, ic('image', 15, 2.2), 'Replace'),
+        h('button.icon-btn.small', { type: 'button', 'aria-label': 'Remove your image', onclick: removeCover }, ic('trash', 16, 2.2))) : null)
+    fill(coverFoot, own
+      ? 'Messages and posts show your image with a link to your page. Drawn makes one from your details again.'
+      : 'Messages and posts show this with a link to your page. It’s drawn from your name, what you do, your colour and your photo, and redrawn when they change.')
+  }
+  async function pickCover(mode) {
+    const x = host()
+    if (mode === x.coverMode) return
+    if (mode === 'image' && !x.coverImage) { if (!await addCover()) paintCoverMode(); return }
+    sound.pick()
+    state.me.host = { ...x, coverMode: mode }
+    paintCover()
+    paintCoverMode()
+    try { pictures((await api.patch('/api/host', { coverMode: mode })).host) } catch (error) { state.me.host = x; paintCover(); paintCoverMode(); failure(error) }
+  }
+  // Choose, frame and send an image; true when it's up.
+  async function addCover() {
+    const file = await framer.choose()
+    if (!file) return false
+    const blob = await framer.frame(file, { shape: 'wide', out: [1200, 630], title: 'Your cover', quality: 0.84 })
+    if (!blob) return false
+    coverUp = URL.createObjectURL(blob)
+    paintCover()
+    let ok = false
+    try {
+      pictures((await api.put('/api/host/cover-image', blob)).host)
+      sound.pop()
+      toast('Links to your page show your image now')
+      ok = true
+    } catch (error) { failure(error) }
+    const was = coverUp
+    coverUp = null
+    paintCover()
+    setTimeout(() => URL.revokeObjectURL(was), 4000)
+    return ok
+  }
+  async function removeCover() {
+    if (!await confirm({ title: 'Remove your image?', text: 'Links to your page show the drawn cover again.', action: 'Remove' })) return
+    try { pictures((await api.del('/api/host/cover-image')).host); sound.remove() } catch (error) { failure(error) }
   }
   addEventListener('kalendar:cover', paintCover)
   paintCover()
+  paintCoverMode()
+
+  /* ---- Time zone ------------------------------------------------------------------------ */
+
+  const zone = hostZone({ onChange: (z) => onSaved({ tz: z }) })
 
   /* ---- About you ----------------------------------------------------------------------- */
 
@@ -322,11 +441,15 @@ export function profileTab({ onSaved }) {
     h('div.group', accents),
     h('p.group-foot', 'Your page, its booking pages, your emails and this dashboard wear it, in light and in dark.'),
     h('h2.group-title', 'When your link is shared'),
+    coverMode,
     coverBox,
-    h('p.group-foot', 'Messages and posts show this with a link to your page. It follows your name, what you do and your colour, and your photo from signing in when it’s a real photo.'),
+    coverFoot,
     h('h2.group-title', 'About you'),
     h('div.group.form-group', row('Name', name), row('What you do', role), row('Company', company), row('City', place)),
     h('p.group-foot', 'Your city is shown with your local time. Leave it empty to use your time zone’s.'),
+    h('h2.group-title', 'Time zone'),
+    zone.el,
+    h('p.group-foot', 'Your hours are in this zone, and your page shows your local time from it. Guests see every time in their own zone.'),
     h('h2.group-title', 'Welcome note'),
     h('div.group.form-group', h('div.form-row.note-row', bio)),
     h('h2.group-title', 'Website and profiles'),
@@ -359,6 +482,8 @@ export function profileTab({ onSaved }) {
       paintFeed()
       paintCard()
       paintCover()
+      paintCoverMode()
+      zone.paint()
       fit()
     },
     leave() {

@@ -1,12 +1,15 @@
 // Someone's page, /@handle: who they are, where to find them, and what you
-// can book with them, each with the next time that's open.
+// can book with them, each with the next time that's open, in the visitor's
+// zone (which they can change; booking pages follow it).
 import { h, ic, fill, avatar } from '../ui.js'
 import * as api from '../api.js'
 import * as store from '../store.js'
 import * as theme from '../theme.js'
 import { topBar, link, holmFooter, state, share } from '../shell.js'
 import * as t from '../time.js'
-import { city } from '../zones.js'
+import { city, zoneName, viewerZone, pickViewerZone } from '../zones.js'
+import { zonePicker } from './zone-picker.js'
+import { sound } from '../sound.js'
 import { colorOf, placeLine } from './common.js'
 import { missingHost } from './missing.js'
 import * as track from '../track.js'
@@ -47,7 +50,8 @@ export async function profile(handle) {
   seed(page)
   const visit = track.page(page.host.handle)
   const panel = h('div.panel')
-  let main = body(page, visit)
+  const redraw = () => { const next = body(page, visit, redraw); main.replaceWith(next); main = next }
+  let main = body(page, visit, redraw)
   const bar = () => {
     const host = page.host
     const mine = state.me && state.me.host && state.me.host.handle === host.handle
@@ -62,9 +66,7 @@ export async function profile(handle) {
     page = fresh
     theme.setAccent(page.host.theme, { scope: theme.scopeOf(location.pathname) })
     seed(page)
-    const next = body(page, visit)
-    main.replaceWith(next)
-    main = next
+    redraw()
   }).catch(() => {})
   return {
     el,
@@ -74,16 +76,25 @@ export async function profile(handle) {
   }
 }
 
-function body(page, visit) {
+function body(page, visit, redraw) {
   const { host, events } = page
   const now = Date.now()
+  const zone = viewerZone()
 
   function nextLine(e) {
     if (!e.next || e.next < now) return h('span.next-open.none', e.requests !== false ? 'Nothing open soon · ask for a time' : 'Nothing open soon')
     const soon = e.next - now < 86400000
-    const rel = t.relativeDay(e.next)
-    const day = rel ? rel.toLowerCase() : t.weekday(e.next, undefined, 'short')
-    return h('span.next-open' + (soon ? '.near' : ''), h('i'), `Next: ${day}, ${t.clock(e.next)}`)
+    const rel = t.relativeDay(e.next, zone)
+    const day = rel ? rel.toLowerCase() : t.weekday(e.next, zone, 'short')
+    return h('span.next-open' + (soon ? '.near' : ''), h('i'), `Next: ${day}, ${t.clock(e.next, zone)}`)
+  }
+
+  async function pickZone() {
+    const z = await zonePicker(zone)
+    if (!z || z === zone) return
+    pickViewerZone(z)
+    sound.pop()
+    redraw()
   }
 
   const cards = events.map((e, i) => {
@@ -116,5 +127,8 @@ function body(page, visit) {
       links.length || website ? h('div.socials', links, website) : null),
     h('h2.section-label', events.length ? 'Book a time' : ''),
     cards.length ? h('nav.event-list', { 'aria-label': 'Ways to meet' }, cards) : h('div.empty-inline', ic('calendarOff', 22, 1.9), h('p', `${host.name} has nothing open right now.`)),
-    h('p.profile-zone', ic('globe', 14, 2), `Times show in your zone. ${host.name.split(' ')[0]}’s hours are in ${host.tzLabel}.`))
+    h('div.profile-zone',
+      h('button.zone-btn', { type: 'button', onclick: pickZone, 'aria-label': `Times are in ${zoneName(zone, now, 'longGeneric')}. Change time zone` },
+        ic('globe', 16, 2), h('span', zoneName(zone, now, 'longGeneric')), h('span.zone-time.num', t.clock(now, zone)), ic('chevronDown', 15, 2.2)),
+      h('p', `${host.name.split(' ')[0]}’s hours are in ${host.tzLabel}.`)))
 }

@@ -2,7 +2,8 @@
 // cancelling it with the secret link from the email, moving it, and the
 // host's list and calendar feed. A guest can also ask for times outside the
 // host's hours: they paint when they could meet, and the host accepts at a
-// time inside it or declines. A request never blocks anyone else's booking.
+// time inside it or declines. A request never blocks anyone else's booking,
+// and a time already booked can't be asked for: guests see it as busy.
 import { reject, text, longText, email as cleanEmail, int, randomId, sha256, hmac, sameHash, cleanTag, MIN, DAY, HOUR } from './lib.js'
 import { offsetAt, cleanZone, cleanZoneLabel } from './tz.js'
 import { slotsFor } from './slots.js'
@@ -18,6 +19,34 @@ const kv = (env) => env.holm.app.kv
 function busyFor(env, hostId, lo, hi, skip = null) {
   return ds(env).find('bookings', { host: hostId, status: 'confirmed', from: { $lt: hi }, to: { $gt: lo } }, { limit: 500 })
     .filter((b) => b.id !== skip).map((b) => [b.from, b.to])
+}
+
+// The same, joined where they touch: what a guest sees as busy, never who.
+function joined(ranges) {
+  const out = []
+  for (const [a, b] of ranges.slice().sort((x, y) => x[0] - y[0])) {
+    const last = out[out.length - 1]
+    if (last && a <= last[1]) last[1] = Math.max(last[1], b)
+    else out.push([a, b])
+  }
+  return out
+}
+
+// Whether some time inside these stretches is still free for the meeting
+// and its buffers, so the host could accept a request for it.
+export function roomIn(ranges, busy, s) {
+  const dur = s.duration * MIN
+  const blocks = busy.map(([f, t]) => [f - dur - (s.after || 0) * MIN, t + (s.before || 0) * MIN]).sort((x, y) => x[0] - y[0])
+  for (const [a, b] of ranges) {
+    let x = a
+    for (const [p, q] of blocks) {
+      if (q <= x) continue
+      if (p >= x) break
+      x = q
+    }
+    if (x + dur <= b) return true
+  }
+  return false
 }
 
 const shape = (event) => ({ duration: event.duration, step: stepOf(event), notice: event.notice ?? 240, window: event.window ?? 60, before: event.before || 0, after: event.after || 0 })
@@ -40,7 +69,9 @@ export function openSlots(env, handle, slug, from, to, now, skip = null) {
   const busy = busyFor(env, host.id, lo - DAY, hi + DAY, skip)
   const slots = slotsFor(host, shape(event), busy, lo, hi, now)
   const horizon = now + (event.window ?? 60) * DAY
-  return { slots, until: horizon, earliest: now + (event.notice ?? 240) * MIN }
+  // Booked times show as busy, so nobody asks for one the host can't give.
+  const taken = joined(busy.filter(([a, b]) => b > lo && a < hi && b > now))
+  return { slots, busy: taken, until: horizon, earliest: now + (event.notice ?? 240) * MIN }
 }
 
 // Open starts for one of a host's own event types, for their tools.
@@ -395,6 +426,14 @@ export async function createBooking(env, input, now, base) {
 async function createRequest(env, c) {
   const { host, event, input, start, now, base } = c
   const ranges = cleanRequestRanges(input.ranges, start, event, now)
+  // A time that's booked already can't be accepted, so it can't be asked for.
+  const lo = ranges[0][0]
+  const hi = ranges[ranges.length - 1][1]
+  if (!roomIn(ranges, busyFor(env, host.id, lo - DAY, hi + DAY), shape(event))) {
+    reject(409, 'busy', ranges.length === 1 && ranges[0][1] - ranges[0][0] === event.duration * MIN
+      ? `${host.name} is busy then. Pick another time.`
+      : `${host.name} is busy for all of that. Paint some other times.`)
+  }
   const pending = ds(env).find('bookings', { host: host.id, email: c.address, status: 'requested' }, { limit: 50 })
   if (pending.some((b) => sameRanges(b.ranges, ranges))) reject(409, 'already_asked', `You’ve already asked ${host.name} for these times.`)
   if (pending.length >= 5) reject(429, 'too_many', `You have several requests waiting with ${host.name}. Wait for an answer first.`)
