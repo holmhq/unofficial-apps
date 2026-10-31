@@ -104,12 +104,12 @@ function accountMenu(anchor) {
   const themes = segmented([
     { value: 'light', label: 'Light', icon: 'sun' },
     { value: 'dark', label: 'Dark', icon: 'moon' },
-    { value: 'system', label: 'Auto', icon: 'monitor' }
+    { value: 'system', label: 'Match this device', icon: 'monitor' }
   ], theme.mode(), (value) => {
     const r = themes.getBoundingClientRect()
     theme.setMode(value, { x: r.left + r.width / 2, y: r.top + r.height / 2 })
     audio.play('pro_hover_tick/soft')
-  }, { label: 'Appearance' })
+  }, { label: 'Appearance', icons: true })
   const surfaces = globalThis.__HOLM_SURFACES__
   const perm = notify.permission()
   const items = [
@@ -122,8 +122,7 @@ function accountMenu(anchor) {
     m && perm !== 'unsupported' ? { label: perm === 'granted' ? 'Notifications allowed' : perm === 'denied' ? 'Notifications blocked' : 'Allow notifications', icon: perm === 'granted' ? 'bellRing' : perm === 'denied' ? 'bellOff' : 'bell', onclick: () => { if (perm === 'default') notify.ask().then((p) => toast(p === 'granted' ? 'Notifications allowed' : 'Notifications stay off', { kind: p === 'granted' ? 'good' : 'info' })); else if (perm === 'denied') toast('Allow notifications for this site in your browser’s settings.', { kind: 'info', ms: 5000 }); else toast('Browser notifications are on') } } : null,
     surfaces && surfaces.analytics && me.admin ? { label: 'Analytics', icon: 'chartColumn', href: surfaces.analytics } : null,
     'sep',
-    m ? { label: 'Sign out', icon: 'logOut', onclick: signOut } : { label: 'Sign in', icon: 'user', onclick: signIn },
-    h('a.holm-line', { href: 'https://holmhq.com', target: '_blank', rel: 'noopener' }, holmMark(11), 'A Holm app')
+    m ? { label: 'Sign out', icon: 'logOut', onclick: signOut } : { label: 'Sign in', icon: 'user', onclick: signIn }
   ]
   menu(anchor, items, { align: 'end' })
 }

@@ -194,7 +194,10 @@ export function confirm({ title, text, action, danger = true }) {
 // A small menu beside `anchor` (an element or { x, y }). items: { label, icon, danger,
 // onclick, href } or 'sep' or a ready node.
 export function menu(anchor, items, { align = 'end' } = {}) {
+  // Its own button again closes it.
+  const again = openMenu && anchor instanceof Element && openMenu.anchor === anchor
   closeMenus()
+  if (again) return null
   const box = h('div.menu', { role: 'menu' })
   const done = () => closeMenus()
   for (const item of items) {
@@ -239,7 +242,7 @@ export function menu(anchor, items, { align = 'end' } = {}) {
     document.addEventListener('pointerdown', away, true)
     document.addEventListener('keydown', away, true)
   })
-  openMenu = { box, away }
+  openMenu = { box, away, anchor }
   return box
 }
 
@@ -256,10 +259,10 @@ export function closeMenus() {
 
 /* ---- Segmented control ----------------------------------------------------------- */
 
-export function segmented(options, value, onchange, { label = 'Choose' } = {}) {
+export function segmented(options, value, onchange, { label = 'Choose', icons = false } = {}) {
   const thumb = h('span.thumb', { 'aria-hidden': 'true' })
   const box = h('div.seg', { role: 'group', 'aria-label': label }, thumb)
-  const buttons = options.map(o => h('button', { type: 'button', 'aria-pressed': String(o.value === value), onclick: () => pick(o.value) }, o.icon ? ic(o.icon, 15, 2) : null, o.label))
+  const buttons = options.map(o => h('button', { type: 'button', 'aria-pressed': String(o.value === value), 'aria-label': icons ? o.label : null, title: icons ? o.label : null, onclick: () => pick(o.value) }, o.icon ? ic(o.icon, icons ? 16 : 15, 2) : null, icons ? null : o.label))
   box.append(...buttons)
   function place(animate) {
     const i = options.findIndex(o => o.value === value)

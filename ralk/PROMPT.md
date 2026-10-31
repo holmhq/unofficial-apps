@@ -40,7 +40,9 @@ there.
   shows if the tab is not in front, the voice follows, and the card records
   which device heard it. Tabs in one browser elect one to play.
 - Apple-quality UI on phone and desktop, light and dark, with a round avatar
-  button top right (signed out too). Native-like: the window never scrolls,
+  button top right (signed out too) whose menu closes when it's tapped again
+  and holds light/dark/auto as three icons; Holm branding stays in the
+  footer. Native-like: the window never scrolls,
   bars stay fixed, panels scroll with no scroll bars, a tab bar on phones and
   a sidebar on desks, meaningful motion. Signed out, a landing page that plays
   the sounds without an account.
@@ -94,3 +96,13 @@ replaced):
 > - I think we picked Olivia sound in [another app] i feel its cheap enough
 >
 > Dont stop until you launch it in ralk.zyt.app
+
+A later patch release came from these messages, written while reviewing
+another app's account menu (Domains), and applied here:
+
+> how is it sensible to show Holm app in the avatar popup menu
+> - clicking it again doesnt dismiss it
+
+> Avoid the labels for light/dark/auto; its stupidly makes the memu wider
+
+> yes, fix ralk, zend and 3dsvg; then /close
