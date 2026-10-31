@@ -92,7 +92,10 @@ references.
 - **Grids line up.** Separators touch each other, cards in a row share their
   edges, and a grid is squarer than a list.
 - **No clipped text.** Try every field with long, short and empty values,
-  including titles, names beside avatars and long domains.
+  including titles, names beside avatars and long domains. A name on a card
+  stays on one line: give its row the space it needs and shrink the type
+  for longer names (check a 12- and a 16-character domain), with an
+  ellipsis and a `title` only as a last resort. Never break a word.
 - **Dark mode isn't an inversion.** Check every colour in both themes,
   especially red and muted grey text, which went unreadable in dark before.
   An app with colour themes must check every theme in both light and dark.
@@ -165,6 +168,16 @@ after the first deploy.
 - **Logos match.** The feedback widget's icon and the tab icon match the
   app's logo.
 
+## CSS foundations
+
+- **Use `box-sizing: border-box` on everything.** A full-width button with
+  padding otherwise spills out of its box.
+- **Keep class names from colliding.** A state class on one component must
+  not match another component's class. A field's hidden state named `.pre`
+  picked up the filter preset's `height: 28px`, and a star's `.pop` bounce
+  picked up the popover's `position: absolute`. Name states `is-…` or make
+  them specific, and search the stylesheet before reusing a short name.
+
 ## Holm runtime notes
 
 These are things the v1 runtime does that have caught apps here. Check the
@@ -223,7 +236,8 @@ couldn't check.
       `border-left`, inset shadows and `::before` bars.
 - [ ] Every screen checked in light and dark, with error, muted and accent
       text readable in both.
-- [ ] No clipped or overflowing text with long, short or empty values.
+- [ ] No clipped or overflowing text with long, short or empty values;
+      names on cards stay on one line at 12 and 16 characters.
 - [ ] Hover is subtle (nothing grows or underlines), separators meet, and
       every dropdown is designed.
 - [ ] Controls are quiet: no wall of equal-weight switches or grey chips.
