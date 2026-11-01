@@ -1181,11 +1181,11 @@
     {
       "name": "roll",
       "path": "roll",
-      "version": "0.1.2",
-      "tag": "roll/v0.1.2",
-      "h1": "h1:b1TJVR9nJ3I/0NhgVWIDg+pYGlxJrxqpZq8ko19lLhE=",
+      "version": "0.1.3",
+      "tag": "roll/v0.1.3",
+      "h1": "h1:fjTDeTXEiVnFlNActYiY5hp47mNy3b5b/QLMUuU++yU=",
       "files": 61,
-      "size": 2127604,
+      "size": 2127687,
       "title": "Roll",
       "description": "Your photo library on your own server: every day on a timeline, memories from past years, and albums you share by link.",
       "themeColor": "#f0592a",
@@ -1195,7 +1195,7 @@
         "subtitle": "Your photo library, on your own server",
         "category": "Photos",
         "description": "Roll keeps your photos on a timeline of the days you took them, by the camera's own clock. Each month and day has a heading with its place, and the days flow along rows that fill the screen. A date rail jumps through the years, and a pinch makes the photos bigger or smaller.\n\nOn this day brings back photos from today's date in earlier years, as a short story that drifts from one photo to the next.\n\nDrop photos anywhere, choose them or paste them. Roll reads each one's date, camera, exposure and location in your browser, names the place without asking any service, skips photos it already has, and keeps the original. The viewer grows out of the photo you tap, swipes and zooms, and shows the details beside the photo.\n\nCollect photos into albums and share one by link: anyone with it sees the album, no account needed, without places, cameras or file names. Places, favourites, a Trash that waits 30 days, and search over places, cameras, months and more.\n\nIt feels like an app: frosted bars that stay put, a tab bar on your phone and a sidebar on a desk, light and dark, with photos on black.",
-        "whatsNew": "The sidebar hides with one click on a desk, and stays hidden. iPhone photos keep their dates and places: the picker asks for JPEG, and HEIC files have their EXIF read too.",
+        "whatsNew": "A slightly wider sidebar, so its footer line no longer breaks in two.",
         "featured": true,
         "screenshots": [
           {
@@ -1243,6 +1243,11 @@
       },
       "prompt": "Build \"Roll\", a photo library for your own server in the spirit of Immich or\nGoogle Photos, using only https://holmhq.com/llms-full.txt for Holm. Read its\nv1 sections 9–12, \"Keep uploads under the node's limits\", \"Shrink photos\nbefore upload\", \"Make an app feel finished\" and \"Make it feel native\" first.\nMake holm.json (web.spa true), public web/ files and api/main.js exporting\ndefault { fetch(request, env) }. No build step or third-party runtime CDN;\nvendor Inter and ThumbHash with their licences.\n\n- Sign in with the node's accounts. Each member's photos and albums are\n  theirs alone, in shared storage with an owner on every record. A quota per\n  member (QUOTA_MB in the app's environment); app admins have none.\n- Uploads: pick files, drop them anywhere or paste them. In the browser,\n  read EXIF (date with its time zone, camera, lens, exposure, GPS), a\n  SHA-256 fingerprint to skip photos already there, a 2048 px preview and a\n  thumbnail made on a canvas (no metadata), and a ThumbHash placeholder.\n  Name the place offline from GeoNames towns of 15,000 people or more\n  (bigger towns win within 25 km, else the region). Send the copies first so\n  the tile appears at once with a progress ring, then the original in its\n  own request; keep the copy if the original is too large. A tray shows\n  progress, what was skipped and why.\n- The library: photos by the date they were taken (the camera's own wall\n  clock), a heading per month and per day with the day's place, days flowing\n  into each other in rows justified to the width, rendered virtually so huge\n  libraries scroll smoothly, a date rail to jump through the years, ThumbHash\n  colours before thumbnails load, and zoom with ctrl+wheel or a pinch.\n- \"On this day\" cards for earlier years that play as a story with a slow\n  drift, bars, tap to move, hold to pause.\n- A viewer that grows out of the tile and back, swipes, zooms (wheel, pinch,\n  double tap; the original loads when you look closer), closes on a pull\n  down, and shows details (date, file, camera and exposure, place with a map\n  link, albums) beside the photo on a desk and in a sheet on a phone.\n- Select with a tick, shift-click ranges, select a whole day, long-press on a\n  phone: favourite, add to an album, download (several as one ZIP made in the\n  browser), move to the Trash with Undo. The Trash keeps photos 30 days.\n- Albums with covers; add from the library with a picker; share by link: a\n  public page with the album's title, who shared it and the photos (no\n  places, cameras or file names, never originals), its own link preview.\n- Places as cards, and search over places, cameras, months, years, albums\n  and words like portrait, night or favorite, with suggestion chips.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places on a desk, a tab\n  bar on a phone; a round avatar button with a three-icon theme switch and\n  storage use; Holm's credit only in the footer. A versioned service worker\n  precaches the app and keeps thumbnails.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/ with screenshots of sample photos only.",
       "history": [
+        {
+          "version": "0.1.2",
+          "date": "2026-11-01",
+          "whatsNew": "The sidebar hides with one click on a desk, and stays hidden. iPhone photos keep their dates and places: the picker asks for JPEG, and HEIC files have their EXIF read too."
+        },
         {
           "version": "0.1.1",
           "date": "2026-11-01",

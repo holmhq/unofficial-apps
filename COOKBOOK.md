@@ -184,6 +184,10 @@ after the first deploy.
   text, so a page head showed the word "null" where an optional part was
   missing. Build children through a helper that skips empty values (the
   `fill` and `h` helpers in each app's `ui.js`).
+- **The footer line never breaks inside a label.** Give each credit item
+  `white-space: nowrap; flex: none`, and measure the credit where it is
+  narrowest. In Roll's 236 px sidebar, "A Holm app" broke over two lines;
+  the sidebar is now 256 px, like Google Photos'.
 
 ## Holm runtime notes
 
