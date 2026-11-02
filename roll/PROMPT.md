@@ -50,13 +50,14 @@ vendor Inter and ThumbHash with their licences.
 - A native-feeling Apple-quality UI on phone and desktop, light and dark: a
   fixed shell where only panels scroll; a sidebar of places on a desk, a tab
   bar on a phone; a round avatar button with a three-icon theme switch and
-  storage use; Holm's credit only in the footer. A versioned service worker
+  storage use; Holm's credit only in the footer, on one line even in the
+  sidebar. A versioned service worker
   precaches the app and keeps thumbnails.
 - For this repository's store, use holm.json version, holm.symbol.svg and
   listing/ with screenshots of sample photos only.
 ```
 
-## Original request
+## The original requests
 
 The app was built overnight from this request, which left the choice of
 project to the agent:
@@ -68,3 +69,10 @@ project to the agent:
 > - make sure the app is esquisite and amazing in UI/UX
 > - deploy and surprise me by morning
 > - good night
+
+Version 0.1.3 fixed the second point of a later message. The first, keeping
+large files in Backblaze, is a setting of the Holm node rather than of the
+app, and isn't done yet:
+
+> We need to connect our black blaze acocunt to this app, so that the large files wont bloat our DB
+> - also, holm app line in sidebar is multiline
