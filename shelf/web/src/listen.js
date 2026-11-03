@@ -58,6 +58,7 @@ export function createSpeaker({ body, panel, lang, title, site, onEnd }) {
   let playing = false
   let rate = Number(localStorage.getItem('shelf:rate')) || 1
   let current = null
+  let fails = 0
   const canTint = typeof Highlight !== 'undefined' && CSS.highlights
 
   const playBtn = h('button.icon-btn.play', { type: 'button', 'aria-label': 'Pause', title: 'Pause', onclick: () => toggle() })
@@ -68,7 +69,7 @@ export function createSpeaker({ body, panel, lang, title, site, onEnd }) {
     h('button.icon-btn', { type: 'button', 'aria-label': 'Next sentence', title: 'Next', onclick: () => skip(1) }, ic('skipForward', 18, 2)),
     h('span.eq', h('i'), h('i'), h('i')),
     rateBtn,
-    h('button.icon-btn', { type: 'button', 'aria-label': 'Stop listening', title: 'Stop', onclick: () => onEnd() }, ic('x', 18, 2.2)))
+    h('button.icon-btn', { type: 'button', 'aria-label': 'Stop listening', title: 'Stop', onclick: () => { stop(); onEnd() } }, ic('x', 18, 2.2)))
 
   const drawState = () => {
     playBtn.replaceChildren(ic(playing ? 'pause' : 'play', 18, 2))
@@ -106,8 +107,14 @@ export function createSpeaker({ body, panel, lang, title, site, onEnd }) {
     const voice = bestVoice(lang)
     if (voice) { u.voice = voice; u.lang = voice.lang } else if (lang) u.lang = lang
     u.rate = rate
+    u.onstart = () => { fails = 0 }
     u.onend = () => { if (current === u && playing) speak(at + 1) }
-    u.onerror = (e) => { if (current === u && playing && e.error !== 'interrupted' && e.error !== 'canceled') speak(at + 1) }
+    // A sentence that can't be spoken is skipped; a device that can't speak at all stops.
+    u.onerror = (e) => {
+      if (current !== u || !playing || e.error === 'interrupted' || e.error === 'canceled') return
+      if (++fails >= 3 || e.error === 'not-allowed' || e.error === 'synthesis-unavailable') { stop(); onEnd('This device couldn’t read the article aloud.'); return }
+      speak(at + 1)
+    }
     current = u
     speechSynthesis.speak(u)
   }
@@ -117,7 +124,10 @@ export function createSpeaker({ body, panel, lang, title, site, onEnd }) {
     playing = true
     drawState()
     speechSynthesis.cancel()
-    const go = () => speak(firstVisible())
+    const go = () => {
+      if (!speechSynthesis.getVoices().length) { stop(); onEnd('This browser has no voices to read with.'); return }
+      speak(firstVisible())
+    }
     if (!speechSynthesis.getVoices().length) {
       let done = false
       const once = () => { if (done) return; done = true; go() }

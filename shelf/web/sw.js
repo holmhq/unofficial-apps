@@ -9,7 +9,7 @@
 // answered from here. An address that ends like a file (/icon-512.png) is that file, even
 // typed into the address bar; every other address is a page and gets the shell.
 
-const VERSION = '0.1.0'
+const VERSION = '0.1.1'
 const CACHE = 'shelf-' + VERSION
 const ARTICLES = 'shelf-articles'
 const PICTURES = 'shelf-pictures'

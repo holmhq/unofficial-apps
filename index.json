@@ -1268,11 +1268,11 @@
     {
       "name": "shelf",
       "path": "shelf",
-      "version": "0.1.0",
-      "tag": "shelf/v0.1.0",
-      "h1": "h1:gm5UKPiMU6SfFuRTm8lnvpFTctCITty0rjlSdIZcB74=",
+      "version": "0.1.1",
+      "tag": "shelf/v0.1.1",
+      "h1": "h1:a0Qmx45T11a4FWiP+YLqvOXF13Jr7hnNkWJWHSuA8Gg=",
       "files": 59,
-      "size": 1319839,
+      "size": 1320657,
       "title": "Shelf",
       "description": "Save anything to read later, on your own server: a calm reader, highlights, offline reading, and Claude can read your shelf too.",
       "themeColor": "#1d1d1f",
@@ -1282,7 +1282,7 @@
         "subtitle": "Read it later, on your own server",
         "category": "Productivity",
         "description": "Shelf keeps the articles you mean to read. Paste a link, click the Save to Shelf button in your browser, share from your phone, or ask Claude to save something it found. Shelf fetches the page on your server and keeps a clean copy: the article's words and pictures, without the ads and pop-ups, so it's still there when the site changes.\n\nThe reader is set in Newsreader, a typeface made for reading on screens, in the size and width you like, on white or a paper tone, in light or dark. Shelf keeps your place and takes you back to it on any device. Select words to highlight them or add a note; your highlights gather in one place and find their spot again if the article is fetched afresh.\n\nAsk for a three-point summary from your server's AI, or listen: your device reads the article aloud, a sentence at a time, and the page follows along. Search finds words inside the articles and your highlights, not only in titles.\n\nBring your links from Pocket, Instapaper or a bookmarks file. Connect Shelf to Claude and it can list, read and search your shelf, quote your highlights and save links for you.\n\nIt feels like an app: frosted bars that stay put, the article beside the list on a desk and sliding over it on a phone, swipes to archive and favourite, keys for everything on a desk, and articles that read offline.",
-        "whatsNew": "First release: save from anywhere, a calm reader with highlights and notes, summaries, listening, search, Pocket import and tools for Claude.",
+        "whatsNew": "Listening says so when a device has no voices, instead of stopping silently. On a phone, Summarise moves into the ⋯ menu so the reader’s bar has room, and the Archive label shows as you swipe a row.",
         "featured": true,
         "screenshots": [
           {
@@ -1336,7 +1336,13 @@
         }
       },
       "prompt": "Build \"Shelf\", a read-later app for your own server in the spirit of Pocket\nor Instapaper, using only https://holmhq.com/llms-full.txt for Holm. Read its\nv1 sections 9–12, \"Use your app from ChatGPT or Claude\", \"Make an app feel\nfinished\" and \"Make it feel native\" first. Make holm.json (web.spa true),\npublic web/ files and api/main.js exporting default { fetch(request, env) }.\nNo build step or third-party runtime CDN; vendor Inter, Newsreader, Mozilla\nReadability and DOMPurify with their licences.\n\n- Sign in with the node's accounts. Each member's links, articles and\n  highlights are theirs alone, in collections named for them.\n- Save a link by pasting it anywhere, dropping it, a Save sheet, a bookmarklet\n  that opens a small /add window, a phone's share sheet (the manifest's\n  share_target) or an MCP tool. Tracking parameters come off; a link saved\n  twice comes back to the top.\n- Making it readable: the server fetches the page with env.holm.net.fetch (a\n  timeout, any public https host granted to the app), the browser runs\n  Readability and DOMPurify on it, keeps the title, site, author, excerpt and\n  lead picture, and sends back the cleaned article and its plain text.\n  Pictures are renamed by the hash of their address; the server keeps a copy\n  of each the first time it's shown, and a square thumbnail for the list.\n  Links saved elsewhere arrive \"pending\" and whichever page is open fetches\n  them, newest first; imported links wait until opened.\n- The list: a reading list with chips for quick reads, long reads, started,\n  saved by Claude and tags; favourites, archive, tags, highlights; rows with\n  title, excerpt, site, minutes left and a thin progress line; swipe to\n  archive or favourite on a phone, J/K/E/S keys on a desk.\n- The reader, beside the list on a desk and sliding over it on a phone: set\n  in Newsreader (or Inter), eight sizes, three widths, a paper tone; the\n  reading position kept on every device; highlights and notes anchored by\n  their place and quote; a three-point summary from env.holm.ai.chat; Listen\n  with the browser's voices, sentence by sentence, the sentence tinted with\n  the CSS Custom Highlight API.\n- Full-text search over articles and highlights with ds.search.\n- Import from Pocket and Instapaper CSV, bookmark HTML or any list of links.\n- MCP tools (auth \"user\", each checking the caller): list, read, search,\n  save, update, and highlights.\n- Realtime: every change reaches the person's other open pages at once.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places on a desk, a tab\n  bar on a phone; ink-black controls, yellow only for your reading; a round\n  avatar button with a three-icon theme switch; Holm's credit only in the\n  footer. A versioned service worker precaches the app and keeps articles\n  and pictures for reading offline.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/ with screenshots of public-domain reading only.",
-      "history": []
+      "history": [
+        {
+          "version": "0.1.0",
+          "date": "2026-11-04",
+          "whatsNew": "First release: save from anywhere, a calm reader with highlights and notes, summaries, listening, search, Pocket import and tools for Claude."
+        }
+      ]
     },
     {
       "name": "snake",

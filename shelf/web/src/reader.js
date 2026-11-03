@@ -34,7 +34,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   const backBtn = h('button.icon-btn.r-back', { type: 'button', 'aria-label': 'Back to the list', title: 'Back (Esc)', onclick: () => onClose() }, ic('chevronLeft', 24, 2.2))
   const title = h('div.r-title')
   const listenBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Listen', title: 'Listen (L)', onclick: () => listen() }, ic('headphones', 20, 1.9))
-  const sumBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Summarise', title: 'Summarise with AI', onclick: () => summary() }, ic('sparkles', 20, 1.9))
+  const sumBtn = h('button.icon-btn.is-quiet.sum-btn', { type: 'button', 'aria-label': 'Summarise', title: 'Summarise with AI', onclick: () => summary() }, ic('sparkles', 20, 1.9))
   const aaBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Text settings', title: 'Text settings', 'aria-haspopup': 'dialog', onclick: () => textSettings() }, ic('aLargeSmall', 21, 1.9))
   const favBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Favourite', title: 'Favourite (S)', onclick: () => toggleFav() }, ic('star', 20, 1.9))
   const archBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Archive', title: 'Archive (E)', onclick: () => toggleArchive() }, ic('archive', 20, 1.9))
@@ -251,6 +251,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     const it = item
     const canShare = !!navigator.share && !wide()
     menu(moreBtn, [
+      !wide() && it.status === 'ready' && (it.words || 0) >= 120 ? { label: it.summary ? 'Summary' : 'Summarise', icon: 'sparkles', onclick: () => summary() } : null,
       { label: 'Open the original', icon: 'externalLink', onclick: () => window.open(it.url, '_blank', 'noopener') },
       canShare ? { label: 'Share…', icon: 'share', onclick: () => navigator.share({ title: it.title, url: it.url }).catch(() => {}) } : { label: 'Copy link', icon: 'link', onclick: () => copyText(it.url, 'Link copied') },
       { label: 'Tags and note…', icon: 'tag', onclick: () => editTags(it.id) },
@@ -547,7 +548,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     if (!item || !body) return
     if (speaker) { speaker.toggle(); return }
     const { createSpeaker } = await import('./listen.js')
-    speaker = createSpeaker({ body, panel, lang: item.lang, title: item.title, site: item.site || item.host, onEnd: () => stopListening() })
+    speaker = createSpeaker({ body, panel, lang: item.lang, title: item.title, site: item.site || item.host, onEnd: (why) => { stopListening(); if (typeof why === 'string') toast(why, { kind: 'info' }) } })
     el.append(speaker.el)
     speaker.start()
     listenBtn.classList.add('is-on')

@@ -1,6 +1,6 @@
 {
   "name": "shelf",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "title": "Shelf",
   "shortName": "Shelf",
   "description": "Save anything to read later, on your own server: a calm reader, highlights, offline reading, and Claude can read your shelf too.",
