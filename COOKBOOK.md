@@ -131,6 +131,10 @@ references.
 - **Leave file addresses alone.** Only page addresses get the cached shell:
   typing `/icon-512.png` must open the image. Pass every `^/_` path (Holm's
   own surfaces) straight through.
+- **Don't take a version you haven't got the data for.** A page that bumps
+  its stored version after a bulk change (an import) is then told "same" and
+  never redraws. Ask for the whole list after such a change, and only move
+  the version on with the data it describes.
 - **Draw from cache first.** Pages draw at once from a local cache and redraw
   only if the server's answer changed. `index.html` can prefetch the first
   page's JSON while modules load.
@@ -180,6 +184,12 @@ after the first deploy.
 - **Nothing invisible takes a tap.** A control that fades out must stop
   taking pointer events too. Roll's date rail, hidden on a phone until you
   scroll, sat over the right edge of the grid and swallowed taps on photos.
+- **A detached element is never `isConnected`.** Shelf cleaned up articles
+  in a `div` that wasn't in the page yet, and a loop that skipped
+  `!el.isConnected` skipped everything. Check `root.contains(el)` instead.
+- **Colour tags by first use, not by a hash.** Five tags hashed into ten
+  colours gave three of them the same teal. Hand colours out in the order
+  tags were first used, and fall back to a hash only past the palette.
 - **`replaceChildren(null)` writes "null".** DOM methods turn `null` into
   text, so a page head showed the word "null" where an optional part was
   missing. Build children through a helper that skips empty values (the
@@ -203,6 +213,11 @@ current guide too, since some of them will change.
 - **Calls out of the app go in raw routes.** Named operations (the ones MCP
   exposes) can't call `net.fetch` or `ai.chat` and have no secrets, so do
   outbound work in a `fetch` route.
+- **`net.fetch` takes a `timeout` in milliseconds.** Without one, a slow
+  site uses up the request, and the storage write after it fails with
+  `storage deadline`. Give outbound calls a timeout well inside the budget.
+- **A server `URL` can't be changed.** Its setters (`url.protocol = …`,
+  `url.search = …`) throw in the v1 runtime; build the address as a string.
 - **`email.send` takes one `to` per call.** It can carry a calendar invite
   but no attachments. Serve calendar files at addresses that don't end in
   `.ics`, because Apple Mail treats those as subscriptions.
