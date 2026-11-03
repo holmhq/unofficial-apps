@@ -212,7 +212,7 @@
    "auth": "user",
    "risk": "write",
    "summary": "Save a link to read later",
-   "description": "Saves an https link to the person’s reading list, optionally with tags and a note saying why. Saving a link that’s already there brings it back to the top. Shelf fetches the article and makes it readable the next time it’s open on any of their devices.",
+   "description": "Saves an https link to the person’s reading list, optionally with tags and a note saying why. Saving a link that’s already there brings it back to the top. Pass the article’s text if you have read it, and it is readable at once; otherwise Shelf fetches the article the next time it’s open on any of their devices.",
    "input": {
     "type": "object",
     "properties": {
@@ -240,6 +240,21 @@
       },
       "maxItems": 8,
       "description": "Short lowercase tags, such as \"design\" or \"rust\"."
+     },
+     "text": {
+      "type": "string",
+      "maxLength": 200000,
+      "description": "The article itself, if you have already read it: paragraphs separated by blank lines, with # headings, - lists, > quotes and [links](https://…) if you like. With it the article is readable at once; without it Shelf fetches the page later."
+     },
+     "author": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Who wrote it, if you pass text."
+     },
+     "site": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "The site or publication, if you pass text."
      }
     },
     "required": [

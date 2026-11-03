@@ -4,7 +4,7 @@
 // as "pending" until Shelf is next open on one of the person's devices, which then fetches it
 // and makes it readable.
 
-import { who, Fail, ITEMS, TEXT, MARKS, itemDTO, getItem, saveLink, cleanTags, bump, minutes, origin } from './lib.js'
+import { who, Fail, ITEMS, TEXT, MARKS, itemDTO, getItem, saveLink, cleanTags, bump, minutes, origin, host } from './lib.js'
 
 const CODES = { 400: 'APP_INVALID_INPUT', 401: 'APP_UNAUTHORIZED', 403: 'APP_FORBIDDEN', 404: 'APP_NOT_FOUND', 409: 'APP_CONFLICT', 413: 'APP_INVALID_INPUT', 422: 'APP_INVALID', 429: 'APP_RATE_LIMITED' }
 
@@ -82,7 +82,7 @@ export function opRead(input, env) {
       text: part || (doc.status === 'pending' ? '' : ''),
       characters: text.length,
       next_offset: offset + length < text.length ? offset + length : undefined,
-      highlights: marks.map((m) => ({ quote: m.quote, note: m.note || undefined })),
+      highlights: marks.map((m) => ({ quote: m.quote.replace(/\s+/g, " ").trim(), note: m.note || undefined })),
       hint: !text ? (doc.status === 'pending' ? 'This link hasn’t been fetched yet: Shelf makes it readable the next time it is open on one of the person’s devices. Read the original at its url meanwhile.' : 'Shelf couldn’t make this page readable. Read the original at its url.') : undefined
     }
   })
@@ -123,7 +123,7 @@ export function opSearch(input, env) {
       items,
       highlights: marks.filter(hit).map((m) => {
         const doc = getItem(env, k, m.item)
-        return { quote: m.quote, note: m.note || undefined, item: m.item, title: doc ? doc.title : undefined }
+        return { quote: m.quote.replace(/\s+/g, " ").trim(), note: m.note || undefined, item: m.item, title: doc ? doc.title : undefined }
       })
     }
   })
@@ -131,7 +131,9 @@ export function opSearch(input, env) {
 
 export function opSave(input, env) {
   return op(env, (k) => {
-    const { doc, existing } = saveLink(env, k, { url: input.url, title: input.title, note: input.note, tags: input.tags, via: 'claude' })
+    let { doc, existing } = saveLink(env, k, { url: input.url, title: input.title, note: input.note, tags: input.tags, via: 'claude' })
+    const text = typeof input.text === 'string' ? input.text.replace(/\r\n?/g, '\n').trim() : ''
+    if (text.length >= 200 && (doc.status === 'pending' || doc.status === 'failed')) doc = keepText(env, k, doc, text, input)
     bump(env, k, { item: itemDTO(doc), fetch: doc.status === 'pending' ? doc.id : undefined })
     return {
       saved: true,
@@ -172,8 +174,61 @@ export function opHighlights(input, env) {
       highlights: marks.map((m) => {
         if (!(m.item in titles)) { const doc = getItem(env, k, m.item); titles[m.item] = doc ? { title: doc.title || doc.host, url: doc.url } : null }
         const t = titles[m.item]
-        return { quote: m.quote, note: m.note || undefined, at: new Date(m.at || m._createdAt).toISOString(), item: m.item, title: t ? t.title : undefined, url: t ? t.url : undefined }
+        return { quote: m.quote.replace(/\s+/g, " ").trim(), note: m.note || undefined, at: new Date(m.at || m._createdAt).toISOString(), item: m.item, title: t ? t.title : undefined, url: t ? t.url : undefined }
       }).filter((m) => m.title !== undefined)
     }
   })
+}
+
+/* ---- An article Claude already read ------------------------------------------------------------ */
+
+// Claude can pass the article's text when it saves a link. It becomes the readable copy at once
+// (the page can still fetch the original later), set from a small, safe subset of Markdown.
+function keepText(env, k, doc, text, input) {
+  const { ds, s3 } = env.holm.app
+  const html = markdown(text.slice(0, 200000))
+  const plain = text.replace(/^#+\s*/gm, '').replace(/^[-*>]\s+/gm, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*_`]/g, '')
+  const words = (plain.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).length
+  const first = plain.split(/\n\s*\n/).map((p) => p.replace(/\s+/g, ' ').trim()).find((p) => p.length >= 60) || ''
+  const set = {
+    status: 'ready',
+    title: String(input.title || doc.title || host(doc.url)).replace(/\s+/g, ' ').trim().slice(0, 300),
+    site: String(input.site || '').replace(/\s+/g, ' ').trim().slice(0, 80),
+    author: String(input.author || '').replace(/\s+/g, ' ').trim().slice(0, 120),
+    excerpt: first.slice(0, 400),
+    words,
+    cv: (doc.cv || 0) + 1,
+    error: ''
+  }
+  s3.put('c/' + k + '/' + doc.id, html, 'text/html')
+  const kept = ds.find(TEXT(k), { item: doc.id }, { limit: 1 })[0]
+  const row = { item: doc.id, title: set.title, site: set.site || doc.host || '', author: set.author, text: plain.slice(0, 400000) }
+  if (kept) ds.update(TEXT(k), { id: kept.id }, { $set: row })
+  else ds.insert(TEXT(k), row)
+  ds.update(ITEMS(k), { id: doc.id }, { $set: set })
+  return { ...doc, ...set }
+}
+
+const escape = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+function inline(s) {
+  return escape(s)
+    .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, (m, t, u) => '<a href="' + u.replace(/"/g, '%22') + '">' + t + '</a>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\n]+)\*(?=[^*\w]|$)/g, '$1<em>$2</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+}
+function markdown(text) {
+  const out = []
+  for (const block of text.split(/\n\s*\n/)) {
+    const b = block.trim()
+    if (!b) continue
+    const head = /^(#{1,4})\s+(.+)$/.exec(b)
+    if (head && !b.includes('\n')) { const n = Math.min(4, head[1].length + 1); out.push('<h' + n + '>' + inline(head[2]) + '</h' + n + '>'); continue }
+    const lines = b.split('\n')
+    if (lines.every((l) => /^\s*[-*]\s+/.test(l))) { out.push('<ul>' + lines.map((l) => '<li>' + inline(l.replace(/^\s*[-*]\s+/, '')) + '</li>').join('') + '</ul>'); continue }
+    if (lines.every((l) => /^\s*\d+[.)]\s+/.test(l))) { out.push('<ol>' + lines.map((l) => '<li>' + inline(l.replace(/^\s*\d+[.)]\s+/, '')) + '</li>').join('') + '</ol>'); continue }
+    if (lines.every((l) => /^>\s?/.test(l))) { out.push('<blockquote><p>' + inline(lines.map((l) => l.replace(/^>\s?/, '')).join(' ')) + '</p></blockquote>'); continue }
+    out.push('<p>' + inline(lines.join(' ')) + '</p>')
+  }
+  return out.join('\n')
 }

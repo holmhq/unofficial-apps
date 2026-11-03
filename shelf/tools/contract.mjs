@@ -33,12 +33,15 @@ const operations = {
       limit: { type: 'integer', minimum: 1, maximum: 30, description: 'How many items to return (default 10).' }
     }, ['query'])),
   'items.save': tool('opSave', 'write', 'Save a link to read later',
-    'Saves an https link to the person’s reading list, optionally with tags and a note saying why. Saving a link that’s already there brings it back to the top. Shelf fetches the article and makes it readable the next time it’s open on any of their devices.',
+    'Saves an https link to the person’s reading list, optionally with tags and a note saying why. Saving a link that’s already there brings it back to the top. Pass the article’s text if you have read it, and it is readable at once; otherwise Shelf fetches the article the next time it’s open on any of their devices.',
     obj({
       url: { type: 'string', minLength: 8, maxLength: 2000, description: 'The full https:// address.' },
       title: { type: 'string', maxLength: 300, description: 'Its title, if you know it; Shelf reads the real one when it fetches the page.' },
       note: { type: 'string', maxLength: 2000, description: 'Why it’s worth reading, shown with the link.' },
-      tags: { type: 'array', items: { type: 'string', maxLength: 32 }, maxItems: 8, description: 'Short lowercase tags, such as "design" or "rust".' }
+      tags: { type: 'array', items: { type: 'string', maxLength: 32 }, maxItems: 8, description: 'Short lowercase tags, such as "design" or "rust".' },
+      text: { type: 'string', maxLength: 200000, description: 'The article itself, if you have already read it: paragraphs separated by blank lines, with # headings, - lists, > quotes and [links](https://…) if you like. With it the article is readable at once; without it Shelf fetches the page later.' },
+      author: { type: 'string', maxLength: 120, description: 'Who wrote it, if you pass text.' },
+      site: { type: 'string', maxLength: 80, description: 'The site or publication, if you pass text.' }
     }, ['url']), { idempotency: 'optional' }),
   'items.update': tool('opUpdate', 'write', 'Archive, favourite or tag a saved link',
     'Moves a link to the archive (finished) or back to the reading list, marks it a favourite, or replaces its tags or note. Only the fields you pass change.',

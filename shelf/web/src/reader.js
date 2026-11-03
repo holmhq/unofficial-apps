@@ -106,7 +106,10 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
       return
     }
     if (mine !== token) return
-    body.innerHTML = html
+    // Cleaned again as it's drawn, whatever wrote it.
+    const { default: DOMPurify } = await import('/vendor/dompurify/purify.es.mjs')
+    if (mine !== token) return
+    body.replaceChildren(DOMPurify.sanitize(html, { RETURN_DOM_FRAGMENT: true, FORBID_TAGS: ['style', 'form', 'input', 'button', 'textarea', 'select', 'iframe', 'object', 'embed', 'svg', 'math'], FORBID_ATTR: ['style', 'class'] }))
     for (const a of body.querySelectorAll('a[href]')) {
       if (a.getAttribute('href').startsWith('#')) a.addEventListener('click', (e) => { e.preventDefault(); jump(a.getAttribute('href').slice(1)) })
       else { a.target = '_blank'; a.rel = 'noopener noreferrer' }
@@ -497,6 +500,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     pop = h('div.pop', { role: 'toolbar', 'aria-label': 'Highlight', 'data-kind': 'mark' },
       h('button', { type: 'button', onclick: () => { closePops(); editNote(m) } }, ic('notebookPen', 16, 2), m.note ? 'Edit note' : 'Note'),
       h('button', { type: 'button', onclick: () => { copyText(m.quote, 'Copied'); closePops() } }, ic('copy', 16, 2), 'Copy'),
+      h('button', { type: 'button', onclick: async () => { closePops(); const { shareHighlight } = await import('./share.js'); shareHighlight(item, m) } }, ic(m.share ? 'link' : 'share', 16, 2), m.share ? 'Shared' : 'Share'),
       h('button.danger', { type: 'button', onclick: async () => {
         closePops()
         const id = item.id

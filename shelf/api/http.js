@@ -17,6 +17,11 @@
 //   DELETE /api/marks/:id              remove a highlight
 //   GET    /api/highlights             every highlight, newest first
 //   GET    /api/search?q=              words in titles, articles and highlights
+//   POST   /api/marks/:id/share        a public link to a highlight (/q/<slug>)
+//   DELETE /api/marks/:id/share        stop sharing it
+//   PUT    /api/q/:slug/card           the link's preview picture, drawn in the browser
+//   GET    /api/q/:slug                a shared highlight, for anyone with the link
+//   GET    /q/:slug                    its page, with its own title and picture for previews
 
 import {
   who, fail, Fail, ITEMS, TEXT, MARKS, itemDTO, getItem, allItems, saveLink, forgetURL, cleanTags, bump, channel,
@@ -58,6 +63,12 @@ async function route(request, env, url) {
   const from = request.headers.get('x-shelf-page') || ''
 
   if (path === '/api/me' && method === 'GET') return me(env, url)
+
+  const q = /^\/(api\/)?q\/([A-Za-z0-9]{8,32})(\/card(?:\.png)?)?$/.exec(path)
+  if (q && method === 'GET') {
+    if (q[3]) return quoteCard(env, q[2])
+    return q[1] ? quoteJSON(env, q[2]) : quotePage(env, url, q[2])
+  }
 
   const caller = who(env)
   if (!caller) return err(401, 'signed_out', 'Sign in to use your shelf.')
@@ -151,6 +162,7 @@ async function route(request, env, url) {
     }
 
     if (part === '' && method === 'DELETE') {
+      for (const quote of ds.find('quotes', { k, item: id }, { limit: 500 })) { ds.delete('quotes', { id: quote.id }); try { env.holm.app.s3.delete('q/' + quote.slug + '.png') } catch {} }
       ds.delete(ITEMS(k), { id })
       ds.delete(TEXT(k), { item: id })
       ds.delete(MARKS(k), { item: id })
@@ -206,6 +218,46 @@ async function route(request, env, url) {
     }
   }
 
+  m = /^\/api\/marks\/([A-Za-z0-9_-]+)\/share$/.exec(path)
+  if (m) {
+    const mark = ds.findOne(MARKS(k), m[1])
+    if (!mark) return err(404, 'not_found', 'That highlight is gone.')
+    if (method === 'POST') {
+      if (mark.share) { const kept = ds.find('quotes', { slug: mark.share }, { limit: 1 })[0]; if (kept) return json({ slug: mark.share, fresh: false, card: !!kept.card }) }
+      const doc = getItem(env, k, mark.item)
+      if (!doc) return err(404, 'not_found', 'That article isn’t on your shelf any more.')
+      const slug = crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+      const by = String(caller.member.name || '').trim().split(/\s+/)[0].slice(0, 40)
+      ds.insert('quotes', { slug, k, mark: mark.id, item: doc.id, quote: mark.quote.replace(/\s+/g, ' ').trim().slice(0, 1200), title: doc.title || doc.host, site: doc.site || '', host: doc.host || host(doc.url), url: doc.url, author: doc.author || '', by, at: Date.now(), card: false })
+      ds.update(MARKS(k), { id: mark.id }, { $set: { share: slug } })
+      const v = bump(env, k, { mark: markDTO({ ...mark, share: slug }) }, from)
+      return json({ slug, fresh: true, card: false, v }, 201)
+    }
+    if (method === 'DELETE') {
+      if (mark.share) {
+        ds.delete('quotes', { slug: mark.share })
+        try { env.holm.app.s3.delete('q/' + mark.share + '.png') } catch {}
+        ds.update(MARKS(k), { id: mark.id }, { $set: { share: '' } })
+      }
+      const v = bump(env, k, { mark: markDTO({ ...mark, share: '' }) }, from)
+      return json({ ok: true, v })
+    }
+  }
+
+  m = /^\/api\/q\/([A-Za-z0-9]{8,32})\/card$/.exec(path)
+  if (m && method === 'PUT') {
+    const doc = ds.find('quotes', { slug: m[1] }, { limit: 1 })[0]
+    if (!doc || doc.k !== k) return err(404, 'not_found', 'That link isn’t yours.')
+    const length = Number(request.headers.get('content-length') || 0)
+    if (length > 800_000) return err(413, 'too_large', 'That picture is too large.')
+    const bytes = await request.arrayBuffer()
+    const head = new Uint8Array(bytes, 0, Math.min(8, bytes.byteLength))
+    if (bytes.byteLength > 800_000 || head[0] !== 0x89 || head[1] !== 0x50) return err(415, 'not_png', 'The preview has to be a PNG.')
+    env.holm.app.s3.put('q/' + doc.slug + '.png', bytes, 'image/png')
+    ds.update('quotes', { id: doc.id }, { $set: { card: true } })
+    return json({ ok: true })
+  }
+
   m = /^\/api\/marks\/([A-Za-z0-9_-]+)$/.exec(path)
   if (m) {
     const mark = ds.findOne(MARKS(k), m[1])
@@ -219,6 +271,7 @@ async function route(request, env, url) {
       return json({ mark: after, v })
     }
     if (method === 'DELETE') {
+      if (mark.share) { ds.delete('quotes', { slug: mark.share }); try { env.holm.app.s3.delete('q/' + mark.share + '.png') } catch {} }
       ds.delete(MARKS(k), { id: mark.id })
       const doc = getItem(env, k, mark.item)
       let item = null
@@ -383,7 +436,7 @@ function snippet(text, terms) {
 /* ---- Highlights --------------------------------------------------------------------------------- */
 
 export function markDTO(m) {
-  return { id: m.id, item: m.item, quote: m.quote, prefix: m.prefix || '', suffix: m.suffix || '', start: m.start || 0, end: m.end || 0, note: m.note || '', at: m.at || m._createdAt }
+  return { id: m.id, item: m.item, quote: m.quote, prefix: m.prefix || '', suffix: m.suffix || '', start: m.start || 0, end: m.end || 0, note: m.note || '', at: m.at || m._createdAt, share: m.share || '' }
 }
 
 /* ---- Summaries from the node's AI ----------------------------------------------------------------- */
@@ -431,4 +484,51 @@ function summarize(env, k, doc, from) {
   ds.update(ITEMS(k), { id: doc.id }, { $set: { summary: points } })
   const v = bump(env, k, { item: itemDTO({ ...doc, summary: points }) }, from)
   return json({ summary: points, v, minutes: minutes(doc.words) })
+}
+
+/* ---- Shared highlights ----------------------------------------------------------------------------- */
+
+// A highlight someone chose to share: the words, the article's title and link, and their first
+// name. Notes stay private, and so does everything else on their shelf.
+function quoteDoc(env, slug) {
+  return env.holm.app.ds.find('quotes', { slug }, { limit: 1 })[0] || null
+}
+
+function quoteJSON(env, slug) {
+  const q = quoteDoc(env, slug)
+  if (!q) return err(404, 'not_found', 'This highlight isn’t shared any more.')
+  return json({ quote: q.quote, title: q.title, site: q.site, host: q.host, url: q.url, author: q.author, by: q.by, at: q.at, card: !!q.card }, 200, { 'cache-control': 'public, max-age=60' })
+}
+
+function quoteCard(env, slug) {
+  const file = env.holm.app.s3.get('q/' + slug + '.png')
+  if (!file) return new Response(null, { status: 302, headers: { location: '/social_preview.png', 'cache-control': 'public, max-age=300' } })
+  return new Response(file.data, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600', 'x-content-type-options': 'nosniff' } })
+}
+
+async function quotePage(env, url, slug) {
+  const shell = await env.holm.web.fetch(new Request(new URL('/', url), { headers: { accept: 'text/html' } }))
+  let html = await shell.text()
+  const q = quoteDoc(env, slug)
+  if (q) {
+    const words = q.quote.replace(/\s+/g, ' ').trim()
+    const short = words.length > 120 ? words.slice(0, 118).replace(/\s+\S*$/, '') + '…' : words
+    const title = esc('“' + short + '”')
+    const description = esc('From ' + q.title + (q.site || q.host ? ' · ' + (q.site || q.host) : '') + '. Highlighted' + (q.by ? ' by ' + q.by : '') + ' in Shelf.')
+    const image = esc(url.origin + '/q/' + slug + '/card.png')
+    html = html
+      .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+      .replace(/<meta[^>]+(property|name)="(og:title|og:description|og:image|og:url|og:type|twitter:title|twitter:description|twitter:image|twitter:card|description)"[^>]*>\s*/g, '')
+      .replace('</head>', `<meta name="description" content="${description}">\n<meta property="og:type" content="article">\n<meta property="og:title" content="${title}">\n<meta property="og:description" content="${description}">\n<meta property="og:image" content="${image}">\n<meta property="og:url" content="${esc(url.origin + url.pathname)}">\n<meta name="twitter:card" content="summary_large_image">\n</head>`)
+  }
+  const headers = new Headers(shell.headers)
+  headers.delete('content-length')
+  headers.delete('etag')
+  headers.set('content-type', 'text/html; charset=utf-8')
+  headers.set('cache-control', 'no-store')
+  return new Response(html, { status: q ? 200 : 404, headers })
+}
+
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 }

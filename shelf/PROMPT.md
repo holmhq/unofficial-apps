@@ -40,10 +40,15 @@ Readability and DOMPurify with their licences.
   their place and quote; a three-point summary from env.holm.ai.chat; Listen
   with the browser's voices, sentence by sentence, the sentence tinted with
   the CSS Custom Highlight API.
+- Share a highlight by link: a public /q/<slug> page with the words, the
+  article's title and link and the sharer's first name (never notes), served
+  from fetch with its own og tags and a preview card drawn on a canvas in the
+  browser; turning it off ends the link.
 - Full-text search over articles and highlights with ds.search.
 - Import from Pocket and Instapaper CSV, bookmark HTML or any list of links.
 - MCP tools (auth "user", each checking the caller): list, read, search,
-  save, update, and highlights.
+  save (optionally with the article's text, readable at once), update, and
+  highlights.
 - Realtime: every change reaches the person's other open pages at once.
 - A native-feeling Apple-quality UI on phone and desktop, light and dark: a
   fixed shell where only panels scroll; a sidebar of places on a desk, a tab

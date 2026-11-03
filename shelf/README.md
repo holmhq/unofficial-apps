@@ -46,6 +46,10 @@ served as files: `api/` and `holm.json` are not public URLs.
 - **Highlights and notes.** Select words and choose Highlight or Note. They
   find their place again even if the article is fetched afresh, and gather on
   the Highlights page, newest article first.
+- **Share a highlight.** Tap a highlight and choose Share: Shelf makes a link
+  to a page with the words, the article's title and link, and your first name
+  (never your notes), and draws its link-preview card in the reader's
+  typefaces. Stop sharing and the link no longer works.
 - **A summary** in three points from the node's AI, kept with the article.
 - **Listen.** Your device reads the article aloud, a sentence at a time, from
   where you are; the sentence being read is tinted and the page follows it.
@@ -58,7 +62,8 @@ served as files: `api/` and `holm.json` are not public URLs.
   at `https://<your-host>/_holm/mcp` and sign in. Claude can list what's on
   your reading list (say, everything under ten minutes), read an article,
   search, read your highlights and notes, save links, and archive, favourite
-  or tag them.
+  or tag them. When Claude has already read an article, it can save its text
+  with the link, and the article is readable at once.
 - **Offline.** Your newest unread articles are kept on the device as the list
   loads, and pictures once you've seen them, so they read on a plane.
 
@@ -91,7 +96,8 @@ the Holm credit sits in the footer.
   keeps only plain article markup, tidies Wikipedia and Project Gutenberg
   pages, renames each picture to `/i/<hash>` and `PUT`s the article, its
   plain text and its details back. The article is only ever served as
-  `text/plain` with a sandbox CSP, and drawn by the page after DOMPurify.
+  `text/plain` with a sandbox CSP, and DOMPurify cleans it again each time
+  the reader draws it.
 - **Pictures** (`api/images.js`). `/i/<hash>` fetches a picture once, with a
   3.5-second timeout, and keeps it; `/i/<hash>/t` is a 320 px square made with
   `env.holm.image.resize`. Only addresses that came in with a saved article
@@ -99,7 +105,14 @@ the Holm credit sits in the footer.
   loads from its site instead.
 - **Links saved elsewhere** (Claude, another device, the bookmark) arrive as
   `pending`. Named operations can't fetch from the web, so whichever page is
-  open fetches them, two at a time, newest first.
+  open fetches them, two at a time, newest first. When Claude passes the
+  article's text, `items_save` sets it from a small, escaped subset of
+  Markdown and stores it straight away.
+- **Shared highlights** are documents in a shared `quotes` collection holding
+  a copy of the words and the article's title, link and site, so the public
+  page never reads anyone's shelf. `GET /q/<slug>` serves the app's page from
+  `fetch` with the quote as its title and `og:image` at `/q/<slug>/card.png`,
+  a PNG the sharer's browser draws on a canvas and uploads.
 - **Claude's tools** are named operations with `auth: "user"`, each scoped to
   the caller: `items_list`, `items_read`, `items_search`, `items_save`,
   `items_update` and `highlights_list`. `api/main.js` exports one-line
@@ -166,9 +179,11 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
   protection) can't be fetched; Shelf keeps the link with Open the original.
 - **https only.** Plain `http://` addresses are tried as `https://`.
 - **PDFs, pictures and videos** are kept as links, not read in Shelf.
-- **Claude's saves wait for a device.** A link Claude saves is fetched the
-  next time Shelf is open on one of your devices. Claude can read an article
-  only once it has been fetched.
+- **Claude's saves wait for a device** unless Claude passes the text. A link
+  saved without it is fetched the next time Shelf is open on one of your
+  devices, and Claude can read it only after that.
+- **A shared highlight is a capability.** Anyone with its link can see it;
+  turning sharing off ends the link.
 - **Listening** uses the voices your device has; some browsers have only a
   few, and they don't play with the screen locked.
 - **5,000 links per person**, and the list loads in one answer.

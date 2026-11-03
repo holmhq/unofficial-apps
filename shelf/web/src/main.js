@@ -1,5 +1,6 @@
 // Shelf's page: one shell, a page per address.
 //
+//   /q/<link>   a highlight someone shared, for anyone with the link
 //   /add?url=   saving a link from the bookmark button or a phone's share sheet
 //   signed out  what Shelf is, and Sign in
 //   signed in   the reading list and everything around it (views/app.js)
@@ -17,6 +18,13 @@ const early = globalThis.__shelf || {}
 let appView = null
 
 async function render() {
+  const shared = /^\/q\/([A-Za-z0-9]{8,32})\/?$/.exec(location.pathname)
+  if (shared) {
+    const { quotePage } = await import('./views/quote.js')
+    appView = null
+    fill(root, quotePage(shared[1]).el)
+    return
+  }
   if (location.pathname === '/add') {
     const { addPage } = await import('./views/add.js')
     appView = null
