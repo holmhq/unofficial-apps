@@ -685,7 +685,7 @@ mark.hl.is-flash { animation: flash 1.4s var(--ease-out); }
 .l-copy { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
 .l-kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: var(--w-strong); color: var(--ink-2); }
 .l-kicker i { width: 7px; height: 7px; border-radius: 50%; background: var(--hl); box-shadow: 0 0 0 4px color-mix(in srgb, var(--hl) 22%, transparent); }
-.l-copy h1 { font-family: var(--serif); font-size: clamp(40px, 6.4vw, 66px); line-height: 1.02; font-weight: 520; letter-spacing: -.03em; font-variation-settings: 'opsz' 72; text-wrap: balance; }
+.l-copy h1 { font-family: var(--serif); font-size: clamp(40px, 5vw, 62px); line-height: 1.02; font-weight: 520; letter-spacing: -.03em; font-variation-settings: 'opsz' 72; text-wrap: balance; }
 .l-copy h1 em { font-style: italic; font-weight: 440; }
 .l-copy h1 mark { color: inherit; background: linear-gradient(transparent 58%, color-mix(in srgb, var(--hl) 55%, transparent) 58%, color-mix(in srgb, var(--hl) 55%, transparent) 92%, transparent 92%); padding: 0 .04em; }
 .l-copy p { color: var(--ink-2); font-size: 17.5px; line-height: 1.55; max-width: 520px; text-wrap: pretty; }
@@ -703,12 +703,16 @@ mark.hl.is-flash { animation: flash 1.4s var(--ease-out); }
 .l-f p { color: var(--ink-2); font-size: 14.5px; line-height: 1.55; }
 .l-foot { padding: 30px 16px calc(28px + var(--sab)); }
 @media (min-width: 900px) {
-  .l-hero { grid-template-columns: minmax(0, .74fr) minmax(0, 1.26fr); align-items: center; gap: 48px; padding: 40px 48px 10px; }
-  .l-demo { grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr); height: 540px; }
+  .l-hero { gap: 44px; padding: 40px 48px 10px; max-width: 980px; }
+  .l-demo { grid-template-columns: 312px minmax(0, 1fr); height: 540px; }
   .l-demo .reader { display: flex; border-left: .5px solid var(--line); }
   .l-demo .article { padding: 26px 26px 40px; --size: 17px; }
   .l-demo .a-title { font-size: 30px; }
   .l-features { grid-template-columns: repeat(3, 1fr); gap: 36px 40px; padding: 56px 48px 20px; }
+}
+
+@media (min-width: 1180px) {
+  .l-hero { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); align-items: center; gap: 52px; max-width: 1280px; }
 }
 
 /* ---- The small window the bookmarklet opens ----------------------------------------------------------- */

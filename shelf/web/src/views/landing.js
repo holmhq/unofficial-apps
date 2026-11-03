@@ -7,11 +7,11 @@ import { accountButton, credit, signIn } from '../shell.js'
 import { favicon } from '../bits.js'
 
 const SAMPLES = [
-  { title: 'Walking', site: 'Project Gutenberg', host: 'gutenberg.org', words: 12400, progress: 0.18, img: 'thoreau', excerpt: 'I wish to speak a word for Nature, for absolute freedom and wildness, as contrasted with a freedom and culture merely civil.', open: true },
+  { title: 'Walking', site: 'gutenberg.org', host: 'gutenberg.org', words: 12400, progress: 0.18, img: 'thoreau', excerpt: 'I wish to speak a word for Nature, for absolute freedom and wildness, as contrasted with a freedom and culture merely civil.', open: true },
   { title: 'Earthrise', site: 'Wikipedia', host: 'en.wikipedia.org', words: 2100, img: 'earthrise', excerpt: 'The photograph William Anders took on Apollo 8 on 24 December 1968, of Earth rising over the Moon.', marks: 2 },
   { title: 'The Great Wave off Kanagawa', site: 'Wikipedia', host: 'en.wikipedia.org', words: 2700, img: 'wave', excerpt: 'Hokusai’s woodblock print, published around 1831, and probably the most recognised work of Japanese art.', fav: true },
-  { title: 'On Being Idle', site: 'Project Gutenberg', host: 'gutenberg.org', words: 3600, progress: 0.62, img: 'jerome', excerpt: 'Now, this is a subject on which I flatter myself I really am au fait.' },
-  { title: 'The Story of an Hour', site: 'Project Gutenberg', host: 'gutenberg.org', words: 1000, img: 'chopin', excerpt: 'Knowing that Mrs. Mallard was afflicted with a heart trouble, great care was taken to break to her as gently as possible the news.' },
+  { title: 'On Being Idle', site: 'gutenberg.org', host: 'gutenberg.org', words: 3600, progress: 0.62, img: 'jerome', excerpt: 'Now, this is a subject on which I flatter myself I really am au fait.' },
+  { title: 'The Story of an Hour', site: 'gutenberg.org', host: 'gutenberg.org', words: 1000, img: 'chopin', excerpt: 'Knowing that Mrs. Mallard was afflicted with a heart trouble, great care was taken to break to her as gently as possible the news.' },
   { title: 'Lighthouse of Alexandria', site: 'Wikipedia', host: 'en.wikipedia.org', words: 2300, img: 'lighthouse', excerpt: 'The Pharos, built by the Ptolemaic Kingdom during the reign of Ptolemy II Philadelphus.' }
 ]
 
@@ -48,7 +48,7 @@ export function landing() {
           h('div.chips', h('span.chip.is-on', 'All', h('span.n', '6')), h('span.chip', 'Quick reads', h('span.n', '3')), h('span.chip', 'Long reads', h('span.n', '1')), h('span.chip', 'Started', h('span.n', '2'))),
           h('div.rows', SAMPLES.map(demoRow))),
         h('div.reader', h('div.r-panel', h('article.article',
-          h('div.a-site', favicon(SAMPLES[0], 18), h('span', 'Project Gutenberg'), h('span', '·'), h('span', '54 min read')),
+          h('div.a-site', favicon(SAMPLES[0], 18), h('span', 'gutenberg.org'), h('span', '·'), h('span', '54 min read')),
           h('h1.a-title', 'Walking'),
           h('div.a-by', h('span', 'Henry David Thoreau'), h('i.dot'), h('span', 'June 1862')),
           h('div.a-sum', h('div.a-sum-h', ic('sparkles', 13, 2), 'Summary'), h('ul', h('li', 'Thoreau argues for wildness over the merely civil, and for walking as a daily practice.'), h('li', 'He traces “saunter” to pilgrims bound for the Holy Land, or to people without land.'))),
