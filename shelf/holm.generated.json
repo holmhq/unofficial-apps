@@ -1,0 +1,27 @@
+{
+  "digest": "sha256:88a1a9d5d1ac9531dd08440b85b23f2177ea8d978028f2c11713eacb20d5d7df",
+  "inputs": {
+    "symbolHash": "sha256:9a08262ffed25d1e0fec7d5e3f3f6635c093e7b7cdbc66cdb916cc4d609e6aed",
+    "themeColor": "#1d1d1f",
+    "name": "Shelf",
+    "subtitle": "Save anything to read later, on your own server: a calm reader, highlights, offline reading, and Claude can read your shelf too.",
+    "iconStyle": "soft"
+  },
+  "generator": {
+    "id": "holm app identity generate",
+    "version": "0.277.0",
+    "dependencies": {}
+  },
+  "outputs": {
+    "web/404.html": "sha256:e9aad2c6eefdcb2e957d1133d7a84ea0d81ff79c9d5fdb32e86b91a9a7815789",
+    "web/apple-touch-icon.png": "sha256:fd9f6682ad7eee538db97ee439900b0519075ba8920824afd71a02e8f61b8218",
+    "web/favicon.ico": "sha256:13c9e8734396ea8c44d0958f6a3d4d3f91f758a299d121bd91abc7f3929ce7d9",
+    "web/favicon.png": "sha256:55c79376f6320cf947ee1b6c7a0823a5bfe8f9b8475fac418a64af4baf6e2ca0",
+    "web/favicon.svg": "sha256:a736e800b52810b367c86f87eb0965e8efc19f7d0f97d33a803ffc05a0aafb1d",
+    "web/icon-192.png": "sha256:ae4234258efbd4cc7fad32586b0ac80b4f87fad8e8d2f93614a9f6607d2e209f",
+    "web/icon-512.png": "sha256:2068854da0781419b9edf5fabf460a080eef8384e82ae8b84f92e0ce755e2812",
+    "web/icon-maskable-512.png": "sha256:e2910d09d88742e63488d95a4c15511db07293c611fc1b80667acb1128d4e2ca",
+    "web/manifest.webmanifest": "sha256:ee19158de62aca6d8d2969e4967e6a6b7d5b567740d7fed3ec558e7551ce8831",
+    "web/social_preview.png": "sha256:73cf3c810975e3f46f27bbfdbbb48ca199945a758fbf50fc4b6376b0e1fe27b2"
+  }
+}

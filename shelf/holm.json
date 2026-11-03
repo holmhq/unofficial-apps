@@ -1,0 +1,46 @@
+{
+  "name": "shelf",
+  "version": "0.1.0",
+  "title": "Shelf",
+  "shortName": "Shelf",
+  "description": "Save anything to read later, on your own server: a calm reader, highlights, offline reading, and Claude can read your shelf too.",
+  "themeColor": "#1d1d1f",
+  "iconStyle": "soft",
+  "surfaces": {
+    "web": {
+      "renderer": "off"
+    }
+  },
+  "web": {
+    "spa": true,
+    "inject": {
+      "analytics": true
+    },
+    "headers": [
+      {
+        "path": "/*",
+        "set": {
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "strict-origin-when-cross-origin"
+        }
+      },
+      {
+        "path": "/fonts/*",
+        "set": {
+          "Cache-Control": "public, max-age=31536000, immutable"
+        }
+      }
+    ]
+  },
+  "publish": {
+    "exclude": [
+      "/listing/",
+      "/tools/"
+    ]
+  },
+  "ext": {
+    "com.holmhq.unofficial": {
+      "demo": "https://shelf.zyt.app"
+    }
+  }
+}
