@@ -122,6 +122,11 @@ references.
 - **Don't let motion jerk.** Animate from where the element is, with the
   right transform origin. Drive drawn shapes from state each frame; CSS
   transitions on SVG coordinates jitter.
+- **Quick repeats don't stack.** When one card slides out as the next slides
+  in, a second press must send away every card on stage, including the one
+  still arriving. Shelf's review looked up "the card" with `querySelector`,
+  found the one already leaving, and left the arriving card on screen under
+  the next.
 
 ## Speed: no flicker
 
@@ -194,6 +199,10 @@ after the first deploy.
   text, so a page head showed the word "null" where an optional part was
   missing. Build children through a helper that skips empty values (the
   `fill` and `h` helpers in each app's `ui.js`).
+- **A media query doesn't outrank a later rule.** An override inside
+  `@media` must come after the rule it changes. Shelf's desk toast set
+  `top: auto; bottom: 28px` in a media block above the base `.toast` rule,
+  whose `top` won, so every toast on a desk stretched the window's height.
 - **The footer line never breaks inside a label.** Give each credit item
   `white-space: nowrap; flex: none`, and measure the credit where it is
   narrowest. In Roll's 236 px sidebar, "A Holm app" broke over two lines;
@@ -213,6 +222,9 @@ current guide too, since some of them will change.
 - **Calls out of the app go in raw routes.** Named operations (the ones MCP
   exposes) can't call `net.fetch` or `ai.chat` and have no secrets, so do
   outbound work in a `fetch` route.
+- **A paged `ds.find` returns at most 100 rows a page**, whatever `limit`
+  asks for; follow the cursor. A find without `page` returns up to its
+  `limit`. Shelf's highlights asked for 1,000 a page and showed 100.
 - **`net.fetch` takes a `timeout` in milliseconds.** Without one, a slow
   site uses up the request, and the storage write after it fails with
   `storage deadline`. Give outbound calls a timeout well inside the budget.
