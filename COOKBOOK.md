@@ -79,18 +79,25 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   and other sheets that mention Claude link to it rather than repeat it.
 - **The sheet, top to bottom:** the app's icon joined to the MCP mark by a
   short row of dots that pulse once as it opens; one bold line and one
-  sentence on what Claude can do with the app; the connector address with
-  Copy; three numbered steps for Claude (open Settings, then Connectors; add
+  sentence on what Claude can do with the app; the connector address to
+  click and copy; three numbered steps for Claude (open Settings, then Connectors; add
   a custom connector named after the app with the address; connect and sign
   in); the Claude Code command, `claude mcp add --transport http <app>
   <address>`, then `/mcp`; and three or four rows saying what the tools do,
   in plain words.
 - **Take the address from the server**, as `url.origin + '/_holm/mcp'` in the
   app's own "who's here" answer, so every host shows its own.
-- **Show addresses as text, not inputs.** A 13 px read-only input makes iOS
-  zoom and clips the end. Use wrapping code that selects in one tap, with
-  `<wbr>` after each slash so it breaks only there. On a phone, Copy is its
-  icon alone, so `https://<app>.zyt.app/_holm/mcp` fits on one line.
+- **Anything to copy is a click-to-copy field**, never a read-only input
+  beside a Copy button. That covers addresses, commands and share links; a
+  13 px input makes iOS zoom, and the button pushes the value onto two lines.
+  The whole field is one button (`role="button"`, Enter and Space copy too)
+  holding the value on one line in 12.5 px mono, with a copy icon at its
+  end. Pointing at it tints the field and fades in Copy over the end of the
+  value. A click turns the icon into a green tick and the word into Copied
+  for 1.6 s, with no toast. A value too long for the line scrolls sideways
+  under a fade. If the clipboard refuses, select the value and say so. In a
+  grid, give the column `minmax(0, 1fr)` or the line widens the sheet. Copy
+  Shelf's `copyField` (`shelf/web/src/ui.js`).
 - **The mark is `shelf/tools/mcp.svg`:** the MCP logo's two strokes at their
   true proportions, filled with `currentColor` and centred 21 units tall on
   the 24 grid, so it sits beside Lucide icons. Copy it into the app's icons;
@@ -311,6 +318,9 @@ couldn't check.
 - [ ] Menu labels are one to three words. Signed in, the menu and ⌘K have
       Connect via MCP… with the MCP mark, and its sheet shows the server's
       address on one line at 390 px.
+- [ ] Every address, command or link to copy is a click-to-copy field: one
+      line, a copy icon, Copy on hover, Copied with a tick after, no separate
+      button. The zyt Claude Code command fits on one line in a wide sheet.
 
 **Look**
 
