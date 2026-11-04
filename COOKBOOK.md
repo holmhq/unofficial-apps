@@ -229,6 +229,9 @@ current guide too, since some of them will change.
 - **A paged `ds.find` returns at most 100 rows a page**, whatever `limit`
   asks for; follow the cursor. A find without `page` returns up to its
   `limit`. Shelf's highlights asked for 1,000 a page and showed 100.
+- **`ds.search` finds what has every word**, and treats `OR` as a word. To
+  find what has any of several words, search each on its own and merge;
+  Shelf's Ask ranks what matches the most.
 - **`net.fetch` takes a `timeout` in milliseconds.** Without one, a slow
   site uses up the request, and the storage write after it fails with
   `storage deadline`. Give outbound calls a timeout well inside the budget.
