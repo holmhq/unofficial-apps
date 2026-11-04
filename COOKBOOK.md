@@ -199,6 +199,10 @@ after the first deploy.
   text, so a page head showed the word "null" where an optional part was
   missing. Build children through a helper that skips empty values (the
   `fill` and `h` helpers in each app's `ui.js`).
+- **A centred fixed element needs `width: max-content`.** With `left: 50%`
+  and `translate(-50%)`, the browser lays it out in the half of the screen
+  to the right of its left edge, so Shelf's toasts wrapped at 190 px on a
+  phone. Give it `width: max-content` and a `max-width`.
 - **A media query doesn't outrank a later rule.** An override inside
   `@media` must come after the rule it changes. Shelf's desk toast set
   `top: auto; bottom: 28px` in a media block above the base `.toast` rule,
