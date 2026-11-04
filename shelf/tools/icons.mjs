@@ -9,7 +9,12 @@ const NAMES = ['book-open', 'bookmark', 'bookmark-plus', 'archive', 'highlighter
   'chevron-up', 'arrow-left', 'info', 'share', 'copy', 'ellipsis', 'pencil', 'rotate-ccw', 'sun', 'moon', 'sun-moon', 'log-out', 'user',
   'chart-column', 'clock', 'external-link', 'loader-circle', 'panel-left', 'trash', 'play', 'pause', 'square', 'skip-forward', 'skip-back',
   'quote', 'undo-2', 'inbox', 'circle-check', 'triangle-alert', 'wifi-off', 'refresh-cw', 'bot', 'globe', 'keyboard', 'arrow-up-right', 'minus',
-  'timer', 'text-quote', 'download', 'file-text', 'image', 'plug', 'mouse-pointer-click', 'smartphone', 'library-big', 'message-square']
+  'timer', 'text-quote', 'download', 'file-text', 'image', 'plug', 'mouse-pointer-click', 'smartphone', 'library-big', 'message-square',
+  // Review, feeds, books, Ask and the library (0.3 onwards)
+  'flame', 'book', 'book-plus', 'notebook-text', 'eye-off', 'eye', 'arrow-right', 'repeat', 'calendar-check', 'file-down', 'hash', 'chevrons-up',
+  'chevrons-down', 'rss', 'circle-play', 'check-check', 'folder', 'newspaper', 'list-tree', 'zoom-in', 'zoom-out', 'book-text', 'wand-sparkles',
+  'languages', 'message-circle-question-mark', 'lightbulb', 'send', 'book-a', 'brain', 'command', 'arrow-down-up', 'list-checks',
+  'sliders-horizontal', 'pin', 'printer', 'type', 'shuffle', 'upload', 'layers', 'library', 'text-search', 'scan-text']
 const camel = (s) => s.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase())
 const lines = []
 for (const name of NAMES) {

@@ -11,7 +11,8 @@ import { h, ic, fill, toast, menu, haptic, reduced, wide, flip, copyText, closeM
 import { mark, starFill } from '../icons.js'
 import * as api from '../api.js'
 import {
-  lib, on, unread, favourites, archived, tagged, tags, all, minutes, tone, update, remove, highlights, keptHighlights, isWorking, makeReadable
+  lib, on, unread, favourites, archived, tagged, tags, all, minutes, tone, update, remove, highlights, keptHighlights, isWorking, makeReadable,
+  reviewSet, keptReview, findCover, books
 } from '../store.js'
 import { go, link, accountButton, credit, failure, saveSheet, saveURL, looksLikeURL, connectSheet, importSheet, keysSheet, state } from '../shell.js'
 import { createReader } from '../reader.js'
@@ -315,38 +316,152 @@ export function createApp() {
   function highlightsPage() {
     const panel = h('div.panel')
     const head = h('div.page-head', h('h1.large-title', 'Highlights'))
+    const reviewSlot = h('div.rv-slot')
+    const chipRow = h('div.chips')
     const list = h('div')
-    panel.append(head, list, h('div.list-end'), h('div.phone-only', { style: { padding: '18px 16px calc(20px + var(--sab))' } }, credit()))
-    panel.addEventListener('scroll', () => updateTitle(panel), { passive: true })
+    const end = h('div.list-end')
+    panel.append(head, reviewSlot, chipRow, list, end, h('div.phone-only', { style: { padding: '18px 16px calc(20px + var(--sab))' } }, credit()))
     const el = h('section.page', panel)
+    let data = null
+    let filter = 'all'
     let drawn = ''
-    function render(data) {
+    let groupsShown = 0
+    let groups = []
+
+    // Today's review, on paper at the top: what's waiting, the streak, one button.
+    function drawReview(r) {
+      if (!r || !r.cards) { if (!data || !data.marks.length) reviewSlot.replaceChildren(); return }
+      const total = r.cards.length
+      const left = r.cards.filter((c) => !r.done.includes(c.mark.id)).length
+      const s = r.streak || { n: 0, today: false }
+      if (!total) { reviewSlot.replaceChildren(); return }
+      const finished = left === 0
+      const first = r.cards.find((c) => !r.done.includes(c.mark.id)) || r.cards[0]
+      const sources = new Set(r.cards.map((c) => c.item.id)).size
+      const key = [total, left, s.n, s.today, first.mark.id].join('|')
+      if (reviewSlot.dataset.key === key) return
+      reviewSlot.dataset.key = key
+      fill(reviewSlot, h('button.rv-hero' + (finished ? '.is-done' : ''), { type: 'button', onclick: () => import('./review.js').then((m) => m.openReview({ again: finished })) },
+        h('div.rv-hero-text',
+          h('small', finished ? 'Today’s review is done' : 'Today’s review'),
+          h('b', finished ? (s.n > 1 ? `${s.n} days in a row` : 'See you tomorrow') : left === total ? `${plural(total, 'highlight')} from ${plural(sources, 'source')}` : `${left} of ${total} left`),
+          h('q', h('span', first.mark.quote.length > 150 ? first.mark.quote.slice(0, 140).trim() + '…' : first.mark.quote))),
+        h('div.rv-hero-side',
+          s.n ? h('span.rv-streak' + (s.today ? '.is-lit' : ''), { title: s.today ? 'Done today' : 'Review today to keep it' }, ic('flame', 15, 2.2), h('b', String(s.n))) : null,
+          h('span.btn.primary.small', finished ? 'Look again' : left === total ? 'Start' : 'Continue'))))
+    }
+
+    function source(id) {
+      const src = (data && data.items[id]) || {}
+      const item = lib.items.get(id)
+      return { id, kind: (item && item.kind) || src.kind || 'article', title: (item && item.title) || src.title || 'Untitled', author: (item && item.author) || src.author || '', host: (item && item.host) || src.host || '', image: (item && item.image) || src.image || null, url: (item && item.url) || src.url || '' }
+    }
+
+    const chipDefs = () => {
+      const marks = data ? data.marks : []
+      const tagCount = new Map()
+      for (const m of marks) for (const t of m.tags || []) tagCount.set(t, (tagCount.get(t) || 0) + 1)
+      const isBook = (m) => { const k = source(m.item).kind; return k === 'notes' || k === 'book' }
+      return [
+        { key: 'all', label: 'All', test: () => true },
+        { key: 'fav', label: 'Favourites', test: (m) => m.fav },
+        { key: 'books', label: 'Books', test: isBook },
+        { key: 'articles', label: 'Articles', test: (m) => !isBook(m) },
+        { key: 'notes', label: 'With notes', test: (m) => !!m.note },
+        ...[...tagCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([t]) => ({ key: '#' + t, label: t, dot: tone(t), test: (m) => (m.tags || []).includes(t) }))
+      ]
+    }
+
+    function drawChips() {
+      if (!data || !data.marks.length) { chipRow.hidden = true; return }
+      const defs = chipDefs().map((c) => ({ ...c, n: data.marks.filter(c.test).length })).filter((c) => c.key === 'all' || c.key === filter || (c.n && c.n < data.marks.length))
+      if (defs.length < 2) { chipRow.hidden = true; filter = 'all'; return }
+      chipRow.hidden = false
+      fill(chipRow, defs.map((c) => h('button.chip' + (c.key === filter ? '.is-on' : ''), { type: 'button', 'aria-pressed': String(c.key === filter), onclick: () => { filter = filter === c.key && c.key !== 'all' ? 'all' : c.key; drawn = ''; drawChips(); render(); panel.scrollTop = Math.min(panel.scrollTop, head.offsetHeight) } },
+        c.dot ? h('i.tagdot', { style: { background: c.dot, width: '7px', height: '7px', 'border-radius': '50%' } }) : null, c.label, h('span.n', c.n.toLocaleString()))))
+    }
+
+    function groupEl([id, marks]) {
+      const src = source(id)
+      const book = src.kind === 'notes' || src.kind === 'book'
+      if (src.kind === 'notes' && !src.image) findCover(id)
+      const pic = src.image
+        ? h('div.pic' + (book ? '.is-cover' : ''), h('img', { src: src.image + '/t', alt: '', loading: 'lazy', onload: (e) => e.target.classList.add('is-in'), onerror: (e) => e.target.parentNode.replaceWith(favicon(src, 36)) }))
+        : book ? h('div.pic.is-cover.is-plain', { style: { '--cloth': tone(src.title) } }, h('span', src.title.trim().charAt(0).toUpperCase())) : favicon(src, 36)
+      return h('div.hl-group', { 'data-key': id },
+        h('button.hl-src', { type: 'button', onclick: () => openItem(id) }, pic,
+          h('div.grow', h('b', src.title), h('small', [src.author, book ? '' : src.host].filter(Boolean).join(' · ') || (book ? 'Book' : '')))),
+        !marks.length ? h('button.hl-card.is-empty', { type: 'button', onclick: () => openItem(id) }, ic('plus', 15, 2.2), 'Add the first highlight') : null,
+        cardsOf(id, marks.length > 6 ? marks.slice(0, 5) : marks),
+        marks.length > 6 ? h('button.hl-more', { type: 'button', onclick: (e) => { const b = e.currentTarget; b.replaceWith(...cardsOf(id, marks.slice(5))) } }, `Show all ${marks.length.toLocaleString()}`, ic('chevronDown', 15, 2.2)) : null)
+    }
+
+    function cardsOf(id, marks) {
+      return marks.map((m) => h('button.hl-card' + (m.skip ? '.is-skipped' : ''), { type: 'button', onclick: () => go('/read/' + id + (m.end ? '?at=' + m.id : '')) },
+          h('q', h('span', m.quote)),
+          m.note ? h('div.note', ic('notebookPen', 14, 2), h('div', m.note)) : null,
+          h('span.when', m.fav ? h('span.star', starFill(11)) : null, (m.tags || []).map((t) => h('i.tagdot', { style: { background: tone(t) }, title: '#' + t })), m.loc ? m.loc + ' · ' : '', when(m.at))))
+    }
+
+    function render() {
       if (!data) { fill(list, skeleton()); return }
-      const key = JSON.stringify(data.marks.map((m) => m.id + m.note))
+      const key = filter + JSON.stringify(data.marks.map((m) => m.id + m.note + (m.tags || []).join() + m.fav)) + books().filter((b) => !b.marks).map((b) => b.id + b.title + b.image).join()
       if (key === drawn) return
       drawn = key
-      if (!data.marks.length) { fill(list, emptyState('highlighter', 'No highlights yet', 'Select words in an article and choose Highlight. Your highlights and notes gather here, and Claude can read them too.')); return }
-      const groups = new Map()
-      for (const m of data.marks) { if (!groups.has(m.item)) groups.set(m.item, []); groups.get(m.item).push(m) }
-      fill(list, [...groups.entries()].map(([id, marks]) => {
-        const src = data.items[id] || {}
-        const item = lib.items.get(id) || { id, host: src.host, title: src.title }
-        return h('div.hl-group',
-          h('button.hl-src', { type: 'button', onclick: () => openItem(id) }, src.image ? h('div.pic', h('img', { src: src.image + '/t', alt: '', loading: 'lazy', onload: (e) => e.target.classList.add('is-in'), onerror: (e) => e.target.parentNode.replaceWith(favicon(item, 36)) })) : favicon(item, 36),
-            h('div.grow', h('b', src.title || 'Untitled'), h('small', src.host || ''))),
-          marks.sort((a, b) => a.start - b.start).map((m) => h('button.hl-card', { type: 'button', onclick: () => go('/read/' + id + '?at=' + m.id) },
-            h('q', h('span', m.quote)),
-            m.note ? h('div.note', ic('notebookPen', 14, 2), h('div', m.note)) : null,
-            h('span.when', when(m.at)))))
-      }))
+      drawChips()
+      if (!data.marks.length && !books().length) {
+        fill(list, h('div.empty', h('div.empty-ic', ic('highlighter', 28, 1.7)), h('b', 'No highlights yet'),
+          h('p', 'Select words in an article and choose Highlight. Your highlights come back here in a daily review, and Claude can read them too.'),
+          h('button.btn', { type: 'button', onclick: () => importSheet() }, ic('fileUp', 17, 2), 'Bring in Kindle highlights')))
+        return
+      }
+      const f = chipDefs().find((c) => c.key === filter) || chipDefs()[0]
+      const by = new Map()
+      for (const m of data.marks) { if (!f.test(m)) continue; if (!by.has(m.item)) by.set(m.item, []); by.get(m.item).push(m) }
+      for (const marks of by.values()) marks.sort((a, b) => (a.end ? a.start - b.start : 0) || (posOf(a) - posOf(b)) || (a.at - b.at))
+      groups = [...by.entries()]
+      // Paper books still waiting for their first highlight come first, so they can be found.
+      if (filter === 'all' || filter === 'books') for (const b of books()) if (!b.marks && !by.has(b.id)) groups.unshift([b.id, []])
+      groupsShown = Math.min(groups.length, Math.max(24, groupsShown))
+      fill(list, groups.slice(0, groupsShown).map(groupEl))
     }
+    const posOf = (m) => { const n = /\d+/.exec(m.loc || ''); return n ? Number(n[0]) : 0 }
+
+    panel.addEventListener('scroll', () => {
+      updateTitle(panel)
+      if (panel.scrollTop + panel.clientHeight < panel.scrollHeight - 900 || groupsShown >= groups.length) return
+      const add = groups.slice(groupsShown, groupsShown + 24)
+      groupsShown += add.length
+      list.append(...add.map(groupEl))
+    }, { passive: true })
+
+    let partialAt = 0
+    function load(force = false) {
+      if (force) lib.highlights = null
+      highlights((part) => {
+        // A long list draws as it arrives, but not more than twice a second.
+        if (Date.now() - partialAt < 500 && data) return
+        partialAt = Date.now()
+        if (!data || part.marks.length > data.marks.length) { data = part; render() }
+      }).then((r) => { data = r; render(); drawReview(keptReview()) }).catch((e) => { if (!data) fill(list, emptyState('wifiOff', 'Highlights can’t load', e.message)) })
+      reviewSet().then(drawReview).catch(() => {})
+    }
+
     return {
       key: '/highlights', el, panel, title: () => 'Highlights',
       show() {
-        render(keptHighlights())
-        highlights().then(render).catch((e) => { if (!keptHighlights()) fill(list, emptyState('wifiOff', 'Highlights can’t load', e.message)) })
+        data = keptHighlights() || data
+        render()
+        drawReview(keptReview())
+        load()
       },
-      change() { if (active && active.key === '/highlights') highlights().then(render).catch(() => {}) },
+      change(c) {
+        if (!active || active.key !== '/highlights') return
+        if (c && c.review) { drawReview(lib.review); return }
+        const total = all().reduce((n, i) => n + (i.marks || 0), 0)
+        if (c && (c.marks || c.full) || (data && !data.partial && total !== data.marks.length)) load(true)
+        else if (c && c.item && lib.items.get(c.item) && lib.items.get(c.item).kind === 'notes') { drawn = ''; render() }
+      },
       ids: () => []
     }
   }
@@ -595,7 +710,7 @@ export function createApp() {
 
   const typing = (t) => t && (t.closest('input, textarea, select, [contenteditable="true"]'))
   document.addEventListener('keydown', (e) => {
-    if (!root.isConnected || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.layer')) return
+    if (!root.isConnected || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.layer, .review')) return
     if (typing(e.target)) return
     const k = e.key
     if (k === 'j' || (k === 'ArrowDown' && !reading)) { e.preventDefault(); moveCursor(1) }
@@ -605,6 +720,7 @@ export function createApp() {
     else if (k === '/') { e.preventDefault(); if (wide()) { searchInput.focus(); searchInput.select() } else go('/search') }
     else if (k === 'a') { e.preventDefault(); saveSheet() }
     else if (k === '?') keysSheet()
+    else if (k === 'r' && !reading) { e.preventDefault(); import('./review.js').then((m) => m.openReview()) }
     else if (k === 'e') { if (reading) reader.archive(); else if (cursor) { const i = lib.items.get(cursor); if (i) { const n = neighbour(cursor); setArchived(cursor, i.state !== 'archived'); cursor = n ? n.id : null; setTimeout(markCursor, 50) } } }
     else if (k === 's') { if (reading) reader.favourite(); else if (cursor) { const i = lib.items.get(cursor); if (i) setFav(cursor, !i.fav) } }
     else if (k === 'h' && reading) reader.highlight()
@@ -641,7 +757,9 @@ export function createApp() {
       if (i && i.via === 'claude') toast('Claude saved “' + ((i.title || i.host).length > 46 ? (i.title || i.host).slice(0, 44) + '…' : (i.title || i.host)) + '”', { kind: 'info', action: { label: 'Read', onclick: () => openItem(i.id) } })
     }
     // Several changes in a row redraw once.
-    pending = pending ? { full: pending.full || change.full } : { full: change.full }
+    pending = pending
+      ? { full: pending.full || change.full, marks: pending.marks || change.marks, review: pending.review || change.review, item: change.item || pending.item }
+      : { full: change.full, marks: change.marks, review: change.review, item: change.item }
     requestAnimationFrame(() => {
       if (!pending) return
       const c = pending

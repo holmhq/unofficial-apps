@@ -24,9 +24,10 @@
 //   GET    /q/:slug                    its page, with its own title and picture for previews
 
 import {
-  who, fail, Fail, ITEMS, TEXT, MARKS, itemDTO, getItem, allItems, saveLink, forgetURL, cleanTags, bump, channel,
+  who, fail, Fail, ITEMS, TEXT, MARKS, itemDTO, markDTO, getItem, allItems, saveLink, forgetURL, cleanTags, bump, channel,
   version, sha, minutes, host, LIMIT
 } from './lib.js'
+export { markDTO }
 
 const MAX_HTML = 1_500_000
 const MAX_TEXT = 400_000
@@ -75,6 +76,11 @@ async function route(request, env, url) {
   const { k } = caller
   const { ds, kv } = env.holm.app
 
+  if (path.startsWith('/api/review')) return (await import('./review.js')).review(request, env, url, caller, from)
+  if (path === '/api/uploads' || path.startsWith('/api/pictures/') || path === '/api/import/highlights' || /^\/api\/items\/[A-Za-z0-9_-]+\/(file|cover)$/.test(path)) {
+    return (await import('./uploads.js')).uploads(request, env, url, caller, from)
+  }
+
   if (path === '/api/library' && method === 'GET') {
     const v = version(env, k)
     if (url.searchParams.get('v') === String(v) && v) return json({ v, same: true })
@@ -118,12 +124,18 @@ async function route(request, env, url) {
 
   if (path === '/api/fetch' && method === 'GET') return fetchPage(env, k, url.searchParams.get('url'))
 
+  // Every highlight, newest first, a thousand at a time (a Kindle library can hold many more).
   if (path === '/api/highlights' && method === 'GET') {
-    const marks = ds.find(MARKS(k), {}, { limit: 1000, order: 'desc' })
-    const ids = [...new Set(marks.map((m) => m.item))]
+    const cursor = url.searchParams.get('cursor')
+    const page = ds.find(MARKS(k), {}, { limit: 1000, order: 'desc', page: true, ...(cursor ? { cursor } : {}) })
     const items = {}
-    for (const id of ids) { const doc = getItem(env, k, id); if (doc) items[id] = { id, title: doc.title || doc.url, host: doc.host || host(doc.url), url: doc.url, image: doc.img ? '/i/' + doc.img : null } }
-    return json({ marks: marks.filter((m) => items[m.item]).map(markDTO), items })
+    for (const m of page.rows) {
+      if (m.item in items) continue
+      const doc = getItem(env, k, m.item)
+      items[m.item] = doc ? { id: doc.id, kind: doc.kind || 'article', title: doc.title || doc.url || 'Untitled', author: doc.author || '', host: doc.host || (doc.url ? host(doc.url) : ''), url: doc.url || '', image: doc.img ? '/i/' + doc.img : null } : null
+    }
+    for (const id in items) if (!items[id]) delete items[id]
+    return json({ marks: page.rows.filter((m) => items[m.item]).map(markDTO), items, cursor: page.cursor || null })
   }
 
   if (path === '/api/search' && method === 'GET') return search(env, k, url.searchParams.get('q'))
@@ -152,6 +164,8 @@ async function route(request, env, url) {
         set.opened = Date.now()
       }
       if (input.opened === true) set.opened = Date.now()
+      if (['never', 'less', 'normal', 'more'].includes(input.freq)) set.freq = input.freq
+      if (typeof input.author === 'string') set.author = input.author.replace(/\s+/g, ' ').trim().slice(0, 120)
       if (!Object.keys(set).length) return json({ item: itemDTO(doc), v: version(env, k) })
       ds.update(ITEMS(k), { id }, { $set: set })
       const item = itemDTO({ ...doc, ...set })
@@ -207,7 +221,10 @@ async function route(request, env, url) {
         start: Math.max(0, Math.round(Number(input.start) || 0)),
         end: Math.max(0, Math.round(Number(input.end) || 0)),
         note: String(input.note || '').slice(0, 4000),
-        at: Date.now()
+        loc: String(input.loc || '').replace(/\s+/g, ' ').trim().slice(0, 40),
+        tags: cleanTags(input.tags || []),
+        at: Date.now(),
+        due: Date.now() + 3 * 864e5
       }
       if (ds.count(MARKS(k), { item: id }) >= 500) return err(409, 'full', 'This article already has 500 highlights.')
       mark.id = ds.insert(MARKS(k), mark)
@@ -264,9 +281,14 @@ async function route(request, env, url) {
     if (!mark) return err(404, 'not_found', 'That highlight is gone.')
     if (method === 'PATCH') {
       const input = await body(request, 20_000)
-      const note = String(input.note || '').slice(0, 4000)
-      ds.update(MARKS(k), { id: mark.id }, { $set: { note } })
-      const after = markDTO({ ...mark, note })
+      const set = {}
+      if (typeof input.note === 'string') set.note = input.note.slice(0, 4000)
+      if (Array.isArray(input.tags)) set.tags = cleanTags(input.tags)
+      if (typeof input.fav === 'boolean') set.fav = input.fav
+      if (typeof input.quote === 'string' && input.quote.trim() && !mark.end) set.quote = input.quote.trim().slice(0, 5000)
+      if (typeof input.loc === 'string' && !mark.end) set.loc = input.loc.replace(/\s+/g, ' ').trim().slice(0, 40)
+      ds.update(MARKS(k), { id: mark.id }, { $set: set })
+      const after = markDTO({ ...mark, ...set })
       const v = bump(env, k, { mark: after }, from)
       return json({ mark: after, v })
     }
@@ -435,9 +457,6 @@ function snippet(text, terms) {
 
 /* ---- Highlights --------------------------------------------------------------------------------- */
 
-export function markDTO(m) {
-  return { id: m.id, item: m.item, quote: m.quote, prefix: m.prefix || '', suffix: m.suffix || '', start: m.start || 0, end: m.end || 0, note: m.note || '', at: m.at || m._createdAt, share: m.share || '' }
-}
 
 /* ---- Summaries from the node's AI ----------------------------------------------------------------- */
 

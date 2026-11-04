@@ -46,6 +46,26 @@ served as files: `api/` and `holm.json` are not public URLs.
 - **Highlights and notes.** Select words and choose Highlight or Note. They
   find their place again even if the article is fetched afresh, and gather on
   the Highlights page, newest article first.
+- **A daily review.** A few highlights a day come back on the Highlights
+  page, one at a time on paper: keep one in mind and it waits a while,
+  favourite it and it comes back more often, send it away for months or for
+  good, add a note or a tag. Every source gets its turn, you choose how often
+  a book or article comes up, and finishing a review keeps a streak. Review
+  a single book or tag whenever you like.
+- **Kindle and Readwise highlights.** Bring in a Kindle's `My Clippings.txt`
+  (or a Bookcision file) and a Readwise CSV export. Each book becomes a
+  notebook on your shelf with its cover from Open Library and its highlights
+  in book order, with locations and notes. Importing the same file again adds
+  only what's new.
+- **Paper books.** Add a book you're reading on paper and type in the
+  passages you mark, with their page. They join the review like any other.
+- **Tags on highlights.** Tap a highlight to tag it, and filter the
+  Highlights page by tag, favourites, books, articles or notes.
+- **Export everything.** One ZIP: a Markdown file per book or article with
+  your highlights and notes (with front matter, for Obsidian, Logseq or
+  Notion), `highlights.csv` in the layout Readwise's CSV import takes,
+  `library.csv` with everything you saved, and a full JSON copy. The articles
+  can come too, as Markdown.
 - **Share a highlight.** Tap a highlight and choose Share: Shelf makes a link
   to a page with the words, the article's title and link, and your first name
   (never your notes), and draws its link-preview card in the reader's
@@ -55,8 +75,9 @@ served as files: `api/` and `holm.json` are not public URLs.
   where you are; the sentence being read is tinted and the page follows it.
 - **Search** finds words in titles, in the articles themselves and in your
   highlights and notes.
-- **Bring your links** from a Pocket or Instapaper export (CSV), a bookmarks
-  file (HTML), or anything with links in it. The newest are made readable
+- **Bring your links** from a Pocket, Instapaper or Readwise Reader export
+  (CSV, or the ZIP it came in), a bookmarks file (HTML), or anything with
+  links in it. The newest are made readable
   straight away and the rest when you open them.
 - **Claude reads it with you.** Connect Shelf to Claude as a custom connector
   at `https://<your-host>/_holm/mcp` and sign in. Claude can list what's on
@@ -76,7 +97,7 @@ and a swipe from the left edge closes the article. Ink-black controls, with
 yellow used for one thing: your reading (highlights, progress, the article
 you have open). Every change reaches your other open devices at once. On a
 desk, J and K move through the list, Enter opens, E archives, S favourites,
-H highlights, L listens, A saves and / searches. The round avatar button holds
+H highlights, L listens, R opens today's review, A saves and / searches. The round avatar button holds
 who you are, saving and importing, a three-icon theme switch and Sign out;
 the Holm credit sits in the footer.
 
@@ -128,7 +149,27 @@ the Holm credit sits in the footer.
   that made it so it isn't echoed back, and other pages patch their copy.
 - **Highlights** are anchored by their place in the article's text and by the
   words themselves with a little text either side, so they find their place
-  again if the article changes.
+  again if the article changes. Imported and typed-in ones have a place in
+  the book (`Location 412`, `Page 23`) instead.
+- **The review** (`api/review.js`). Each highlight carries `due` and `ivl`:
+  keeping one roughly doubles its wait (14 days the first time), "much
+  later" quadruples it, "sooner" brings it back in four days. Today's set is
+  drawn once per person per day (the browser sends its own date, since the
+  server has no time zones) with a seeded weighted draw: favourites count
+  double, a source's frequency setting scales it, long-waiting ones lean in,
+  and no source repeats until every source has had a turn. It's kept in KV
+  for every device, topped up if it came up short, and a finished set moves
+  the streak on. Holm v1 has no scheduled jobs, so the review waits in the
+  app rather than arriving by email.
+- **Books kept for their highlights** are items of kind `notes` with no web
+  address. `POST /api/import/highlights` takes a batch of sources, finds each
+  again by title and author (a KV entry) or by link, and adds only highlights
+  it hasn't got, a couple of seconds at a time. Covers come from Open
+  Library's search the first time a book is shown.
+- **Export** is made in the browser: `web/src/zip.js` writes an uncompressed
+  ZIP (and reads ZIP exports with `DecompressionStream`), with no library.
+  Highlights come from `GET /api/highlights` a page at a time, since a paged
+  `ds.find` returns at most 100 rows a page.
 - **Summaries** come from `env.holm.ai.chat`, at most 60 a day per person and
   2,000 a day across the node, and are kept with the item.
 - **Feedback** opens from the footer: `web/vendor/feedback/embed.js` is a copy
@@ -179,6 +220,12 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
   protection) can't be fetched; Shelf keeps the link with Open the original.
 - **https only.** Plain `http://` addresses are tried as `https://`.
 - **PDFs, pictures and videos** are kept as links, not read in Shelf.
+- **The review is in the app.** No email or notification reminds you, as Holm
+  v1 apps can't run on a schedule or send push notifications.
+- **Kindle highlights come from a file.** Shelf can't sign in to Amazon to
+  sync them; copy `My Clippings.txt` from the Kindle, or export with
+  Bookcision. Apple Books, Kobo and Google Play Books keep theirs closed;
+  bring them through a Readwise export.
 - **Claude's saves wait for a device** unless Claude passes the text. A link
   saved without it is fetched the next time Shelf is open on one of your
   devices, and Claude can read it only after that.
@@ -188,8 +235,7 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
   few, and they don't play with the screen locked.
 - **5,000 links per person**, and the list loads in one answer.
 - **Search matches whole words** in articles, not parts of words.
-- Signed-in use on the live node, iPhone Safari and summaries were not
-  checked before release.
+- iPhone Safari and summaries were not checked before release.
 
 ## Licences
 

@@ -9,7 +9,7 @@
 // answered from here. An address that ends like a file (/icon-512.png) is that file, even
 // typed into the address bar; every other address is a page and gets the shell.
 
-const VERSION = '0.2.1'
+const VERSION = '0.3.0'
 const CACHE = 'shelf-' + VERSION
 const ARTICLES = 'shelf-articles'
 const PICTURES = 'shelf-pictures'
@@ -17,8 +17,8 @@ const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
   '/fonts/inter-latin.woff2', '/fonts/newsreader-latin.woff2', '/fonts/newsreader-italic-latin.woff2', '/src/styles.css',
   '/src/main.js', '/src/ui.js', '/src/icons.js', '/src/theme.js', '/src/api.js', '/src/live.js', '/src/store.js', '/src/shell.js', '/src/bits.js',
-  '/src/extract.js', '/src/reader.js', '/src/listen.js', '/src/importer.js', '/src/share.js',
-  '/src/views/app.js', '/src/views/landing.js', '/src/views/add.js', '/src/views/quote.js',
+  '/src/extract.js', '/src/reader.js', '/src/listen.js', '/src/importer.js', '/src/share.js', '/src/zip.js', '/src/export.js',
+  '/src/views/app.js', '/src/views/landing.js', '/src/views/add.js', '/src/views/quote.js', '/src/views/review.js',
   '/vendor/readability/Readability.js', '/vendor/dompurify/purify.es.mjs'
 ]
 const FILE = /^\/.*\.[a-z0-9]+$/i

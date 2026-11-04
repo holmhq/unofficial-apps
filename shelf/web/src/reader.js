@@ -7,7 +7,7 @@
 
 import { h, ic, fill, toast, menu, sheet, copyText, haptic, reduced, wide, closeMenus } from './ui.js'
 import { starFill } from './icons.js'
-import { lib, on, update, remove, progress, article, marksFor, addMark, noteMark, removeMark, summarize, makeReadable, isWorking, minutes, tone, tags as allTags } from './store.js'
+import { lib, on, update, remove, progress, article, marksFor, addMark, noteMark, editMark, removeMark, summarize, makeReadable, isWorking, minutes, tone, tags as allTags, findCover } from './store.js'
 import { failure, go } from './shell.js'
 import { favicon, when } from './bits.js'
 
@@ -69,6 +69,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
 
   async function draw(mine, at = null) {
     const it = item
+    if (it.kind === 'notes') return notebook(mine)
     art = h('article.article', { lang: it.lang || null, dir: it.dir || null })
     applySettings()
     const head = [
@@ -190,9 +191,129 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     archBtn.title = item.state === 'archived' ? 'Back to the reading list (E)' : 'Archive (E)'
     fill(archBtn, ic(item.state === 'archived' ? 'rotateCcw' : 'archive', 20, 1.9))
     const readable = item.status === 'ready'
+    const notes = item.kind === 'notes'
     listenBtn.hidden = !readable || !('speechSynthesis' in window)
     sumBtn.hidden = !readable || (item.words || 0) < 120
     aaBtn.hidden = !readable
+    favBtn.hidden = notes
+    archBtn.hidden = notes
+  }
+
+  /* ---- A book's notebook ---------------------------------------------------------------------------
+     A book kept only for its highlights (from a Kindle, Readwise, or typed in from paper): its
+     cover, and its highlights in the order they come in the book, each one editable. */
+
+  const notesOrder = (a, b) => (locNumber(a) - locNumber(b)) || ((a.at || 0) - (b.at || 0))
+  const locNumber = (m) => { const n = /\d+/.exec(m.loc || ''); return n ? Number(n[0]) : 1e9 }
+
+  function bookCover(it, big = true) {
+    const plain = () => h('div.nb-cover.is-plain', { style: { '--cloth': tone(it.title || 'book') } }, h('span', (it.title || '?').trim().charAt(0).toUpperCase()))
+    if (!it.image) return plain()
+    return h('div.nb-cover', h('img', { src: big ? it.image : it.image + '/t', alt: '', onerror: (e) => e.target.parentNode.replaceWith(plain()) }))
+  }
+
+  async function notebook(mine) {
+    const it = item
+    art = h('article.article.notebook')
+    applySettings()
+    const cover = bookCover(it)
+    const count = h('span')
+    const listEl = h('div.nb-list', h('div.a-loading', [...Array(6)].map(() => h('i'))))
+    const from = it.source === 'kindle' ? 'From your Kindle' : it.source === 'readwise' ? 'From Readwise' : it.source === 'paper' ? 'A paper book' : 'A book'
+    fill(panel, fill(art,
+      h('header.nb-head', cover,
+        h('div.nb-info',
+          h('h1.a-title', it.title || 'Untitled'),
+          it.author ? h('div.nb-author', it.author) : null,
+          h('div.a-by', h('span', from), h('i.dot'), count),
+          h('div.nb-btns',
+            h('button.btn.primary.small', { type: 'button', onclick: () => import('./views/review.js').then((m) => m.openReview({ item: it.id, title: it.title })) }, ic('repeat', 15, 2.2), 'Review'),
+            h('button.btn.small', { type: 'button', onclick: () => addTyped() }, ic('plus', 15, 2.4), 'Add a highlight')))),
+      listEl))
+    if (!it.image) findCover(it.id).then((image) => { if (image && mine === token && item) { const fresh = bookCover({ ...item, image }); cover.replaceWith(fresh) } })
+    try { marks = await marksFor(it.id, { fresh: true }) } catch { marks = lib.marks.get(it.id) || [] }
+    if (mine !== token) return
+    drawNotes()
+  }
+
+  function drawNotes() {
+    const listEl = art && art.querySelector('.nb-list')
+    if (!listEl) return
+    const countEl = art.querySelector('.a-by span:last-child')
+    if (countEl) countEl.textContent = marks.length === 1 ? '1 highlight' : marks.length + ' highlights'
+    if (!marks.length) {
+      fill(listEl, h('div.empty', { style: { margin: '24px auto 0' } }, h('div.empty-ic', ic('highlighter', 26, 1.7)), h('b', 'No highlights yet'), h('p', 'Type in a passage you marked in the book, with its page if you like. It comes back in your daily review.')))
+      return
+    }
+    fill(listEl, marks.slice().sort(notesOrder).map((m) => h('button.nb-mark', { type: 'button', 'data-id': m.id, onclick: (e) => noteMenu(m, e.currentTarget) },
+      h('q', h('span', m.quote)),
+      m.note ? h('div.note', ic('notebookPen', 14, 2), h('div', m.note)) : null,
+      h('div.nb-meta',
+        m.fav ? h('span.star', starFill(11)) : null,
+        m.loc ? h('span', m.loc) : null,
+        (m.tags || []).map((t) => h('span.nb-tag', h('i', { style: { background: tone(t) } }), t)),
+        m.skip ? h('span', 'Not in reviews') : null))))
+  }
+
+  function noteMenu(m, anchor) {
+    menu(anchor, [
+      { label: m.fav ? 'Remove from favourites' : 'Favourite', icon: 'star', onclick: () => saveNote(m, { fav: !m.fav }) },
+      { label: m.note ? 'Edit note' : 'Add a note', icon: 'notebookPen', onclick: () => editNote(m) },
+      { label: 'Tags…', icon: 'tag', onclick: async () => { const { tagSheet } = await import('./views/review.js'); const tags = await tagSheet(m.tags || [], m.quote); if (tags) saveNote(m, { tags }) } },
+      !m.end ? { label: 'Edit highlight', icon: 'pencil', onclick: () => addTyped(m) } : null,
+      { label: 'Copy', icon: 'copy', onclick: () => copyText(m.quote, 'Copied') },
+      'sep',
+      { label: 'Delete', icon: 'trash', danger: true, onclick: () => dropNote(m) }
+    ], { align: 'start' })
+  }
+
+  async function saveNote(m, changes) {
+    try {
+      const after = await editMark(item.id, m.id, changes)
+      marks = marks.map((x) => (x.id === m.id ? after : x))
+      lib.highlights = null
+      drawNotes()
+    } catch (e) { failure(e) }
+  }
+
+  async function dropNote(m) {
+    const id = item.id
+    marks = marks.filter((x) => x.id !== m.id)
+    drawNotes()
+    try { await removeMark(id, m.id); toast('Highlight deleted') } catch (e) { failure(e); marks = await marksFor(id, { fresh: true }); drawNotes() }
+  }
+
+  // Type in a highlight from a paper book (or fix one that was imported).
+  async function addTyped(m = null) {
+    if (!item) return
+    let quote, loc, note
+    const result = await sheet({
+      title: m ? 'Edit highlight' : 'Add a highlight',
+      done: 'Save',
+      onDone: (close) => {
+        if (!quote.value.trim()) { quote.focus(); return }
+        close({ quote: quote.value.trim(), loc: loc.value.trim(), note: note ? note.value.trim() : undefined })
+      },
+      body: () => {
+        quote = h('textarea.field.nb-quote-field', { placeholder: 'The passage, as it is in the book', maxlength: '5000', autofocus: true, 'aria-label': 'Passage' })
+        quote.value = m ? m.quote : ''
+        loc = h('input.field', { type: 'text', placeholder: 'Page 112', maxlength: '40', 'aria-label': 'Page or location', enterkeyhint: 'done' })
+        loc.value = m ? m.loc : ''
+        note = m ? null : h('textarea.field', { placeholder: 'A note, if you like', maxlength: '4000', 'aria-label': 'Note' })
+        return [quote, h('div.sheet-label', 'Where it is'), loc, note ? h('div.sheet-label', 'Note') : null, note]
+      }
+    })
+    if (!result || result === true) return
+    try {
+      if (m) await saveNote(m, { quote: result.quote, loc: result.loc })
+      else {
+        const saved = await addMark(item.id, { quote: result.quote, loc: result.loc ? (/^\d+$/.test(result.loc) ? 'Page ' + result.loc : result.loc) : '', note: result.note || '' })
+        marks = [...marks, saved]
+        lib.highlights = null
+        drawNotes()
+        toast('Highlight added')
+      }
+    } catch (e) { failure(e) }
   }
 
   /* ---- Scrolling and progress --------------------------------------------------------------- */
@@ -252,6 +373,16 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   function more() {
     if (!item) return
     const it = item
+    if (it.kind === 'notes') {
+      menu(moreBtn, [
+        { label: 'Review this book', icon: 'repeat', onclick: () => import('./views/review.js').then((m) => m.openReview({ item: it.id, title: it.title })) },
+        { label: 'Add a highlight', icon: 'plus', onclick: () => addTyped() },
+        { label: 'Title and author…', icon: 'pencil', onclick: () => editBook(it) },
+        'sep',
+        { label: 'Delete the book', icon: 'trash', danger: true, onclick: () => deleteItem(it.id) }
+      ], { align: 'end' })
+      return
+    }
     const canShare = !!navigator.share && !wide()
     menu(moreBtn, [
       !wide() && it.status === 'ready' && (it.words || 0) >= 120 ? { label: it.summary ? 'Summary' : 'Summarise', icon: 'sparkles', onclick: () => summary() } : null,
@@ -262,6 +393,24 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
       'sep',
       { label: 'Delete', icon: 'trash', danger: true, onclick: () => deleteItem(it.id) }
     ], { align: 'end' })
+  }
+
+  async function editBook(it) {
+    let t, a
+    const result = await sheet({
+      title: 'Title and author',
+      done: 'Save',
+      onDone: (close) => { if (!t.value.trim()) { t.focus(); return } close({ title: t.value.trim(), author: a.value.trim() }) },
+      body: () => {
+        t = h('input.field', { type: 'text', maxlength: '300', 'aria-label': 'Title', autofocus: true })
+        t.value = it.title || ''
+        a = h('input.field', { type: 'text', maxlength: '120', 'aria-label': 'Author', placeholder: 'Author' })
+        a.value = it.author || ''
+        return [h('div.sheet-label', 'Title'), t, h('div.sheet-label', 'Author'), a]
+      }
+    })
+    if (!result || result === true) return
+    try { await update(it.id, result); if (item && item.id === it.id) { const mine = ++token; notebook(mine) } } catch (e) { failure(e) }
   }
 
   async function deleteItem(id) {
@@ -460,6 +609,8 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     try {
       const after = await noteMark(item.id, m.id, note)
       marks = marks.map((x) => (x.id === m.id ? after : x))
+      lib.highlights = null
+      if (item.kind === 'notes') { drawNotes(); toast(note ? 'Note saved' : 'Note removed'); return }
       for (const mk of body.querySelectorAll(`mark.hl[data-id="${CSS.escape(m.id)}"]`)) { mk.classList.toggle('has-note', !!note); mk.title = note }
       toast(note ? 'Note saved' : 'Note removed')
     } catch (e) { failure(e) }
@@ -499,16 +650,23 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     if (!m) return
     pop = h('div.pop', { role: 'toolbar', 'aria-label': 'Highlight', 'data-kind': 'mark' },
       h('button', { type: 'button', onclick: () => { closePops(); editNote(m) } }, ic('notebookPen', 16, 2), m.note ? 'Edit note' : 'Note'),
-      h('button', { type: 'button', onclick: () => { copyText(m.quote, 'Copied'); closePops() } }, ic('copy', 16, 2), 'Copy'),
+      h('button', { type: 'button', onclick: async () => {
+        closePops()
+        const { tagSheet } = await import('./views/review.js')
+        const tags = await tagSheet(m.tags || [], m.quote)
+        if (!tags) return
+        try { const after = await editMark(item.id, m.id, { tags }); marks = marks.map((x) => (x.id === m.id ? after : x)); lib.highlights = null; toast(tags.length ? 'Tagged' : 'Tags removed') } catch (e) { failure(e) }
+      } }, ic('tag', 16, 2), m.tags && m.tags.length ? m.tags.length === 1 ? m.tags[0] : m.tags.length + ' tags' : 'Tag'),
       h('button', { type: 'button', onclick: async () => { closePops(); const { shareHighlight } = await import('./share.js'); shareHighlight(item, m) } }, ic(m.share ? 'link' : 'share', 16, 2), m.share ? 'Shared' : 'Share'),
-      h('button.danger', { type: 'button', onclick: async () => {
+      h('button.is-icon', { type: 'button', 'aria-label': 'Copy', title: 'Copy', onclick: () => { copyText(m.quote, 'Copied'); closePops() } }, ic('copy', 16, 2)),
+      h('button.danger.is-icon', { type: 'button', 'aria-label': 'Remove', title: 'Remove', onclick: async () => {
         closePops()
         const id = item.id
         for (const x of body.querySelectorAll(`mark.hl[data-id="${CSS.escape(m.id)}"]`)) x.replaceWith(...x.childNodes)
         body.normalize()
         marks = marks.filter((x) => x.id !== m.id)
         try { await removeMark(id, m.id); toast('Highlight removed') } catch (e) { failure(e); marks = await marksFor(id, { fresh: true }); paintMarks() }
-      } }, ic('trash', 16, 2), 'Remove'))
+      } }, ic('trash', 16, 2)))
     placePop(pop, mk.getBoundingClientRect())
   }
 
@@ -615,6 +773,10 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     if (change.working === false && before.status !== now.status) return
     if (change.remote && now.cv !== before.cv && now.status === 'ready' && !isWorking(now.id)) { const mine = ++token; draw(mine) }
     else if (art && (before.fav !== now.fav || before.state !== now.state)) { const end = art.querySelector('.a-end'); if (end) end.replaceWith(ending(now)) }
+    if (now.kind === 'notes') {
+      if (change.remote && (now.marks !== before.marks || now.title !== before.title || now.image !== before.image)) { const mine = ++token; notebook(mine) }
+      return
+    }
     if (change.marks === item.id || (change.remote && now.marks !== before.marks)) marksFor(item.id, { fresh: true }).then((m) => { if (item && item.id === now.id) { marks = m; paintMarks() } }).catch(() => {})
   })
 

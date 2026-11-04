@@ -8,10 +8,10 @@ import Readability from '/vendor/readability/Readability.js'
 import DOMPurify from '/vendor/dompurify/purify.es.mjs'
 import * as api from './api.js'
 
-const TAGS = ['p', 'br', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'del', 'ins', 'sub', 'sup', 'small', 'abbr', 'cite', 'q', 'code', 'pre', 'kbd', 'samp', 'var',
+export const TAGS = ['p', 'br', 'a', 'em', 'strong', 'b', 'i', 'u', 's', 'del', 'ins', 'sub', 'sup', 'small', 'abbr', 'cite', 'q', 'code', 'pre', 'kbd', 'samp', 'var',
   'blockquote', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'img', 'figure', 'figcaption', 'table', 'thead', 'tbody', 'tfoot',
   'tr', 'th', 'td', 'caption', 'div', 'span', 'section', 'article', 'details', 'summary', 'time', 'mark']
-const ATTRS = ['href', 'src', 'alt', 'title', 'width', 'height', 'colspan', 'rowspan', 'datetime', 'start', 'reversed', 'lang', 'dir', 'id']
+export const ATTRS = ['href', 'src', 'alt', 'title', 'width', 'height', 'colspan', 'rowspan', 'datetime', 'start', 'reversed', 'lang', 'dir', 'id']
 const BLOCK = new Set(['P', 'DIV', 'SECTION', 'ARTICLE', 'BLOCKQUOTE', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'PRE', 'FIGURE', 'FIGCAPTION', 'TR', 'DT', 'DD', 'TABLE', 'UL', 'OL', 'HR', 'BR', 'DETAILS', 'SUMMARY'])
 
 export async function sha(text) {

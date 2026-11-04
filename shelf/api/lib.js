@@ -18,6 +18,7 @@ export const key = (id) => String(id).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 8
 export const ITEMS = (k) => 'items.' + k
 export const TEXT = (k) => 'text.' + k
 export const MARKS = (k) => 'marks.' + k
+export const FEEDS = (k) => 'feeds.' + k
 
 export class Fail extends Error {
   constructor(status, code, message) {
@@ -28,6 +29,20 @@ export class Fail extends Error {
   }
 }
 export const fail = (status, code, message) => { throw new Fail(status, code, message) }
+
+export const json = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), {
+  status,
+  headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', ...headers }
+})
+export const err = (status, code, message) => json({ error: { code, message } }, status)
+
+export async function readJSON(request, max = 2_000_000) {
+  const length = Number(request.headers.get('content-length') || 0)
+  if (length > max) fail(413, 'too_large', 'That’s more than Shelf takes in one go.')
+  try { return await request.json() } catch { fail(400, 'bad_json', 'The request wasn’t valid JSON.') }
+}
+
+export const clip = (s, n) => (typeof s === 'string' ? s.replace(/\s+/g, ' ').trim().slice(0, n) : '')
 
 /* ---- Links -------------------------------------------------------------------------------- */
 
@@ -66,7 +81,7 @@ export function canonical(url) {
 export const host = (url) => { try { return new URL(url).hostname.toLowerCase().replace(/^www\./, '') } catch { return '' } }
 
 export async function sha(text) {
-  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', typeof text === 'string' ? new TextEncoder().encode(text) : text))
   let out = ''
   for (let i = 0; i < 16; i++) out += (bytes[i] < 16 ? '0' : '') + bytes[i].toString(16)
   return out
@@ -74,16 +89,15 @@ export async function sha(text) {
 
 /* ---- Items ---------------------------------------------------------------------------------- */
 
-const clip = (s, n) => (typeof s === 'string' ? s.replace(/\s+/g, ' ').trim().slice(0, n) : '')
-
 // What the page and Claude see of a saved link.
 export function itemDTO(doc) {
   return {
     id: doc.id,
-    url: doc.url,
+    kind: doc.kind || 'article',
+    url: doc.url || '',
     title: doc.title || '',
     site: doc.site || '',
-    host: doc.host || host(doc.url),
+    host: doc.host || (doc.url ? host(doc.url) : ''),
     author: doc.author || '',
     excerpt: doc.excerpt || '',
     image: doc.img ? '/i/' + doc.img : null,
@@ -104,7 +118,23 @@ export function itemDTO(doc) {
     via: doc.via || 'app',
     note: doc.note || '',
     summary: Array.isArray(doc.summary) ? doc.summary : null,
-    error: doc.error || ''
+    error: doc.error || '',
+    source: doc.source || '',
+    feed: doc.feed || '',
+    seen: !!doc.seen,
+    video: doc.video || '',
+    pages: doc.pages || 0,
+    freq: doc.freq || 'normal'
+  }
+}
+
+// What the page and Claude see of a highlight. Imported ones have a place in the book (loc)
+// in place of a place in the text (start, end).
+export function markDTO(m) {
+  return {
+    id: m.id, item: m.item, quote: m.quote, prefix: m.prefix || '', suffix: m.suffix || '', start: m.start || 0, end: m.end || 0,
+    note: m.note || '', at: m.at || m._createdAt, share: m.share || '', loc: m.loc || '', tags: Array.isArray(m.tags) ? m.tags : [],
+    fav: !!m.fav, skip: !!m.skip, due: m.due || 0
   }
 }
 
@@ -184,7 +214,39 @@ export function saveLink(env, k, { url, title = '', note = '', tags = [], via = 
   return { doc: { ...doc, id }, existing: false }
 }
 
+// A book, a PDF or a source of imported highlights: something on the shelf without a web
+// address of its own.
+export function saveThing(env, k, { kind = 'book', title = '', author = '', site = '', source = 'upload', state = 'unread', saved = 0, tags = [], status = 'pending' }) {
+  const { ds } = env.holm.app
+  if (ds.count(ITEMS(k), {}) >= LIMIT) fail(409, 'full', `Your shelf holds ${LIMIT} things. Delete some from the Archive to make room.`)
+  const doc = {
+    kind: ['book', 'pdf', 'notes'].includes(kind) ? kind : 'book',
+    url: '',
+    host: '',
+    title: clip(title, 300) || 'Untitled',
+    author: clip(author, 120),
+    site: clip(site, 80),
+    status,
+    state: state === 'archived' ? 'archived' : 'unread',
+    fav: false,
+    tags: cleanTags(tags),
+    progress: 0,
+    saved: saved && saved > 0 && saved < Date.now() + 864e5 ? Math.round(saved) : Date.now(),
+    read: state === 'archived' ? (saved || Date.now()) : 0,
+    cv: 0,
+    marks: 0,
+    via: source === 'upload' ? 'app' : 'import',
+    source: clip(source, 20),
+    note: ''
+  }
+  const id = ds.insert(ITEMS(k), doc)
+  // Found by its title and author in search, before it has any words of its own.
+  try { ds.insert(TEXT(k), { item: id, title: doc.title, site: '', author: doc.author, text: '' }) } catch {}
+  return { ...doc, id }
+}
+
 export function forgetURL(env, k, url) {
+  if (!url) return
   try { env.holm.app.kv.delete(urlKey(k, canonical(url))) } catch {}
 }
 

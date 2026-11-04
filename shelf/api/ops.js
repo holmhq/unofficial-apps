@@ -32,7 +32,8 @@ function brief(env, doc) {
   return {
     id: d.id,
     title: d.title || d.host,
-    url: d.url,
+    kind: d.kind !== 'article' ? d.kind : undefined,
+    url: d.url || undefined,
     site: d.site || d.host,
     author: d.author || undefined,
     minutes: d.words ? minutes(d.words) : undefined,
@@ -82,8 +83,8 @@ export function opRead(input, env) {
       text: part || (doc.status === 'pending' ? '' : ''),
       characters: text.length,
       next_offset: offset + length < text.length ? offset + length : undefined,
-      highlights: marks.map((m) => ({ quote: m.quote.replace(/\s+/g, " ").trim(), note: m.note || undefined })),
-      hint: !text ? (doc.status === 'pending' ? 'This link hasn’t been fetched yet: Shelf makes it readable the next time it is open on one of the person’s devices. Read the original at its url meanwhile.' : 'Shelf couldn’t make this page readable. Read the original at its url.') : undefined
+      highlights: marks.map((m) => ({ quote: m.quote.replace(/\s+/g, " ").trim(), note: m.note || undefined, where: m.loc || undefined, tags: m.tags && m.tags.length ? m.tags : undefined })),
+      hint: !text ? (doc.kind === 'notes' ? 'Shelf keeps only the highlights of this book, not its text.' : doc.status === 'pending' ? 'This link hasn’t been fetched yet: Shelf makes it readable the next time it is open on one of the person’s devices. Read the original at its url meanwhile.' : 'Shelf couldn’t make this page readable. Read the original at its url.') : undefined
     }
   })
 }

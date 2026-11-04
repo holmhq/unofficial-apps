@@ -2,11 +2,11 @@
 // menu, the footer credit, and the sheets for saving a link, connecting Claude, the bookmarklet
 // and bringing in an export.
 
-import { h, ic, avatar, menu, segmented, haptic, toast, sheet, copyText, fill } from './ui.js'
+import { h, ic, avatar, menu, segmented, haptic, toast, sheet, copyText, fill, toggle } from './ui.js'
 import { holmMark } from './icons.js'
 import * as api from './api.js'
 import * as theme from './theme.js'
-import { lib, save, forget, importLinks } from './store.js'
+import { lib, save, forget, importLinks, importHighlights, addBook } from './store.js'
 
 export const state = { me: null }
 export const SOURCE = 'https://github.com/holmhq/unofficial-apps/tree/main/shelf'
@@ -93,8 +93,11 @@ function accountMenu(anchor) {
       : h('div.me', h('span.avatar.ghost', ic('user', 22, 2)), h('div.grow', h('b', 'Not signed in'), h('small', 'Sign in to keep a shelf here'))),
     'sep',
     m ? { label: 'Save a link', icon: 'bookmarkPlus', onclick: () => saveSheet() } : null,
-    m ? { label: 'Bring in your links…', icon: 'fileUp', onclick: () => importSheet() } : null,
+    m ? { label: 'Add a paper book…', icon: 'bookPlus', onclick: () => bookSheet() } : null,
     m ? { label: 'Save from anywhere', icon: 'plug', onclick: () => connectSheet() } : null,
+    m ? 'sep' : null,
+    m ? { label: 'Bring in links and highlights…', icon: 'fileUp', onclick: () => importSheet() } : null,
+    m ? { label: 'Export your shelf…', icon: 'download', onclick: () => exportSheet() } : null,
     m && innerWidth >= 900 ? { label: 'Keyboard shortcuts', icon: 'keyboard', onclick: () => keysSheet() } : null,
     m ? 'sep' : null,
     h('div.menu-theme', themes),
@@ -176,7 +179,8 @@ export function saveSheet(prefill = '') {
       requestAnimationFrame(() => { input.focus() })
       return [
         h('div.save-field', input, paste),
-        h('p.sheet-note', 'Shelf fetches the page on your server and keeps a clean copy to read, with its pictures. ', h('button.btn.plain.small', { type: 'button', style: { padding: '0', height: 'auto', 'text-decoration': 'underline' }, onclick: () => { close(); connectSheet() } }, 'Save from anywhere'))
+        h('p.sheet-note', 'Shelf fetches the page on your server and keeps a clean copy to read, with its pictures. ', h('button.btn.plain.small', { type: 'button', style: { padding: '0', height: 'auto', 'text-decoration': 'underline' }, onclick: () => { close(); connectSheet() } }, 'Save from anywhere'),
+          ' · ', h('button.btn.plain.small', { type: 'button', style: { padding: '0', height: 'auto', 'text-decoration': 'underline' }, onclick: () => { close(); bookSheet() } }, 'Add a paper book'))
       ]
     }
   })
@@ -216,36 +220,74 @@ export function connectSheet() {
 
 export function importSheet() {
   return sheet({
-    title: 'Bring in your links',
+    title: 'Bring in links and highlights',
     cancel: null,
     done: 'Close',
     body: (close) => {
       const body = h('div', { style: { display: 'grid', gap: '14px' } })
-      const pick = h('input', { type: 'file', accept: '.csv,.html,.htm,.txt,.json,text/csv,text/html,text/plain,application/json', hidden: true })
+      const pick = h('input', { type: 'file', accept: '.csv,.html,.htm,.txt,.json,.zip,text/csv,text/html,text/plain,application/json,application/zip', hidden: true })
       const start = () => pick.click()
+      const progress = (what, total) => {
+        const bar = h('i')
+        const label = h('small.num', `0 of ${total.toLocaleString()}`)
+        fill(body, h('div.import-prog', h('b', what), h('div.meter', bar), label))
+        return (f, text) => { bar.style.transform = `scaleX(${f})`; label.textContent = text }
+      }
+      const done = (title, text, action, go2) => fill(body, h('div.empty', { style: { margin: '10px auto 0' } }, h('div.empty-ic', ic('circleCheck', 28, 1.8)), h('b', title), h('p', text),
+        h('button.btn.primary', { type: 'button', onclick: () => { close(); go(go2) } }, action)))
       pick.addEventListener('change', async () => {
         const file = pick.files && pick.files[0]
+        pick.value = ''
         if (!file) return
-        const { parseExport } = await import('./importer.js')
-        let rows
-        try { rows = parseExport(await file.text(), file.name) } catch (e) { toast(e.message, { kind: 'bad' }); return }
-        if (!rows.length) { toast('No links were found in that file.', { kind: 'bad' }); return }
-        const bar = h('i')
-        const label = h('small.num', `0 of ${rows.length.toLocaleString()}`)
-        fill(body, h('div.import-prog', h('b', `Bringing in ${rows.length.toLocaleString()} links…`), h('div.meter', bar), label))
+        const { parseExport, parseHighlights, looksLikeHighlights } = await import('./importer.js')
+        let text = ''
+        let rows = []
+        let sources = []
         try {
-          const r = await importLinks(rows, (f, n) => { bar.style.transform = `scaleX(${f})`; label.textContent = `${Math.round(f * rows.length).toLocaleString()} of ${rows.length.toLocaleString()} · ${n.added.toLocaleString()} new` })
-          fill(body, h('div.empty', { style: { margin: '10px auto 0' } }, h('div.empty-ic', ic('circleCheck', 28, 1.8)), h('b', `${r.added.toLocaleString()} links added`),
-            h('p', (r.skipped ? `${r.skipped.toLocaleString()} were already here or couldn’t be read. ` : '') + 'The newest are being made readable now; the rest are fetched when you open them.'),
-            h('button.btn.primary', { type: 'button', onclick: () => { close(); go('/') } }, 'See your reading list')))
+          if (/\.zip$/i.test(file.name) || file.type === 'application/zip') {
+            // An export packed as a ZIP (Omnivore, Readwise, Pocket): read every file in it.
+            const { readZip } = await import('./zip.js')
+            const zip = await readZip(await file.arrayBuffer())
+            for (const name of zip.names()) {
+              if (!/\.(csv|json|html?|txt)$/i.test(name) || /__MACOSX/.test(name)) continue
+              const t = await zip.text(name)
+              if (looksLikeHighlights(t, name)) sources.push(...parseHighlights(t, name))
+              else rows.push(...parseExport(t, name))
+            }
+          } else {
+            text = await file.text()
+            if (looksLikeHighlights(text, file.name)) sources = parseHighlights(text, file.name)
+            else rows = parseExport(text, file.name)
+          }
+        } catch (e) { toast(e.message || 'That file couldn’t be read.', { kind: 'bad' }); return }
+        const count = sources.reduce((n, b) => n + b.highlights.length, 0)
+        if (!rows.length && !count) { toast('No links or highlights were found in that file.', { kind: 'bad' }); return }
+        try {
+          let summary = ''
+          if (count) {
+            const step = progress(`Bringing in ${count.toLocaleString()} highlights…`, count)
+            const r = await importHighlights(sources, (f, n) => step(f, `${Math.round(f * sources.length).toLocaleString()} of ${sources.length.toLocaleString()} books and articles · ${n.added.toLocaleString()} new`))
+            const kinds = sources.every((b) => b.kind !== 'article') ? (sources.length === 1 ? 'book' : 'books') : sources.every((b) => b.kind === 'article') ? (sources.length === 1 ? 'article' : 'articles') : 'books and articles'
+            summary = `${r.added.toLocaleString()} highlights from ${sources.length.toLocaleString()} ${kinds}` + (r.skipped ? `, ${r.skipped.toLocaleString()} already here` : '') + '. '
+            if (!rows.length && !r.added) return done('Nothing new', `All ${count.toLocaleString()} highlights from ${sources.length === 1 ? 'this ' + kinds : 'these ' + sources.length.toLocaleString() + ' ' + kinds} are on your shelf already.`, 'See your highlights', '/highlights')
+            if (!rows.length) return done(`${r.added.toLocaleString()} highlights added`, summary + 'They come back a few at a time in your daily review.', 'See your highlights', '/highlights')
+          }
+          const step = progress(`Bringing in ${rows.length.toLocaleString()} links…`, rows.length)
+          const r = await importLinks(rows, (f, n) => step(f, `${Math.round(f * rows.length).toLocaleString()} of ${rows.length.toLocaleString()} · ${n.added.toLocaleString()} new`))
+          done(`${r.added.toLocaleString()} links added`, summary + (r.skipped ? `${r.skipped.toLocaleString()} links were already here or couldn’t be read. ` : '') + 'The newest are being made readable now; the rest are fetched when you open them.', 'See your reading list', '/')
         } catch (e) { failure(e); fill(body, ...intro()) }
       })
+      const row = (icon, title, text) => h('div.row', h('span.row-ic', ic(icon, 17, 2)), h('div.grow', h('b', title), h('small', text)))
       const intro = () => [
-        h('p.sheet-note', 'Pick the file you exported. Shelf reads the links, their titles, tags, and whether you’d read them.'),
+        h('p.sheet-note', 'Pick the file you exported. Shelf reads the links with their titles, tags and whether you’d read them, and highlights with their notes.'),
+        h('div.sheet-label', 'Links'),
         h('div.group',
-          h('div.row', h('span.row-ic', ic('fileText', 17, 2)), h('div.grow', h('b', 'Pocket'), h('small', 'The CSV from Pocket’s export'))),
-          h('div.row', h('span.row-ic', ic('fileText', 17, 2)), h('div.grow', h('b', 'Instapaper'), h('small', 'Settings → Export → CSV'))),
-          h('div.row', h('span.row-ic', ic('fileText', 17, 2)), h('div.grow', h('b', 'Browser bookmarks, Omnivore, Raindrop'), h('small', 'An HTML bookmarks file, or any list of links')))),
+          row('fileText', 'Pocket, Instapaper, Readwise Reader', 'Their CSV export, or the ZIP it came in'),
+          row('fileText', 'Bookmarks, Omnivore, Raindrop', 'An HTML bookmarks file, a JSON export, or any list of links')),
+        h('div.sheet-label', 'Highlights'),
+        h('div.group',
+          row('bookOpen', 'Kindle', 'My Clippings.txt from the Kindle’s documents folder, or a Bookcision file'),
+          row('highlighter', 'Readwise', 'Export to CSV in Readwise, or any CSV with a Highlight column')),
         h('button.btn.primary.large.block', { type: 'button', onclick: start }, ic('fileUp', 18, 2.2), 'Choose a file'),
         pick
       ]
@@ -253,6 +295,69 @@ export function importSheet() {
       return body
     }
   })
+}
+
+/* ---- Taking everything with you -------------------------------------------------------------------- */
+
+export function exportSheet() {
+  let articles = false
+  return sheet({
+    title: 'Export your shelf',
+    cancel: null,
+    done: 'Close',
+    body: () => {
+      const body = h('div', { style: { display: 'grid', gap: '14px' } })
+      const intro = () => {
+        const toggleRow = h('label.row', h('span.row-ic', ic('fileText', 17, 2)), h('div.grow', h('b', 'Include the articles'), h('small', 'Each readable article as Markdown too. Slower with many.')),
+          toggle(articles, (on) => { articles = on }, 'Include the articles'))
+        return [
+          h('p.sheet-note', 'One ZIP file with everything on your shelf, made on this device.'),
+          h('div.group',
+            h('div.row', h('span.row-ic', ic('highlighter', 17, 2)), h('div.grow', h('b', 'Highlights as Markdown'), h('small', 'A file per book or article, ready for Obsidian, Logseq or Notion'))),
+            h('div.row', h('span.row-ic', ic('fileDown', 17, 2)), h('div.grow', h('b', 'CSV for Readwise and spreadsheets'), h('small', 'highlights.csv opens in Readwise’s CSV import; library.csv lists everything saved'))),
+            h('div.row', h('span.row-ic', ic('download', 17, 2)), h('div.grow', h('b', 'A full copy'), h('small', 'shelf.json, with every field'))),
+            toggleRow),
+          h('button.btn.primary.large.block', { type: 'button', onclick: run }, ic('download', 18, 2.2), 'Export')
+        ]
+      }
+      async function run() {
+        const bar = h('i')
+        const label = h('small.num', 'Starting…')
+        fill(body, h('div.import-prog', h('b', 'Exporting your shelf…'), h('div.meter', bar), label))
+        try {
+          const { exportShelf, download } = await import('./export.js')
+          const { blob, counts } = await exportShelf({ articles, onStep: (text, f) => { label.textContent = text; bar.style.transform = `scaleX(${f})` } })
+          const d = new Date()
+          download(blob, `Shelf ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.zip`)
+          fill(body, h('div.empty', { style: { margin: '10px auto 0' } }, h('div.empty-ic', ic('circleCheck', 28, 1.8)), h('b', 'Exported'),
+            h('p', `${counts.items.toLocaleString()} saved, ${counts.highlights.toLocaleString()} highlights from ${counts.sources.toLocaleString()} books and articles. Look for the ZIP in your downloads.`)))
+        } catch (e) { failure(e); fill(body, ...intro()) }
+      }
+      fill(body, ...intro())
+      return body
+    }
+  })
+}
+
+/* ---- A book you're reading on paper ---------------------------------------------------------------- */
+
+export async function bookSheet() {
+  let title, author
+  const made = await sheet({
+    title: 'Add a paper book',
+    done: 'Add',
+    onDone: async (close) => {
+      if (!title.value.trim()) { title.focus(); return }
+      try { close(await addBook({ title: title.value.trim(), author: author.value.trim() })) } catch (e) { failure(e) }
+    },
+    body: () => {
+      title = h('input.field', { type: 'text', placeholder: 'Title', maxlength: '300', autofocus: true, 'aria-label': 'Title', enterkeyhint: 'next' })
+      author = h('input.field', { type: 'text', placeholder: 'Author', maxlength: '120', 'aria-label': 'Author', enterkeyhint: 'done' })
+      title.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); author.focus() } })
+      return [h('p.sheet-note', 'Type in the passages you mark in a book on paper. They join your highlights and come back in your daily review.'), title, author]
+    }
+  })
+  if (made && made.id) go('/read/' + made.id)
 }
 
 /* ---- Keyboard shortcuts ----------------------------------------------------------------------------------- */
@@ -268,6 +373,7 @@ export function keysSheet() {
       row(['S'], 'Favourite'),
       row(['H'], 'Highlight what you selected'),
       row(['L'], 'Listen'),
+      row(['R'], 'Today’s review: → next, F favourite, T tag, N note'),
       row(['A'], 'Save a link'),
       row(['/'], 'Search'),
       row(['⌘', 'V'], 'Paste a link anywhere to save it'),

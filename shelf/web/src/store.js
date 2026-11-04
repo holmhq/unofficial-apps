@@ -9,7 +9,7 @@
 import * as api from './api.js'
 import { subscribe } from './live.js'
 
-export const lib = { me: null, items: new Map(), v: 0, ready: false, marks: new Map(), highlights: null }
+export const lib = { me: null, items: new Map(), v: 0, ready: false, marks: new Map(), highlights: null, review: null }
 
 const listeners = new Set()
 export function on(fn) { listeners.add(fn); return () => listeners.delete(fn) }
@@ -132,10 +132,14 @@ function drop(id, { remote = false } = {}) {
 export const all = () => [...lib.items.values()]
 export const minutes = (i) => (i.words ? Math.max(1, Math.round(i.words / 230)) : 0)
 const bySaved = (a, b) => (b.saved || 0) - (a.saved || 0)
-export const unread = () => all().filter((i) => i.state !== 'archived').sort(bySaved)
-export const favourites = () => all().filter((i) => i.fav).sort(bySaved)
-export const archived = () => all().filter((i) => i.state === 'archived').sort((a, b) => (b.read || b.saved) - (a.read || a.saved))
+// Books kept only for their highlights (a Kindle import, a paper book) live on the Highlights
+// page, not in the lists of things to read.
+const readable = (i) => i.kind !== 'notes'
+export const unread = () => all().filter((i) => readable(i) && i.state !== 'archived').sort(bySaved)
+export const favourites = () => all().filter((i) => readable(i) && i.fav).sort(bySaved)
+export const archived = () => all().filter((i) => readable(i) && i.state === 'archived').sort((a, b) => (b.read || b.saved) - (a.read || a.saved))
 export const tagged = (tag) => all().filter((i) => (i.tags || []).includes(tag)).sort(bySaved)
+export const books = () => all().filter((i) => i.kind === 'notes').sort((a, b) => a.title.localeCompare(b.title))
 
 export function tags() {
   const count = new Map()
@@ -283,8 +287,11 @@ export async function addMark(id, mark) {
   return r.mark
 }
 
-export async function noteMark(id, markId, note) {
-  const r = await api.patch('/api/marks/' + markId, { note })
+export async function noteMark(id, markId, note) { return editMark(id, markId, { note }) }
+
+// Change a highlight's note, tags, favourite (or, for one typed in, its words and place).
+export async function editMark(id, markId, changes) {
+  const r = await api.patch('/api/marks/' + markId, changes)
   lib.v = Math.max(lib.v, r.v || 0)
   keepMarks(id, (lib.marks.get(id) || []).map((m) => (m.id === markId ? r.mark : m)))
   return r.mark
@@ -298,15 +305,128 @@ export async function removeMark(id, markId) {
   if (item) upsert({ ...item, marks: Math.max(0, (item.marks || 1) - 1) }, { quiet: true })
 }
 
-export async function highlights() {
+// Every highlight, a page at a time (the server sends a hundred per request); `onPage` sees
+// the list grow, so a long one draws before it has all arrived.
+let gathering = null
+export async function highlights(onPage = null) {
   if (lib.highlights) return lib.highlights
-  let kept = null
-  try { kept = JSON.parse(localStorage.getItem('shelf:marks:all') || 'null') } catch {}
-  if (kept && !lib.highlights) lib.highlights = kept
-  const r = await api.get('/api/highlights')
-  lib.highlights = r
-  try { localStorage.setItem('shelf:marks:all', JSON.stringify(r)) } catch {}
+  if (gathering) return gathering
+  gathering = (async () => {
+    const marks = []
+    const items = {}
+    let cursor = null
+    do {
+      const r = await api.get('/api/highlights' + (cursor ? '?cursor=' + encodeURIComponent(cursor) : ''))
+      marks.push(...r.marks)
+      Object.assign(items, r.items)
+      cursor = r.cursor
+      if (onPage && cursor) onPage({ marks: marks.slice(), items: { ...items }, partial: true })
+    } while (cursor)
+    const all = { marks, items }
+    lib.highlights = all
+    try { localStorage.setItem('shelf:marks:all', JSON.stringify(all)) } catch {}
+    return all
+  })()
+  try { return await gathering } finally { gathering = null }
+}
+
+export async function everyHighlight(onPage = () => {}) {
+  lib.highlights = null
+  return highlights((part) => onPage(part.marks.length))
+}
+
+/* ---- Review ------------------------------------------------------------------------------------------- */
+
+export const localDay = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
+
+export async function reviewSet({ tag = '', item = '' } = {}) {
+  const q = '?day=' + localDay() + (tag ? '&tag=' + encodeURIComponent(tag) : '') + (item ? '&item=' + encodeURIComponent(item) : '')
+  for (let i = 0; i < 20; i++) {
+    const r = await api.get('/api/review' + q)
+    if (!r.preparing) {
+      if (!tag && !item) { lib.review = r; try { localStorage.setItem('shelf:review:' + (lib.me && lib.me.id), JSON.stringify(r)) } catch {} }
+      return r
+    }
+  }
+  throw new Error('Your highlights are still being got ready. Try again in a moment.')
+}
+export const keptReview = () => {
+  if (lib.review && lib.review.day === localDay()) return lib.review
+  try { const r = JSON.parse(localStorage.getItem('shelf:review:' + (lib.me && lib.me.id)) || 'null'); return r && r.day === localDay() ? r : null } catch { return null }
+}
+
+export async function reviewed(markId, action) {
+  const r = await api.post('/api/review/' + markId, { action, day: localDay() })
+  if (lib.review && lib.review.cards.some((c) => c.mark.id === markId) && action !== 'restore' && !lib.review.done.includes(markId)) lib.review.done.push(markId)
+  if (lib.review) { lib.review.streak = r.streak; try { localStorage.setItem('shelf:review:' + (lib.me && lib.me.id), JSON.stringify(lib.review)) } catch {} }
+  for (const [id, marks] of lib.marks) if (marks.some((m) => m.id === markId)) keepMarks(id, marks.map((m) => (m.id === markId ? r.mark : m)))
+  emit({ review: true })
   return r
+}
+
+export async function reviewSize(n) {
+  await api.patch('/api/review', { n, day: localDay() })
+  lib.review = null
+  return reviewSet()
+}
+
+/* ---- Books kept for their highlights --------------------------------------------------------------------- */
+
+export async function addBook({ title, author }) {
+  const r = await api.post('/api/uploads', { kind: 'notes', title, author })
+  lib.v = Math.max(lib.v, r.v || 0)
+  upsert(r.item, { fresh: true })
+  return r.item
+}
+
+// Covers are looked for two at a time, each book once per visit.
+const coverAsked = new Map()
+let coversRunning = 0
+const coverQueue = []
+export function findCover(id) {
+  if (coverAsked.has(id)) return coverAsked.get(id)
+  const job = new Promise((resolve) => coverQueue.push({ id, resolve }))
+  coverAsked.set(id, job)
+  nextCover()
+  return job
+}
+function nextCover() {
+  while (coversRunning < 2 && coverQueue.length) {
+    const { id, resolve } = coverQueue.shift()
+    coversRunning++
+    api.post('/api/items/' + id + '/cover')
+      .then((r) => { if (r.item) { lib.v = Math.max(lib.v, r.v || 0); upsert(r.item, { quiet: true }) } resolve(r.image || null) })
+      .catch(() => resolve(null))
+      .finally(() => { coversRunning--; nextCover() })
+  }
+}
+
+export async function importHighlights(sources, onProgress) {
+  let added = 0
+  let skipped = 0
+  let made = 0
+  let i = 0
+  while (i < sources.length) {
+    // Batches small enough to send: a few books, or one very long one.
+    const batch = []
+    let size = 0
+    for (let j = i; j < sources.length && batch.length < 20; j++) {
+      const n = JSON.stringify(sources[j]).length
+      if (batch.length && size + n > 900_000) break
+      batch.push(sources[j])
+      size += n
+    }
+    const r = await api.post('/api/import/highlights', { sources: batch })
+    added += r.added
+    skipped += r.skipped
+    made += r.books
+    i += Math.max(1, r.done || batch.length)
+    if (onProgress) onProgress(i / sources.length, { added, skipped, made })
+  }
+  lib.highlights = null
+  await refresh(true)
+  emit({ marks: true })
+  return { added, skipped, made }
 }
 export const keptHighlights = () => {
   if (lib.highlights) return lib.highlights

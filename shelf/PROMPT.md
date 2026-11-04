@@ -45,7 +45,18 @@ Readability and DOMPurify with their licences.
   from fetch with its own og tags and a preview card drawn on a canvas in the
   browser; turning it off ends the link.
 - Full-text search over articles and highlights with ds.search.
-- Import from Pocket and Instapaper CSV, bookmark HTML or any list of links.
+- Import from Pocket, Instapaper and Readwise Reader CSV, bookmark HTML or
+  any list of links, and ZIP exports read with DecompressionStream.
+- A daily review of highlights, Readwise-style: a few a day, one at a time,
+  spaced out (keep, sooner, much later, never), favourites and per-source
+  frequency, notes and tags on highlights, a streak; review one book or tag
+  on demand. Holm has no schedules, so it waits in the app.
+- Kindle My Clippings.txt, Bookcision and Readwise CSV highlights become
+  books with Open Library covers and their highlights in book order; paper
+  books take typed-in highlights. Re-importing adds only what's new.
+- Export one ZIP made in the browser: Markdown per source with front matter
+  (Obsidian, Logseq, Notion), highlights.csv in Readwise's import layout,
+  library.csv and a JSON copy.
 - MCP tools (auth "user", each checking the caller): list, read, search,
   save (optionally with the article's text, readable at once), update, and
   highlights.
@@ -70,3 +81,8 @@ to the agent:
 > - find that will be strategically useful for people, so that folks will install holm
 > - and make it esquistely well designed with exceptional attention to detai0l
 > - showcasing the capabilities of holm
+
+Shelf 0.3 onwards came from a follow-up, after comparing Shelf with Readwise:
+
+> Yes, I would like to do a proper gap analysis with ReadWise and close all
+> possible gaps as elegantly as possible
