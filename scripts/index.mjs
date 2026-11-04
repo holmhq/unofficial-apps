@@ -12,13 +12,16 @@
 // "h1:" and the base64 SHA-256 of that summary. Nodes keep it to notice a
 // release tag that later points at different files; it is not shown to people.
 //
-// Each app also carries its version history, from its earlier release tags.
+// Each app also carries its version history, from its earlier release tags,
+// and its MCP tools from api/contract.json, which a store lists for people.
 //
 // An app's store listing lives in <app>/listing/ (listing.json, its
 // screenshots and an optional 1200x630 cover.png from scripts/covers.mjs), kept
 // out of the deploy with "publish": {"exclude": ["/listing/"]}. Each image
 // carries a short content hash, so a store can cache it under a URL that
-// changes whenever the image does.
+// changes whenever the image does. The description's first paragraph is the
+// short version a store shows first, so it stays within SUMMARY_MAX
+// characters; "related" names up to four other apps to show beside it.
 
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
@@ -30,6 +33,10 @@ const INDEX = join(ROOT, 'index.json')
 const REPOSITORY = 'github.com/holmhq/unofficial-apps'
 const EXT = 'com.holmhq.unofficial'
 const SCREENSHOT_MAX = 600 * 1024
+const SUMMARY_MAX = 300
+const RELATED_MAX = 4
+const RISKS = ['read', 'write', 'destructive']
+const AUTHS = ['public', 'user', 'member', 'admin']
 
 const git = (args, options = {}) => execFileSync('git', args, { cwd: ROOT, maxBuffer: 64 << 20, ...options })
 const sha256 = bytes => createHash('sha256').update(bytes).digest()
@@ -133,6 +140,12 @@ function listing(dir) {
   const where = `${dir}/listing/listing.json`
   const data = JSON.parse(readFileSync(path, 'utf8'))
   for (const key of ['subtitle', 'category', 'description']) if (typeof data[key] !== 'string' || !data[key]) fail(`${where}: needs "${key}"`)
+  const summary = data.description.split('\n\n')[0]
+  if (summary.length > SUMMARY_MAX) fail(`${where}: the description's first paragraph is the store's short version; keep it to ${SUMMARY_MAX} characters (it has ${summary.length})`)
+  const related = data.related || []
+  if (!Array.isArray(related) || related.length > RELATED_MAX || related.some(name => typeof name !== 'string' || name === dir)) {
+    fail(`${where}: "related" is a list of up to ${RELATED_MAX} other apps' folder names`)
+  }
   const screenshots = (data.screenshots || []).map(shot => {
     const file = join(ROOT, dir, 'listing', shot.file || '')
     if (!shot.file || shot.file.includes('/') || !existsSync(file)) fail(`${where}: screenshot "${shot.file}" not found in listing/`)
@@ -155,6 +168,7 @@ function listing(dir) {
     description: data.description,
     whatsNew: data.whatsNew || '',
     featured: data.featured === true,
+    ...(related.length ? { related } : {}),
     screenshots,
     ...(cover ? { cover } : {})
   }
@@ -213,11 +227,28 @@ function readApp(dir) {
     symbol: symbol(dir),
     demo: ext.demo || null,
     listing: listing(dir),
+    mcp: tools(dir),
     prompt: prompt(dir)
   }
   entry.history = history(dir, manifest.version, (entry.listing && entry.listing.whatsNew) || '')
   for (const key of Object.keys(entry)) if (entry[key] === null) delete entry[key]
   return entry
+}
+
+// The app's named operations, which Holm serves as MCP tools: what each does
+// in a line, how risky it is and who may call it.
+function tools(dir) {
+  const path = join(ROOT, dir, 'api', 'contract.json')
+  if (!existsSync(path)) return null
+  const where = `${dir}/api/contract.json`
+  const operations = Object.entries(JSON.parse(readFileSync(path, 'utf8')).operations || {})
+  if (!operations.length) return null
+  return operations.map(([name, op]) => {
+    if (typeof op.summary !== 'string' || !op.summary) fail(`${where}: operation "${name}" needs a "summary"`)
+    if (!RISKS.includes(op.risk)) fail(`${where}: operation "${name}" has an unknown "risk"`)
+    if (!AUTHS.includes(op.auth)) fail(`${where}: operation "${name}" has an unknown "auth"`)
+    return { name, summary: op.summary, risk: op.risk, auth: op.auth }
+  })
 }
 
 // An app folder is a top-level directory with a holm.json or manifest.json.
@@ -230,6 +261,11 @@ function appDirs() {
 const render = index => JSON.stringify(index, null, 2) + '\n'
 const mode = process.argv[2] || ''
 const index = { schema: 1, repository: REPOSITORY, apps: appDirs().map(readApp) }
+for (const app of index.apps) {
+  for (const name of (app.listing && app.listing.related) || []) {
+    if (!index.apps.some(other => other.path === name)) fail(`${app.path}/listing/listing.json: "related" names "${name}", which is not an app here`)
+  }
+}
 
 if (mode === '') {
   writeFileSync(INDEX, render(index))

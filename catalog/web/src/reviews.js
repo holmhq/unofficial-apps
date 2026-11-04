@@ -19,11 +19,47 @@ function reviewCard(review, extra = []) {
 // the form refreshes whichever reviews section is current.
 let refreshCurrent = () => {}
 
+// No reviews yet: one slim strip instead of the section. A star opens the
+// form with that many stars chosen; the button opens it empty.
+const STAR = 'M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.5l-5.1 2.7 1-5.6-4.1-4 5.7-.8z'
+function starOutline() {
+  const ns = 'http://www.w3.org/2000/svg'
+  const svg = document.createElementNS(ns, 'svg')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('aria-hidden', 'true')
+  const path = document.createElementNS(ns, 'path')
+  path.setAttribute('d', STAR)
+  svg.append(path)
+  return svg
+}
+function noReviews(app) {
+  return [
+    el('div', { class: 'no-reviews-text' },
+      el('div', { class: 'star-row', role: 'group', 'aria-label': 'Rate ' + app.title },
+        [1, 2, 3, 4, 5].map(n => el('button', { type: 'button', 'aria-label': `${n} star${n === 1 ? '' : 's'}`, onclick: () => openForm(app, null, n) }, starOutline()))),
+      el('span', {}, 'No reviews yet. Be the first.')),
+    el('button', { type: 'button', class: 'button', onclick: () => openForm(app, null) }, 'Write a review')
+  ]
+}
+
 export function reviewsSection(app) {
   const section = el('section', { class: 'reviews', 'aria-labelledby': 'reviews-title' })
   const paint = data => {
     const rating = app.rating
     const own = data && data.mine
+    // The index knows whether there are ratings, so the strip draws at once,
+    // before the reviews load; only a reader's own unpublished review swaps it
+    // for the full section.
+    if (!rating && !own && !(data && data.reviews.length)) {
+      section.className = 'no-reviews'
+      section.setAttribute('aria-label', 'Ratings and reviews')
+      section.removeAttribute('aria-labelledby')
+      section.replaceChildren(...noReviews(app))
+      return
+    }
+    section.className = 'reviews'
+    section.removeAttribute('aria-label')
+    section.setAttribute('aria-labelledby', 'reviews-title')
     const write = el('button', { type: 'button', class: 'button', onclick: () => openForm(app, own) },
       own ? 'Edit your review' : 'Write a review')
     section.replaceChildren(
@@ -54,12 +90,12 @@ async function removeOwn(app) {
   refreshCurrent()
 }
 
-async function openForm(app, existing) {
+async function openForm(app, existing, preset = 0) {
   if (!viewer().me) {
     try { await signIn() } catch { return }
   }
   const dialog = $('#review')
-  let rating = existing ? existing.rating : 0
+  let rating = existing ? existing.rating : preset
   const pick = el('div', { class: 'star-pick', role: 'radiogroup', 'aria-label': 'Your rating' })
   const paintStars = () => pick.replaceChildren(...[1, 2, 3, 4, 5].map(n => el('button', {
     type: 'button', role: 'radio', class: n <= rating ? 'on' : null,

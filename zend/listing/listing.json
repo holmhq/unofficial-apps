@@ -2,6 +2,12 @@
   "subtitle": "Text from your own phone, anywhere",
   "category": "Social",
   "featured": false,
+  "related": [
+    "relay",
+    "ralk",
+    "pastebin",
+    "kalendar"
+  ],
   "description": "Send SMS through the Android phone in your pocket, from any browser or from your own scripts. Install the free SMS Gateway for Android app, paste the username and password it shows, and your texts go out on your own SIM and plan. People see your own number, and their replies come back here.\n\nEvery text shows its time and ticks: one when your phone sends it, two when it's delivered, and a clear note with Try Again when it doesn't get through. Name the people you text, send to up to ten at once, pick a SIM, send later, and fill in templates you use often. A ring counts how much of an SMS you've used as you type. Replies and receipts arrive live, with quiet sounds you can turn off.\n\nIt feels at home on a phone, with a tab bar, sheets that slide up and a swipe to go back, and on a computer, with your conversations beside the open one and keyboard shortcuts.\n\nA personal SIM stays personal: Zend asks before sending anything that reads like an offer or a one-time code, stays under India's limits for bulk texts, and honours every STOP. API keys can be held to a few numbers, so a key that leaks can't text anyone else. No phone handy? A demo phone pretends to send, deliver and reply.",
   "whatsNew": "The account menu closes when you tap the avatar again, its theme switch is three icons, and the Holm credit stays on the welcome page.",
   "screenshots": [

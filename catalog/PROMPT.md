@@ -36,7 +36,20 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   screenshots, description, whatsNew with a folded version history (the
   index's history: each earlier tag's whatsNew and date), and source
   information. Keep each app's prompt in the index, but don't show it for
-  now.
+  now. The description's first paragraph (at most 300 characters, which
+  --check enforces) is its short version, with More for the rest. With no
+  reviews, show one slim strip whose stars open the review form. End with
+  four related apps (named in listing.json "related", then the same
+  category) and See all, so every page ends at the same place.
+- The index also carries each app's MCP tools from its api/contract.json
+  (name, summary, risk, auth). An app with tools gets an MCP pill beside
+  Get that opens a Connect via MCP sheet: the app's icon joined to the MCP
+  mark by five waving dots, a click-to-copy connector address
+  (https://<host>/_holm/mcp) with two small index tabs on its top edge,
+  Demo (the repository's running copy, when signed-in people may use the
+  tools; Claude's sign-in there makes an account) and Your node (the host
+  from the Get sheet), then tabs for Claude, ChatGPT and Claude Code steps
+  and the tools grouped by risk. The sheet never changes height.
   Read the public repository index with synchronous env.holm.net.fetch,
   not global fetch; cache it in KV and keep the last good index on failure.
 - Make it fast: the handler serves every page with the index and the viewer
@@ -286,6 +299,33 @@ it back.
 
 The menu didn't close on a second tap of the avatar: it closed and opened
 again at once. That is fixed alongside the switch.
+
+**Iteration 20**, over a clickable preview the agent published before
+building:
+
+> Okay, can we look at the store app: catalog
+> - i would like a proepr standard way to the app page that shows that this app supports mcp
+> - think of a nice way to add it
+
+> Badge + Sheet feels the neatest
+> - do you think we can somehow add an elegant way to point to the user that they can test it immediately in the live site if they sign in?
+
+> I find that switch too big; may be add it as tiny tag like switch at the top right of the copy link field?
+
+> Is demo a better word than live?
+
+> while you are at it, do you think we need to constrain the description like this:
+> - a few sentence TLDR will be there for all apps, which will be the only thing that can be seen in the store, with a more button which shows the entire content;
+> - if there are no reviews, we need a dedicated design for it that will show write review but is much more slimer than current making better use of space
+> - also info should be a fixed width component, so that even if more items comes in, it shouldnt take more space
+> - more apps should also be a component with limited width so that the entire page will have predicatable width
+> - also, pick say ~4 apps or so that are related to show
+
+> I like everything, except the two column layout below, should we do that? lets make it one column?
+
+Information and More apps stayed in one column; More apps keeps the page's
+length fixed by showing four apps. Shelf, Kalendar and Margin got shorter
+first paragraphs to fit the 300-character short version.
 
 The build request spells out the repository conventions without claiming
 they are a shipped Holm store protocol. It uses the public v1 guide for

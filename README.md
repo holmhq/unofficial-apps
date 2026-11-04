@@ -155,9 +155,10 @@ node from each app's Get button.
   includes README, PROMPT and other project-only files. It is a release
   fingerprint, not the exact v1 ingestion payload and not a signature.
 - **Index:** [`index.json`](index.json) records versions, tags, fingerprints,
-  size/file counts, symbols, listings, prompts and each app's `history`:
-  the `whatsNew` of every earlier tagged version, read from its tag with the
-  date of its commit, listed once under the release that introduced it.
+  size/file counts, symbols, listings, MCP tools, prompts and each app's
+  `history`: the `whatsNew` of every earlier tagged version, read from its
+  tag with the date of its commit, listed once under the release that
+  introduced it.
   `node scripts/index.mjs` regenerates it (tags must be fetched); `--check`
   catches stale data and changed released files. `holm app install` reads
   each app's `tag` and `h1` from it.
@@ -166,7 +167,13 @@ node from each app's Get button.
   sample screenshots, excluded with `publish.exclude: ["/listing/"]` in
   `holm.json`. These are repository conventions not documented by the v1
   guide. `"featured": true` in `listing.json` puts the app in the store's
-  cover carousel. Listing-only changes do not need a version bump.
+  cover carousel, and `"related"` names up to four other apps for the foot
+  of its page. The description's first paragraph is its short version, the
+  only part a store shows until More; `--check` keeps it to 300
+  characters. Listing-only changes do not need a version bump.
+- **MCP tools:** the index lists each app's named operations from
+  `api/contract.json` as `mcp` (name, summary, risk, auth), so a store can
+  say which apps Claude can use and what their tools do.
 - **Cover:** `listing/cover.png` is a 1200×630 card, the store's featured
   card in landscape (the app's colour, icon, title, subtitle and first
   screenshot). The store uses it as the app page's link preview.

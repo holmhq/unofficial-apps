@@ -28,9 +28,12 @@
   --planned: #8a5a00;
   --star: #c98a12;
   --danger: #b4441f;
+  --ok: #13795b;
   --planned-wash: #f4e9d3;
   --scrim: rgba(12, 24, 28, 0.45);
   --lift: 0 1px 2px rgba(21, 38, 44, 0.06), 0 18px 40px -24px rgba(21, 38, 44, 0.45);
+  --tile-shadow: 0 1px 2px rgba(21, 38, 44, 0.08), 0 6px 16px -8px rgba(21, 38, 44, 0.35);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --font: "Bricolage", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "Fragment Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: light;
@@ -50,9 +53,11 @@
   --planned: #e3b35a;
   --star: #f0b43c;
   --danger: #f08a68;
+  --ok: #5fd3a6;
   --planned-wash: #2e2614;
   --scrim: rgba(0, 0, 0, 0.6);
   --lift: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 40px -24px rgba(0, 0, 0, 0.8);
+  --tile-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px -8px rgba(0, 0, 0, 0.7);
   color-scheme: dark;
 }
 
@@ -350,6 +355,9 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .row-link:hover .row-title { text-decoration: underline; text-underline-offset: 0.18em; }
 .row-sub { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .row-meta { font-size: 0.85rem; color: var(--ink-3); }
+.mcp-tag { display: inline-flex; align-items: center; gap: 0.2rem; white-space: nowrap; }
+.mcp-tag .mark { width: 0.9rem; height: 0.9rem; }
+.mark { flex: none; width: 1em; height: 1em; fill: currentColor; }
 
 /* Product page */
 
@@ -362,6 +370,16 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .subtitle { margin: 0.35rem 0 0; font-size: 1.15rem; color: var(--ink-2); }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; margin-top: 1.1rem; }
 .actions a { font-size: 0.95rem; color: var(--ink-2); }
+/* MCP, beside Get when the app has tools: it opens Connect via MCP. */
+.mcp-pill {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font: 600 0.88rem var(--font); color: var(--ink);
+  background: var(--sheet); border: 0; box-shadow: inset 0 0 0 1px var(--rule);
+  border-radius: 999px; padding: 0.36rem 0.8rem 0.36rem 0.6rem; cursor: pointer;
+}
+.mcp-pill .mark { width: 1.05rem; height: 1.05rem; }
+.mcp-pill small { font-size: 0.82rem; font-weight: 500; color: var(--ink-3); }
+@media (hover: hover) { .mcp-pill:hover { background: color-mix(in oklab, var(--sheet), var(--ink) 4%); } }
 @media (max-width: 36rem) {
   .product { gap: 1.1rem; align-items: flex-start; }
 }
@@ -405,6 +423,21 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 
 .about { margin-top: 1.75rem; }
 .about p, .news p { margin: 0 0 0.85rem; max-width: 40em; }
+/* The first paragraph is the short version; More opens the rest under it. */
+.about-rest { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 320ms var(--ease); }
+.about-rest > div { overflow: hidden; min-height: 0; }
+.about.is-open .about-rest { grid-template-rows: 1fr; }
+.more-button {
+  display: inline-flex; align-items: center; gap: 0.4rem; margin-top: -0.25rem; padding: 0.2rem 0;
+  font: 600 0.95rem var(--font); color: var(--accent); background: none; border: 0; cursor: pointer;
+}
+.more-button::after {
+  content: ""; width: 0.4rem; height: 0.4rem; border: solid currentColor; border-width: 0 1.8px 1.8px 0;
+  transform: translateY(-25%) rotate(45deg); transition: transform 200ms var(--ease);
+}
+.about.is-open .more-button { margin-top: 0; }
+.about.is-open .more-button::after { transform: translateY(20%) rotate(-135deg); }
+@media (prefers-reduced-motion: reduce) { .about-rest, .more-button::after { transition: none; } }
 
 .news, .prompt, .info { margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.6rem; }
@@ -443,6 +476,14 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .info dl > div { display: flex; justify-content: space-between; gap: 1.5rem; padding-block: 0.7rem; border-bottom: 1px solid var(--rule); }
 .info dt { color: var(--ink-3); }
 .info dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+/* More apps opens with its own rule, so the last row of Information drops its line. */
+.info dl > div:last-child { border-bottom: 0; }
+
+/* More apps: four related apps, and See all. */
+.more-apps { margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+.more-apps .section-head { align-items: center; margin-bottom: 0; }
+.see-all { font-weight: 600; color: var(--accent); text-decoration: none; }
+.see-all:hover { text-decoration: underline; text-underline-offset: 0.18em; }
 
 /* Install sheet */
 
@@ -590,6 +631,104 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .signin { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 1rem; background: var(--scrim); }
 .signin iframe { width: min(27.5rem, 100%); height: min(40rem, 100%); border: 0; border-radius: 18px; background: #fff; box-shadow: var(--lift); }
 
+/* Connect via MCP, in a sheet like the install one (mcp.js). */
+
+/* Wide, like Shelf's own, so Shelf's zyt Claude Code command fits on one
+   line in this font. */
+.mcp-sheet { width: min(41.5rem, 100% - 2rem); }
+@media (max-width: 36rem) { .mcp-sheet { width: 100%; } }
+.mcp-sheet .sheet-head h2 { font-size: 1.2rem; }
+
+/* The app's icon joined to the MCP mark by five dots. A wave runs from one to
+   the other every 2.4 s; with reduced motion the dots stand still. */
+.bridge { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 1rem 0 1.1rem; }
+.icon-bridge { --size: 60px; box-shadow: var(--tile-shadow); }
+.bridge .tile { width: 60px; height: 60px; border-radius: 14px; display: grid; place-items: center; background: var(--sheet); color: var(--ink); box-shadow: var(--tile-shadow), inset 0 0 0 1px var(--rule); }
+.bridge .tile .mark { width: 56%; height: 56%; }
+.dots { display: flex; gap: 6px; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); opacity: 0.45; animation: mcp-flow 2.4s var(--ease) infinite; }
+.dots i:nth-child(2) { animation-delay: 0.12s; }
+.dots i:nth-child(3) { animation-delay: 0.24s; }
+.dots i:nth-child(4) { animation-delay: 0.36s; }
+.dots i:nth-child(5) { animation-delay: 0.48s; }
+@keyframes mcp-flow { 0%, 36%, 100% { opacity: 0.45; transform: none; } 14% { opacity: 1; transform: scale(1.3); background: var(--ink); } }
+@media (prefers-reduced-motion: reduce) { .dots i { animation: none; opacity: 0.7; } }
+
+/* Anything to copy is one field that copies on a click, as Shelf's copyField. */
+.copy-field {
+  position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; width: 100%;
+  height: 46px; padding: 0 14px; border-radius: 12px; text-align: left;
+  background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 150ms;
+}
+@media (hover: hover) { .copy-field:hover { background: color-mix(in oklab, var(--sheet), var(--ink) 4%); } }
+.copy-field:focus-visible { outline-offset: 0; }
+.copy-value { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; white-space: nowrap; scrollbar-width: none; font: 400 12.5px/1.7 var(--mono); }
+.copy-value::-webkit-scrollbar { display: none; }
+.copy-field.is-long .copy-value { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.copy-value .you { color: var(--accent); background: var(--accent-wash); border-radius: 3px; padding: 0.05em 0.15em; }
+.copy-cue { flex: none; display: inline-flex; align-items: center; color: var(--ink-3); font-size: 12.5px; font-weight: 600; }
+/* Copy fades in over the end of the value, so it never takes the value's room. */
+.copy-word {
+  position: absolute; right: 36px; top: 0; bottom: 0; display: flex; align-items: center; padding-left: 22px;
+  opacity: 0; transition: opacity 150ms; pointer-events: none;
+  background: linear-gradient(to right, transparent, color-mix(in oklab, var(--sheet), var(--ink) 4%) 18px);
+}
+@media (hover: hover) { .copy-field:hover .copy-word { opacity: 1; } .copy-field:hover .copy-cue { color: var(--ink); } }
+.copy-cue .ic { position: relative; width: 15px; height: 15px; }
+.copy-cue svg { position: absolute; inset: 0; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: opacity 180ms, transform 180ms var(--ease); }
+.copy-cue svg.tick { opacity: 0; transform: scale(0.5); }
+.copy-field.is-copied .copy-word, .copy-field.is-stuck .copy-word { opacity: 1; }
+.copy-field.is-copied .copy-word, .copy-field.is-copied .copy-cue { color: var(--ok); }
+.copy-field.is-copied svg.clip { opacity: 0; transform: scale(0.5); }
+.copy-field.is-copied svg.tick { opacity: 1; transform: none; }
+
+/* Which server the address is for: two index tabs on the field's top edge,
+   flush with its right side. The field's top-right corner goes square and
+   the last tab carries its curve. The chosen tab shares the field's face and
+   drops the line under it; the other sits behind, the line drawn under it.
+   Both are one box, so nothing moves. */
+.addr-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.75rem; min-height: 24px; }
+.addr-label { margin: 0 0 0.35rem; font-size: 0.82rem; color: var(--ink-3); }
+.target { position: relative; z-index: 1; display: flex; align-items: flex-end; gap: 3px; flex: none; margin-bottom: -1px; }
+.target button {
+  height: 24px; padding: 0 0.65rem; cursor: pointer;
+  border: 1px solid var(--rule); border-bottom: 0; border-radius: 8px 8px 0 0;
+  background: color-mix(in oklab, var(--paper), var(--ink) 5%); box-shadow: inset 0 -1px 0 var(--rule);
+  font: 600 0.72rem/1 var(--font); color: var(--ink-3);
+  display: inline-flex; align-items: center; gap: 0.32rem; white-space: nowrap;
+  transition: background 150ms, color 150ms;
+}
+.target button:last-child { border-top-right-radius: 12px; }
+.target button:hover { color: var(--ink-2); }
+.target button[aria-pressed="true"] { background: var(--sheet); box-shadow: none; color: var(--ink); }
+.addr-box:has(.target) .copy-field { border-top-right-radius: 0; }
+@media (hover: hover) { .addr-box:has(.copy-field:hover) .target button[aria-pressed="true"] { background: color-mix(in oklab, var(--sheet), var(--ink) 4%); } }
+.live-dot { position: relative; width: 5px; height: 5px; border-radius: 50%; background: var(--ok); flex: none; }
+.live-dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--ok); animation: live 2.4s ease-out infinite; }
+@keyframes live { 0% { transform: scale(1); opacity: 0.55; } 70%, 100% { transform: scale(2.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .target button { transition: none; } .live-dot::after { animation: none; opacity: 0; } }
+/* Two lines' room, so the sheet keeps its height whichever note shows. */
+.addr-note { margin: 0.5rem 0 0; min-height: 2.9em; font-size: 0.86rem; line-height: 1.45; color: var(--ink-3); }
+.addr-note b { font-weight: 600; color: var(--ink-2); }
+.mcp-sheet .tabs { margin-top: 1.1rem; overflow-x: auto; scrollbar-width: none; }
+
+/* Every pane shares one grid cell: the sheet is as tall as the tallest. */
+.panes { display: grid; grid-template-columns: minmax(0, 1fr); padding-top: 0.9rem; }
+.panes > * { grid-area: 1 / 1; align-self: start; }
+.panes > :not(.is-on) { visibility: hidden; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.steps li { display: flex; align-items: flex-start; gap: 0.8rem; }
+.steps .n { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; display: grid; place-items: center; font-size: 0.82rem; font-weight: 700; color: var(--accent); background: var(--accent-wash); }
+.steps b { display: block; font-size: 0.96rem; font-weight: 600; }
+.steps small, .groups small { display: block; font-size: 0.86rem; line-height: 1.4; color: var(--ink-3); }
+.pane-note { margin: 0.7rem 0 0; font-size: 0.86rem; color: var(--ink-3); }
+.groups { display: grid; gap: 0.75rem; }
+.groups b { display: flex; align-items: baseline; gap: 0.45rem; font-size: 0.96rem; font-weight: 600; }
+.groups b span { font-size: 0.85rem; font-weight: 500; color: var(--ink-3); }
+.groups small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.groups .is-destructive b { color: var(--danger); }
+
 /* Ratings and reviews */
 
 .stars { display: inline-flex; gap: 0.08em; color: var(--star); letter-spacing: 0; }
@@ -597,6 +736,28 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 .rating-meta { color: var(--ink-3); }
 
 .reviews { margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+/* No reviews yet: one slim strip. The stars fill up to the one pointed at. */
+.no-reviews {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  margin-top: 2.25rem; padding: 0.75rem 0.85rem 0.75rem 1rem; border-radius: 14px;
+  background: color-mix(in oklab, var(--paper), var(--ink) 4%);
+}
+.no-reviews > .button { flex: none; }
+.no-reviews-text { display: grid; gap: 0.15rem; min-width: 0; }
+.no-reviews-text > span { font-size: 0.86rem; color: var(--ink-3); }
+@media (min-width: 40rem) {
+  .no-reviews-text { display: flex; align-items: center; gap: 0.75rem; }
+  .no-reviews-text > span { font-size: 0.92rem; }
+}
+.star-row { display: flex; gap: 2px; margin-left: -3px; }
+.star-row button { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; background: none; color: var(--ink-3); cursor: pointer; }
+.star-row svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; transition: fill 120ms, color 120ms; }
+@media (hover: hover) {
+  .star-row:hover button { color: var(--star); }
+  .star-row:hover svg { fill: currentColor; }
+  .star-row button:hover ~ button { color: var(--ink-3); }
+  .star-row button:hover ~ button svg { fill: none; }
+}
 .reviews .section-head { align-items: center; }
 .reviews .section-head button { flex: none; }
 .summary { display: flex; align-items: center; gap: 1rem; margin: 0.5rem 0 1.25rem; }

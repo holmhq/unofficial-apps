@@ -5,6 +5,7 @@ import { $, el, icon, bytes, paragraphs, stars, track, applyTint, store, date, R
 import { openInstall } from './install.js'
 import { loadViewer, onViewer, setViewer } from './account.js'
 import { reviewsSection } from './reviews.js'
+import { mcpPill, mcpTag, tools } from './mcp.js'
 import { adminPage } from './admin.js'
 import { startPage, isStart } from './start.js'
 
@@ -44,10 +45,12 @@ function shotImage(attributes) {
 
 const getButton = app => el('button', { type: 'button', class: 'get', 'aria-label': 'Get ' + app.title, onclick: () => openInstall(app) }, 'Get')
 
-// Category, rating, and for admins whether the store is hiding the app.
+// Category, rating, MCP when the app has tools, and for admins whether the
+// store is hiding the app.
 const meta = app => [
   app.listing && app.listing.category,
   app.rating && [stars(app.rating.average, false), ` ${app.rating.average.toFixed(1)}`],
+  mcpTag(app),
   app.hidden && 'Hidden from the store'
 ].filter(Boolean).flatMap((part, i) => i ? ['  ', part] : [part])
 
@@ -195,7 +198,7 @@ const LENS = 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4'
 const CROSS = 'M7 7l10 10M17 7 7 17'
 
 // What the search looks in, and whether every word typed is there.
-const haystack = app => [app.title, app.path, subtitle(app), app.description, app.listing && app.listing.category, app.listing && app.listing.description]
+const haystack = app => [app.title, app.path, subtitle(app), app.description, app.listing && app.listing.category, app.listing && app.listing.description, tools(app).length > 0 && 'mcp']
   .filter(Boolean).join(' ').toLowerCase()
 const matches = (app, words) => words.every(word => haystack(app).includes(word))
 
@@ -288,10 +291,39 @@ document.addEventListener('keydown', event => {
 const fact = (value, label) => value && el('li', {}, el('strong', {}, value), el('span', {}, label))
 const info = (label, ...value) => el('div', {}, el('dt', {}, label), el('dd', {}, ...value))
 
+// The description: its first paragraph is the short version, always shown
+// (the index keeps it to 300 characters); More opens the rest under it.
+function about(app) {
+  const [lead, ...rest] = paragraphs((app.listing && app.listing.description) || app.description)
+  const section = el('section', { class: 'about' }, el('p', {}, lead))
+  if (rest.length === 0) return section
+  const more = el('div', { class: 'about-rest', id: 'about-rest' }, el('div', {}, rest.map(text => el('p', {}, text))))
+  more.inert = true
+  const toggle = el('button', { type: 'button', class: 'more-button', 'aria-expanded': 'false', 'aria-controls': 'about-rest', onclick: () => {
+    const open = section.classList.toggle('is-open')
+    more.inert = !open
+    toggle.setAttribute('aria-expanded', String(open))
+    toggle.textContent = open ? 'Less' : 'More'
+  } }, 'More')
+  section.append(more, toggle)
+  return section
+}
+
+// Four apps to show under an app: the ones its listing names, then others in
+// its category, then the rest, so the page ends at the same place whatever
+// the store holds.
+function related(app) {
+  const others = index.apps.filter(other => other !== app)
+  const named = ((app.listing && app.listing.related) || []).map(path => others.find(other => other.path === path)).filter(Boolean)
+  const category = app.listing && app.listing.category
+  const rest = others.filter(other => !named.includes(other))
+  return [...named, ...rest.filter(other => other.listing && other.listing.category === category), ...rest.filter(other => !other.listing || other.listing.category !== category)].slice(0, 4)
+}
+
 function productPage(app) {
   document.title = `${app.title} – Unofficial Holm apps`
   const listing = app.listing || { screenshots: [] }
-  const others = index.apps.filter(other => other !== app)
+  const others = related(app)
   const history = app.history || []
   track(app.path, 'view')
   show(
@@ -304,7 +336,8 @@ function productPage(app) {
         el('p', { class: 'subtitle' }, subtitle(app)),
         el('div', { class: 'actions' },
           getButton(app),
-          app.demo && external(app.demo, 'Open the live copy')))),
+          mcpPill(app),
+          app.demo && external(app.demo, 'Open the demo')))),
     el('ul', { class: 'facts' },
       app.rating && fact(`${app.rating.average.toFixed(1)} ★`, `${app.rating.count} ${app.rating.count === 1 ? 'rating' : 'ratings'}`),
       fact(app.version, 'Version'),
@@ -314,7 +347,7 @@ function productPage(app) {
     listing.screenshots.length > 0 && el('section', { class: 'shots', 'aria-label': 'Screenshots' },
       el('ul', {}, listing.screenshots.map(shot => el('li', {},
         shotImage({ src: shotURL(app, shot), alt: shot.alt, width: shot.width, height: shot.height, loading: 'lazy', style: `--ratio: ${(shot.width / shot.height).toFixed(4)}` }))))),
-    el('section', { class: 'about' }, paragraphs(listing.description || app.description).map(text => el('p', {}, text))),
+    about(app),
     (listing.whatsNew || history.length > 0) && el('section', { class: 'news' },
       el('div', { class: 'section-head' }, el('h2', {}, 'What’s new'), el('span', {}, 'Version ' + app.version)),
       paragraphs(listing.whatsNew).map(text => el('p', {}, text)),
@@ -341,8 +374,8 @@ function productPage(app) {
         listing.category && info('Category', listing.category),
         info('License', 'MIT'),
         info('Documentation', external(`${REPO}/blob/${encodeURI(app.tag)}/${app.path}/README.md`, 'README')))),
-    others.length > 0 && el('section', { class: 'shelf' },
-      el('h2', {}, 'More apps'),
+    others.length > 0 && el('section', { class: 'more-apps' },
+      el('div', { class: 'section-head' }, el('h2', {}, 'More apps'), el('a', { class: 'see-all', href: withRef('/'), 'data-link': true }, 'See all')),
       el('ul', { class: 'rows' }, others.map(row))))
 }
 

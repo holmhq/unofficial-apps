@@ -76,18 +76,37 @@ out of this app's deploy. They are still public source in this repository.
   a new app, each naming its section of <https://holmhq.com/llms-full.txt>.
   The store's pages need JavaScript, so their `<noscript>` points agents here.
 - **App pages** at `/apps/<app>`:
-  - the icon, title, subtitle, Get and a link to the live copy;
+  - the icon, title, subtitle, Get, **MCP** when the app has MCP tools, and
+    a link to the demo;
   - a strip of facts: version, size, category, license, ruled like the
     grid of apps, its dividers meeting the lines above and below;
   - screenshots you can swipe through;
-  - the description and what's new in this version, with **Version
-    history** folded under it: each earlier release's notes, newest first,
-    with its date (from the index's `history`);
+  - the description's first paragraph, its short version (the index keeps
+    it to 300 characters), with **More** to open the rest in place;
+  - what's new in this version, with **Version history** folded under it:
+    each earlier release's notes, newest first, with its date (from the
+    index's `history`);
+  - ratings and reviews; with none yet, one slim strip instead, where a
+    star opens the review form with that many stars chosen;
   - **Built from a prompt:** the request a coding agent built the app
     from, folded until opened. It is hidden for now: `SHOW_PROMPT` in
     `web/src/app.js` brings it back, and the index still carries each
     app's prompt;
-  - information: repository, release tag, size and file count, README.
+  - information: repository, release tag, size and file count, README;
+  - **More apps:** four related apps and See all, so every page ends at
+    the same place however many apps the store holds. They are the ones
+    the app's `listing.json` names in `related`, then others in its
+    category.
+- **Connect via MCP**, from the MCP pill: the sheet each app has in its own
+  account menu (see `COOKBOOK.md`), built from the app's
+  `api/contract.json`, which the index carries as `mcp`. Two tabs on the
+  connector address pick the server: **Demo**, the copy this repository
+  runs, which anyone can try at once (Claude sends them to its sign-in
+  page, where a new email makes an account), shown when anyone signed in
+  may use the tools; and **Your node**, written for the domain set in the
+  install sheet. Under it, tabs for Claude, ChatGPT and Claude Code steps,
+  and the tools grouped by what they risk. Rows of apps carry an MCP tag,
+  and searching "mcp" finds them.
 - **The install sheet:** type your peer and domain once and every command is
   written for your node, with your parts highlighted; the guide shares them.
   Three ways, as tabs; the one you pick is remembered:
@@ -152,10 +171,11 @@ off and the handler serves every page. Other paths go to
 ```text
 holm.json           name, version, colour, font caching, store metadata
 web/                public files, served as-is:
-  shell.html        page shell, module preloads, install <dialog>, feedback tag
+  shell.html        page shell, module preloads, sheet <dialog>s, feedback tag
   llms.txt          instructions for coding agents
   src/app.js        router, front page and app pages
   src/install.js    the install sheet and its commands
+  src/mcp.js        the MCP pill and the Connect via MCP sheet
   src/start.js      the Get started guide at /start
   src/account.js    avatar, menu, sign-in overlay
   src/reviews.js    ratings, reviews and the review form

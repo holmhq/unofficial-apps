@@ -11,6 +11,9 @@ const SYMBOL = /^[MLHVCSQTAZ0-9. -]{1,8000}$/
 const SHOT = /^listing\/[A-Za-z0-9._-]{1,80}\.(png|webp)$/
 const TYPES = { png: 'image/png', webp: 'image/webp' }
 const HASH = /^[0-9a-f]{12}$/
+const PATH = /^[a-z0-9][a-z0-9-]{0,63}$/
+const RISKS = ['read', 'write', 'destructive']
+const AUTHS = ['public', 'user', 'member', 'admin']
 
 const text = (value, max) => typeof value === 'string' ? value.replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, ' ').trim().slice(0, max) : ''
 const size = value => Number.isInteger(value) && value > 0 && value < 1e9 ? value : null
@@ -29,6 +32,7 @@ function cleanListing(listing) {
     description: text(listing.description, 4000),
     whatsNew: text(listing.whatsNew, 2000),
     featured: listing.featured === true,
+    related: (Array.isArray(listing.related) ? listing.related : []).filter(name => PATH.test(name || '')).slice(0, 4),
     screenshots: (Array.isArray(listing.screenshots) ? listing.screenshots : []).slice(0, 10)
       .filter(validImage)
       .map(shot => ({ ...cleanImage(shot), alt: text(shot.alt, 200) })),
@@ -41,7 +45,7 @@ function clean(index) {
   if (!index || index.schema !== 1 || !Array.isArray(index.apps)) throw publicError('index.json is not schema 1')
   const apps = index.apps.slice(0, 200).map(app => ({
     name: text(app.name, 48),
-    path: /^[a-z0-9][a-z0-9-]{0,63}$/.test(app.path || '') ? app.path : '',
+    path: PATH.test(app.path || '') ? app.path : '',
     version: /^\d+\.\d+\.\d+$/.test(app.version || '') ? app.version : '',
     tag: text(app.tag, 120),
     h1: H1.test(app.h1 || '') ? app.h1 : '',
@@ -53,6 +57,11 @@ function clean(index) {
     symbol: SYMBOL.test(app.symbol || '') ? app.symbol : null,
     demo: /^https:\/\/[^\s"'<>]+$/.test(app.demo || '') ? app.demo : null,
     listing: cleanListing(app.listing),
+    // The app's MCP tools: a line on what each does, its risk and who may call it.
+    mcp: (Array.isArray(app.mcp) ? app.mcp : []).slice(0, 80)
+      .filter(tool => tool && RISKS.includes(tool.risk) && AUTHS.includes(tool.auth))
+      .map(tool => ({ name: text(tool.name, 64), summary: text(tool.summary, 200), risk: tool.risk, auth: tool.auth }))
+      .filter(tool => tool.name && tool.summary),
     prompt: text(app.prompt, 4000) || null,
     history: (Array.isArray(app.history) ? app.history : []).slice(0, 30)
       .filter(note => note && /^\d+\.\d+\.\d+$/.test(note.version || ''))
