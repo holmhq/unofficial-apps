@@ -9,7 +9,7 @@
 import * as api from './api.js'
 import { subscribe } from './live.js'
 
-export const lib = { me: null, items: new Map(), v: 0, ready: false, marks: new Map(), highlights: null, review: null }
+export const lib = { me: null, items: new Map(), v: 0, ready: false, marks: new Map(), highlights: null, review: null, feeds: null }
 
 const listeners = new Set()
 export function on(fn) { listeners.add(fn); return () => listeners.delete(fn) }
@@ -102,6 +102,7 @@ export function listen(channel) {
     if (m.item) upsert(m.item, { quiet: m.quiet, remote: true })
     if (m.removed) drop(m.removed, { remote: true })
     if (m.mark || m.unmark) { lib.highlights = null; if (m.mark) lib.marks.delete(m.mark.item); emit({ marks: m.mark ? m.mark.item : true }) }
+    if (m.feeds) loadFeeds().catch(() => {})
     if (m.full || (!inOrder && !m.item && !m.removed)) { refresh(); return }
     lib.v = Math.max(lib.v, m.v)
     writeCache()
@@ -135,7 +136,8 @@ const bySaved = (a, b) => (b.saved || 0) - (a.saved || 0)
 // Books kept only for their highlights (a Kindle import, a paper book) live on the Highlights
 // page, not in the lists of things to read.
 const readable = (i) => i.kind !== 'notes'
-export const unread = () => all().filter((i) => readable(i) && i.state !== 'archived').sort(bySaved)
+export const unread = () => all().filter((i) => readable(i) && i.state === 'unread').sort(bySaved)
+export const inFeed = () => all().filter((i) => i.state === 'feed').sort(bySaved)
 export const favourites = () => all().filter((i) => readable(i) && i.fav).sort(bySaved)
 export const archived = () => all().filter((i) => readable(i) && i.state === 'archived').sort((a, b) => (b.read || b.saved) - (a.read || a.saved))
 export const tagged = (tag) => all().filter((i) => (i.tags || []).includes(tag)).sort(bySaved)
@@ -453,7 +455,7 @@ let running = 0
 // export can hold thousands), apart from the newest few.
 function waiting() {
   const now = Date.now()
-  const list = all().filter((i) => i.status === 'pending' && !busy.has(i.id) && !(tried.get(i.id) > now - 5 * 60 * 1000))
+  const list = all().filter((i) => i.status === 'pending' && i.state !== 'feed' && !busy.has(i.id) && !(tried.get(i.id) > now - 5 * 60 * 1000))
   const own = list.filter((i) => i.via !== 'import').sort(bySaved)
   const imported = list.filter((i) => i.via === 'import' && i.state !== 'archived').sort(bySaved).slice(0, 12)
   return [...own, ...imported]
@@ -478,7 +480,10 @@ export function makeReadable(id) {
     const { readable } = await import('./extract.js')
     const item = lib.items.get(id)
     if (!item) return null
-    const content = await readable(item)
+    // A feed that carries whole articles (or a video's description) needs no trip to the site,
+    // and a video page has nothing to read: its description is kept instead.
+    const given = feedHTML.get(id) || (item.video ? '<p>' + (item.excerpt || item.title).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</p>' : '')
+    const content = await readable(item, given)
     const r = await api.put('/api/items/' + id + '/content', content)
     lib.v = Math.max(lib.v, r.v || 0)
     upsert(r.item, { remote: false })
@@ -506,4 +511,184 @@ export async function importLinks(rows, onProgress) {
   }
   await refresh(true)
   return { added, skipped }
+}
+
+/* ---- Feeds ----------------------------------------------------------------------------------------------
+   The list of feeds, kept like the library; checking them, a few at a time, whenever the app is
+   open (Holm v1 has no schedules); and what you do with what they bring. */
+
+const feedHTML = new Map()
+const feedsKey = () => 'shelf:feeds:' + (lib.me && lib.me.id)
+
+export function keptFeeds() {
+  if (lib.feeds) return lib.feeds
+  try { lib.feeds = JSON.parse(localStorage.getItem(feedsKey()) || 'null') } catch {}
+  return lib.feeds
+}
+
+export async function loadFeeds() {
+  const r = await api.get('/api/feeds')
+  lib.feeds = r.feeds
+  try { localStorage.setItem(feedsKey(), JSON.stringify(r.feeds)) } catch {}
+  emit({ feeds: true })
+  return r.feeds
+}
+
+function keepFeed(feed) {
+  const list = keptFeeds() || []
+  const i = list.findIndex((f) => f.id === feed.id)
+  if (i >= 0) list[i] = feed
+  else list.push(feed)
+  lib.feeds = list
+  try { localStorage.setItem(feedsKey(), JSON.stringify(list)) } catch {}
+}
+
+// Read a feed the server fetched, and send back what's in it.
+async function readFeed(feed, parsed = null) {
+  const { parseFeed } = await import('./feeds.js')
+  let read = parsed
+  let etag = ''
+  let modified = ''
+  if (!read) {
+    const r = await api.get('/api/feeds/' + feed.id + '/fetch')
+    if (r.ok && r.same) return api.post('/api/feeds/' + feed.id + '/entries', { entries: [] })
+    if (!r.ok) {
+      if (r.reason === 'cap') return null
+      return api.post('/api/feeds/' + feed.id + '/entries', { error: r.reason === 'gone' ? 'The feed isn’t there any more.' : r.reason === 'timeout' ? 'The site took too long to answer.' : r.reason === 'http' ? 'This feed is only on plain http, which Shelf can’t fetch.' : 'The feed couldn’t be fetched.' })
+    }
+    read = parseFeed(r.body, feed.url)
+    etag = r.etag
+    modified = r.modified
+    if (!read) return api.post('/api/feeds/' + feed.id + '/entries', { error: 'This isn’t a feed Shelf can read any more.' })
+  }
+  for (const e of read.items) if (e.html) feedHTML.set('pending:' + e.url, e.html)
+  const r = await api.post('/api/feeds/' + feed.id + '/entries', {
+    title: read.title, site: read.site, icon: read.icon, etag, modified,
+    entries: read.items.map((e) => ({ url: e.url, guid: e.guid, title: e.title, author: e.author, published: e.published, excerpt: e.excerpt, image: e.image, video: e.video }))
+  })
+  for (const item of r.items || []) {
+    const html = feedHTML.get('pending:' + item.url)
+    if (html) feedHTML.set(item.id, html)
+    upsert(item, { quiet: true })
+  }
+  lib.v = Math.max(lib.v, r.v || 0)
+  if (r.feed) keepFeed(r.feed)
+  return r
+}
+
+let checking = null
+let checkedAt = 0
+// Look at the feeds that are due, four at a time, until none are.
+export function checkFeeds({ force = false } = {}) {
+  if (checking) return checking
+  if (!force && Date.now() - checkedAt < 4 * 60 * 1000) return Promise.resolve(0)
+  if (!navigator.onLine || !lib.me) return Promise.resolve(0)
+  checkedAt = Date.now()
+  checking = (async () => {
+    let added = 0
+    emit({ feedsChecking: true })
+    for (let round = 0; round < 40; round++) {
+      let due
+      try { due = await api.post('/api/feeds/due') } catch { break }
+      if (!due.feeds.length) break
+      const results = await Promise.all(due.feeds.map((f) => readFeed(f).catch(() => null)))
+      for (const r of results) if (r && r.added) added += r.added
+      if (!due.more) break
+    }
+    return added
+  })()
+  checking.finally(() => { checking = null; emit({ feedsChecking: false }) })
+  return checking
+}
+export const isChecking = () => !!checking
+setInterval(() => { if (document.visibilityState === 'visible') checkFeeds() }, 15 * 60 * 1000)
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkFeeds() })
+
+// Follow what a person typed: a feed's own address, or a site (or YouTube channel) that names
+// its feed, or one at the usual places.
+export async function follow(raw) {
+  const { parseFeed, feedsIn, guesses } = await import('./feeds.js')
+  let address = String(raw || '').trim()
+  if (!/^https?:\/\//i.test(address)) address = 'https://' + address
+  const look = async (url) => { try { const r = await api.get('/api/fetch?url=' + encodeURIComponent(url)); return r.ok ? r : null } catch (e) { if (e.status === 429) throw e; return null } }
+  const page = await look(address)
+  if (!page) throw new Error('That address couldn’t be reached.')
+  let feedURL = address
+  let read = parseFeed(page.html, address)
+  let later = null
+  if (!read) {
+    const named = feedsIn(page.html, address)
+    for (const url of [...named.slice(0, 3), ...(named.length ? [] : guesses(address).slice(0, 5))]) {
+      const r = await look(url)
+      const p = r && parseFeed(r.html, url)
+      if (p) { read = p; feedURL = url; break }
+      // YouTube's feed server turns everyone away for hours at a time; the channel's page still
+      // names its feed, so follow it and let the next checks bring the videos.
+      if (!later && /^https:\/\/www\.youtube\.com\/feeds\/videos\.xml\?/.test(url)) later = url
+    }
+  }
+  if (!read && later) {
+    const doc = new DOMParser().parseFromString(page.html, 'text/html')
+    const name = ((doc.querySelector('meta[property="og:title"]') || {}).content || doc.title || 'YouTube channel').replace(/\s*-\s*YouTube$/, '').trim()
+    const r = await api.post('/api/feeds', { url: later, title: name, site: address })
+    keepFeed({ ...r.feed, waiting: true })
+    emit({ feeds: true })
+    return { ...r.feed, waiting: true }
+  }
+  if (!read) throw new Error('Shelf couldn’t find a feed there. Try the site’s RSS or Atom address.')
+  const r = await api.post('/api/feeds', { url: feedURL, title: read.title, site: read.site, icon: read.icon })
+  keepFeed(r.feed)
+  emit({ feeds: true })
+  await readFeed(r.feed, read).catch(() => null)
+  emit({ full: true })
+  return r.feed
+}
+
+export async function followMany(list, onProgress) {
+  let added = 0
+  for (let i = 0; i < list.length;) {
+    const r = await api.post('/api/feeds/import', { feeds: list.slice(i, i + 50) })
+    added += r.added
+    i += Math.max(1, r.done || 50)
+    if (onProgress) onProgress(Math.min(1, i / list.length), added)
+  }
+  await loadFeeds()
+  checkFeeds({ force: true })
+  return added
+}
+
+export async function unfollow(id) {
+  const r = await api.del('/api/feeds/' + id)
+  lib.feeds = (keptFeeds() || []).filter((f) => f.id !== id)
+  try { localStorage.setItem(feedsKey(), JSON.stringify(lib.feeds)) } catch {}
+  for (const i of all()) if (i.feed === id && i.state === 'feed') lib.items.delete(i.id)
+  writeCache()
+  lib.v = Math.max(lib.v, r.v || 0)
+  emit({ full: true, feeds: true })
+  return r
+}
+
+export async function renameFeed(id, title) {
+  const r = await api.patch('/api/feeds/' + id, { title })
+  keepFeed(r.feed)
+  emit({ feeds: true })
+}
+
+// Seen: a few at once from the list, or everything showing.
+export async function markSeen(ids) {
+  const fresh = ids.filter((id) => { const i = lib.items.get(id); return i && i.state === 'feed' && !i.seen })
+  if (!fresh.length) return
+  for (const id of fresh) lib.items.set(id, { ...lib.items.get(id), seen: true })
+  writeCache()
+  emit({ full: true })
+  try {
+    for (let n = 0; n < fresh.length; n += 500) {
+      const r = await api.post('/api/feeds/seen', { ids: fresh.slice(n, n + 500) })
+      lib.v = Math.max(lib.v, r.v || 0)
+    }
+  } catch (e) {
+    for (const id of fresh) { const i = lib.items.get(id); if (i) lib.items.set(id, { ...i, seen: false }) }
+    emit({ full: true })
+    throw e
+  }
 }

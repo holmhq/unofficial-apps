@@ -38,9 +38,10 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   const aaBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Text settings', title: 'Text settings', 'aria-haspopup': 'dialog', onclick: () => textSettings() }, ic('aLargeSmall', 21, 1.9))
   const favBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Favourite', title: 'Favourite (S)', onclick: () => toggleFav() }, ic('star', 20, 1.9))
   const archBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Archive', title: 'Archive (E)', onclick: () => toggleArchive() }, ic('archive', 20, 1.9))
+  const keepBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Save to your reading list', title: 'Save to your reading list', onclick: () => keepFromFeed() }, ic('bookmarkPlus', 20, 1.9))
   const moreBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'More', title: 'More', 'aria-haspopup': 'menu', onclick: () => more() }, ic('ellipsis', 20, 2.1))
   const progBar = h('i')
-  const bar = h('header.r-bar', backBtn, title, listenBtn, sumBtn, aaBtn, favBtn, archBtn, moreBtn, h('div.r-prog', progBar))
+  const bar = h('header.r-bar', backBtn, title, listenBtn, sumBtn, aaBtn, favBtn, keepBtn, archBtn, moreBtn, h('div.r-prog', progBar))
   const panel = h('div.r-panel')
   const el = h('section.reader', { 'aria-label': 'Article' }, bar, panel)
 
@@ -127,7 +128,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     let top = firstImg
     while (top && top.parentNode !== body) top = top.parentNode
     const opensWithPicture = !!top && [...body.children].indexOf(top) < 3
-    const lead = it.image && !opensWithPicture ? h('img.a-lead', { src: it.image, alt: '', onerror: (e) => e.target.remove() }) : null
+    const lead = it.video ? videoFrame(it) : it.image && !opensWithPicture ? h('img.a-lead', { src: it.image, alt: '', onerror: (e) => e.target.remove() }) : null
     fill(art, head, lead, it.note ? noteBox(it.note) : null, summaryBox(it), body, ending(it))
     // Back to where you were, unless it's finished or nearly so.
     restoring = true
@@ -148,7 +149,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     const parts = []
     if (it.author) parts.push(h('span', it.author))
     if (it.published) { const d = Date.parse(it.published); if (d) parts.push(h('span', new Date(d).toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' }))) }
-    parts.push(h('span', 'Saved ' + when(it.saved) + (it.via === 'claude' ? ' by Claude' : '')))
+    parts.push(h('span', it.state === 'feed' || (it.via === 'feed' && !it.opened) ? 'Posted ' + when(it.saved) : 'Saved ' + when(it.saved) + (it.via === 'claude' ? ' by Claude' : '')))
     const out = []
     parts.forEach((p, i) => { if (i) out.push(h('i.dot')); out.push(p) })
     return h('div.a-by', out)
@@ -171,6 +172,13 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   function ending(it) {
     const list = onNext ? onNext(it.id, true) : null
     const next = list && list.id !== it.id ? list : null
+    if (it.state === 'feed') {
+      return h('div.a-end',
+        h('div.ornament', '· · ·'),
+        h('div.a-end-btns',
+          h('button.btn.primary', { type: 'button', onclick: () => keepFromFeed() }, ic('bookmarkPlus', 17, 2.2), 'Save to your reading list'),
+          next ? h('button.btn', { type: 'button', onclick: () => go('/read/' + next.id) }, 'Next', ic('chevronRight', 17, 2.2)) : null))
+    }
     return h('div.a-end',
       h('div.ornament', '· · ·'),
       h('div.a-end-btns',
@@ -195,9 +203,20 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     listenBtn.hidden = !readable || !('speechSynthesis' in window)
     sumBtn.hidden = !readable || (item.words || 0) < 120
     aaBtn.hidden = !readable
+    const feed = item.state === 'feed'
     favBtn.hidden = notes
-    archBtn.hidden = notes
+    archBtn.hidden = notes || feed
+    keepBtn.hidden = !feed
   }
+
+  async function keepFromFeed() {
+    if (!item || item.state !== 'feed') return
+    haptic(12)
+    try { await update(item.id, { state: 'unread' }); toast('Saved to your reading list') } catch (e) { failure(e) }
+  }
+
+  // A video from a YouTube channel plays at the top, from YouTube's privacy-enhanced player.
+  const videoFrame = (it) => (it.video ? h('div.a-video', h('iframe', { src: 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(it.video) + '?rel=0&modestbranding=1', title: it.title || 'Video', allow: 'accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen', allowfullscreen: true, referrerpolicy: 'strict-origin-when-cross-origin', loading: 'lazy' })) : null)
 
   /* ---- A book's notebook ---------------------------------------------------------------------------
      A book kept only for its highlights (from a Kindle, Readwise, or typed in from paper): its

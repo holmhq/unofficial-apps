@@ -21,6 +21,8 @@
 //   DELETE /api/marks/:id/share        stop sharing it
 //   PUT    /api/q/:slug/card           the link's preview picture, drawn in the browser
 //   GET    /api/q/:slug                a shared highlight, for anyone with the link
+//   /api/review…, /api/feeds…, /api/uploads, /api/pictures/…, /api/import/highlights
+//                                       in review.js, feeds.js and uploads.js
 //   GET    /q/:slug                    its page, with its own title and picture for previews
 
 import {
@@ -77,6 +79,7 @@ async function route(request, env, url) {
   const { ds, kv } = env.holm.app
 
   if (path.startsWith('/api/review')) return (await import('./review.js')).review(request, env, url, caller, from)
+  if (path.startsWith('/api/feeds')) return (await import('./feeds.js')).feeds(request, env, url, caller, from)
   if (path === '/api/uploads' || path.startsWith('/api/pictures/') || path === '/api/import/highlights' || /^\/api\/items\/[A-Za-z0-9_-]+\/(file|cover)$/.test(path)) {
     return (await import('./uploads.js')).uploads(request, env, url, caller, from)
   }
@@ -153,6 +156,8 @@ async function route(request, env, url) {
       if (input.state === 'archived' || input.state === 'unread') {
         set.state = input.state
         set.read = input.state === 'archived' ? Date.now() : 0
+        // Saved from the Feed: it joins the top of the reading list.
+        if (doc.state === 'feed') { set.saved = Date.now(); set.seen = true; if (input.state === 'unread') set.via = 'feed' }
         if (input.state === 'unread' && doc.state === 'archived') set.progress = doc.progress >= 0.97 ? 0 : doc.progress || 0
       }
       if (typeof input.fav === 'boolean') set.fav = input.fav
@@ -163,7 +168,8 @@ async function route(request, env, url) {
         set.progress = Math.round(input.progress * 1000) / 1000
         set.opened = Date.now()
       }
-      if (input.opened === true) set.opened = Date.now()
+      if (input.opened === true) { set.opened = Date.now(); if (doc.state === 'feed') set.seen = true }
+      if (typeof input.seen === 'boolean' && doc.state === 'feed') set.seen = input.seen
       if (['never', 'less', 'normal', 'more'].includes(input.freq)) set.freq = input.freq
       if (typeof input.author === 'string') set.author = input.author.replace(/\s+/g, ' ').trim().slice(0, 120)
       if (!Object.keys(set).length) return json({ item: itemDTO(doc), v: version(env, k) })
@@ -229,8 +235,10 @@ async function route(request, env, url) {
       if (ds.count(MARKS(k), { item: id }) >= 500) return err(409, 'full', 'This article already has 500 highlights.')
       mark.id = ds.insert(MARKS(k), mark)
       const marks = ds.count(MARKS(k), { item: id })
-      ds.update(ITEMS(k), { id }, { $set: { marks } })
-      const v = bump(env, k, { item: itemDTO({ ...doc, marks }), mark: markDTO(mark) }, from)
+      // Highlighting something in the Feed keeps it: it moves to the reading list.
+      const moved = doc.state === 'feed' ? { state: 'unread', seen: true, saved: Date.now() } : {}
+      ds.update(ITEMS(k), { id }, { $set: { marks, ...moved } })
+      const v = bump(env, k, { item: itemDTO({ ...doc, marks, ...moved }), mark: markDTO(mark) }, from)
       return json({ mark: markDTO(mark), v }, 201)
     }
   }
@@ -362,7 +370,7 @@ function fetchPage(env, k, raw) {
   const headers = response.headers || {}
   const type = String(headers['content-type'] || '').toLowerCase()
   if (!response.ok) return json({ ok: false, status: response.status, reason: response.status === 403 || response.status === 401 ? 'refused' : response.status === 404 || response.status === 410 ? 'gone' : 'error' })
-  if (type && !/html|xml|text\/plain/.test(type)) return json({ ok: false, status: response.status, reason: 'not_html', type: type.split(';')[0] })
+  if (type && !/html|xml|json|text\/plain/.test(type)) return json({ ok: false, status: response.status, reason: 'not_html', type: type.split(';')[0] })
   let html = response.text()
   if (html.length > 3_000_000) html = html.slice(0, 3_000_000)
   return json({ ok: true, status: response.status, type: type.split(';')[0], html })

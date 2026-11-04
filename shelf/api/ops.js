@@ -39,6 +39,7 @@ function brief(env, doc) {
     minutes: d.words ? minutes(d.words) : undefined,
     saved: new Date(d.saved).toISOString(),
     state: d.state,
+    seen: d.state === 'feed' ? d.seen : undefined,
     favourite: d.fav || undefined,
     tags: d.tags.length ? d.tags : undefined,
     progress: d.progress ? Math.round(d.progress * 100) + '%' : undefined,
@@ -56,11 +57,12 @@ export function opList(input, env) {
     const { ds } = env.holm.app
     const show = input.show || 'unread'
     const limit = Math.max(1, Math.min(100, Math.round(input.limit || 30)))
-    const query = show === 'archived' ? { state: 'archived' } : show === 'favourites' ? { fav: true } : show === 'all' ? {} : { state: 'unread' }
+    const query = show === 'archived' ? { state: 'archived' } : show === 'favourites' ? { fav: true } : show === 'all' ? {} : show === 'feed' ? { state: 'feed' } : { state: 'unread' }
     let rows = ds.find(ITEMS(k), query, { limit: 1000, order: 'desc' })
+    if (show !== 'all' && show !== 'feed') rows = rows.filter((r) => r.kind !== 'notes')
     if (input.tag) rows = rows.filter((r) => (r.tags || []).includes(String(input.tag).toLowerCase().replace(/^#/, '')))
     if (input.longest_first) rows.sort((a, b) => (b.words || 0) - (a.words || 0))
-    else rows.sort((a, b) => (b.saved || 0) - (a.saved || 0))
+    else rows.sort((a, b) => (show === 'feed' ? (a.seen ? 1 : 0) - (b.seen ? 1 : 0) : 0) || (b.saved || 0) - (a.saved || 0))
     if (input.max_minutes) rows = rows.filter((r) => r.words && minutes(r.words) <= input.max_minutes)
     return { total: rows.length, items: rows.slice(0, limit).map((r) => brief(env, r)) }
   })
@@ -151,7 +153,11 @@ export function opUpdate(input, env) {
     const doc = getItem(env, k, input.id)
     if (!doc) throw new Fail(404, 'not_found', 'No saved link has that id.')
     const set = {}
-    if (input.state === 'archived' || input.state === 'unread') { set.state = input.state; set.read = input.state === 'archived' ? Date.now() : 0 }
+    if (input.state === 'archived' || input.state === 'unread') {
+      set.state = input.state
+      set.read = input.state === 'archived' ? Date.now() : 0
+      if (doc.state === 'feed') { set.saved = Date.now(); set.seen = true }
+    }
     if (typeof input.favourite === 'boolean') set.fav = input.favourite
     if (Array.isArray(input.tags)) set.tags = cleanTags(input.tags)
     if (typeof input.note === 'string') set.note = input.note.slice(0, 2000)

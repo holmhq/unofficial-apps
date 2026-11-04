@@ -54,9 +54,15 @@ Readability and DOMPurify with their licences.
 - Kindle My Clippings.txt, Bookcision and Readwise CSV highlights become
   books with Open Library covers and their highlights in book order; paper
   books take typed-in highlights. Re-importing adds only what's new.
+- A Feed of what followed sites, newsletters with a feed and YouTube channels
+  post: paste a site and find its feed (link rel=alternate, then the usual
+  places), OPML in and out, Unseen and All, save a post to the reading list
+  with a swipe, videos in the reader from youtube-nocookie. The server
+  fetches feeds conditionally when an open page asks for the due ones; the
+  browser parses RSS, Atom and JSON Feed.
 - Export one ZIP made in the browser: Markdown per source with front matter
   (Obsidian, Logseq, Notion), highlights.csv in Readwise's import layout,
-  library.csv and a JSON copy.
+  library.csv, feeds.opml and a JSON copy.
 - MCP tools (auth "user", each checking the caller): list, read, search,
   save (optionally with the article's text, readable at once), update, and
   highlights.

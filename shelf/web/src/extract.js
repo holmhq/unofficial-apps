@@ -30,7 +30,8 @@ const REASONS = {
   error: 'The site answered with an error.'
 }
 
-export async function readable(item) {
+export async function readable(item, given = '') {
+  if (given) return fromHTML(`<!doctype html><html><head><title>${item.title.replace(/</g, '&lt;')}</title></head><body><article>${given}</article></body></html>`, item.url, item.title, { keep: true })
   let r
   try { r = await api.get('/api/fetch?url=' + encodeURIComponent(item.url)) } catch (e) {
     if (e.status === 429 || e.status === 0) throw e
@@ -48,8 +49,10 @@ const kind = (type) => (/pdf/.test(type) ? 'A PDF document.' : /^image\//.test(t
 
 const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim()
 
-export async function fromHTML(html, url, fallbackTitle = '') {
+export async function fromHTML(html, url, fallbackTitle = '', { keep = false } = {}) {
   const doc = new DOMParser().parseFromString(html, 'text/html')
+  // Words a feed carried are kept even when short (a video's description), as they are.
+  const given = keep && doc.querySelector('article') ? doc.querySelector('article').innerHTML : ''
   const head = doc.head || doc.documentElement
   if (!doc.querySelector('base[href]')) {
     const base = doc.createElement('base')
@@ -115,7 +118,8 @@ export async function fromHTML(html, url, fallbackTitle = '') {
   // A publisher's legal name ("Wikimedia Foundation, Inc.") isn't what people call the site.
   const publisher = clean(parsed && parsed.siteName)
   const site = clean(info.site || (publisher && publisher.length <= 28 && !/\b(inc|ltd|llc|gmbh|foundation|corporation|corp|limited|group|media)\b\.?/i.test(publisher) ? publisher : '')).slice(0, 80)
-  if (!parsed || !parsed.content || (parsed.length || 0) < 280) {
+  if ((!parsed || !parsed.content || (parsed.length || 0) < 280) && given) parsed = { ...(parsed || {}), content: given, length: given.length }
+  if (!parsed || !parsed.content || (parsed.length || 0) < 280 && !given) {
     return { status: 'link', title, site, excerpt: info.excerpt.slice(0, 400), image: ogImage, author: info.author, lang: info.lang, published: info.published, words: 0, html: '', text: info.excerpt }
   }
 

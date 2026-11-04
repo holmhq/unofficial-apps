@@ -3,7 +3,8 @@
 // kept alive with its scroll while you're elsewhere.
 //
 //   /              the reading list          /tags/<tag>   one tag
-//   /favourites    favourites                /search?q=    search
+//   /feed          what feeds brought        /search?q=    search
+//   /favourites    favourites
 //   /highlights    every highlight           /read/<id>    an article (?at=<highlight>)
 //   /archive       finished
 
@@ -12,21 +13,23 @@ import { mark, starFill } from '../icons.js'
 import * as api from '../api.js'
 import {
   lib, on, unread, favourites, archived, tagged, tags, all, minutes, tone, update, remove, highlights, keptHighlights, isWorking, makeReadable,
-  reviewSet, keptReview, findCover, books
+  reviewSet, keptReview, findCover, books, inFeed, keptFeeds, loadFeeds, checkFeeds, isChecking, markSeen
 } from '../store.js'
-import { go, link, accountButton, credit, failure, saveSheet, saveURL, looksLikeURL, connectSheet, importSheet, keysSheet, state } from '../shell.js'
+import { go, link, accountButton, credit, failure, saveSheet, saveURL, looksLikeURL, connectSheet, importSheet, keysSheet, state, followSheet, feedsSheet } from '../shell.js'
 import { createReader } from '../reader.js'
 import { favicon, when, plural } from '../bits.js'
 
 const PLACES = [
   { path: '/', label: 'Reading list', icon: 'bookOpen', count: () => unread().length },
+  { path: '/feed', label: 'Feed', icon: 'rss', count: () => inFeed().filter((i) => !i.seen).length },
   { path: '/favourites', label: 'Favourites', icon: 'star', count: () => favourites().length },
   { path: '/highlights', label: 'Highlights', icon: 'highlighter', count: () => all().reduce((n, i) => n + (i.marks || 0), 0) },
   { path: '/archive', label: 'Archive', icon: 'archive', count: () => archived().length }
 ]
+// On a phone Favourites is a chip on the Reading list and the Archive, so the Feed gets its tab.
 const TABS = [
   { path: '/', label: 'Reading list', icon: 'bookOpen' },
-  { path: '/favourites', label: 'Favourites', icon: 'star' },
+  { path: '/feed', label: 'Feed', icon: 'rss' },
   { path: '/highlights', label: 'Highlights', icon: 'highlighter' },
   { path: '/archive', label: 'Archive', icon: 'archive' },
   { path: '/search', label: 'Search', icon: 'search' }
@@ -89,7 +92,7 @@ export function createApp() {
     const add = (...x) => { bits.push(h('i.dot')); bits.push(...x) }
     if (i.status === 'pending') {
       if (isWorking(i.id)) add(h('span.shimmer'))
-      else add(h('span', i.via === 'import' ? 'Not fetched yet' : 'Waiting to fetch'))
+      else if (i.state !== 'feed') add(h('span', i.via === 'import' ? 'Not fetched yet' : 'Waiting to fetch'))
     } else if (i.status === 'failed') add(h('span', 'Couldn’t fetch'))
     else if (i.status === 'link') add(h('span', 'Link'))
     else if (i.words) {
@@ -98,6 +101,8 @@ export function createApp() {
       else add(h('span', `${m} min`))
     }
     if (archive && i.read) add(h('span', 'Read ' + when(i.read)))
+    if (i.state === 'feed') add(h('span', when(i.saved)))
+    if (i.video) add(h('span', { title: 'A video' }, ic('circlePlay', 12, 2.2)))
     if (i.marks) add(h('span', { title: plural(i.marks, 'highlight') }, ic('highlighter', 12, 2.2)))
     if (i.fav) bits.push(h('span.star', starFill(12)))
     for (const t of (i.tags || []).slice(0, 3)) bits.push(h('i.tagdot', { style: { background: tone(t) }, title: '#' + t }))
@@ -106,7 +111,8 @@ export function createApp() {
 
   function rowEl(i, opts = {}) {
     const showProgress = !opts.archive && i.progress > 0.02 && i.progress < 0.97
-    const btn = h('button.row-item' + (i.status === 'pending' ? '.is-pending' : '') + (reading === i.id ? '.is-open' : ''), { type: 'button', 'data-id': i.id },
+    const feed = i.state === 'feed'
+    const btn = h('button.row-item' + (i.status === 'pending' && !feed ? '.is-pending' : '') + (feed && i.seen ? '.is-seen' : '') + (reading === i.id ? '.is-open' : ''), { type: 'button', 'data-id': i.id },
       h('div', { style: { 'min-width': '0' } },
         h('div.row-t', i.title || i.host || i.url),
         i.excerpt ? h('div.row-x', i.excerpt) : null,
@@ -115,7 +121,9 @@ export function createApp() {
       i.image ? h('div.pic', h('img', { src: i.image + '/t', alt: '', loading: 'lazy', decoding: 'async', onload: (e) => e.target.classList.add('is-in'), onerror: (e) => e.target.parentNode.remove() })) : null,
       showProgress ? h('div.row-prog', h('i', { style: { transform: `scaleX(${i.progress})` } })) : null)
     const wrap = h('div.row-wrap', { 'data-key': i.id, 'data-sig': sig(i) },
-      h('div.row-acts', h('span.is-fav', starFill(18), i.fav ? 'Unfavourite' : 'Favourite'), h('span.is-arch', ic(i.state === 'archived' ? 'rotateCcw' : 'archive', 18, 2), i.state === 'archived' ? 'Unarchive' : 'Archive')),
+      feed
+        ? h('div.row-acts', h('span.is-save', ic('bookmarkPlus', 18, 2), 'Save'), h('span.is-arch', ic(i.seen ? 'eye' : 'eyeOff', 18, 2), i.seen ? 'Unseen' : 'Seen'))
+        : h('div.row-acts', h('span.is-fav', starFill(18), i.fav ? 'Unfavourite' : 'Favourite'), h('span.is-arch', ic(i.state === 'archived' ? 'rotateCcw' : 'archive', 18, 2), i.state === 'archived' ? 'Unarchive' : 'Archive')),
       btn)
     btn.addEventListener('click', () => openItem(i.id))
     btn.addEventListener('contextmenu', (e) => { e.preventDefault(); rowMenu(i.id, { x: e.clientX, y: e.clientY }) })
@@ -126,6 +134,18 @@ export function createApp() {
   function rowMenu(id, at) {
     const i = lib.items.get(id)
     if (!i) return
+    if (i.state === 'feed') {
+      const f = (keptFeeds() || []).find((x) => x.id === i.feed)
+      menu(at, [
+        { label: 'Read', icon: 'bookOpen', onclick: () => openItem(id) },
+        { label: 'Save to your reading list', icon: 'bookmarkPlus', onclick: () => saveFromFeed(id) },
+        { label: i.seen ? 'Mark as unseen' : 'Mark as seen', icon: i.seen ? 'eye' : 'eyeOff', onclick: () => toggleSeen(id) },
+        { label: 'Open the original', icon: 'externalLink', onclick: () => window.open(i.url, '_blank', 'noopener') },
+        f ? 'sep' : null,
+        f ? { label: 'Unfollow ' + (f.title.length > 28 ? f.title.slice(0, 26) + '…' : f.title), icon: 'rss', danger: true, onclick: () => import('../shell.js').then((m) => m.unfollowFeed(f)) } : null
+      ], { align: 'start' })
+      return
+    }
     menu(at, [
       { label: 'Read', icon: 'bookOpen', onclick: () => openItem(id) },
       { label: 'Open the original', icon: 'externalLink', onclick: () => window.open(i.url, '_blank', 'noopener') },
@@ -172,7 +192,12 @@ export function createApp() {
       if (dx < -90 && i) {
         btn.style.transform = 'translate3d(-110%,0,0)'
         haptic(14)
-        setTimeout(() => setArchived(id, i.state !== 'archived'), 180)
+        if (i.state === 'feed') setTimeout(() => { btn.style.transform = ''; toggleSeen(id) }, 180)
+        else setTimeout(() => setArchived(id, i.state !== 'archived'), 180)
+      } else if (dx > 90 && i && i.state === 'feed') {
+        btn.style.transform = 'translate3d(110%,0,0)'
+        haptic(14)
+        setTimeout(() => saveFromFeed(id), 180)
       } else {
         btn.style.transform = ''
         if (dx > 90 && i) { haptic(14); setFav(id, !i.fav) }
@@ -184,6 +209,21 @@ export function createApp() {
     }
     btn.addEventListener('pointerup', end)
     btn.addEventListener('pointercancel', end)
+  }
+
+  async function saveFromFeed(id) {
+    try {
+      await update(id, { state: 'unread' })
+      toast('Saved to your reading list', { action: { label: 'Read', onclick: () => openItem(id) } })
+    } catch (e) { failure(e) }
+  }
+  async function toggleSeen(id) {
+    const i = lib.items.get(id)
+    if (!i) return
+    try {
+      if (i.seen) await update(id, { seen: false })
+      else await markSeen([id])
+    } catch (e) { failure(e) }
   }
 
   async function setFav(id, on) {
@@ -199,16 +239,17 @@ export function createApp() {
 
   /* ---- List pages --------------------------------------------------------------------------- */
 
-  function listPage({ key, title, source, chips = null, empty: emptyFor, archive = false, sub = null }) {
+  function listPage({ key, title, source, chips = null, empty: emptyFor, archive = false, sub = null, start = 'all', actions = null, footer = null }) {
     const panel = h('div.panel')
-    const head = h('div.page-head', h('h1.large-title', typeof title === 'function' ? title() : title))
+    const head = h('div.page-head', h('h1.large-title', typeof title === 'function' ? title() : title), actions)
     const chipRow = h('div.chips')
     const rows = h('div.rows')
     const more = h('div.list-end')
+    const tail = h('div.list-tail')
     const foot = h('div.phone-only', { style: { padding: '18px 16px calc(20px + var(--sab))' } }, credit())
-    panel.append(head, chipRow, rows, more, foot)
+    panel.append(head, chipRow, rows, tail, more, foot)
     const el = h('section.page', panel)
-    let filter = 'all'
+    let filter = start
     let shown = 0
     let list = []
 
@@ -221,16 +262,18 @@ export function createApp() {
     function drawChips() {
       if (!chips) { chipRow.hidden = true; return }
       const base = source()
-      const defs = chips().map((c) => ({ ...c, n: c.key === 'all' ? base.length : base.filter(c.test).length })).filter((c) => c.key === 'all' || c.key === filter || c.n)
-      if (defs.length < 2) { chipRow.hidden = true; if (filter !== 'all') filter = 'all'; return }
+      const defs = chips().map((c) => ({ ...c, n: c.key === 'all' ? base.length : base.filter(c.test).length })).filter((c) => c.key === 'all' || c.key === filter || c.key === start || c.n)
+      if (defs.length < 2) { chipRow.hidden = true; if (filter !== start) filter = start; return }
       chipRow.hidden = false
-      fill(chipRow, defs.map((c) => h('button.chip' + (c.key === filter ? '.is-on' : ''), { type: 'button', 'aria-pressed': String(c.key === filter), onclick: () => { filter = filter === c.key && c.key !== 'all' ? 'all' : c.key; drawChips(); draw(true); panel.scrollTop = 0 } },
+      fill(chipRow, defs.map((c) => h('button.chip' + (c.key === filter ? '.is-on' : ''), { type: 'button', 'aria-pressed': String(c.key === filter), onclick: () => { filter = filter === c.key && c.key !== start ? start : c.key; drawChips(); draw(true); panel.scrollTop = 0 } },
+        c.icon ? h('img.chip-ic', { src: c.icon, alt: '', onerror: (e) => e.target.remove() }) : null,
         c.dot ? h('i.tagdot', { style: { background: c.dot, width: '7px', height: '7px', 'border-radius': '50%' } }) : null, c.label, h('span.n', c.n.toLocaleString()))))
     }
 
     function draw(full = false) {
       head.firstChild.textContent = typeof title === 'function' ? title() : title
       list = filtered()
+      if (footer) fill(tail, footer(list, filter))
       if (!lib.ready) { fill(rows, skeleton()); return }
       if (!list.length) { fill(rows, emptyFor ? emptyFor(filter) : null); shown = 0; return }
       if (rows.querySelector('.empty, .welcome, .skeleton')) full = true
@@ -261,8 +304,9 @@ export function createApp() {
     return {
       key, el, panel,
       title: () => (typeof title === 'function' ? title() : title),
-      show() { drawChips(); draw(); updateTitle(panel) },
+      show() { if (key === '/feed' && !reading) stillShown.clear(); drawChips(); draw(); updateTitle(panel); if (key === '/feed') checkFeeds() },
       change(c) { drawChips(); draw(!!c.full) },
+      filter: () => filter,
       ids: () => list.map((i) => i.id),
       setOpen(id) { for (const r of rows.querySelectorAll('.row-item')) r.classList.toggle('is-open', r.dataset.id === id) },
       rows
@@ -276,8 +320,10 @@ export function createApp() {
     top.classList.toggle('scrolled', !!t && panel.scrollTop > t.offsetTop + t.offsetHeight - 8)
   }
 
+  const favChip = () => (isPhone() ? [{ key: 'fav', label: 'Favourites', test: (i) => i.fav }] : [])
   const timeChips = () => [
     { key: 'all', label: 'All', test: () => true },
+    ...favChip(),
     { key: 'quick', label: 'Quick reads', test: (i) => i.words && minutes(i) <= 10 },
     { key: 'long', label: 'Long reads', test: (i) => minutes(i) >= 20 },
     { key: 'started', label: 'Started', test: (i) => i.progress > 0.02 && i.progress < 0.97 },
@@ -310,6 +356,77 @@ export function createApp() {
   }
 
   const emptyState = (icon, title, text) => h('div.empty', h('div.empty-ic', ic(icon, 28, 1.7)), h('b', title), h('p', text))
+
+  /* ---- The Feed ------------------------------------------------------------------------------------
+     What the feeds you follow brought, newest first: Unseen until you've opened it or marked it,
+     a swipe to save it to the reading list. The feeds are checked whenever Shelf is open. */
+
+  // Posts opened from the Unseen list stay in it until you come back to the page, so the list
+  // doesn't shift under you.
+  const stillShown = new Set()
+
+  function feedPage() {
+    const refreshBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Check the feeds now', title: 'Check the feeds now', onclick: () => refresh() }, ic('refreshCw', 19, 2))
+    const followBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Follow a site', title: 'Follow a site', onclick: () => followSheet() }, ic('plus', 21, 2.1))
+    const manageBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Your feeds', title: 'Your feeds', 'aria-haspopup': 'dialog', onclick: () => feedsSheet() }, ic('listTree', 19, 2))
+    const actions = h('div.head-acts', refreshBtn, followBtn, manageBtn)
+    async function refresh() {
+      refreshBtn.classList.add('is-busy')
+      try { const n = await checkFeeds({ force: true }); toast(n ? `${n} new from your feeds` : 'Nothing new in your feeds', { kind: n ? 'good' : 'info' }) } catch (e) { failure(e) }
+    }
+    const feedChips = () => {
+      const feeds = keptFeeds() || []
+      const counts = new Map()
+      for (const i of inFeed()) counts.set(i.feed, (counts.get(i.feed) || 0) + 1)
+      return [
+        { key: 'unseen', label: 'Unseen', test: (i) => !i.seen || stillShown.has(i.id) },
+        { key: 'all', label: 'All', test: () => true },
+        ...feeds.filter((f) => counts.get(f.id)).sort((a, b) => counts.get(b.id) - counts.get(a.id)).slice(0, 30).map((f) => ({ key: 'f:' + f.id, label: f.title, test: (i) => i.feed === f.id }))
+      ]
+    }
+    const p = listPage({
+      key: '/feed', title: 'Feed', source: inFeed, chips: feedChips, start: 'unseen', actions,
+      empty: (f) => {
+        const feeds = keptFeeds() || []
+        if (!feeds.length) return feedWelcome()
+        if (f === 'unseen') return h('div.empty', h('div.empty-ic', ic('checkCheck', 28, 1.8)), h('b', 'All seen'), h('p', 'New posts from the ' + plural(feeds.length, 'feed') + ' you follow show up here.'))
+        return emptyState('rss', 'Nothing here yet', 'New posts show up here as your feeds are checked.')
+      },
+      // At the end of what's unseen: mark the lot as seen.
+      footer: (list, f) => {
+        const ids = list.filter((i) => !i.seen).map((i) => i.id)
+        if (ids.length < 2 || f === 'all') return null
+        return h('div.feed-end', h('button.btn', { type: 'button', onclick: async () => {
+          try { await markSeen(ids); toast(plural(ids.length, 'post') + ' marked as seen', { kind: 'info' }) } catch (e) { failure(e) }
+        } }, ic('checkCheck', 17, 2.2), 'Mark ' + (ids.length === list.length ? 'all ' : '') + ids.length.toLocaleString() + ' as seen'))
+      }
+    })
+    on((c) => {
+      if (c.feedsChecking !== undefined) refreshBtn.classList.toggle('is-busy', isChecking())
+      if (c.feeds && active === p) p.change({ full: false })
+    })
+    if (!keptFeeds()) loadFeeds().catch(() => {})
+    return p
+  }
+
+  // No feeds yet: a field to follow a site, an OPML file, and a few to start with.
+  function feedWelcome() {
+    const SUGGEST = [
+      { title: 'The Public Domain Review', url: 'https://publicdomainreview.org', note: 'Essays on curious corners of the past' },
+      { title: 'NASA Image of the Day', url: 'https://www.nasa.gov/feeds/iotd-feed/', note: 'A photograph a day from NASA' },
+      { title: 'kottke.org', url: 'https://kottke.org', note: 'Links to the liberal arts since 1998' },
+      { title: 'Wikipedia: Featured articles', url: 'https://en.wikipedia.org/w/api.php?action=featuredfeed&feed=featured&feedformat=atom', note: 'One of Wikipedia’s best articles a day' }
+    ]
+    return h('div.welcome.feed-welcome',
+      h('div.empty-ic', ic('rss', 28, 1.8)),
+      h('h2', 'Follow the sites you read'),
+      h('p', 'New posts from blogs, newsletters with a feed and YouTube channels arrive here. Save the ones worth reading to your reading list.'),
+      h('div.welcome-ways',
+        h('button.way', { type: 'button', onclick: () => followSheet() }, h('span.way-ic', ic('plus', 18, 2)), h('div', h('b', 'Follow a site'), h('small', 'Its address, or a YouTube channel’s'))),
+        h('button.way', { type: 'button', onclick: () => importSheet() }, h('span.way-ic', ic('fileUp', 18, 2)), h('div', h('b', 'Bring in your feeds'), h('small', 'An OPML file from Feedly, Inoreader, NetNewsWire or Readwise')))),
+      h('div.sheet-label', { style: { margin: '18px 4px 4px', 'text-align': 'left' } }, 'To start with'),
+      h('div.group.suggest', SUGGEST.map((x) => h('button.row', { type: 'button', onclick: () => followSheet(x.url) }, h('span.row-ic', ic('rss', 16, 2)), h('div.grow', h('b', x.title), h('small', x.note)), ic('plus', 17, 2.2)))))
+  }
 
   /* ---- Highlights page ---------------------------------------------------------------------------- */
 
@@ -556,7 +673,8 @@ export function createApp() {
   function make(key) {
     if (key === '/') return listPage({ key, title: 'Reading list', source: unread, chips: timeChips, empty: (f) => (f !== 'all' ? emptyState('bookOpen', 'Nothing here', 'Nothing on your reading list fits that.') : lib.items.size ? caughtUp() : welcome()) })
     if (key === '/favourites') return listPage({ key, title: 'Favourites', source: favourites, empty: () => emptyState('star', 'No favourites yet', 'Star the articles worth keeping. They stay here after you’ve read them.') })
-    if (key === '/archive') return listPage({ key, title: 'Archive', source: archived, archive: true, chips: () => [{ key: 'all', label: 'All', test: () => true }, { key: 'marks', label: 'With highlights', test: (i) => i.marks > 0 }, ...tags().slice(0, 10).map(({ tag }) => ({ key: '#' + tag, label: tag, dot: tone(tag), test: (i) => (i.tags || []).includes(tag) }))], empty: () => emptyState('archive', 'Nothing finished yet', 'Archive an article when you’re done with it. It stays here, searchable, with your highlights.') })
+    if (key === '/feed') return feedPage()
+    if (key === '/archive') return listPage({ key, title: 'Archive', source: archived, archive: true, chips: () => [{ key: 'all', label: 'All', test: () => true }, ...favChip(), { key: 'marks', label: 'With highlights', test: (i) => i.marks > 0 }, ...tags().slice(0, 10).map(({ tag }) => ({ key: '#' + tag, label: tag, dot: tone(tag), test: (i) => (i.tags || []).includes(tag) }))], empty: () => emptyState('archive', 'Nothing finished yet', 'Archive an article when you’re done with it. It stays here, searchable, with your highlights.') })
     if (key === '/highlights') return highlightsPage()
     if (key === '/search') return searchPage()
     const t = /^\/tags\/(.+)$/.exec(key)
@@ -573,7 +691,7 @@ export function createApp() {
     const path = decodeURIComponent(location.pathname.replace(/\/+$/, '') || '/')
     const r = /^\/read\/([A-Za-z0-9_-]{6,64})$/.exec(path)
     if (r) return { read: r[1], at: new URLSearchParams(location.search).get('at') }
-    if (['/', '/favourites', '/highlights', '/archive', '/search'].includes(path) || /^\/tags\/[^/]+$/.test(path)) return { key: path }
+    if (['/', '/feed', '/favourites', '/highlights', '/archive', '/search'].includes(path) || /^\/tags\/[^/]+$/.test(path)) return { key: path }
     return { key: '/', missing: path !== '/' }
   }
 
@@ -584,7 +702,7 @@ export function createApp() {
     if (r.read) {
       const item = lib.items.get(r.read)
       if (!item && lib.ready) { toast('That article isn’t on your shelf.', { kind: 'bad' }); history.replaceState({}, '', listKey); return show() }
-      key = pages.has(listKey) ? listKey : (item && item.state === 'archived' ? '/archive' : '/')
+      key = pages.has(listKey) ? listKey : (item && item.state === 'archived' ? '/archive' : item && item.state === 'feed' ? '/feed' : '/')
     } else listKey = key
     const p = page(key)
     if (active !== p) {
@@ -618,6 +736,8 @@ export function createApp() {
 
   function openItem(id) {
     closeMenus()
+    const it = lib.items.get(id)
+    if (it && it.state === 'feed') stillShown.add(id)
     if (location.pathname === '/read/' + id) return
     go('/read/' + id, { replace: !!reading && wide() })
   }
@@ -770,6 +890,8 @@ export function createApp() {
       markCursor()
     })
   })
+
+  setTimeout(() => { loadFeeds().then((f) => { if (f.length) checkFeeds() }).catch(() => {}) }, 2500)
 
   return {
     el: root,

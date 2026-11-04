@@ -34,11 +34,19 @@ served as files: `api/` and `holm.json` are not public URLs.
   article: its words, its pictures, its title, site, author and date. The
   pictures are kept on the server too, so the article is still whole when the
   site changes or goes away.
+- **The Feed.** Follow blogs, newsletters that have a feed (Substack,
+  Buttondown, Ghost, beehiiv) and YouTube channels: paste a site's address
+  and Shelf finds its feed, or bring in an OPML file from another reader. New
+  posts arrive in the Feed, apart from the reading list, Unseen until you've
+  opened or marked them; swipe one right (or tap Save) to keep it on your
+  reading list. Videos play in the reader. A few sites to start with are a
+  tap away.
 - **The reading list** shows each article's title, a line or two, the site
   and the minutes it takes, or the minutes left when you've started. Chips
   narrow it to quick reads, long reads, ones you've started, ones Claude
   saved, or a tag. Favourites, the Archive (what you've finished), tags and
-  Highlights are a tap away.
+  Highlights are a tap away; on a phone the tab bar holds the Feed, and
+  Favourites is a chip on the reading list and the Archive.
 - **The reader** opens beside the list on a desk and slides over it on a
   phone. It's set in Newsreader, or Inter if you'd rather, in eight sizes and
   three widths, on white or a paper tone, in light or dark. Shelf keeps your
@@ -81,7 +89,8 @@ served as files: `api/` and `holm.json` are not public URLs.
   straight away and the rest when you open them.
 - **Claude reads it with you.** Connect Shelf to Claude as a custom connector
   at `https://<your-host>/_holm/mcp` and sign in. Claude can list what's on
-  your reading list (say, everything under ten minutes), read an article,
+  your reading list (say, everything under ten minutes) or new in your Feed,
+  read an article,
   search, read your highlights and notes, save links, and archive, favourite
   or tag them. When Claude has already read an article, it can save its text
   with the link, and the article is readable at once.
@@ -166,6 +175,21 @@ the Holm credit sits in the footer.
   again by title and author (a KV entry) or by link, and adds only highlights
   it hasn't got, a couple of seconds at a time. Covers come from Open
   Library's search the first time a book is shown.
+- **Feeds** (`api/feeds.js`, `web/src/feeds.js`). The server keeps each
+  person's feeds in `feeds.<member>` and fetches one when asked, with
+  `If-None-Match` and `If-Modified-Since` and a 6-second timeout; the browser
+  reads RSS 2.0, RSS 1.0, Atom, JSON Feed and OPML with `DOMParser` and sends
+  back the entries. Each becomes an item with `state: "feed"`, found again by
+  a KV entry per entry id so nothing arrives twice. Holm v1 has no schedules,
+  so whichever page is open asks `POST /api/feeds/due` for up to four feeds
+  that haven't been looked at for half an hour (setting them aside for a few
+  minutes so two devices don't both fetch them), reads them, and asks again.
+  A feed that fails is looked at less and less often, up to once a day.
+  Seen posts go after three weeks, and the Feed holds at most 1,500.
+- **Videos** from a YouTube channel's feed keep their video id and play in
+  the reader from `www.youtube-nocookie.com`, with the description as the
+  article. A feed that carries whole articles is read from the feed, with no
+  trip to the site.
 - **Export** is made in the browser: `web/src/zip.js` writes an uncompressed
   ZIP (and reads ZIP exports with `DecompressionStream`), with no library.
   Highlights come from `GET /api/highlights` a page at a time, since a paged
@@ -193,11 +217,18 @@ holm @<peer> app deploy shelf --spec-v1 --host shelf.<your-domain>
 
 Add `--force` when redeploying.
 
-**Fetching pages.** Shelf fetches whatever site you save, so the app needs
+**Fetching pages.** Shelf fetches whatever site you save or follow, so the app needs
 permission to reach any public HTTPS host:
 
 ```bash
 holm @<peer> net allow-any --app <app-id>
+```
+
+**Videos in the reader** need the YouTube player allowed in the app's CSP,
+next to the feedback form:
+
+```bash
+holm @<peer> policy set security.csp.frame_src https://feedback.zyt.app,https://www.youtube-nocookie.com --app <app-id>
 ```
 
 **Summaries** need an AI provider on the node (section 6.7 of the guide).
@@ -220,6 +251,14 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
   protection) can't be fetched; Shelf keeps the link with Open the original.
 - **https only.** Plain `http://` addresses are tried as `https://`.
 - **PDFs, pictures and videos** are kept as links, not read in Shelf.
+- **Feeds are checked while Shelf is open**, every 15 minutes on any of your
+  devices and when you open the Feed, as Holm v1 apps can't run on a
+  schedule. Newsletters that only arrive by email can't come in: Holm v1
+  apps can't receive mail.
+- **Plain-http feeds can't be fetched.** Holm's outbound fetch is https only;
+  a feed saved with an `http://` address is tried over https.
+- **YouTube's feed server sometimes turns everyone away** for hours. Shelf
+  follows the channel anyway and keeps trying. Transcripts can't be fetched.
 - **The review is in the app.** No email or notification reminds you, as Holm
   v1 apps can't run on a schedule or send push notifications.
 - **Kindle highlights come from a file.** Shelf can't sign in to Amazon to

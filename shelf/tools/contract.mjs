@@ -11,9 +11,9 @@ const tool = (handler, risk, summary, description, input, extra = {}) => ({ hand
 
 const operations = {
   'items.list': tool('opList', 'read', 'List what’s on your shelf',
-    'Lists saved links, newest first: unread by default, or archived, favourites or all. Each has an id, title, site, reading time in minutes, reading progress, tags and a link to open it in Shelf. Use items_read with an id to read one.',
+    'Lists saved links, newest first: unread by default, or archived, favourites, all, or feed (new posts from the sites and channels the person follows, not yet saved). Each has an id, title, site, reading time in minutes, reading progress, tags and a link to open it in Shelf. Use items_read with an id to read one, and items_update with state "unread" to save a feed post to the reading list.',
     obj({
-      show: { type: 'string', enum: ['unread', 'archived', 'favourites', 'all'], description: 'Which links: unread (the reading list, default), archived (finished), favourites or all.' },
+      show: { type: 'string', enum: ['unread', 'archived', 'favourites', 'all', 'feed'], description: 'Which links: unread (the reading list, default), archived (finished), favourites, all, or feed (posts from followed feeds, unseen first).' },
       tag: { type: 'string', maxLength: 40, description: 'Only links with this tag.' },
       max_minutes: { type: 'integer', minimum: 1, maximum: 600, description: 'Only articles that take at most this many minutes to read.' },
       longest_first: { type: 'boolean', description: 'Sort by length instead of by when they were saved.' },

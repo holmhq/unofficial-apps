@@ -2,11 +2,11 @@
 // menu, the footer credit, and the sheets for saving a link, connecting Claude, the bookmarklet
 // and bringing in an export.
 
-import { h, ic, avatar, menu, segmented, haptic, toast, sheet, copyText, fill, toggle } from './ui.js'
+import { h, ic, avatar, menu, segmented, haptic, toast, sheet, copyText, fill, toggle, confirm } from './ui.js'
 import { holmMark } from './icons.js'
 import * as api from './api.js'
 import * as theme from './theme.js'
-import { lib, save, forget, importLinks, importHighlights, addBook } from './store.js'
+import { lib, save, forget, importLinks, importHighlights, addBook, follow, followMany, unfollow, renameFeed, keptFeeds, loadFeeds, inFeed } from './store.js'
 
 export const state = { me: null }
 export const SOURCE = 'https://github.com/holmhq/unofficial-apps/tree/main/shelf'
@@ -93,10 +93,11 @@ function accountMenu(anchor) {
       : h('div.me', h('span.avatar.ghost', ic('user', 22, 2)), h('div.grow', h('b', 'Not signed in'), h('small', 'Sign in to keep a shelf here'))),
     'sep',
     m ? { label: 'Save a link', icon: 'bookmarkPlus', onclick: () => saveSheet() } : null,
+    m ? { label: 'Follow a site…', icon: 'rss', onclick: () => followSheet() } : null,
     m ? { label: 'Add a paper book…', icon: 'bookPlus', onclick: () => bookSheet() } : null,
     m ? { label: 'Save from anywhere', icon: 'plug', onclick: () => connectSheet() } : null,
     m ? 'sep' : null,
-    m ? { label: 'Bring in links and highlights…', icon: 'fileUp', onclick: () => importSheet() } : null,
+    m ? { label: 'Bring in links, highlights, feeds…', icon: 'fileUp', onclick: () => importSheet() } : null,
     m ? { label: 'Export your shelf…', icon: 'download', onclick: () => exportSheet() } : null,
     m && innerWidth >= 900 ? { label: 'Keyboard shortcuts', icon: 'keyboard', onclick: () => keysSheet() } : null,
     m ? 'sep' : null,
@@ -220,12 +221,12 @@ export function connectSheet() {
 
 export function importSheet() {
   return sheet({
-    title: 'Bring in links and highlights',
+    title: 'Bring in links, highlights and feeds',
     cancel: null,
     done: 'Close',
     body: (close) => {
       const body = h('div', { style: { display: 'grid', gap: '14px' } })
-      const pick = h('input', { type: 'file', accept: '.csv,.html,.htm,.txt,.json,.zip,text/csv,text/html,text/plain,application/json,application/zip', hidden: true })
+      const pick = h('input', { type: 'file', accept: '.csv,.html,.htm,.txt,.json,.zip,.opml,.xml,text/csv,text/html,text/plain,application/json,application/zip,text/x-opml,application/xml,text/xml', hidden: true })
       const start = () => pick.click()
       const progress = (what, total) => {
         const bar = h('i')
@@ -243,6 +244,7 @@ export function importSheet() {
         let text = ''
         let rows = []
         let sources = []
+        let feeds = []
         try {
           if (/\.zip$/i.test(file.name) || file.type === 'application/zip') {
             // An export packed as a ZIP (Omnivore, Readwise, Pocket): read every file in it.
@@ -256,12 +258,21 @@ export function importSheet() {
             }
           } else {
             text = await file.text()
-            if (looksLikeHighlights(text, file.name)) sources = parseHighlights(text, file.name)
+            if (/\.opml$/i.test(file.name) || /<opml[\s>]/i.test(text.slice(0, 1000))) feeds = (await import('./feeds.js')).parseOPML(text)
+            else if (looksLikeHighlights(text, file.name)) sources = parseHighlights(text, file.name)
             else rows = parseExport(text, file.name)
           }
         } catch (e) { toast(e.message || 'That file couldn’t be read.', { kind: 'bad' }); return }
         const count = sources.reduce((n, b) => n + b.highlights.length, 0)
-        if (!rows.length && !count) { toast('No links or highlights were found in that file.', { kind: 'bad' }); return }
+        if (feeds.length) {
+          const step = progress(`Following ${feeds.length.toLocaleString()} feeds…`, feeds.length)
+          try {
+            const added = await followMany(feeds, (f, n) => step(f, `${Math.round(f * feeds.length).toLocaleString()} of ${feeds.length.toLocaleString()} · ${n.toLocaleString()} new`))
+            done(`Following ${added.toLocaleString()} new ${added === 1 ? 'feed' : 'feeds'}`, (added < feeds.length ? `${(feeds.length - added).toLocaleString()} you followed already. ` : '') + 'Their newest posts arrive in the Feed over the next minute or two.', 'See your Feed', '/feed')
+          } catch (e) { failure(e); fill(body, ...intro()) }
+          return
+        }
+        if (!rows.length && !count) { toast('No links, highlights or feeds were found in that file.', { kind: 'bad' }); return }
         try {
           let summary = ''
           if (count) {
@@ -288,6 +299,8 @@ export function importSheet() {
         h('div.group',
           row('bookOpen', 'Kindle', 'My Clippings.txt from the Kindle’s documents folder, or a Bookcision file'),
           row('highlighter', 'Readwise', 'Export to CSV in Readwise, or any CSV with a Highlight column')),
+        h('div.sheet-label', 'Feeds'),
+        h('div.group', row('rss', 'Any feed reader', 'An OPML file from Feedly, Inoreader, NetNewsWire or Readwise Reader')),
         h('button.btn.primary.large.block', { type: 'button', onclick: start }, ic('fileUp', 18, 2.2), 'Choose a file'),
         pick
       ]
@@ -315,6 +328,7 @@ export function exportSheet() {
           h('div.group',
             h('div.row', h('span.row-ic', ic('highlighter', 17, 2)), h('div.grow', h('b', 'Highlights as Markdown'), h('small', 'A file per book or article, ready for Obsidian, Logseq or Notion'))),
             h('div.row', h('span.row-ic', ic('fileDown', 17, 2)), h('div.grow', h('b', 'CSV for Readwise and spreadsheets'), h('small', 'highlights.csv opens in Readwise’s CSV import; library.csv lists everything saved'))),
+            h('div.row', h('span.row-ic', ic('rss', 17, 2)), h('div.grow', h('b', 'Your feeds'), h('small', 'feeds.opml, for any feed reader'))),
             h('div.row', h('span.row-ic', ic('download', 17, 2)), h('div.grow', h('b', 'A full copy'), h('small', 'shelf.json, with every field'))),
             toggleRow),
           h('button.btn.primary.large.block', { type: 'button', onclick: run }, ic('download', 18, 2.2), 'Export')
@@ -326,7 +340,9 @@ export function exportSheet() {
         fill(body, h('div.import-prog', h('b', 'Exporting your shelf…'), h('div.meter', bar), label))
         try {
           const { exportShelf, download } = await import('./export.js')
-          const { blob, counts } = await exportShelf({ articles, onStep: (text, f) => { label.textContent = text; bar.style.transform = `scaleX(${f})` } })
+          let feeds = keptFeeds() || []
+          try { feeds = await loadFeeds() } catch {}
+          const { blob, counts } = await exportShelf({ articles, feeds, onStep: (text, f) => { label.textContent = text; bar.style.transform = `scaleX(${f})` } })
           const d = new Date()
           download(blob, `Shelf ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.zip`)
           fill(body, h('div.empty', { style: { margin: '10px auto 0' } }, h('div.empty-ic', ic('circleCheck', 28, 1.8)), h('b', 'Exported'),
@@ -334,6 +350,95 @@ export function exportSheet() {
         } catch (e) { failure(e); fill(body, ...intro()) }
       }
       fill(body, ...intro())
+      return body
+    }
+  })
+}
+
+/* ---- Feeds ------------------------------------------------------------------------------------------- */
+
+export function followSheet(prefill = '') {
+  let input
+  let note
+  let busy = false
+  const hint = 'Paste a blog’s address and Shelf finds its feed. Newsletters on Substack, Buttondown, Ghost and beehiiv have one too.'
+  return sheet({
+    title: 'Follow a site',
+    done: 'Follow',
+    onDone: async (close) => {
+      const value = input.value.trim()
+      if (!value) { input.focus(); return }
+      if (busy) return
+      busy = true
+      const box = input.closest('.sheet')
+      box.doneButton.disabled = true
+      note.textContent = 'Looking for its feed…'
+      try {
+        const feed = await follow(value)
+        close(feed)
+        if (feed.waiting) toast(`Following ${feed.title}. YouTube isn’t sending its feed right now; Shelf will keep trying.`, { kind: 'info', ms: 6000 })
+        else toast('Following ' + feed.title, { action: { label: 'See', onclick: () => go('/feed') } })
+      } catch (e) {
+        note.textContent = e.message
+        note.classList.add('is-bad')
+        box.doneButton.disabled = false
+        busy = false
+      }
+    },
+    body: () => {
+      input = h('input.field', { type: 'url', value: prefill, placeholder: 'A site, a feed or a YouTube channel', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', autofocus: true, enterkeyhint: 'go', inputmode: 'url', 'aria-label': 'Address' })
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); input.closest('.sheet').doneButton.click() } })
+      input.addEventListener('input', () => { note.classList.remove('is-bad'); note.textContent = hint })
+      note = h('p.sheet-note', hint)
+      requestAnimationFrame(() => input.focus())
+      return [input, note]
+    }
+  })
+}
+
+export async function unfollowFeed(f) {
+  const waiting = inFeed().filter((i) => i.feed === f.id).length
+  const sure = await confirm({ title: 'Unfollow ' + f.title + '?', text: waiting ? `The ${waiting === 1 ? 'post' : waiting + ' posts'} it brought that you haven’t saved go too. Anything you saved stays.` : 'Anything you saved from it stays.', action: 'Unfollow' })
+  if (!sure) return
+  try { await unfollow(f.id); toast('Unfollowed ' + f.title, { kind: 'info' }) } catch (e) { failure(e) }
+}
+
+// The feeds you follow: when each was checked, a rename, unfollow, and OPML out.
+export function feedsSheet() {
+  return sheet({
+    title: 'Your feeds',
+    cancel: null,
+    done: 'Done',
+    body: (close) => {
+      const body = h('div', { style: { display: 'grid', gap: '14px' } })
+      const draw = () => {
+        const feeds = (keptFeeds() || []).slice().sort((a, b) => a.title.localeCompare(b.title))
+        const counts = new Map()
+        for (const i of inFeed()) if (!i.seen) counts.set(i.feed, (counts.get(i.feed) || 0) + 1)
+        const ago = (t) => { if (!t) return 'Not checked yet'; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'Checked just now' : m < 60 ? `Checked ${m} min ago` : m < 1440 ? `Checked ${Math.round(m / 60)} h ago` : `Checked ${Math.round(m / 1440)} d ago` }
+        fill(body,
+          h('div.save-field', h('button.btn.block', { type: 'button', onclick: () => { close(); followSheet() } }, ic('plus', 17, 2.2), 'Follow a site'), h('button.btn', { type: 'button', onclick: () => { close(); importSheet() } }, ic('fileUp', 17, 2), 'OPML')),
+          feeds.length ? h('div.group.feed-list', feeds.map((f) => h('button.row', { type: 'button', onclick: (e) => feedMenu(f, e.currentTarget) },
+            h('span.row-ic.feed-ic', f.icon ? h('img', { src: f.icon, alt: '', onerror: (e) => e.target.remove() }) : null, (f.title || '?').charAt(0).toUpperCase()),
+            h('div.grow', h('b.trunc', f.title), h('small' + (f.error ? '.is-bad' : ''), f.error ? f.error : ago(f.checked))),
+            counts.get(f.id) ? h('span.side-count', String(counts.get(f.id))) : null,
+            ic('ellipsis', 18, 2)))) : h('p.sheet-note', 'You don’t follow any feeds yet.'))
+      }
+      function feedMenu(f, anchor) {
+        menu(anchor, [
+          f.site ? { label: 'Open the site', icon: 'externalLink', onclick: () => window.open(f.site, '_blank', 'noopener') } : null,
+          { label: 'Copy the feed’s address', icon: 'link', onclick: () => copyText(f.url, 'Address copied') },
+          { label: 'Rename…', icon: 'pencil', onclick: async () => {
+            let field
+            const t = await sheet({ title: 'Rename', done: 'Save', onDone: (c) => c(field.value.trim()), body: () => { field = h('input.field', { type: 'text', value: f.title, maxlength: '120', autofocus: true, 'aria-label': 'Name' }); return [field] } })
+            if (typeof t === 'string' && t && t !== f.title) { try { await renameFeed(f.id, t); draw() } catch (e) { failure(e) } }
+          } },
+          'sep',
+          { label: 'Unfollow', icon: 'trash', danger: true, onclick: async () => { await unfollowFeed(f); draw() } }
+        ], { align: 'end' })
+      }
+      draw()
+      loadFeeds().then(draw).catch(() => {})
       return body
     }
   })

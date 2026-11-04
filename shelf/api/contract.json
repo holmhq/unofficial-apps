@@ -5,7 +5,7 @@
    "auth": "user",
    "risk": "read",
    "summary": "List what’s on your shelf",
-   "description": "Lists saved links, newest first: unread by default, or archived, favourites or all. Each has an id, title, site, reading time in minutes, reading progress, tags and a link to open it in Shelf. Use items_read with an id to read one.",
+   "description": "Lists saved links, newest first: unread by default, or archived, favourites, all, or feed (new posts from the sites and channels the person follows, not yet saved). Each has an id, title, site, reading time in minutes, reading progress, tags and a link to open it in Shelf. Use items_read with an id to read one, and items_update with state \"unread\" to save a feed post to the reading list.",
    "input": {
     "type": "object",
     "properties": {
@@ -15,9 +15,10 @@
        "unread",
        "archived",
        "favourites",
-       "all"
+       "all",
+       "feed"
       ],
-      "description": "Which links: unread (the reading list, default), archived (finished), favourites or all."
+      "description": "Which links: unread (the reading list, default), archived (finished), favourites, all, or feed (posts from followed feeds, unseen first)."
      },
      "tag": {
       "type": "string",
