@@ -16,7 +16,7 @@ import {
   reviewSet, keptReview, findCover, books, inFeed, keptFeeds, loadFeeds, checkFeeds, isChecking, markSeen, keptViews, loadViews, saveViews, bulk
 } from '../store.js'
 import { parse as parseQuery, apply as applyQuery, HELP as QUERY_HELP } from '../query.js'
-import { go, link, accountButton, credit, failure, saveSheet, saveURL, looksLikeURL, connectSheet, importSheet, keysSheet, state, followSheet, feedsSheet, uploadSheet } from '../shell.js'
+import { go, link, accountButton, credit, failure, saveSheet, saveURL, looksLikeURL, connectSheet, mcpSheet, importSheet, keysSheet, state, followSheet, feedsSheet, uploadSheet } from '../shell.js'
 import { createReader } from '../reader.js'
 import { favicon, when, plural } from '../bits.js'
 
@@ -441,7 +441,7 @@ export function createApp() {
       h('p', 'Save articles to read when you have the time. Shelf keeps a clean copy of each one on your own server, with its pictures.'),
       h('div.welcome-ways',
         way('bookmarkPlus', 'Save a link', isPhone() ? 'Paste an address you copied' : 'Or paste one anywhere with ⌘V', () => saveSheet()),
-        way('plug', 'Save from anywhere', 'A bookmark button, your phone’s share sheet, or Claude', () => connectSheet()),
+        way('share', 'Save from anywhere', 'A bookmark button, your phone’s share sheet, or Claude', () => connectSheet()),
         way('fileUp', 'Bring in your Pocket links', 'Or an Instapaper, Omnivore or bookmarks export', () => importSheet())))
   }
 
@@ -557,7 +557,8 @@ export function createApp() {
       { label: 'Upload a book, PDF or Markdown file', icon: 'upload', run: () => import('../shell.js').then((m) => m.pickFile()) },
       { label: 'Follow a site', icon: 'rss', run: () => followSheet() },
       { label: 'Add a paper book', icon: 'bookPlus', run: () => import('../shell.js').then((m) => m.bookSheet()) },
-      { label: 'Bring in links, highlights, feeds', icon: 'fileUp', run: () => importSheet() },
+      { label: 'Connect via MCP', icon: 'mcp', run: () => mcpSheet() },
+      { label: 'Import links, highlights, feeds', icon: 'fileUp', run: () => importSheet() },
       { label: 'Export your shelf', icon: 'download', run: () => import('../shell.js').then((m) => m.exportSheet()) },
       { label: 'Keyboard shortcuts', icon: 'keyboard', hint: '?', run: () => keysSheet() },
       ...tags().slice(0, 30).map(({ tag }) => ({ label: '#' + tag, icon: 'hash', hint: 'Tag', run: () => go('/tags/' + encodeURIComponent(tag)) }))

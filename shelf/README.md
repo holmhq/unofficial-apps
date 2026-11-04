@@ -117,8 +117,10 @@ served as files: `api/` and `holm.json` are not public URLs.
   (CSV, or the ZIP it came in), a bookmarks file (HTML), or anything with
   links in it. The newest are made readable
   straight away and the rest when you open them.
-- **Claude reads it with you.** Connect Shelf to Claude as a custom connector
-  at `https://<your-host>/_holm/mcp` and sign in. Claude can list what's on
+- **Claude reads it with you.** Open **Connect via MCP…** in the account
+  menu. It has the connector address with a Copy button, the steps for
+  Claude and the Claude Code command. Add Shelf in Claude as a custom
+  connector at `https://<your-host>/_holm/mcp` and sign in. Claude can list what's on
   your reading list (say, everything under ten minutes) or new in your Feed,
   read an article, highlight a passage or change a highlight, go over
   today's review,
@@ -180,6 +182,12 @@ the Holm credit sits in the footer.
   and `review_today`. `api/main.js` exports one-line
   wrappers that import `api/ops.js`, so Holm's contract scan stays small.
   `node shelf/tools/contract.mjs` writes `api/contract.json`.
+- **Connect via MCP** is one sheet (`mcpSheet` in `web/src/shell.js`), opened
+  from the account menu and ⌘K. It shows Shelf's icon joined to the MCP mark,
+  the address `/api/me` reports (`url.origin + '/_holm/mcp'`) with Copy, the
+  steps for Claude, the Claude Code command and what the tools do. The mark
+  is `tools/mcp.svg`, a filled 24 × 24 drawing that `tools/icons.mjs` builds
+  into `web/src/icons.js` as the `mcp` icon.
 - **One answer for the list.** `GET /api/library` returns every link. A
   version in KV (`v:<member>`), moved on by every change, lets the page ask
   `?v=` and get a one-line answer when nothing changed. The page keeps its
@@ -371,6 +379,9 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
   `pdf.worker.min.mjs` from `pdfjs-dist`): Apache 2.0, in
   `web/vendor/pdfjs/LICENSE`.
 - Icons from [Lucide](https://lucide.dev): ISC, in `web/vendor/lucide/LICENSE`.
+- The MCP mark (`tools/mcp.svg`, built into `web/src/icons.js`) is the
+  [Model Context Protocol](https://modelcontextprotocol.io) project's logo,
+  used only to name the protocol.
 - The sample pictures on the start page (`web/samples/`) and the articles in
   the store screenshots are in the public domain, from Wikimedia Commons,
   Project Gutenberg and Wikipedia (whose article text is CC BY-SA 4.0). Shelf's

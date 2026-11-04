@@ -88,6 +88,11 @@ Readability and DOMPurify with their licences.
 - MCP tools (auth "user", each checking the caller): list, read, search,
   save (optionally with the article's text, readable at once), update,
   highlights, save a highlight, change a highlight, today's review.
+- Connect via MCP… in the account menu and ⌘K, with the MCP mark: a sheet
+  with the app's icon joined to the mark, the connector address
+  (https://<host>/_holm/mcp) with Copy, the steps for Claude, the Claude
+  Code command and what the tools do. Menu labels stay short (Import…,
+  Export…).
 - Realtime: every change reaches the person's other open pages at once.
 - A native-feeling Apple-quality UI on phone and desktop, light and dark: a
   fixed shell where only panels scroll; a sidebar of places on a desk, a tab
@@ -114,3 +119,15 @@ Shelf 0.3 onwards came from a follow-up, after comparing Shelf with Readwise:
 
 > Yes, I would like to do a proper gap analysis with ReadWise and close all
 > possible gaps as elegantly as possible
+
+Shelf 0.8.1 came from two more, after the connector address turned out to be
+hard to find:
+
+> Thats not sensible, this is a major feature, add it as an option connect via mcp in menu
+> - bring links, highlighst, feeds feels too long; its making the menu wider than it should be
+> - provide a nicer smaller name
+
+> we need to make the connect via MCP a standard feature for every app we build from now
+> - use the [MCP logo] file
+> - extract the logo sensibly and use it in a nice way so that, this becomes reference to everything we build
+> - if you need to update it anywhere do it

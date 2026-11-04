@@ -95,10 +95,11 @@ function accountMenu(anchor) {
     m ? { label: 'Save a link', icon: 'bookmarkPlus', onclick: () => saveSheet() } : null,
     m ? { label: 'Follow a site…', icon: 'rss', onclick: () => followSheet() } : null,
     m ? { label: 'Add a paper book…', icon: 'bookPlus', onclick: () => bookSheet() } : null,
-    m ? { label: 'Save from anywhere', icon: 'plug', onclick: () => connectSheet() } : null,
+    m ? { label: 'Save from anywhere', icon: 'share', onclick: () => connectSheet() } : null,
     m ? 'sep' : null,
-    m ? { label: 'Bring in links, highlights, feeds…', icon: 'fileUp', onclick: () => importSheet() } : null,
-    m ? { label: 'Export your shelf…', icon: 'download', onclick: () => exportSheet() } : null,
+    m ? { label: 'Connect via MCP…', icon: 'mcp', onclick: () => mcpSheet() } : null,
+    m ? { label: 'Import…', icon: 'fileUp', onclick: () => importSheet() } : null,
+    m ? { label: 'Export…', icon: 'download', onclick: () => exportSheet() } : null,
     m && innerWidth >= 900 ? { label: 'Keyboard shortcuts', icon: 'keyboard', onclick: () => keysSheet() } : null,
     m ? 'sep' : null,
     h('div.menu-theme', themes),
@@ -197,13 +198,12 @@ export function bookmarkletCode() {
 }
 
 export function connectSheet() {
-  const mcp = (state.me && state.me.mcp) || location.origin + '/_holm/mcp'
   return sheet({
     title: 'Save from anywhere',
     cancel: null,
     done: 'Done',
     wide: true,
-    body: () => [
+    body: (close) => [
       h('div.sheet-label', 'In your browser'),
       h('div.group', h('div.row', h('span.row-ic', ic('bookmark', 17, 2)), h('div.grow', h('b', 'The Save to Shelf button'), h('small', innerWidth >= 760 ? 'Drag it to your bookmarks bar. Click it on any page to save that page.' : 'On a computer, open Shelf and drag this button from here to the bookmarks bar.')),
         innerWidth >= 760 ? h('a.bookmarklet', { href: bookmarkletCode(), onclick: (e) => { e.preventDefault(); toast('Drag this button to your bookmarks bar.', { kind: 'info' }) }, title: 'Drag to your bookmarks bar' }, ic('bookmarkPlus', 16, 2.2), 'Save to Shelf') : null)),
@@ -212,9 +212,54 @@ export function connectSheet() {
         h('div.row', h('span.row-ic', ic('smartphone', 17, 2)), h('div.grow', h('b', 'Android'), h('small', 'Add Shelf to your home screen from the browser menu. Shelf then shows up when you share a page.'))),
         h('div.row', h('span.row-ic', ic('share', 17, 2)), h('div.grow', h('b', 'iPhone and iPad'), h('small', 'Copy a page’s link, then in Shelf tap + and Paste.')))),
       h('div.sheet-label', 'With Claude'),
-      h('div.group', h('div.row', h('span.row-ic.is-hl', ic('bot', 17, 2)), h('div.grow', h('b', 'Add Shelf as a connector'), h('small', 'In Claude, add a custom connector with this address and sign in. Claude can then list, read and search your shelf, read your highlights, and save links for you.')))),
-      h('div.save-field', h('input.field.is-mono', { type: 'text', value: mcp, readonly: true, 'aria-label': 'Connector address', onfocus: (e) => e.target.select() }), h('button.btn', { type: 'button', onclick: () => copyText(mcp, 'Address copied') }, ic('copy', 17, 2), 'Copy'))
+      h('div.group', h('button.row.is-link', { type: 'button', onclick: () => { close(); mcpSheet() } },
+        h('span.row-ic', ic('mcp', 17)),
+        h('div.grow', h('b', 'Ask Claude to save it'), h('small', 'Connect Shelf to Claude once, then ask it to save what it finds.')),
+        ic('chevronRight', 17, 2)))
     ]
+  })
+}
+
+/* ---- Connecting Claude, or any app that takes MCP connectors --------------------------------------------- */
+
+export function mcpSheet() {
+  const mcp = (state.me && state.me.mcp) || location.origin + '/_holm/mcp'
+  const command = 'claude mcp add --transport http shelf ' + mcp
+  // Long addresses break after a slash, never inside a word; on a phone, Copy is just its icon.
+  const breakable = (value) => value.split(/(?<=\/)/).flatMap((part, i) => (i ? [h('wbr'), part] : [part]))
+  const copyField = (value, label, copied) => h('div.copy-field',
+    h('code.copy-value', { 'aria-label': label, title: label }, ...breakable(value)),
+    h('button.btn', { type: 'button', 'aria-label': 'Copy', title: 'Copy', onclick: () => copyText(value, copied) }, ic('copy', 17, 2), h('span.copy-label', 'Copy')))
+  const step = (n, title, text) => h('div.row', h('span.row-ic.is-num', String(n)), h('div.grow', h('b', title), h('small', text)))
+  const can = (icon, title, text) => h('div.row', h('span.row-ic', ic(icon, 17, 2)), h('div.grow', h('b', title), h('small', text)))
+  return sheet({
+    title: 'Connect via MCP',
+    cancel: null,
+    done: 'Done',
+    wide: true,
+    body: () => h('div.sheet-stack',
+      h('div.mcp-hero', { 'aria-hidden': 'true' },
+        h('img.mcp-app', { src: '/icon-192.png', alt: '', width: 60, height: 60 }),
+        h('span.mcp-link', h('i'), h('i'), h('i'), h('i'), h('i')),
+        h('span.mcp-tile', ic('mcp', 32))),
+      h('div.mcp-intro', h('b', 'Your shelf, in Claude'),
+        h('p', 'Add Shelf as a connector in Claude, or any app that speaks MCP, and sign in once. Then ask what to read next, find a passage you half remember, or have it save a link.')),
+      h('div.sheet-label', 'Connector address'),
+      copyField(mcp, 'Connector address', 'Address copied'),
+      h('div.sheet-label', 'In Claude'),
+      h('div.group',
+        step(1, 'Open Settings, then Connectors', 'On claude.ai or in the Claude app.'),
+        step(2, 'Add a custom connector', 'Name it Shelf and paste the address.'),
+        step(3, 'Connect and sign in', 'Allow access once. Claude sees only your shelf.')),
+      h('div.sheet-label', 'In Claude Code'),
+      copyField(command, 'Claude Code command', 'Command copied'),
+      h('p.sheet-note', 'Then type ', h('code', '/mcp'), ' in Claude Code and sign in.'),
+      h('div.sheet-label', 'What Claude can do'),
+      h('div.group',
+        can('list', 'Read your shelf', 'List, open and search what you’ve saved, and your feed.'),
+        can('bookmarkPlus', 'Save and tidy', 'Save links, then archive, favourite or tag them.'),
+        can('highlighter', 'Highlight', 'Read your highlights, add new ones and change their notes.'),
+        can('calendarCheck', 'Go over today’s review', 'The highlights due to come back today.')))
   })
 }
 
@@ -222,7 +267,7 @@ export function connectSheet() {
 
 export function importSheet() {
   return sheet({
-    title: 'Bring in links, highlights and feeds',
+    title: 'Import',
     cancel: null,
     done: 'Close',
     body: (close) => {
@@ -316,7 +361,7 @@ export function importSheet() {
 export function exportSheet() {
   let articles = false
   return sheet({
-    title: 'Export your shelf',
+    title: 'Export',
     cancel: null,
     done: 'Close',
     body: () => {
