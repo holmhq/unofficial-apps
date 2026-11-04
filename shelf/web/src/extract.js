@@ -38,6 +38,7 @@ export async function readable(item, given = '') {
     return { status: 'failed', error: e.message }
   }
   if (!r.ok) {
+    if (r.reason === 'not_html' && /pdf/.test(r.type || '')) return { status: 'pdf' }
     if (r.reason === 'not_html') return { status: 'link', title: item.title || fileName(item.url), site: '', excerpt: kind(r.type) }
     return { status: 'failed', error: REASONS[r.reason] || REASONS.error }
   }

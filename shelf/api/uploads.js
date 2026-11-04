@@ -41,7 +41,7 @@ export async function uploads(request, env, url, { k }, from) {
 
   if (path === '/api/uploads' && method === 'POST') {
     const input = await readJSON(request, 20_000)
-    const kind = ['pdf', 'book', 'notes'].includes(input.kind) ? input.kind : 'book'
+    const kind = ['pdf', 'book', 'notes', 'doc'].includes(input.kind) ? input.kind : 'book'
     // A paper book is a place to keep highlights you type in; it has no words of its own.
     const doc = saveThing(env, k, kind === 'notes'
       ? { kind, title: input.title, author: input.author, source: 'paper', state: 'archived', status: 'notes' }
@@ -76,6 +76,28 @@ export async function uploads(request, env, url, { k }, from) {
     const item = itemDTO({ ...doc, img })
     const v = bump(env, k, { item, quiet: true }, from)
     return json({ image: '/i/' + img, item, v })
+  }
+
+  // A saved link that turned out to be a PDF: the server keeps the file, and it becomes a PDF
+  // on the shelf, read in the PDF viewer.
+  m = /^\/api\/items\/([A-Za-z0-9_-]+)\/pdf$/.exec(path)
+  if (m && method === 'POST') {
+    const doc = getItem(env, k, m[1])
+    if (!doc || !doc.url) return err(404, 'not_found', 'That link isn’t on your shelf any more.')
+    let response
+    try {
+      response = env.holm.net.fetch(doc.url, { responseType: 'file', filename: doc.id + '.pdf', timeout: 9000, headers: { 'user-agent': 'Mozilla/5.0 (compatible; Shelf; read-later on a Holm server; +https://holmhq.com)', accept: 'application/pdf,*/*;q=0.5' } })
+    } catch (error) {
+      return err(502, 'unreachable', /timeout|deadline/i.test(String(error && error.message)) ? 'The PDF took too long to download.' : 'The PDF couldn’t be downloaded.')
+    }
+    const file = response.file
+    if (!response.ok || !file) return err(502, 'unreachable', 'The PDF couldn’t be downloaded.')
+    if (file.size > PDF_MAX) return err(413, 'too_large', 'PDFs can be up to 30 MB.')
+    s3.put('f/' + k + '/' + doc.id + '.pdf', file, 'application/pdf')
+    ds.update(ITEMS(k), { id: doc.id }, { $set: { kind: 'pdf' } })
+    const item = itemDTO({ ...doc, kind: 'pdf' })
+    const v = bump(env, k, { item }, from)
+    return json({ item, v })
   }
 
   m = /^\/api\/items\/([A-Za-z0-9_-]+)\/file$/.exec(path)

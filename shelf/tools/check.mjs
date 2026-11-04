@@ -1,5 +1,6 @@
 // Checks Shelf's release invariants: node tools/check.mjs
-//  - sw.js precaches every page file, and its VERSION matches holm.json;
+//  - sw.js precaches every page file (or names it as kept on first use), and its VERSION
+//    matches holm.json;
 //  - index.html loads its code at that version;
 //  - sw.js treats file addresses as files and page addresses as pages.
 import { readFileSync, readdirSync, statSync } from 'node:fs'
@@ -17,7 +18,9 @@ const walk = (dir, base = '') => readdirSync(new URL(dir, web)).flatMap((name) =
 })
 const code = [...walk('src/', 'src/'), ...walk('vendor/', 'vendor/').filter((f) => (f.endsWith('.js') || f.endsWith('.mjs')) && !f.includes('feedback'))].map((f) => '/' + f)
 const listed = new Set(JSON.parse(sw.match(/const FILES = (\[[\s\S]*?\])/)[1].replace(/'/g, '"')))
-for (const file of code) assert.ok(listed.has(file), `sw.js doesn't list ${file}`)
+const lazy = new Set(JSON.parse(sw.match(/const LAZY = (\[[\s\S]*?\])/)[1].replace(/'/g, '"')))
+for (const file of code) assert.ok(listed.has(file) || lazy.has(file), `sw.js doesn't list ${file}`)
+for (const file of lazy) statSync(new URL('.' + file, web))
 for (const file of listed) if (file !== '/') statSync(new URL('.' + file, web))
 assert.equal(sw.match(/const VERSION = '([^']+)'/)[1], version, 'sw.js VERSION must match holm.json')
 for (const m of index.matchAll(/\?v=([\d.]+)/g)) assert.equal(m[1], version, 'index.html must load ?v=' + version)

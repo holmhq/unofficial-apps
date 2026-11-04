@@ -60,6 +60,13 @@ Readability and DOMPurify with their licences.
   with a swipe, videos in the reader from youtube-nocookie. The server
   fetches feeds conditionally when an open page asks for the due ones; the
   browser parses RSS, Atom and JSON Feed.
+- Books, PDFs and Markdown by upload or drop: EPUB read in the browser with
+  DecompressionStream into one article with a section per chapter (a
+  Contents list; highlights carry the chapter), pictures kept by the hash of
+  their bytes; PDFs kept in s3 and shown with vendored pdf.js (loaded on
+  first use) page by page with a text layer for page-anchored highlights,
+  their words read in the browser for search; a saved link to a PDF becomes
+  one too.
 - Export one ZIP made in the browser: Markdown per source with front matter
   (Obsidian, Logseq, Notion), highlights.csv in Readwise's import layout,
   library.csv, feeds.opml and a JSON copy.

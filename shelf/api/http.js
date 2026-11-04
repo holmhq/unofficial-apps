@@ -32,6 +32,8 @@ import {
 export { markDTO }
 
 const MAX_HTML = 1_500_000
+const MAX_BOOK = 9_000_000 // a book's chapters in one page
+const BIG = ['book', 'pdf', 'doc']
 const MAX_TEXT = 400_000
 const FETCH_CAP = 600 // pages fetched per person per day
 const AI_CAP = 60 // summaries per person per day
@@ -80,7 +82,7 @@ async function route(request, env, url) {
 
   if (path.startsWith('/api/review')) return (await import('./review.js')).review(request, env, url, caller, from)
   if (path.startsWith('/api/feeds')) return (await import('./feeds.js')).feeds(request, env, url, caller, from)
-  if (path === '/api/uploads' || path.startsWith('/api/pictures/') || path === '/api/import/highlights' || /^\/api\/items\/[A-Za-z0-9_-]+\/(file|cover)$/.test(path)) {
+  if (path === '/api/uploads' || path.startsWith('/api/pictures/') || path === '/api/import/highlights' || /^\/api\/items\/[A-Za-z0-9_-]+\/(file|cover|pdf)$/.test(path)) {
     return (await import('./uploads.js')).uploads(request, env, url, caller, from)
   }
 
@@ -187,6 +189,7 @@ async function route(request, env, url) {
       ds.delete(TEXT(k), { item: id })
       ds.delete(MARKS(k), { item: id })
       try { env.holm.app.s3.delete('c/' + k + '/' + id) } catch {}
+      if (doc.kind === 'pdf') try { env.holm.app.s3.delete('f/' + k + '/' + id + '.pdf') } catch {}
       forgetURL(env, k, doc.url)
       const v = bump(env, k, { removed: id }, from)
       return json({ ok: true, v })
@@ -207,7 +210,7 @@ async function route(request, env, url) {
       })
     }
 
-    if (part === '/content' && method === 'PUT') return putContent(env, k, doc, await body(request, MAX_HTML + MAX_TEXT + 200_000), from)
+    if (part === '/content' && method === 'PUT') return putContent(env, k, doc, await body(request, (BIG.includes(doc.kind) ? MAX_BOOK : MAX_HTML) + MAX_TEXT + 200_000), from)
 
     if (part === '/summary' && method === 'POST') return summarize(env, k, doc, from)
 
@@ -385,7 +388,7 @@ async function putContent(env, k, doc, input, from) {
   const status = input.status === 'link' ? 'link' : input.status === 'failed' ? 'failed' : 'ready'
   const html = typeof input.html === 'string' ? input.html : ''
   const text = typeof input.text === 'string' ? input.text.slice(0, MAX_TEXT) : ''
-  if (html.length > MAX_HTML) return err(413, 'too_large', 'This article is too long to keep.')
+  if (html.length > (BIG.includes(doc.kind) ? MAX_BOOK : MAX_HTML)) return err(413, 'too_large', BIG.includes(doc.kind) ? 'This book is too long to keep.' : 'This article is too long to keep.')
   if (status === 'ready' && !html) return err(400, 'empty', 'There was no article to keep.')
 
   // Pictures: the page names each one by the hash of its address, and Shelf keeps the address
@@ -401,7 +404,9 @@ async function putContent(env, k, doc, input, from) {
     if ((await sha(src)) === h) kv.set('img:' + h, src)
   }
   let img = doc.img || ''
-  if (typeof input.image === 'string' && /^https:\/\//.test(input.image) && input.image.length < 2000) {
+  // A book's cover, uploaded already under the hash of its bytes.
+  if (typeof input.cover === 'string' && /^[a-f0-9]{32}$/.test(input.cover) && kv.get('imgk:' + input.cover)) img = input.cover
+  else if (typeof input.image === 'string' && /^https:\/\//.test(input.image) && input.image.length < 2000) {
     img = await sha(input.image)
     if (!kv.get('img:' + img)) kv.set('img:' + img, input.image)
   }
@@ -418,6 +423,7 @@ async function putContent(env, k, doc, input, from) {
     published: clip(input.published, 40),
     words,
     img,
+    pages: Math.max(0, Math.min(100000, Math.round(Number(input.pages) || doc.pages || 0))),
     error: status === 'failed' ? clip(input.error, 200) : '',
     cv: (doc.cv || 0) + 1
   }

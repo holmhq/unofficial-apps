@@ -41,6 +41,12 @@ served as files: `api/` and `holm.json` are not public URLs.
   opened or marked them; swipe one right (or tap Save) to keep it on your
   reading list. Videos play in the reader. A few sites to start with are a
   tap away.
+- **Books, PDFs and notes of your own.** Drop an EPUB, a PDF or a Markdown
+  file on Shelf, or upload one from the Save sheet. A book keeps its cover,
+  chapters (a Contents list in the reader) and pictures, and its highlights
+  carry the chapter's name. A PDF reads in its own layout, page by page,
+  with highlights on the page; save a link to a PDF and Shelf keeps the file
+  too. Their words are searchable, and Claude can read them.
 - **The reading list** shows each article's title, a line or two, the site
   and the minutes it takes, or the minutes left when you've started. Chips
   narrow it to quick reads, long reads, ones you've started, ones Claude
@@ -190,6 +196,24 @@ the Holm credit sits in the footer.
   the reader from `www.youtube-nocookie.com`, with the description as the
   article. A feed that carries whole articles is read from the feed, with no
   trip to the site.
+- **Books** (`web/src/books.js`). The browser opens the EPUB as a ZIP (with
+  `DecompressionStream`, no library), reads its package and table of
+  contents, cleans each chapter with DOMPurify, and joins them into one
+  article, a `section` per chapter named in `aria-label`. Pictures are made
+  web-sized on a canvas and kept under the SHA-256 of their bytes
+  (`PUT /api/pictures/<hash>`, checked on the server). Project Gutenberg's
+  licence pages and a title page that repeats the title are left out.
+- **PDFs** (`web/src/pdfview.js`) use Mozilla's
+  [pdf.js](https://mozilla.github.io/pdf.js/), vendored in `web/vendor/pdfjs`
+  and fetched the first time a PDF is opened (the service worker keeps it
+  then, rather than installing 1.7 MB with the app). The file is kept in
+  `env.holm.app.s3` (`PUT /api/items/<id>/file`, up to 30 MB). The browser
+  reads its words page by page for search and Claude, takes its title from
+  its details or the largest upright words on page one, and draws page one
+  for the list. The reader draws pages as they come near, each with pdf.js's
+  text layer so words can be selected; a highlight is anchored to its page.
+- **Markdown** files become articles in the browser (`web/src/md.js`, a
+  small escaped subset), their pictures kept like an article's.
 - **Export** is made in the browser: `web/src/zip.js` writes an uncompressed
   ZIP (and reads ZIP exports with `DecompressionStream`), with no library.
   Highlights come from `GET /api/highlights` a page at a time, since a paged
@@ -250,7 +274,11 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
   a stranger. Sites that turn away servers (some news sites behind bot
   protection) can't be fetched; Shelf keeps the link with Open the original.
 - **https only.** Plain `http://` addresses are tried as `https://`.
-- **PDFs, pictures and videos** are kept as links, not read in Shelf.
+- **Pictures and videos** you save as links are kept as links.
+- **PDFs** can be up to 30 MB. Fonts a PDF doesn't carry are drawn with the
+  device's own, and Listen doesn't read PDFs. A highlight stays on one page.
+- **Books must be DRM-free EPUBs.** Their own styling is set aside for
+  Shelf's, and links inside the book become plain words.
 - **Feeds are checked while Shelf is open**, every 15 minutes on any of your
   devices and when you open the Feed, as Holm v1 apps can't run on a
   schedule. Newsletters that only arrive by email can't come in: Holm v1
@@ -286,6 +314,9 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
   it as a module.
 - [DOMPurify](https://github.com/cure53/DOMPurify): Apache 2.0 or MPL 2.0, in
   `web/vendor/dompurify/LICENSE`.
+- [pdf.js](https://github.com/mozilla/pdf.js) 4.10.38 (`pdf.min.mjs` and
+  `pdf.worker.min.mjs` from `pdfjs-dist`): Apache 2.0, in
+  `web/vendor/pdfjs/LICENSE`.
 - Icons from [Lucide](https://lucide.dev): ISC, in `web/vendor/lucide/LICENSE`.
 - The sample pictures on the start page (`web/samples/`) and the articles in
   the store screenshots are in the public domain, from Wikimedia Commons,

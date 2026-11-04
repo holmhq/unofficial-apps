@@ -6,7 +6,7 @@ import { h, ic, avatar, menu, segmented, haptic, toast, sheet, copyText, fill, t
 import { holmMark } from './icons.js'
 import * as api from './api.js'
 import * as theme from './theme.js'
-import { lib, save, forget, importLinks, importHighlights, addBook, follow, followMany, unfollow, renameFeed, keptFeeds, loadFeeds, inFeed } from './store.js'
+import { lib, save, forget, importLinks, importHighlights, addBook, follow, followMany, unfollow, renameFeed, keptFeeds, loadFeeds, inFeed, uploadFile, kindOf } from './store.js'
 
 export const state = { me: null }
 export const SOURCE = 'https://github.com/holmhq/unofficial-apps/tree/main/shelf'
@@ -180,6 +180,7 @@ export function saveSheet(prefill = '') {
       requestAnimationFrame(() => { input.focus() })
       return [
         h('div.save-field', input, paste),
+        h('button.btn.block.upload-btn', { type: 'button', onclick: () => { close(); pickFile() } }, ic('upload', 17, 2.1), 'Upload a book, PDF or Markdown file'),
         h('p.sheet-note', 'Shelf fetches the page on your server and keeps a clean copy to read, with its pictures. ', h('button.btn.plain.small', { type: 'button', style: { padding: '0', height: 'auto', 'text-decoration': 'underline' }, onclick: () => { close(); connectSheet() } }, 'Save from anywhere'),
           ' · ', h('button.btn.plain.small', { type: 'button', style: { padding: '0', height: 'auto', 'text-decoration': 'underline' }, onclick: () => { close(); bookSheet() } }, 'Add a paper book'))
       ]
@@ -440,6 +441,38 @@ export function feedsSheet() {
       draw()
       loadFeeds().then(draw).catch(() => {})
       return body
+    }
+  })
+}
+
+/* ---- Books, PDFs and Markdown files ------------------------------------------------------------------ */
+
+export function pickFile() {
+  const input = h('input', { type: 'file', accept: '.epub,.pdf,.md,.markdown,.txt,application/epub+zip,application/pdf,text/markdown', hidden: true })
+  input.addEventListener('change', () => { const f = input.files && input.files[0]; input.remove(); if (f) uploadSheet(f) })
+  document.body.append(input)
+  input.click()
+}
+
+export function uploadSheet(file) {
+  const kind = kindOf(file)
+  if (!kind) { toast('Shelf takes EPUB books, PDFs and Markdown files.', { kind: 'bad' }); return }
+  const what = kind === 'book' ? 'book' : kind === 'pdf' ? 'PDF' : 'document'
+  return sheet({
+    title: 'Adding a ' + what,
+    cancel: null,
+    done: null,
+    body: (close) => {
+      const bar = h('i')
+      const label = h('small.num', 'Starting…')
+      const box = h('div', { style: { display: 'grid', gap: '14px' } }, h('div.import-prog', h('b.trunc', file.name), h('div.meter', bar), label))
+      uploadFile(file, (text, f) => { label.textContent = text; bar.style.transform = `scaleX(${f})` })
+        .then((item) => { close(); toast('Added to your reading list', { action: { label: 'Read', onclick: () => go('/read/' + item.id) } }); go('/read/' + item.id) })
+        .catch((e) => {
+          fill(box, h('div.empty', { style: { margin: '6px auto 0' } }, h('div.empty-ic', ic('triangleAlert', 28, 1.8)), h('b', 'That ' + what + ' couldn’t be added'), h('p', e.message || 'Something went wrong.'),
+            h('button.btn', { type: 'button', onclick: () => close() }, 'Close')))
+        })
+      return box
     }
   })
 }

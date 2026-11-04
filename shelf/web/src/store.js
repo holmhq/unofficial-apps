@@ -483,7 +483,18 @@ export function makeReadable(id) {
     // A feed that carries whole articles (or a video's description) needs no trip to the site,
     // and a video page has nothing to read: its description is kept instead.
     const given = feedHTML.get(id) || (item.video ? '<p>' + (item.excerpt || item.title).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</p>' : '')
-    const content = await readable(item, given)
+    // A PDF (uploaded, or a saved link that turned out to be one) is read from the file kept on
+    // the server.
+    let content = item.kind === 'pdf' ? { status: 'pdf' } : await readable(item, given)
+    if (content.status === 'pdf') {
+      try {
+        if (item.kind !== 'pdf') { const made = await api.post('/api/items/' + id + '/pdf'); upsert(made.item, { quiet: true }) }
+        content = await pdfContent(id, item)
+      } catch (e) {
+        if (e && e.status === 0) throw e
+        content = { status: 'link', title: item.title, excerpt: 'A PDF document. ' + ((e && e.message) || '') }
+      }
+    }
     const r = await api.put('/api/items/' + id + '/content', content)
     lib.v = Math.max(lib.v, r.v || 0)
     upsert(r.item, { remote: false })
@@ -689,6 +700,127 @@ export async function markSeen(ids) {
   } catch (e) {
     for (const id of fresh) { const i = lib.items.get(id); if (i) lib.items.set(id, { ...i, seen: false }) }
     emit({ full: true })
+    throw e
+  }
+}
+
+/* ---- Books, PDFs and Markdown from a file ------------------------------------------------------------
+   Each is read here in the browser and kept on the server: an EPUB's chapters and pictures, a
+   PDF itself with its words for search, a Markdown file as an article. */
+
+const MB = 1024 * 1024
+
+async function putPicture(hash, bytes, type) {
+  const r = await fetch('/api/pictures/' + hash, { method: 'PUT', body: bytes, headers: { 'content-type': type, 'x-shelf-page': api.PAGE } })
+  if (!r.ok && r.status !== 409) throw new api.ApiError(r.status, 'picture', r.status === 413 ? 'A picture in it is too large.' : 'A picture couldn’t be kept.')
+}
+
+async function pdfContent(id, item, bytes = null, onStep = () => {}) {
+  const { readPDF } = await import('./pdfview.js')
+  if (!bytes) {
+    const r = await fetch('/api/items/' + id + '/file')
+    if (!r.ok) throw new api.ApiError(r.status, 'no_file', 'The PDF isn’t on the server.')
+    bytes = new Uint8Array(await r.arrayBuffer())
+  }
+  const info = await readPDF(bytes, onStep)
+  let cover = ''
+  if (info.cover) {
+    try {
+      const { shaBytes } = await import('./books.js')
+      const data = new Uint8Array(await info.cover.arrayBuffer())
+      cover = await shaBytes(data)
+      await putPicture(cover, data, 'image/jpeg')
+    } catch { cover = '' }
+  }
+  return {
+    status: 'ready',
+    title: info.title || item.title,
+    author: info.author || item.author || '',
+    site: item.site || '',
+    excerpt: info.excerpt,
+    words: info.words,
+    pages: info.pages,
+    html: info.html || '<p></p>',
+    text: info.text,
+    cover
+  }
+}
+
+export function kindOf(file) {
+  const name = (file && file.name) || ''
+  if (/\.epub$/i.test(name) || file.type === 'application/epub+zip') return 'book'
+  if (/\.pdf$/i.test(name) || file.type === 'application/pdf') return 'pdf'
+  if (/\.(md|markdown|mdown|txt)$/i.test(name) || file.type === 'text/markdown') return 'doc'
+  return null
+}
+
+export async function uploadFile(file, onStep = () => {}) {
+  const kind = kindOf(file)
+  if (!kind) throw new Error('Shelf takes EPUB books, PDFs and Markdown files.')
+  if (kind === 'pdf' && file.size > 30 * MB) throw new Error('PDFs can be up to 30 MB.')
+  if (file.size > 80 * MB) throw new Error('That file is too large.')
+  const plainName = file.name.replace(/\.[a-z]+$/i, '').replace(/[_-]+/g, ' ').trim()
+  let created = null
+  try {
+    if (kind === 'book') {
+      onStep('Reading the book…', 0)
+      const { readEPUB } = await import('./books.js')
+      const { book, images } = await readEPUB(file, (f) => onStep('Reading the book…', f * 0.45))
+      created = (await api.post('/api/uploads', { kind, title: book.title, author: book.author, site: book.site })).item
+      const list = Object.entries(images)
+      let done = 0
+      const next = async () => {
+        while (list.length) {
+          const [hash, { bytes, type }] = list.shift()
+          await putPicture(hash, bytes, type)
+          done++
+          onStep(`Keeping its pictures… ${done} of ${done + list.length}`, 0.45 + 0.4 * (done / Math.max(1, done + list.length)))
+        }
+      }
+      await Promise.all([next(), next(), next()])
+      onStep('Putting it on your shelf…', 0.9)
+      const { contents, cover, ...rest } = book
+      const r = await api.put('/api/items/' + created.id + '/content', { status: 'ready', ...rest, cover })
+      lib.v = Math.max(lib.v, r.v || 0)
+      upsert(r.item, { fresh: true })
+      return r.item
+    }
+    if (kind === 'pdf') {
+      onStep('Reading the PDF…', 0)
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      created = (await api.post('/api/uploads', { kind, title: plainName })).item
+      onStep('Keeping the file…', 0.1)
+      const put = await fetch('/api/items/' + created.id + '/file', { method: 'PUT', body: bytes, headers: { 'content-type': 'application/pdf', 'x-shelf-page': api.PAGE } })
+      if (!put.ok) throw new api.ApiError(put.status, 'file', put.status === 413 ? 'That PDF is larger than this server takes.' : (await put.json().catch(() => ({ error: {} }))).error.message || 'The PDF couldn’t be kept.')
+      const content = await pdfContent(created.id, created, bytes, (f) => onStep('Reading its words…', 0.3 + f * 0.6))
+      const r = await api.put('/api/items/' + created.id + '/content', content)
+      lib.v = Math.max(lib.v, r.v || 0)
+      upsert(r.item, { fresh: true })
+      return r.item
+    }
+    onStep('Reading the file…', 0.2)
+    const { markdown } = await import('./md.js')
+    const { sha, plainText, countWords } = await import('./extract.js')
+    const doc = markdown(await file.text())
+    const box = document.createElement('div')
+    box.innerHTML = doc.html
+    // Pictures by address are kept on the server like an article's.
+    const images = {}
+    for (const img of box.querySelectorAll('img[src^="https://"]')) {
+      const src = img.getAttribute('src')
+      const hash = await sha(src)
+      images[hash] = src
+      img.setAttribute('data-orig', src)
+      img.setAttribute('src', '/i/' + hash)
+    }
+    const text = plainText(box)
+    created = (await api.post('/api/uploads', { kind, title: doc.title || plainName })).item
+    const r = await api.put('/api/items/' + created.id + '/content', { status: 'ready', title: doc.title || plainName, html: box.innerHTML || '<p></p>', text, words: countWords(text), excerpt: text.slice(0, 300), images })
+    lib.v = Math.max(lib.v, r.v || 0)
+    upsert(r.item, { fresh: true })
+    return r.item
+  } catch (e) {
+    if (created) { try { await api.del('/api/items/' + created.id); drop(created.id) } catch {} }
     throw e
   }
 }

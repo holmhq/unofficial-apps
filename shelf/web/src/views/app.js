@@ -15,7 +15,7 @@ import {
   lib, on, unread, favourites, archived, tagged, tags, all, minutes, tone, update, remove, highlights, keptHighlights, isWorking, makeReadable,
   reviewSet, keptReview, findCover, books, inFeed, keptFeeds, loadFeeds, checkFeeds, isChecking, markSeen
 } from '../store.js'
-import { go, link, accountButton, credit, failure, saveSheet, saveURL, looksLikeURL, connectSheet, importSheet, keysSheet, state, followSheet, feedsSheet } from '../shell.js'
+import { go, link, accountButton, credit, failure, saveSheet, saveURL, looksLikeURL, connectSheet, importSheet, keysSheet, state, followSheet, feedsSheet, uploadSheet } from '../shell.js'
 import { createReader } from '../reader.js'
 import { favicon, when, plural } from '../bits.js'
 
@@ -66,7 +66,7 @@ export function createApp() {
   const listCol = h('div.list-col')
   const main = h('main.main', listCol, readerCol)
   const root = h('div.app', top, h('div.body', side, main), tabbar)
-  const drop = h('div.drop', h('div', ic('bookmarkPlus', 30, 1.8), 'Drop a link to save it'))
+  const drop = h('div.drop', h('div', ic('bookmarkPlus', 30, 1.8), 'Drop a link, a book or a PDF'))
   root.append(drop)
 
   // The sidebar hides with one click and stays as it was left. Between 900 and 1180 px it
@@ -87,13 +87,18 @@ export function createApp() {
     return [i.title, i.excerpt, i.status, i.state, i.fav, i.progress, i.image, (i.tags || []).join(), i.note, i.words, i.site, i.marks, isWorking(i.id)].join('|')
   }
 
+  const KIND = { book: ['Book', 'book'], pdf: ['PDF', 'fileText'], doc: ['Document', 'notebookText'] }
   function rowMeta(i, { archive = false } = {}) {
-    const bits = [favicon(i, 16), h('span.host', i.site || i.host)]
+    const own = !i.url && KIND[i.kind]
+    const bits = own
+      ? [h('span.kind-tile', ic(KIND[i.kind][1], 11, 2.3)), h('span.host', i.author || KIND[i.kind][0])]
+      : [favicon(i, 16), h('span.host', i.site || i.host)]
     const add = (...x) => { bits.push(h('i.dot')); bits.push(...x) }
     if (i.status === 'pending') {
       if (isWorking(i.id)) add(h('span.shimmer'))
       else if (i.state !== 'feed') add(h('span', i.via === 'import' ? 'Not fetched yet' : 'Waiting to fetch'))
     } else if (i.status === 'failed') add(h('span', 'Couldn’t fetch'))
+    else if (i.kind === 'pdf' && i.pages && !i.words) add(h('span', plural(i.pages, 'page')))
     else if (i.status === 'link') add(h('span', 'Link'))
     else if (i.words) {
       const m = minutes(i)
@@ -328,6 +333,8 @@ export function createApp() {
     { key: 'long', label: 'Long reads', test: (i) => minutes(i) >= 20 },
     { key: 'started', label: 'Started', test: (i) => i.progress > 0.02 && i.progress < 0.97 },
     { key: 'claude', label: 'From Claude', test: (i) => i.via === 'claude' },
+    { key: 'books', label: 'Books', test: (i) => i.kind === 'book' },
+    { key: 'pdfs', label: 'PDFs', test: (i) => i.kind === 'pdf' },
     ...tags().slice(0, 12).map(({ tag }) => ({ key: '#' + tag, label: tag, dot: tone(tag), test: (i) => (i.tags || []).includes(tag) }))
   ]
 
@@ -855,7 +862,7 @@ export function createApp() {
   })
 
   let dragDepth = 0
-  const linkIn = (e) => e.dataTransfer && [...e.dataTransfer.types].some((t) => t === 'text/uri-list' || t === 'text/plain')
+  const linkIn = (e) => e.dataTransfer && [...e.dataTransfer.types].some((t) => t === 'text/uri-list' || t === 'text/plain' || t === 'Files')
   document.addEventListener('dragenter', (e) => { if (!root.isConnected || !linkIn(e)) return; dragDepth++; drop.classList.add('is-on') })
   document.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; drop.classList.remove('is-on') } })
   document.addEventListener('dragover', (e) => { if (root.isConnected && linkIn(e)) e.preventDefault() })
@@ -863,6 +870,8 @@ export function createApp() {
     if (!root.isConnected) return
     dragDepth = 0
     drop.classList.remove('is-on')
+    const file = e.dataTransfer.files && e.dataTransfer.files[0]
+    if (file) { e.preventDefault(); uploadSheet(file); return }
     const text = (e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain') || '').split('\n').find((l) => l && !l.startsWith('#'))
     if (text && looksLikeURL(text)) { e.preventDefault(); saveURL(text.trim()) }
   })

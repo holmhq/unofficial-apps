@@ -3,13 +3,14 @@
 // request waits on the network. A new deploy changes VERSION, so the browser installs the
 // new set next time it looks; it takes over on the next launch.
 //
-// Articles (/api/items/<id>/content?v=<n>, which never change at a given n) and the pictures
-// kept from them (/i/…) are kept too, in their own caches, so what you saved reads offline;
+// Articles (/api/items/<id>/content?v=<n>, which never change at a given n), PDFs
+// (/api/items/<id>/file) and the pictures kept from them (/i/…) are kept too, in their own
+// caches, so what you saved reads offline;
 // signing out empties them. Nothing else under /api/, /auth/ or /_ (Holm's own pages) is ever
 // answered from here. An address that ends like a file (/icon-512.png) is that file, even
 // typed into the address bar; every other address is a page and gets the shell.
 
-const VERSION = '0.4.0'
+const VERSION = '0.5.0'
 const CACHE = 'shelf-' + VERSION
 const ARTICLES = 'shelf-articles'
 const PICTURES = 'shelf-pictures'
@@ -17,13 +18,16 @@ const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
   '/fonts/inter-latin.woff2', '/fonts/newsreader-latin.woff2', '/fonts/newsreader-italic-latin.woff2', '/src/styles.css',
   '/src/main.js', '/src/ui.js', '/src/icons.js', '/src/theme.js', '/src/api.js', '/src/live.js', '/src/store.js', '/src/shell.js', '/src/bits.js',
-  '/src/extract.js', '/src/reader.js', '/src/listen.js', '/src/importer.js', '/src/share.js', '/src/zip.js', '/src/export.js', '/src/feeds.js',
+  '/src/extract.js', '/src/reader.js', '/src/listen.js', '/src/importer.js', '/src/share.js', '/src/zip.js', '/src/export.js', '/src/feeds.js', '/src/books.js', '/src/md.js', '/src/pdfview.js',
   '/src/views/app.js', '/src/views/landing.js', '/src/views/add.js', '/src/views/quote.js', '/src/views/review.js',
   '/vendor/readability/Readability.js', '/vendor/dompurify/purify.es.mjs'
 ]
+// The PDF viewer (1.7 MB) is kept the first time a PDF is opened, not installed with the app.
+const LAZY = ['/vendor/pdfjs/pdf.min.mjs', '/vendor/pdfjs/pdf.worker.min.mjs']
 const FILE = /^\/.*\.[a-z0-9]+$/i
 const PASS = /^\/(_[^/]*|api|auth|\.well-known)(\/|$)|^\/sw\.js$/
 const ARTICLE = /^\/api\/items\/[A-Za-z0-9_-]+\/content$/
+const PDF = /^\/api\/items\/[A-Za-z0-9_-]+\/file$/
 const PICTURE = /^\/i\/[a-f0-9]{32}(\/t)?$/
 
 self.addEventListener('install', (event) => {
@@ -44,6 +48,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET' || request.cache === 'no-store' || url.origin !== location.origin) return
   if (ARTICLE.test(url.pathname) && url.searchParams.has('v')) { event.respondWith(kept(request, ARTICLES)); return }
   if (PICTURE.test(url.pathname)) { event.respondWith(kept(request, PICTURES)); return }
+  if (PDF.test(url.pathname)) { event.respondWith(kept(request, ARTICLES)); return }
   if (PASS.test(url.pathname)) return
   event.respondWith(answer(request, url))
 })

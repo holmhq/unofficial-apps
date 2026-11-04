@@ -220,7 +220,7 @@ export function saveThing(env, k, { kind = 'book', title = '', author = '', site
   const { ds } = env.holm.app
   if (ds.count(ITEMS(k), {}) >= LIMIT) fail(409, 'full', `Your shelf holds ${LIMIT} things. Delete some from the Archive to make room.`)
   const doc = {
-    kind: ['book', 'pdf', 'notes'].includes(kind) ? kind : 'book',
+    kind: ['book', 'pdf', 'notes', 'doc'].includes(kind) ? kind : 'book',
     url: '',
     host: '',
     title: clip(title, 300) || 'Untitled',

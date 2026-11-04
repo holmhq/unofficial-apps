@@ -38,10 +38,12 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   const aaBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Text settings', title: 'Text settings', 'aria-haspopup': 'dialog', onclick: () => textSettings() }, ic('aLargeSmall', 21, 1.9))
   const favBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Favourite', title: 'Favourite (S)', onclick: () => toggleFav() }, ic('star', 20, 1.9))
   const archBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Archive', title: 'Archive (E)', onclick: () => toggleArchive() }, ic('archive', 20, 1.9))
+  const zoomBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Zoom', title: 'Zoom', onclick: () => zoom() }, ic('zoomIn', 20, 1.9))
+  const tocBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Contents', title: 'Contents', 'aria-haspopup': 'menu', onclick: () => contents() }, ic('listTree', 20, 1.9))
   const keepBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Save to your reading list', title: 'Save to your reading list', onclick: () => keepFromFeed() }, ic('bookmarkPlus', 20, 1.9))
   const moreBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'More', title: 'More', 'aria-haspopup': 'menu', onclick: () => more() }, ic('ellipsis', 20, 2.1))
   const progBar = h('i')
-  const bar = h('header.r-bar', backBtn, title, listenBtn, sumBtn, aaBtn, favBtn, keepBtn, archBtn, moreBtn, h('div.r-prog', progBar))
+  const bar = h('header.r-bar', backBtn, title, tocBtn, zoomBtn, listenBtn, sumBtn, aaBtn, favBtn, keepBtn, archBtn, moreBtn, h('div.r-prog', progBar))
   const panel = h('div.r-panel')
   const el = h('section.reader', { 'aria-label': 'Article' }, bar, panel)
 
@@ -70,10 +72,12 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
 
   async function draw(mine, at = null) {
     const it = item
+    if (pdfView) { pdfView.destroy(); pdfView = null }
     if (it.kind === 'notes') return notebook(mine)
+    if (it.kind === 'pdf') return drawPDF(mine, at)
     art = h('article.article', { lang: it.lang || null, dir: it.dir || null })
     applySettings()
-    const head = [
+    const head = !it.url ? ownHead(it) : [
       h('div.a-site', favicon(it, 18), h('a', { href: it.url, target: '_blank', rel: 'noopener noreferrer', title: it.url }, h('span', it.site || it.host), ic('arrowUpRight', 13, 2.2)),
         it.words ? [h('span', '·'), h('span', `${minutes(it)} min read`)] : null),
       h('h1.a-title', it.title || it.host),
@@ -128,8 +132,9 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     let top = firstImg
     while (top && top.parentNode !== body) top = top.parentNode
     const opensWithPicture = !!top && [...body.children].indexOf(top) < 3
-    const lead = it.video ? videoFrame(it) : it.image && !opensWithPicture ? h('img.a-lead', { src: it.image, alt: '', onerror: (e) => e.target.remove() }) : null
+    const lead = it.video ? videoFrame(it) : it.image && it.url && !opensWithPicture ? h('img.a-lead', { src: it.image, alt: '', onerror: (e) => e.target.remove() }) : null
     fill(art, head, lead, it.note ? noteBox(it.note) : null, summaryBox(it), body, ending(it))
+    tocBtn.hidden = body.querySelectorAll('section[aria-label]').length < 2
     // Back to where you were, unless it's finished or nearly so.
     restoring = true
     requestAnimationFrame(() => {
@@ -156,6 +161,103 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   }
 
   const noteBox = (note) => h('div.a-note', ic('notebookPen', 16, 2), h('div', note))
+
+  // A book, PDF or document has no site: its head is its cover, title and author.
+  function ownHead(it) {
+    const label = it.kind === 'book' ? 'Book' : it.kind === 'pdf' ? 'PDF' : 'Document'
+    const facts = [label, it.pages ? it.pages + (it.pages === 1 ? ' page' : ' pages') : null, it.words ? minutes(it) + ' min read' : null].filter(Boolean).join(' · ')
+    if (it.kind === 'book') {
+      return [h('header.nb-head.is-book', bookCover(it), h('div.nb-info', h('h1.a-title', it.title || 'Untitled'), it.author ? h('div.nb-author', it.author) : null, h('div.a-by', h('span', facts))))]
+    }
+    return [h('div.a-site', h('span.kind-ic', ic(it.kind === 'pdf' ? 'fileText' : 'notebookText', 14, 2)), h('span', facts)), h('h1.a-title', it.title || 'Untitled'), it.author ? h('div.a-by', h('span', it.author)) : null]
+  }
+
+  // A book's chapters, from the names on its sections.
+  function contents() {
+    if (!body) return
+    const sections = [...body.querySelectorAll('section[aria-label]')]
+    const top = panel.scrollTop + 120
+    let here = 0
+    sections.forEach((sec, n) => { if (sec.offsetTop <= top) here = n })
+    menu(tocBtn, sections.map((sec, n) => ({
+      label: (n === here ? '● ' : '') + sec.getAttribute('aria-label'),
+      onclick: () => { const p = panel.getBoundingClientRect(); panel.scrollBy({ top: sec.getBoundingClientRect().top - p.top - 70, behavior: reduced() ? 'auto' : 'smooth' }) }
+    })), { align: 'end' })
+  }
+
+  /* ---- PDFs ------------------------------------------------------------------------------------- */
+
+  let pdfView = null
+  // Zoom, for small print on a phone: the pages grow and scroll sideways in their own box.
+  const ZOOMS = [1, 1.5, 2]
+  let zoomAt = 0
+  function zoom() {
+    const box = body && body.closest('.a-pdf-wrap')
+    if (!box) return
+    const keep = panel.scrollTop / Math.max(1, panel.scrollHeight)
+    zoomAt = (zoomAt + 1) % ZOOMS.length
+    body.style.width = ZOOMS[zoomAt] * 100 + '%'
+    fill(zoomBtn, ic(zoomAt === ZOOMS.length - 1 ? 'zoomOut' : 'zoomIn', 20, 1.9))
+    zoomBtn.title = zoomBtn.ariaLabel = ZOOMS[zoomAt] === 1 ? 'Zoom' : Math.round(ZOOMS[zoomAt] * 100) + '%'
+    requestAnimationFrame(() => { panel.scrollTop = keep * panel.scrollHeight })
+  }
+
+  async function drawPDF(mine, at) {
+    const it = item
+    art = h('article.article.is-pdf')
+    applySettings()
+    const pagesBox = h('div.a-pdf')
+    zoomAt = 0
+    fill(zoomBtn, ic('zoomIn', 20, 1.9))
+    body = pagesBox
+    fill(panel, fill(art, ownHead(it), it.note ? noteBox(it.note) : null, summaryBox(it), h('div.a-loading', [...Array(6)].map(() => h('i')))))
+    let bytes
+    try {
+      const r = await fetch('/api/items/' + it.id + '/file')
+      if (!r.ok) throw new Error(r.status === 404 ? 'This PDF hasn’t arrived on the server yet.' : 'The PDF couldn’t be loaded.')
+      bytes = new Uint8Array(await r.arrayBuffer())
+    } catch (e) {
+      if (mine !== token) return
+      fill(panel, fill(art, ownHead(it), h('div.a-orig', h('b', 'The PDF can’t open'), h('div', navigator.onLine ? e.message : 'You’re offline, and this PDF wasn’t kept on this device yet.'))))
+      return
+    }
+    if (mine !== token) return
+    art.querySelector('.a-loading').replaceWith(h('div.a-pdf-wrap', pagesBox))
+    try { marks = await marksFor(it.id) } catch { marks = [] }
+    if (mine !== token) return
+    const { viewPDF } = await import('./pdfview.js')
+    if (mine !== token) return
+    try {
+      pdfView = await viewPDF({ bytes, container: pagesBox, panel, onPage: (n, layer) => paintPage(n, layer) })
+    } catch (e) {
+      if (mine !== token) return
+      fill(pagesBox, h('div.a-orig', h('b', 'The PDF can’t open'), h('div', 'Shelf couldn’t read this file as a PDF.')))
+      return
+    }
+    if (mine !== token) { pdfView.destroy(); pdfView = null; return }
+    pagesBox.parentNode.after(ending(it))
+    // Its words come out of the file the first time it's opened, for search and for Claude.
+    if (it.status === 'pending' && !isWorking(it.id)) makeReadable(it.id).catch(() => {})
+    restoring = true
+    requestAnimationFrame(() => {
+      if (mine !== token) return
+      if (at) flashMark(at)
+      else if (it.progress > 0.02 && it.progress < 0.97) panel.scrollTop = it.progress * (panel.scrollHeight - panel.clientHeight)
+      onScroll()
+      setTimeout(() => { restoring = false }, 120)
+    })
+  }
+
+  const pageOf = (m) => { const n = /^Page (\d+)$/.exec(m.loc || ''); return n ? Number(n[1]) : 0 }
+
+  // A page's text layer has just been made: its highlights go on it.
+  function paintPage(n, layer) {
+    for (const m of marks.filter((x) => pageOf(x) === n).sort((a, b) => b.start - a.start)) {
+      const map = textMap(layer)
+      const place = locate(map, m)
+      if (place) wrap(map, place[0], place[1], m)
+    }
+  }
 
   function original(message, retry) {
     return h('div.a-orig', h('b', retry ? 'This one couldn’t be made readable' : 'Read it on the site'), h('div', message),
@@ -200,9 +302,12 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     fill(archBtn, ic(item.state === 'archived' ? 'rotateCcw' : 'archive', 20, 1.9))
     const readable = item.status === 'ready'
     const notes = item.kind === 'notes'
-    listenBtn.hidden = !readable || !('speechSynthesis' in window)
+    const pdf = item.kind === 'pdf'
+    listenBtn.hidden = !readable || pdf || !('speechSynthesis' in window)
     sumBtn.hidden = !readable || (item.words || 0) < 120
-    aaBtn.hidden = !readable
+    aaBtn.hidden = !readable || pdf
+    zoomBtn.hidden = !pdf
+    tocBtn.hidden = true
     const feed = item.state === 'feed'
     favBtn.hidden = notes
     archBtn.hidden = notes || feed
@@ -405,10 +510,11 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     const canShare = !!navigator.share && !wide()
     menu(moreBtn, [
       !wide() && it.status === 'ready' && (it.words || 0) >= 120 ? { label: it.summary ? 'Summary' : 'Summarise', icon: 'sparkles', onclick: () => summary() } : null,
-      { label: 'Open the original', icon: 'externalLink', onclick: () => window.open(it.url, '_blank', 'noopener') },
-      canShare ? { label: 'Share…', icon: 'share', onclick: () => navigator.share({ title: it.title, url: it.url }).catch(() => {}) } : { label: 'Copy link', icon: 'link', onclick: () => copyText(it.url, 'Link copied') },
+      it.url ? { label: 'Open the original', icon: 'externalLink', onclick: () => window.open(it.url, '_blank', 'noopener') } : null,
+      it.kind === 'pdf' ? { label: 'Open the PDF', icon: 'fileText', onclick: () => window.open('/api/items/' + it.id + '/file', '_blank', 'noopener') } : null,
+      !it.url ? null : canShare ? { label: 'Share…', icon: 'share', onclick: () => navigator.share({ title: it.title, url: it.url }).catch(() => {}) } : { label: 'Copy link', icon: 'link', onclick: () => copyText(it.url, 'Link copied') },
       { label: 'Tags and note…', icon: 'tag', onclick: () => editTags(it.id) },
-      it.status === 'ready' ? { label: 'Fetch the article again', icon: 'refreshCw', onclick: () => refetch() } : null,
+      it.status === 'ready' && it.url && it.kind !== 'pdf' ? { label: 'Fetch the article again', icon: 'refreshCw', onclick: () => refetch() } : null,
       'sep',
       { label: 'Delete', icon: 'trash', danger: true, onclick: () => deleteItem(it.id) }
     ], { align: 'end' })
@@ -494,19 +600,19 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   /* ---- Highlights -------------------------------------------------------------------------------------- */
 
   // Text nodes of the article body, in order, with where each starts in the whole text.
-  function textMap() {
+  function textMap(root = body) {
     const nodes = []
     let at = 0
-    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT)
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
     for (let n = walker.nextNode(); n; n = walker.nextNode()) { nodes.push({ n, at }); at += n.nodeValue.length }
     return { nodes, text: nodes.map((x) => x.n.nodeValue).join('') }
   }
 
-  function offsetOf(map, node, offset) {
+  function offsetOf(map, node, offset, root = body) {
     if (node.nodeType !== 3) {
       // A boundary between elements: the first text node at or after it.
       const child = node.childNodes[offset]
-      const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT)
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
       walker.currentNode = child || node
       let t = child && child.nodeType === 3 ? child : walker.nextNode()
       if (!t) return map.text.length
@@ -554,6 +660,11 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
 
   function paintMarks() {
     if (!body) return
+    if (item && item.kind === 'pdf') {
+      for (const mk of [...body.querySelectorAll('mark.hl')]) { const parent = mk.parentNode; mk.replaceWith(...mk.childNodes); parent.normalize() }
+      if (pdfView) for (let n = 1; n <= pdfView.pages; n++) { const layer = pdfView.layer(n); if (layer) paintPage(n, layer) }
+      return
+    }
     for (const mk of [...body.querySelectorAll('mark.hl')]) mk.replaceWith(...mk.childNodes)
     body.normalize()
     for (const m of [...marks].sort((a, b) => b.start - a.start)) {
@@ -564,7 +675,19 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   }
 
   function flashMark(id) {
-    const first = body && body.querySelector(`mark.hl[data-id="${CSS.escape(id)}"]`)
+    let first = body && body.querySelector(`mark.hl[data-id="${CSS.escape(id)}"]`)
+    if (!first && pdfView) {
+      const m = marks.find((x) => x.id === id)
+      const el = m && pdfView.element(pageOf(m))
+      if (el) {
+        const p = panel.getBoundingClientRect()
+        panel.scrollBy({ top: el.getBoundingClientRect().top - p.top - 60 })
+        let tries = 0
+        const wait = () => { if (body.querySelector(`mark.hl[data-id="${CSS.escape(id)}"]`)) flashMark(id); else if (++tries < 40) setTimeout(wait, 100) }
+        setTimeout(wait, 100)
+      }
+      return
+    }
     if (!first) return
     const p = panel.getBoundingClientRect()
     panel.scrollBy({ top: first.getBoundingClientRect().top - p.top - p.height / 3, behavior: 'auto' })
@@ -584,9 +707,24 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   async function highlight(withNote = false) {
     const range = selectionInBody()
     if (!range || !item) return
-    const map = textMap()
-    let start = offsetOf(map, range.startContainer, range.startOffset)
-    let end = offsetOf(map, range.endContainer, range.endOffset)
+    // In a PDF a highlight stays on one page; in a book it carries its chapter's name.
+    let root = body
+    let loc = ''
+    if (item.kind === 'pdf') {
+      const page = (range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement).closest('.pdf-page')
+      const layer = page && page.querySelector('.textLayer')
+      if (!layer) return
+      root = layer
+      loc = 'Page ' + page.dataset.page
+      if (!layer.contains(range.endContainer)) range.setEnd(layer, layer.childNodes.length)
+    } else {
+      const start = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement
+      const sec = start && start.closest('section[aria-label]')
+      if (sec && body.contains(sec) && item.kind === 'book') loc = sec.getAttribute('aria-label').slice(0, 40)
+    }
+    const map = textMap(root)
+    let start = offsetOf(map, range.startContainer, range.startOffset, root)
+    let end = offsetOf(map, range.endContainer, range.endOffset, root)
     if (start < 0 || end <= start) return
     // Trim spaces off the ends so the highlight sits on the words.
     while (start < end && /\s/.test(map.text[start])) start++
@@ -600,7 +738,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     haptic(10)
     const id = item.id
     try {
-      const saved = await addMark(id, { quote, start, end, prefix: map.text.slice(Math.max(0, start - 48), start), suffix: map.text.slice(end, end + 48) })
+      const saved = await addMark(id, { quote, start, end, loc, prefix: map.text.slice(Math.max(0, start - 48), start), suffix: map.text.slice(end, end + 48) })
       if (!item || item.id !== id) return
       for (const mk of body.querySelectorAll(`mark.hl[data-id="${temp.id}"]`)) mk.dataset.id = saved.id
       marks = lib.marks.get(id) || [...marks, saved]
@@ -802,6 +940,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   function close() {
     stopListening()
     closePops()
+    if (pdfView) { pdfView.destroy(); pdfView = null }
     if (item && item.status === 'ready') progress(item.id, item.progress || 0, { now: true })
     item = null
     token++
