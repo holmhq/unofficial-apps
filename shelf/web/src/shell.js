@@ -227,6 +227,27 @@ export function mcpSheet() {
   const command = 'claude mcp add --transport http shelf ' + mcp
   const step = (n, title, text) => h('div.row', h('span.row-ic.is-num', String(n)), h('div.grow', h('b', title), h('small', text)))
   const can = (icon, title, text) => h('div.row', h('span.row-ic', ic(icon, 17, 2)), h('div.grow', h('b', title), h('small', text)))
+  // Every pane sits in the same grid cell, so the sheet is as tall as the tallest and never jumps.
+  const panes = {
+    claude: h('div.group',
+      step(1, 'Open Settings, then Connectors', 'On claude.ai or in the Claude app.'),
+      step(2, 'Add a custom connector', 'Name it Shelf and paste the address.'),
+      step(3, 'Connect and sign in', 'Allow access once. Claude sees only your shelf.')),
+    chatgpt: h('div.group',
+      step(1, 'Turn on Developer mode', 'In Settings, under Apps, then Advanced. On the web, on paid plans.'),
+      step(2, 'Create a connector', 'Name it Shelf, paste the address and choose OAuth.'),
+      step(3, 'Connect and sign in', 'Then pick Shelf from + in a chat.')),
+    code: h('div.sheet-stack',
+      copyField(command),
+      h('p.sheet-note', 'Run it in a terminal, then type ', h('code', '/mcp'), ' in Claude Code and sign in.')),
+    tools: h('div.group',
+      can('list', 'Read your shelf', 'List, open and search what you’ve saved, and your feed.'),
+      can('bookmarkPlus', 'Save and tidy', 'Save links, then archive, favourite or tag them.'),
+      can('highlighter', 'Highlight', 'Read your highlights, add new ones and change their notes.'),
+      can('calendarCheck', 'Go over today’s review', 'The highlights due to come back today.'))
+  }
+  const show = (v) => Object.entries(panes).forEach(([k, el]) => { el.classList.toggle('is-on', k === v); el.inert = k !== v })
+  show('claude')
   return sheet({
     title: 'Connect via MCP',
     cancel: null,
@@ -237,24 +258,15 @@ export function mcpSheet() {
         h('img.mcp-app', { src: '/icon-192.png', alt: '', width: 60, height: 60 }),
         h('span.mcp-link', h('i'), h('i'), h('i'), h('i'), h('i')),
         h('span.mcp-tile', ic('mcp', 32))),
-      h('div.mcp-intro', h('b', 'Your shelf, in Claude'),
-        h('p', 'Add Shelf as a connector in Claude, or any app that speaks MCP, and sign in once. Then ask what to read next, find a passage you half remember, or have it save a link.')),
       h('div.sheet-label', 'Connector address'),
       copyField(mcp),
-      h('div.sheet-label', 'In Claude'),
-      h('div.group',
-        step(1, 'Open Settings, then Connectors', 'On claude.ai or in the Claude app.'),
-        step(2, 'Add a custom connector', 'Name it Shelf and paste the address.'),
-        step(3, 'Connect and sign in', 'Allow access once. Claude sees only your shelf.')),
-      h('div.sheet-label', 'In Claude Code'),
-      copyField(command),
-      h('p.sheet-note', 'Then type ', h('code', '/mcp'), ' in Claude Code and sign in.'),
-      h('div.sheet-label', 'What Claude can do'),
-      h('div.group',
-        can('list', 'Read your shelf', 'List, open and search what you’ve saved, and your feed.'),
-        can('bookmarkPlus', 'Save and tidy', 'Save links, then archive, favourite or tag them.'),
-        can('highlighter', 'Highlight', 'Read your highlights, add new ones and change their notes.'),
-        can('calendarCheck', 'Go over today’s review', 'The highlights due to come back today.')))
+      segmented([
+        { value: 'claude', label: 'Claude' },
+        { value: 'chatgpt', label: 'ChatGPT' },
+        { value: 'code', label: 'Claude Code' },
+        { value: 'tools', label: 'Tools' }
+      ], 'claude', show, { label: 'Where to connect' }),
+      h('div.mcp-panes', ...Object.values(panes)))
   })
 }
 

@@ -118,8 +118,8 @@ served as files: `api/` and `holm.json` are not public URLs.
   links in it. The newest are made readable
   straight away and the rest when you open them.
 - **Claude reads it with you.** Open **Connect via MCP…** in the account
-  menu. Click the connector address to copy it, then follow the steps for
-  Claude, or click the Claude Code command. Add Shelf in Claude as a custom
+  menu. Click the connector address to copy it, then follow the steps on the
+  Claude, ChatGPT or Claude Code tab. Add Shelf in Claude as a custom
   connector at `https://<your-host>/_holm/mcp` and sign in. Claude can list what's on
   your reading list (say, everything under ten minutes) or new in your Feed,
   read an article, highlight a passage or change a highlight, go over
@@ -183,9 +183,11 @@ the Holm credit sits in the footer.
   wrappers that import `api/ops.js`, so Holm's contract scan stays small.
   `node shelf/tools/contract.mjs` writes `api/contract.json`.
 - **Connect via MCP** is one sheet (`mcpSheet` in `web/src/shell.js`), opened
-  from the account menu and ⌘K. It shows Shelf's icon joined to the MCP mark,
-  the address `/api/me` reports (`url.origin + '/_holm/mcp'`), the steps for
-  Claude, the Claude Code command and what the tools do. The mark is
+  from the account menu and ⌘K. It shows Shelf's icon joined to the MCP mark
+  by dots that keep flowing, and the address `/api/me` reports
+  (`url.origin + '/_holm/mcp'`). Below are tabs for Claude, ChatGPT, Claude
+  Code and Tools (what the tools do). The tabs' panes share one grid cell, so
+  the sheet keeps one height. The mark is
   `tools/mcp.svg`, a filled 24 × 24 drawing that `tools/icons.mjs` builds
   into `web/src/icons.js` as the `mcp` icon.
 - **Click to copy.** Addresses, commands and share links are `copyField` in
@@ -346,6 +348,10 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
   devices and when you open the Feed, as Holm v1 apps can't run on a
   schedule. Newsletters that only arrive by email can't come in: Holm v1
   apps can't receive mail.
+- **No connection status.** The Connect via MCP sheet can't say whether
+  you've connected Claude or ChatGPT: Holm doesn't tell an app about its
+  connections yet. Anything saved or highlighted through any MCP client is
+  marked as Claude's, because the app isn't told which client called.
 - **Plain-http feeds can't be fetched.** Holm's outbound fetch is https only;
   a feed saved with an `http://` address is tried over https.
 - **YouTube's feed server sometimes turns everyone away** for hours. Shelf

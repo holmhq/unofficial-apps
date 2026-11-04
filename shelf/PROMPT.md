@@ -89,9 +89,10 @@ Readability and DOMPurify with their licences.
   save (optionally with the article's text, readable at once), update,
   highlights, save a highlight, change a highlight, today's review.
 - Connect via MCP… in the account menu and ⌘K, with the MCP mark: a sheet
-  with the app's icon joined to the mark, the connector address
-  (https://<host>/_holm/mcp), the steps for Claude, the Claude Code command
-  and what the tools do. Menu labels stay short (Import…, Export…).
+  with the app's icon joined to the mark by flowing dots and the connector
+  address (https://<host>/_holm/mcp). Below them are tabs for Claude,
+  ChatGPT, Claude Code and Tools (what the tools do), and the sheet keeps one
+  height. Menu labels stay short (Import…, Export…).
 - Anything to copy (addresses, commands, share links) is one line that
   copies when clicked, with a copy icon, Copy on hover and Copied after.
 - Realtime: every change reaches the person's other open pages at once.
@@ -140,3 +141,12 @@ lines beside its Copy button:
 > - may be make all copyable field, click-to-copy?
 > - so that we don't need to show an additional copy button, that may remove the multi line issue
 > - and show: 'copy' cue on hover?
+
+Shelf 0.8.3 came from one more, about the size of that sheet:
+
+> Should we make the mpc modal smaller?
+> - say, instructions / Claude / ChatGPT / Operations
+> - so that modal size stays the same show the bare minmum on screen: the url & instructions
+> - that dot animation on top should cycle?
+> - so that it shows always?
+> - also, is there any way to show status of connect?
