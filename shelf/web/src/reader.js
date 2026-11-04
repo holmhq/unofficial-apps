@@ -34,7 +34,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   const backBtn = h('button.icon-btn.r-back', { type: 'button', 'aria-label': 'Back to the list', title: 'Back (Esc)', onclick: () => onClose() }, ic('chevronLeft', 24, 2.2))
   const title = h('div.r-title')
   const listenBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Listen', title: 'Listen (L)', onclick: () => listen() }, ic('headphones', 20, 1.9))
-  const sumBtn = h('button.icon-btn.is-quiet.sum-btn', { type: 'button', 'aria-label': 'Summarise', title: 'Summarise with AI', onclick: () => summary() }, ic('sparkles', 20, 1.9))
+  const sumBtn = h('button.icon-btn.is-quiet.sum-btn', { type: 'button', 'aria-label': 'Ask', title: 'Ask about this', onclick: () => openAsk() }, ic('sparkles', 20, 1.9))
   const aaBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Text settings', title: 'Text settings', 'aria-haspopup': 'dialog', onclick: () => textSettings() }, ic('aLargeSmall', 21, 1.9))
   const favBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Favourite', title: 'Favourite (S)', onclick: () => toggleFav() }, ic('star', 20, 1.9))
   const archBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Archive', title: 'Archive (E)', onclick: () => toggleArchive() }, ic('archive', 20, 1.9))
@@ -53,6 +53,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     const next = lib.items.get(id)
     if (!next) return false
     const same = item && item.id === id
+    if (asking && !same) asking.close()
     stopListening()
     closePops()
     item = next
@@ -509,7 +510,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     }
     const canShare = !!navigator.share && !wide()
     menu(moreBtn, [
-      !wide() && it.status === 'ready' && (it.words || 0) >= 120 ? { label: it.summary ? 'Summary' : 'Summarise', icon: 'sparkles', onclick: () => summary() } : null,
+      !wide() && it.status === 'ready' && (it.words || 0) >= 120 ? { label: 'Ask about this', icon: 'sparkles', onclick: () => openAsk() } : null,
       it.url ? { label: 'Open the original', icon: 'externalLink', onclick: () => window.open(it.url, '_blank', 'noopener') } : null,
       it.kind === 'pdf' ? { label: 'Open the PDF', icon: 'fileText', onclick: () => window.open('/api/items/' + it.id + '/file', '_blank', 'noopener') } : null,
       !it.url ? null : canShare ? { label: 'Share…', icon: 'share', onclick: () => navigator.share({ title: it.title, url: it.url }).catch(() => {}) } : { label: 'Copy link', icon: 'link', onclick: () => copyText(it.url, 'Link copied') },
@@ -704,8 +705,8 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     return range
   }
 
-  async function highlight(withNote = false) {
-    const range = selectionInBody()
+  async function highlight(withNote = false, note = '', given = null) {
+    const range = given || selectionInBody()
     if (!range || !item) return
     // In a PDF a highlight stays on one page; in a book it carries its chapter's name.
     let root = body
@@ -738,10 +739,11 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     haptic(10)
     const id = item.id
     try {
-      const saved = await addMark(id, { quote, start, end, loc, prefix: map.text.slice(Math.max(0, start - 48), start), suffix: map.text.slice(end, end + 48) })
+      const saved = await addMark(id, { quote, start, end, loc, note: note || '', prefix: map.text.slice(Math.max(0, start - 48), start), suffix: map.text.slice(end, end + 48) })
       if (!item || item.id !== id) return
-      for (const mk of body.querySelectorAll(`mark.hl[data-id="${temp.id}"]`)) mk.dataset.id = saved.id
+      for (const mk of body.querySelectorAll(`mark.hl[data-id="${temp.id}"]`)) { mk.dataset.id = saved.id; if (note) { mk.classList.add('has-note'); mk.title = note } }
       marks = lib.marks.get(id) || [...marks, saved]
+      if (note) toast('Highlighted, with a note')
       if (withNote) editNote(saved)
     } catch (e) {
       failure(e)
@@ -797,7 +799,8 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     pop = h('div.pop', { role: 'toolbar', 'aria-label': 'Selection', 'data-kind': 'sel' },
       h('button', { type: 'button', onpointerdown: (e) => e.preventDefault(), onclick: () => highlight(false) }, h('span.sw'), 'Highlight'),
       h('button', { type: 'button', onpointerdown: (e) => e.preventDefault(), onclick: () => highlight(true) }, ic('notebookPen', 16, 2), 'Note'),
-      h('button', { type: 'button', onpointerdown: (e) => e.preventDefault(), onclick: () => { copyText(range.toString().trim(), 'Copied'); closePops() } }, ic('copy', 16, 2), 'Copy'))
+      h('button', { type: 'button', onpointerdown: (e) => e.preventDefault(), onclick: (e) => askSelection(e.currentTarget, range) }, ic('sparkles', 16, 2), 'Ask'),
+      h('button.is-icon', { type: 'button', 'aria-label': 'Copy', title: 'Copy', onpointerdown: (e) => e.preventDefault(), onclick: () => { copyText(range.toString().trim(), 'Copied'); closePops() } }, ic('copy', 16, 2)))
     placePop(pop, rect)
   }
 
@@ -838,6 +841,47 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     if (mk && !selectionInBody()) { e.preventDefault(); markPop(mk) }
   })
   panel.addEventListener('scroll', () => { if (pop && pop.dataset.kind === 'mark') closePops() }, { passive: true })
+
+  /* ---- Ask ------------------------------------------------------------------------------------------- */
+
+  async function askSelection(btn, range) {
+    if (!item) return
+    const kept = range.cloneRange()
+    const text = range.toString().trim()
+    const rect = range.getBoundingClientRect()
+    const b = btn.getBoundingClientRect()
+    const { selectionActions } = await import('./ask.js')
+    // The little bar goes; the menu opens where its Ask button was.
+    closePops()
+    selectionActions({ x: b.left, y: b.bottom }, { item, text, rect, onNote: (note) => highlight(false, note, kept) })
+  }
+
+  let asking = null
+  async function openAsk() {
+    if (!item) return
+    if (asking) { asking.close(); return }
+    const { askPanel } = await import('./ask.js')
+    sumBtn.classList.add('is-on')
+    asking = askPanel({ host: el, item, jump: (q) => showPassage(q), onClose: () => { asking = null; sumBtn.classList.remove('is-on') } })
+  }
+
+  // A passage an answer leans on: found in the article, scrolled to and lit up for a moment.
+  function showPassage(quote) {
+    if (!body) return
+    const map = textMap()
+    const flat = map.text.replace(/\s/g, ' ')
+    let at = flat.indexOf(quote)
+    if (at < 0) at = flat.indexOf(quote.slice(0, 60))
+    if (at < 0) { toast('That passage isn’t on this page.', { kind: 'info' }); return }
+    const made = wrap(map, at, at + Math.min(quote.length, flat.length - at), { id: 'ask-passage', note: '' })
+    for (const mk of made) mk.classList.add('is-passage', 'is-flash')
+    if (made[0]) {
+      const p = panel.getBoundingClientRect()
+      panel.scrollBy({ top: made[0].getBoundingClientRect().top - p.top - p.height / 3, behavior: reduced() ? 'auto' : 'smooth' })
+    }
+    if (!wide() && asking) asking.close()
+    setTimeout(() => { for (const mk of made) { if (mk.isConnected) { const parent = mk.parentNode; mk.replaceWith(...mk.childNodes); parent.normalize() } } }, 2600)
+  }
 
   /* ---- Summary ------------------------------------------------------------------------------------- */
 
@@ -909,7 +953,22 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
         })
         noteInput = h('textarea.field', { placeholder: 'A note to yourself: why you saved it', maxlength: '2000', 'aria-label': 'Note' })
         noteInput.value = it.note || ''
-        return [h('div.sheet-label', 'Tags'), chips, input, h('div.sheet-label', 'Note'), noteInput]
+        // Suggestions from the node's AI, to tap.
+        const ideas = h('div.tag-edit.is-ideas')
+        const suggest = it.status === 'ready' ? h('button.btn.small.plain', { type: 'button', onclick: async (e) => {
+          const b = e.currentTarget
+          b.disabled = true
+          fill(b, ic('loaderCircle', 14, 2.2), 'Thinking…')
+          b.querySelector('svg').classList.add('spin')
+          try {
+            const { suggestTags } = await import('./ask.js')
+            const tags = (await suggestTags(id)).filter((t) => !chosen.has(t))
+            if (!tags.length) { b.replaceWith(h('small.sheet-note', 'No new tags to suggest.')); return }
+            fill(ideas, tags.map((t) => h('button.chip.is-idea', { type: 'button', onclick: (ev) => { chosen.add(t); if (!known.includes(t)) known.push(t); ev.currentTarget.remove(); drawChips() } }, ic('plus', 13, 2.4), t)))
+            b.remove()
+          } catch (err) { b.disabled = false; fill(b, ic('sparkles', 14, 2.1), 'Suggest tags'); failure(err) }
+        } }, ic('sparkles', 14, 2.1), 'Suggest tags') : null
+        return [h('div.sheet-label.has-act', 'Tags', suggest), chips, ideas, input, h('div.sheet-label', 'Note'), noteInput]
       }
     })
     if (!result) return
@@ -940,6 +999,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
   function close() {
     stopListening()
     closePops()
+    if (asking) asking.close()
     if (pdfView) { pdfView.destroy(); pdfView = null }
     if (item && item.status === 'ready') progress(item.id, item.progress || 0, { now: true })
     item = null

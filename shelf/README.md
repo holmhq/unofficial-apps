@@ -84,7 +84,15 @@ served as files: `api/` and `holm.json` are not public URLs.
   to a page with the words, the article's title and link, and your first name
   (never your notes), and draws its link-preview card in the reader's
   typefaces. Stop sharing and the link no longer works.
-- **A summary** in three points from the node's AI, kept with the article.
+- **Ask.** Select words and choose Ask: Look up shows the dictionary and
+  Wikipedia (no AI needed), Explain says what the passage means in this
+  article, and Translate puts it in the language you choose; any answer can
+  become the note on a new highlight. The sparkles button opens Ask beside
+  the article: a summary, key takeaways, questions to think about, prompts
+  you saved, or any question about it, answered from its words with the
+  passages it leans on, which you can jump to. Ask a question in search and
+  your whole shelf answers, with numbered sources. Tags can be suggested
+  too. Everything but Look up uses the node's AI.
 - **Listen.** Your device reads the article aloud, a sentence at a time, from
   where you are; the sentence being read is tinted and the page follows it.
 - **Search** finds words in titles, in the articles themselves and in your
@@ -218,8 +226,16 @@ the Holm credit sits in the footer.
   ZIP (and reads ZIP exports with `DecompressionStream`), with no library.
   Highlights come from `GET /api/highlights` a page at a time, since a paged
   `ds.find` returns at most 100 rows a page.
-- **Summaries** come from `env.holm.ai.chat`, at most 60 a day per person and
-  2,000 a day across the node, and are kept with the item.
+- **Summaries and Ask** (`api/ask.js`, `web/src/ask.js`) use
+  `env.holm.ai.chat` with answers asked for as JSON, at most 150 a day per
+  person and 3,000 across the node. An answer about an article reads its
+  stored text (the start, the end, or the stretch around a selection); the
+  passages it quotes come back only if they're really in the article.
+  Asking the shelf searches each word of the question on its own (a
+  `ds.search` with several words finds only what has them all), stems
+  included, ranks what matches most (highlights a little higher), and gives
+  the AI the top ten as numbered sources. Look up reads Wikipedia's REST
+  summary and Wiktionary's definitions with `net.fetch`, kept two weeks in KV.
 - **Feedback** opens from the footer: `web/vendor/feedback/embed.js` is a copy
   of the widget from [feedback.zyt.app](https://feedback.zyt.app), with its
   floating button hidden. Its form is framed from that origin, so the app's
@@ -255,8 +271,8 @@ next to the feedback form:
 holm @<peer> policy set security.csp.frame_src https://feedback.zyt.app,https://www.youtube-nocookie.com --app <app-id>
 ```
 
-**Summaries** need an AI provider on the node (section 6.7 of the guide).
-Without one, the Summarise button says summaries aren't available.
+**Summaries and Ask** need an AI provider on the node (section 6.7 of the
+guide). Without one they say so, and Look up still works.
 
 **Branding.** Then set the sign-in page's presentation and the link-preview
 card for the new app id, after checking the settings schema on your node:
@@ -302,7 +318,9 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
   few, and they don't play with the screen locked.
 - **5,000 links per person**, and the list loads in one answer.
 - **Search matches whole words** in articles, not parts of words.
-- iPhone Safari and summaries were not checked before release.
+- **AI answers can be wrong**, and Shelf says so under each one. They were
+  tested against a stand-in for the AI, not a real model, before release.
+- iPhone Safari was not checked before release.
 
 ## Licences
 

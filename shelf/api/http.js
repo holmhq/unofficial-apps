@@ -21,8 +21,8 @@
 //   DELETE /api/marks/:id/share        stop sharing it
 //   PUT    /api/q/:slug/card           the link's preview picture, drawn in the browser
 //   GET    /api/q/:slug                a shared highlight, for anyone with the link
-//   /api/review…, /api/feeds…, /api/uploads, /api/pictures/…, /api/import/highlights
-//                                       in review.js, feeds.js and uploads.js
+//   /api/review…, /api/feeds…, /api/uploads, /api/pictures/…, /api/import/highlights,
+//   /api/ask, /api/lookup, /api/items/:id/ask   in review.js, feeds.js, uploads.js and ask.js
 //   GET    /q/:slug                    its page, with its own title and picture for previews
 
 import {
@@ -82,6 +82,7 @@ async function route(request, env, url) {
 
   if (path.startsWith('/api/review')) return (await import('./review.js')).review(request, env, url, caller, from)
   if (path.startsWith('/api/feeds')) return (await import('./feeds.js')).feeds(request, env, url, caller, from)
+  if (path === '/api/lookup' || path === '/api/ask' || path === '/api/prompts' || /^\/api\/items\/[A-Za-z0-9_-]+\/(ask|tags)$/.test(path)) return (await import('./ask.js')).ask(request, env, url, caller, from)
   if (path === '/api/uploads' || path.startsWith('/api/pictures/') || path === '/api/import/highlights' || /^\/api\/items\/[A-Za-z0-9_-]+\/(file|cover|pdf)$/.test(path)) {
     return (await import('./uploads.js')).uploads(request, env, url, caller, from)
   }

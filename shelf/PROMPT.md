@@ -67,6 +67,12 @@ Readability and DOMPurify with their licences.
   first use) page by page with a text layer for page-anchored highlights,
   their words read in the browser for search; a saved link to a PDF becomes
   one too.
+- Ask: on a selection, Look up (Wikipedia REST and Wiktionary, no AI),
+  Explain and Translate, each able to become a highlight's note; beside an
+  article, a panel with the summary, takeaways, questions, saved prompts and
+  free questions answered with quoted passages to jump to; in search, a
+  question answered from the whole shelf with numbered sources; suggested
+  tags. ai.chat with JSON answers and daily caps.
 - Export one ZIP made in the browser: Markdown per source with front matter
   (Obsidian, Logseq, Notion), highlights.csv in Readwise's import layout,
   library.csv, feeds.opml and a JSON copy.

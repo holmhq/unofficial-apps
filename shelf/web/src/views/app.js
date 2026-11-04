@@ -598,10 +598,20 @@ export function createApp() {
     const head = h('div.page-head.phone-only', h('h1.large-title', 'Search'))
     const box = h('div.phone-only', { style: { padding: '4px 16px 8px' } }, field)
     const out = h('div')
-    panel.append(head, box, out, h('div.list-end'))
+    // A question gets an offer to ask the whole shelf, and the answer sits above the results.
+    const askBox = h('div.ask-slot')
+    panel.append(head, box, askBox, out, h('div.list-end'))
     panel.addEventListener('scroll', () => updateTitle(panel), { passive: true })
     const el = h('section.page', panel)
     let q = ''
+    let askedFor = ''
+    const question = (t) => /\?$/.test(t) || (t.split(/\s+/).length >= 4 && /^(what|why|how|who|when|where|which|did|do|does|is|are|can|should|would|could|tell|find|summari[sz]e|compare)\b/i.test(t))
+    function offerAsk() {
+      if (!q || !question(q)) { if (askedFor !== q) fill(askBox); return }
+      if (askedFor === q) return
+      fill(askBox, h('button.ask-row', { type: 'button', onclick: () => { askedFor = q; import('../ask.js').then((m) => m.askShelf(q, askBox)) } },
+        h('span.ask-row-ic', ic('sparkles', 16, 2.1)), h('div.grow', h('b', 'Ask your shelf'), h('small', '“' + q + '”')), ic('arrowRight', 16, 2.2)))
+    }
     let timer = 0
     let asked = 0
     function run(text) {
@@ -610,7 +620,8 @@ export function createApp() {
       if (field.value !== text && document.activeElement !== field) field.value = text
       const url = '/search' + (q ? '?q=' + encodeURIComponent(q) : '')
       if (location.pathname === '/search' && location.pathname + location.search !== url) history.replaceState({}, '', url)
-      if (!q) { fill(out, emptyState('search', 'Search your shelf', 'Find words in the titles, the articles you saved, and your highlights and notes.')); return }
+      offerAsk()
+      if (!q) { fill(out, emptyState('search', 'Search your shelf', 'Find words in the titles, the articles you saved, and your highlights and notes. Ask a question to have it answered from them.')); return }
       const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
       const local = all().filter((i) => { const hay = [i.title, i.site, i.host, i.excerpt, i.note, ...(i.tags || [])].join(' ').toLowerCase(); return terms.every((t) => hay.includes(t)) }).sort((a, b) => (b.saved || 0) - (a.saved || 0))
       const draw = (server) => {
@@ -619,7 +630,7 @@ export function createApp() {
         const marks = server ? server.marks.filter((m) => lib.items.has(m.item)) : []
         const snippets = new Map(server ? server.results.map((r) => [r.id, r.snippet]) : [])
         if (!local.length && !deep.length && !marks.length) {
-          fill(out, server ? emptyState('search', 'Nothing found', `Nothing on your shelf mentions “${q}”.`) : h('div.empty', h('span.shimmer')))
+          fill(out, server ? (question(q) ? null : emptyState('search', 'Nothing found', `Nothing on your shelf mentions “${q}”.`)) : h('div.empty', h('span.shimmer')))
           return
         }
         fill(out,
