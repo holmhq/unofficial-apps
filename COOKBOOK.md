@@ -77,14 +77,30 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 - **The account menu has Connect via MCP…** when you're signed in, with the
   MCP mark as its icon. ⌘K has it too. It opens one sheet, never a page,
   and other sheets that mention Claude link to it rather than repeat it.
-- **The sheet, top to bottom:** the app's icon joined to the MCP mark by a
-  short row of dots that pulse once as it opens; one bold line and one
-  sentence on what Claude can do with the app; the connector address to
-  click and copy; three numbered steps for Claude (open Settings, then Connectors; add
-  a custom connector named after the app with the address; connect and sign
-  in); the Claude Code command, `claude mcp add --transport http <app>
-  <address>`, then `/mcp`; and three or four rows saying what the tools do,
-  in plain words.
+- **The sheet shows the bare minimum.** It shows the app's icon joined to the
+  MCP mark by five dots, and the connector address to click and copy. Under
+  that is a segmented control: **Claude · ChatGPT · Claude Code · Tools**.
+  - **Claude:** three numbered steps (open Settings, then Connectors; add a
+    custom connector named after the app with the address; connect and sign
+    in).
+  - **ChatGPT:** three steps (turn on Developer mode in Settings, under Apps,
+    then Advanced, on the web and on paid plans; create a connector with the
+    address and OAuth; connect, then pick the app from + in a chat).
+  - **Claude Code:** the command, `claude mcp add --transport http <app>
+    <address>`, then `/mcp`.
+  - **Tools:** three or four rows saying what the tools do, in plain words.
+
+  There's no intro paragraph. The panes share one grid cell, so the sheet is
+  as tall as the tallest and never changes height between tabs. It fits a
+  390 × 844 phone without scrolling.
+- **The dots keep moving while the sheet is open.** A wave runs from the app
+  to the mark every 2.4 s and rests between waves. With reduced motion they
+  stand still; turn the animation off by name, because a global
+  `animation-duration: .01ms` on an infinite animation flickers.
+- **Don't show a connection status you can't know.** Holm doesn't yet tell an
+  app whether someone has connected. Its read tools can't write, so an app
+  can't even record when it was last used. Until Holm offers that, show no
+  status rather than a guess.
 - **Take the address from the server**, as `url.origin + '/_holm/mcp'` in the
   app's own "who's here" answer, so every host shows its own.
 - **Anything to copy is a click-to-copy field**, never a read-only input
@@ -316,8 +332,10 @@ couldn't check.
 - [ ] The menu has no Holm line or Source link. The theme switch is icons
       only, and admin links show only for admins.
 - [ ] Menu labels are one to three words. Signed in, the menu and ⌘K have
-      Connect via MCP… with the MCP mark, and its sheet shows the server's
-      address on one line at 390 px.
+      Connect via MCP… with the MCP mark. Its sheet shows the server's
+      address on one line at 390 px, has Claude, ChatGPT, Claude Code and
+      Tools tabs, and keeps one height across them without scrolling on a
+      phone.
 - [ ] Every address, command or link to copy is a click-to-copy field: one
       line, a copy icon, Copy on hover, Copied with a tick after, no separate
       button. The zyt Claude Code command fits on one line in a wide sheet.
