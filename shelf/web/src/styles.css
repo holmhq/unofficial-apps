@@ -683,10 +683,22 @@ mark.hl.is-flash { animation: flash 1.4s var(--ease-out); }
 
 .save-field { display: flex; gap: 8px; }
 .save-field .field { flex: 1; }
-.sheet-stack { display: grid; gap: 14px; }
-.copy-field { display: flex; align-items: center; gap: 8px; }
-.copy-value { flex: 1; min-width: 0; min-height: 46px; display: flex; align-items: center; padding: 11px 14px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink); font: 13.5px/1.45 var(--mono); letter-spacing: 0; overflow-wrap: break-word; -webkit-user-select: all; user-select: all; }
-@media (max-width: 520px) { .copy-field .btn { width: 46px; height: 46px; padding: 0; flex: none; } .copy-label { display: none; } }
+.sheet-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.copy-field { --cf-base: var(--surface); --cf-bg: var(--cf-base); display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px; border-radius: 12px; background: var(--cf-bg); box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s, box-shadow .15s; }
+[data-theme='dark'] .copy-field { --cf-base: var(--raised); }
+.copy-field:active { --cf-bg: color-mix(in srgb, var(--cf-base), var(--ink) 8%); }
+@media (hover: hover) { .copy-field:hover { --cf-bg: color-mix(in srgb, var(--cf-base), var(--ink) 4%); box-shadow: inset 0 0 0 1px var(--fill-3); } }
+.copy-value { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; white-space: nowrap; font: 12.5px/46px var(--mono); letter-spacing: 0; }
+.copy-value::-webkit-scrollbar { display: none; }
+.copy-field.is-long .copy-value { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.copy-cue { position: relative; flex: none; display: grid; color: var(--ink-3); transition: color .15s; }
+.copy-cue svg { grid-area: 1 / 1; transition: opacity .15s, transform .25s var(--spring); }
+.copy-cue svg:last-child { opacity: 0; transform: scale(.5); color: var(--green); }
+.copy-word { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); padding: 3px 7px 3px 26px; background: linear-gradient(to right, transparent, var(--cf-bg) 20px); color: var(--ink-2); font: var(--w-strong) 13px/1.2 var(--font); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; }
+@media (hover: hover) { .copy-field:hover .copy-cue { color: var(--ink); } .copy-field:hover .copy-word { opacity: 1; } }
+.copy-field.is-copied .copy-word { opacity: 1; color: var(--green-text); }
+.copy-field.is-copied .copy-cue svg:first-of-type { opacity: 0; transform: scale(.5); }
+.copy-field.is-copied .copy-cue svg:last-child { opacity: 1; transform: none; }
 .sheet-note code { padding: .1em .35em; border-radius: 5px; background: var(--fill); color: var(--ink); font: 12.5px var(--mono); }
 .row-ic.is-num { color: var(--ink-2); font: var(--w-strong) 14px/1 var(--font); font-variant-numeric: tabular-nums; }
 .row.is-link { width: 100%; border: 0; background: var(--surface); text-align: left; cursor: pointer; font: inherit; transition: background .15s; }

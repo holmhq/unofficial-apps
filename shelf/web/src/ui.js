@@ -320,6 +320,37 @@ export async function copyText(text, what = 'Copied') {
   }
 }
 
+// Something to copy, such as a link or a command: one line, and the whole field copies it. A copy icon
+// always shows; pointing at it says Copy, and once it has, it says Copied with a tick. Too long for the
+// line, it scrolls sideways under a fade, and a tap still copies all of it.
+export function copyField(value) {
+  const text = h('code.copy-value', value)
+  const word = h('span.copy-word', { 'aria-live': 'polite' }, 'Copy')
+  let timer
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(value) } catch {
+      getSelection().selectAllChildren(text)
+      toast('Couldn’t copy. It’s selected, so copy it by hand.', { kind: 'bad' })
+      return
+    }
+    haptic()
+    el.classList.add('is-copied')
+    word.textContent = 'Copied'
+    clearTimeout(timer)
+    timer = setTimeout(() => { el.classList.remove('is-copied'); word.textContent = 'Copy' }, 1600)
+  }
+  const el = h('div.copy-field', {
+    role: 'button',
+    tabindex: '0',
+    onclick: copy,
+    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy() } }
+  }, text, h('span.copy-cue', word, ic('copy', 16, 2), ic('check', 16, 2.4)))
+  const fade = () => el.classList.toggle('is-long', text.scrollLeft + text.clientWidth < text.scrollWidth - 1)
+  text.addEventListener('scroll', fade, { passive: true })
+  new ResizeObserver(fade).observe(text)
+  return el
+}
+
 // Scroll the nearest panel so `el` shows, without moving the fixed shell.
 export function reveal(el, panel = el && el.closest('.panel, .sheet-body')) {
   if (!el || !panel) return

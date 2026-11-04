@@ -5,7 +5,7 @@
 // quoted words and a little text either side, so they find their place again even if the
 // article is fetched afresh.
 
-import { h, ic, fill, toast, menu, sheet, copyText, haptic, reduced, wide, closeMenus, toggle } from './ui.js'
+import { h, ic, fill, toast, menu, sheet, copyText, copyField, haptic, reduced, wide, closeMenus, toggle } from './ui.js'
 import * as api from './api.js'
 import { starFill } from './icons.js'
 import { lib, on, update, remove, progress, article, marksFor, addMark, noteMark, editMark, removeMark, summarize, makeReadable, isWorking, minutes, tone, tags as allTags, findCover } from './store.js'
@@ -542,10 +542,9 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
       cancel: null,
       done: 'Done',
       body: (close) => {
-        const field = h('input.field.is-mono', { type: 'text', value: url(), readonly: true, 'aria-label': 'Link', onfocus: (e) => e.target.select() })
         return [
           h('p.sheet-note', `Anyone with the link sees your ${it.marks === 1 ? 'highlight' : it.marks + ' highlights'} from “${it.title}”, its title and link, and your first name. It stays up to date as you highlight.`),
-          h('div.save-field', field, h('button.btn', { type: 'button', onclick: () => copyText(url(), 'Link copied') }, ic('copy', 17, 2), 'Copy')),
+          copyField(url()),
           h('label.row.share-notes', h('div.grow', h('b', 'Show my notes too'), h('small', 'Off, your notes stay private.')), toggle(notes, async (on) => { notes = on; try { await make() } catch (e) { failure(e) } }, 'Show my notes too')),
           navigator.share && !wide() ? h('button.btn.primary.large.block', { type: 'button', onclick: () => navigator.share({ url: url(), title: 'Highlights from ' + it.title }).catch(() => {}) }, ic('share', 18, 2), 'Share…') : null,
           h('a.btn.plain.block', { href: '/s/' + slug, target: '_blank', rel: 'noopener' }, ic('externalLink', 16, 2), 'See the page'),

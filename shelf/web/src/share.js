@@ -2,7 +2,7 @@
 // link and the sharer's first name, and a card for link previews drawn here on a canvas in the
 // reader's own typefaces. Notes are never shared.
 
-import { h, ic, sheet, toast, copyText, wide } from './ui.js'
+import { h, ic, sheet, toast, copyField, wide } from './ui.js'
 import { MARK } from './icons.js'
 import * as api from './api.js'
 import { lib } from './store.js'
@@ -118,7 +118,7 @@ export async function shareHighlight(item, mark) {
     body: (close) => [
       h('img.share-card', { src: preview, alt: 'The card people see when you share the link' }),
       h('p.sheet-note', 'Anyone with the link sees these words, the article’s title and link, and your first name. Notes stay private.'),
-      h('div.save-field', h('input.field.is-mono', { type: 'text', value: url, readonly: true, 'aria-label': 'Link', onfocus: (e) => e.target.select() }), h('button.btn', { type: 'button', onclick: () => copyText(url, 'Link copied') }, ic('copy', 17, 2), 'Copy')),
+      copyField(url),
       navigator.share && !wide() ? h('button.btn.primary.large.block', { type: 'button', onclick: () => navigator.share({ url, title: '“' + mark.quote.slice(0, 80) + '”' }).catch(() => {}) }, ic('share', 18, 2), 'Share…') : null,
       h('button.btn.plain.block', { type: 'button', style: { color: 'var(--red-text)' }, onclick: async () => {
         try {

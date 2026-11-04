@@ -90,9 +90,10 @@ Readability and DOMPurify with their licences.
   highlights, save a highlight, change a highlight, today's review.
 - Connect via MCP… in the account menu and ⌘K, with the MCP mark: a sheet
   with the app's icon joined to the mark, the connector address
-  (https://<host>/_holm/mcp) with Copy, the steps for Claude, the Claude
-  Code command and what the tools do. Menu labels stay short (Import…,
-  Export…).
+  (https://<host>/_holm/mcp), the steps for Claude, the Claude Code command
+  and what the tools do. Menu labels stay short (Import…, Export…).
+- Anything to copy (addresses, commands, share links) is one line that
+  copies when clicked, with a copy icon, Copy on hover and Copied after.
 - Realtime: every change reaches the person's other open pages at once.
 - A native-feeling Apple-quality UI on phone and desktop, light and dark: a
   fixed shell where only panels scroll; a sidebar of places on a desk, a tab
@@ -131,3 +132,11 @@ hard to find:
 > - use the [MCP logo] file
 > - extract the logo sensibly and use it in a nice way so that, this becomes reference to everything we build
 > - if you need to update it anywhere do it
+
+Shelf 0.8.2 came from one more, when the Claude Code command wrapped onto two
+lines beside its Copy button:
+
+> This is showiong up in two lines
+> - may be make all copyable field, click-to-copy?
+> - so that we don't need to show an additional copy button, that may remove the multi line issue
+> - and show: 'copy' cue on hover?

@@ -2,7 +2,7 @@
 // menu, the footer credit, and the sheets for saving a link, connecting Claude, the bookmarklet
 // and bringing in an export.
 
-import { h, ic, avatar, menu, segmented, haptic, toast, sheet, copyText, fill, toggle, confirm } from './ui.js'
+import { h, ic, avatar, menu, segmented, haptic, toast, sheet, copyText, copyField, fill, toggle, confirm } from './ui.js'
 import { holmMark } from './icons.js'
 import * as api from './api.js'
 import * as theme from './theme.js'
@@ -225,11 +225,6 @@ export function connectSheet() {
 export function mcpSheet() {
   const mcp = (state.me && state.me.mcp) || location.origin + '/_holm/mcp'
   const command = 'claude mcp add --transport http shelf ' + mcp
-  // Long addresses break after a slash, never inside a word; on a phone, Copy is just its icon.
-  const breakable = (value) => value.split(/(?<=\/)/).flatMap((part, i) => (i ? [h('wbr'), part] : [part]))
-  const copyField = (value, label, copied) => h('div.copy-field',
-    h('code.copy-value', { 'aria-label': label, title: label }, ...breakable(value)),
-    h('button.btn', { type: 'button', 'aria-label': 'Copy', title: 'Copy', onclick: () => copyText(value, copied) }, ic('copy', 17, 2), h('span.copy-label', 'Copy')))
   const step = (n, title, text) => h('div.row', h('span.row-ic.is-num', String(n)), h('div.grow', h('b', title), h('small', text)))
   const can = (icon, title, text) => h('div.row', h('span.row-ic', ic(icon, 17, 2)), h('div.grow', h('b', title), h('small', text)))
   return sheet({
@@ -245,14 +240,14 @@ export function mcpSheet() {
       h('div.mcp-intro', h('b', 'Your shelf, in Claude'),
         h('p', 'Add Shelf as a connector in Claude, or any app that speaks MCP, and sign in once. Then ask what to read next, find a passage you half remember, or have it save a link.')),
       h('div.sheet-label', 'Connector address'),
-      copyField(mcp, 'Connector address', 'Address copied'),
+      copyField(mcp),
       h('div.sheet-label', 'In Claude'),
       h('div.group',
         step(1, 'Open Settings, then Connectors', 'On claude.ai or in the Claude app.'),
         step(2, 'Add a custom connector', 'Name it Shelf and paste the address.'),
         step(3, 'Connect and sign in', 'Allow access once. Claude sees only your shelf.')),
       h('div.sheet-label', 'In Claude Code'),
-      copyField(command, 'Claude Code command', 'Command copied'),
+      copyField(command),
       h('p.sheet-note', 'Then type ', h('code', '/mcp'), ' in Claude Code and sign in.'),
       h('div.sheet-label', 'What Claude can do'),
       h('div.group',

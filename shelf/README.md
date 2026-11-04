@@ -118,8 +118,8 @@ served as files: `api/` and `holm.json` are not public URLs.
   links in it. The newest are made readable
   straight away and the rest when you open them.
 - **Claude reads it with you.** Open **Connect via MCP…** in the account
-  menu. It has the connector address with a Copy button, the steps for
-  Claude and the Claude Code command. Add Shelf in Claude as a custom
+  menu. Click the connector address to copy it, then follow the steps for
+  Claude, or click the Claude Code command. Add Shelf in Claude as a custom
   connector at `https://<your-host>/_holm/mcp` and sign in. Claude can list what's on
   your reading list (say, everything under ten minutes) or new in your Feed,
   read an article, highlight a passage or change a highlight, go over
@@ -184,10 +184,16 @@ the Holm credit sits in the footer.
   `node shelf/tools/contract.mjs` writes `api/contract.json`.
 - **Connect via MCP** is one sheet (`mcpSheet` in `web/src/shell.js`), opened
   from the account menu and ⌘K. It shows Shelf's icon joined to the MCP mark,
-  the address `/api/me` reports (`url.origin + '/_holm/mcp'`) with Copy, the
-  steps for Claude, the Claude Code command and what the tools do. The mark
-  is `tools/mcp.svg`, a filled 24 × 24 drawing that `tools/icons.mjs` builds
+  the address `/api/me` reports (`url.origin + '/_holm/mcp'`), the steps for
+  Claude, the Claude Code command and what the tools do. The mark is
+  `tools/mcp.svg`, a filled 24 × 24 drawing that `tools/icons.mjs` builds
   into `web/src/icons.js` as the `mcp` icon.
+- **Click to copy.** Addresses, commands and share links are `copyField` in
+  `web/src/ui.js`: one line that copies when clicked, tapped or given Enter,
+  with no separate button. A copy icon always shows. Pointing at it says Copy,
+  and it says Copied with a tick for a moment after. A value too long for the
+  line scrolls sideways under a fade. If the browser won't copy, the value is
+  selected for copying by hand.
 - **One answer for the list.** `GET /api/library` returns every link. A
   version in KV (`v:<member>`), moved on by every change, lets the page ask
   `?v=` and get a one-line answer when nothing changed. The page keeps its
