@@ -114,6 +114,15 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   under a fade. If the clipboard refuses, select the value and say so. In a
   grid, give the column `minmax(0, 1fr)` or the line widens the sheet. Copy
   Shelf's `copyField` (`shelf/web/src/ui.js`).
+- **Summaries are read by people too.** Each operation's `summary` appears
+  in the Tools tab, here and on the app's page in the store, so write it as
+  a plain line on what the tool does. Instructions for the agent, such as
+  "call this first", go in its `description`.
+- **The store shows it too.** An app's page there has an MCP pill beside
+  Get that opens the same sheet, built from `api/contract.json`, with two
+  index tabs on the address: **Demo**, the copy this repository runs, which
+  anyone can try at once when signed-in people may use the tools, and
+  **Your node** (`catalog/web/src/mcp.js`).
 - **The mark is `shelf/tools/mcp.svg`:** the MCP logo's two strokes at their
   true proportions, filled with `currentColor` and centred 21 units tall on
   the 24 grid, so it sits beside Lucide icons. Copy it into the app's icons;
