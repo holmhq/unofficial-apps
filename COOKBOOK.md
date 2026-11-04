@@ -56,11 +56,45 @@ references.
   A click-away handler that ignores the button reopens the menu; check whether
   it's open first, and close it.
 - **What goes in it:** who you are, the app's own places (Saved, Analytics
-  for admins only), the theme switch, and Sign in or Sign out.
+  for admins only), **Connect via MCP…**, the theme switch, and Sign in or
+  Sign out.
+- **Labels are one to three words**, such as "Import…", not "Bring in links,
+  highlights, feeds…". One long label widens the whole menu.
 - **What stays out:** Holm branding, Source links and anything else that
   belongs in the footer.
 - **The theme switch is three icons:** sun, moon and auto, each with an
   `aria-label` and a `title`, and no words. Labels make the menu wider.
+
+## Connect via MCP
+
+Every app here is one Claude can use too, and says so where people look.
+Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
+
+- **Every app ships MCP tools.** Its main actions are named operations in
+  `api/contract.json` with `auth: "user"`, each checking the caller, and
+  Holm serves them at `/_holm/mcp`. Named operations can't call out of the
+  app (see the runtime notes), so tools work on the app's own data.
+- **The account menu has Connect via MCP…** when you're signed in, with the
+  MCP mark as its icon. ⌘K has it too. It opens one sheet, never a page,
+  and other sheets that mention Claude link to it rather than repeat it.
+- **The sheet, top to bottom:** the app's icon joined to the MCP mark by a
+  short row of dots that pulse once as it opens; one bold line and one
+  sentence on what Claude can do with the app; the connector address with
+  Copy; three numbered steps for Claude (open Settings, then Connectors; add
+  a custom connector named after the app with the address; connect and sign
+  in); the Claude Code command, `claude mcp add --transport http <app>
+  <address>`, then `/mcp`; and three or four rows saying what the tools do,
+  in plain words.
+- **Take the address from the server**, as `url.origin + '/_holm/mcp'` in the
+  app's own "who's here" answer, so every host shows its own.
+- **Show addresses as text, not inputs.** A 13 px read-only input makes iOS
+  zoom and clips the end. Use wrapping code that selects in one tap, with
+  `<wbr>` after each slash so it breaks only there. On a phone, Copy is its
+  icon alone, so `https://<app>.zyt.app/_holm/mcp` fits on one line.
+- **The mark is `shelf/tools/mcp.svg`:** the MCP logo's two strokes at their
+  true proportions, filled with `currentColor` and centred 21 units tall on
+  the 24 grid, so it sits beside Lucide icons. Copy it into the app's icons;
+  don't redraw, stretch or stroke it.
 
 ## The look
 
@@ -274,6 +308,9 @@ couldn't check.
       outside. The same holds for every other menu button in the app.
 - [ ] The menu has no Holm line or Source link. The theme switch is icons
       only, and admin links show only for admins.
+- [ ] Menu labels are one to three words. Signed in, the menu and ⌘K have
+      Connect via MCP… with the MCP mark, and its sheet shows the server's
+      address on one line at 390 px.
 
 **Look**
 

@@ -35,6 +35,9 @@ or opens a pull request.
   `PROMPT.md` and `README.md`: none may contain private content. In these
   v1 apps only `web/` is served as files; `api/` and `holm.json` are not
   public URLs. README, PROMPT, scripts and listing files stay out of deploy.
+- Every app exposes its main actions as MCP tools and has **Connect via
+  MCP…** in its account menu, as `COOKBOOK.md` describes; Shelf is the
+  reference.
 - Add each new app to the table in the root `README.md`, and mention it in the
   `open` skill if it makes a better first demo than pastebin.
 - `holm.json` carries the repository's app `version`. Changing any file
