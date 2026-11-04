@@ -54,8 +54,10 @@ served as files: `api/` and `holm.json` are not public URLs.
   Highlights are a tap away; on a phone the tab bar holds the Feed, and
   Favourites is a chip on the reading list and the Archive.
 - **The reader** opens beside the list on a desk and slides over it on a
-  phone. It's set in Newsreader, or Inter if you'd rather, in eight sizes and
-  three widths, on white or a paper tone, in light or dark. Shelf keeps your
+  phone. It's set in Newsreader, Inter or Atkinson Hyperlegible (drawn by the
+  Braille Institute so letters are easy to tell apart), in eight sizes,
+  three widths and three line spacings, ragged or justified, on white or a
+  paper tone, in light or dark. Shelf keeps your
   place as you read and takes you back to it on any device.
 - **Highlights and notes.** Select words and choose Highlight or Note. They
   find their place again even if the article is fetched afresh, and gather on
@@ -96,7 +98,14 @@ served as files: `api/` and `holm.json` are not public URLs.
 - **Listen.** Your device reads the article aloud, a sentence at a time, from
   where you are; the sentence being read is tinted and the page follows it.
 - **Search** finds words in titles, in the articles themselves and in your
-  highlights and notes.
+  highlights and notes. Filters narrow it, as in Readwise Reader:
+  `tag:design`, `in:list`, `in:feed`, `kind:book`, `has:highlights`,
+  `minutes:<10`, `saved:<7d`, `from:claude`, with a minus to turn one around.
+  Save a search as a **view** and it sits in the sidebar with its count.
+- **Lists your way.** Sort a list by newest, oldest, shortest, longest or
+  recently opened, and select many to archive, favourite, tag or delete at
+  once. ⌘K (Ctrl+K) finds a place, an article or something to do from a few
+  letters. Change any title or author.
 - **Bring your links** from a Pocket, Instapaper or Readwise Reader export
   (CSV, or the ZIP it came in), a bookmarks file (HTML), or anything with
   links in it. The newest are made readable
@@ -222,6 +231,11 @@ the Holm credit sits in the footer.
   text layer so words can be selected; a highlight is anchored to its page.
 - **Markdown** files become articles in the browser (`web/src/md.js`, a
   small escaped subset), their pictures kept like an article's.
+- **Views** are a name and a query, kept per person in KV (`/api/views`);
+  the query is applied in the browser to the library it already holds
+  (`web/src/query.js`), and only the words in it go to the server's search.
+  **Many at once** goes through `POST /api/items/bulk`, a few seconds' worth
+  per request, with one version bump.
 - **Export** is made in the browser: `web/src/zip.js` writes an uncompressed
   ZIP (and reads ZIP exports with `DecompressionStream`), with no library.
   Highlights come from `GET /api/highlights` a page at a time, since a paged
@@ -324,9 +338,11 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
 
 ## Licences
 
-- [Inter](https://rsms.me/inter/) and
-  [Newsreader](https://github.com/productiontype/Newsreader): SIL Open Font
-  License 1.1, in `web/fonts/OFL-inter.txt` and `web/fonts/OFL-newsreader.txt`.
+- [Inter](https://rsms.me/inter/),
+  [Newsreader](https://github.com/productiontype/Newsreader) and
+  [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/): SIL
+  Open Font License 1.1, in `web/fonts/OFL-inter.txt`,
+  `web/fonts/OFL-newsreader.txt` and `web/fonts/OFL-atkinson.txt`.
 - [Readability](https://github.com/mozilla/readability): Apache 2.0, in
   `web/vendor/readability/LICENSE.md`. One line is added at the end to export
   it as a module.

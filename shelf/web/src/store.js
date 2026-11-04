@@ -9,7 +9,7 @@
 import * as api from './api.js'
 import { subscribe } from './live.js'
 
-export const lib = { me: null, items: new Map(), v: 0, ready: false, marks: new Map(), highlights: null, review: null, feeds: null }
+export const lib = { me: null, items: new Map(), v: 0, ready: false, marks: new Map(), highlights: null, review: null, feeds: null, views: null }
 
 const listeners = new Set()
 export function on(fn) { listeners.add(fn); return () => listeners.delete(fn) }
@@ -103,6 +103,7 @@ export function listen(channel) {
     if (m.removed) drop(m.removed, { remote: true })
     if (m.mark || m.unmark) { lib.highlights = null; if (m.mark) lib.marks.delete(m.mark.item); emit({ marks: m.mark ? m.mark.item : true }) }
     if (m.feeds) loadFeeds().catch(() => {})
+    if (m.views) loadViews().catch(() => {})
     if (m.full || (!inOrder && !m.item && !m.removed)) { refresh(); return }
     lib.v = Math.max(lib.v, m.v)
     writeCache()
@@ -823,4 +824,59 @@ export async function uploadFile(file, onStep = () => {}) {
     if (created) { try { await api.del('/api/items/' + created.id); drop(created.id) } catch {} }
     throw e
   }
+}
+
+/* ---- Saved views and changes to many at once ---------------------------------------------------- */
+
+const viewsKey = () => 'shelf:views:' + (lib.me && lib.me.id)
+export function keptViews() {
+  if (lib.views) return lib.views
+  try { lib.views = JSON.parse(localStorage.getItem(viewsKey()) || 'null') } catch {}
+  return lib.views || []
+}
+export async function loadViews() {
+  const r = await api.get('/api/views')
+  lib.views = r.views
+  try { localStorage.setItem(viewsKey(), JSON.stringify(r.views)) } catch {}
+  emit({ views: true })
+  return r.views
+}
+export async function saveViews(views) {
+  lib.views = views
+  emit({ views: true })
+  const r = await api.put('/api/views', { views })
+  lib.views = r.views
+  lib.v = Math.max(lib.v, r.v || 0)
+  try { localStorage.setItem(viewsKey(), JSON.stringify(r.views)) } catch {}
+  emit({ views: true })
+  return r.views
+}
+
+// Archive, favourite, tag or delete many: changed here at once, then on the server in batches.
+export async function bulk(ids, changes) {
+  const before = new Map(ids.map((id) => [id, lib.items.get(id)]).filter(([, i]) => i))
+  for (const [id, i] of before) {
+    if (changes.delete) { lib.items.delete(id); continue }
+    const next = { ...i }
+    if (changes.state) { next.state = changes.state; if (changes.state === 'archived') next.read = Date.now() }
+    if (typeof changes.fav === 'boolean') next.fav = changes.fav
+    if (changes.addTags) next.tags = [...new Set([...(i.tags || []), ...changes.addTags])]
+    lib.items.set(id, next)
+  }
+  writeCache()
+  emit({ full: true })
+  try {
+    const list = [...before.keys()]
+    for (let n = 0; n < list.length;) {
+      const r = await api.post('/api/items/bulk', { ids: list.slice(n, n + 100), ...changes })
+      n += Math.max(1, r.done || 100)
+      lib.v = Math.max(lib.v, r.v || 0)
+    }
+  } catch (e) {
+    for (const [id, i] of before) lib.items.set(id, i)
+    writeCache()
+    emit({ full: true })
+    throw e
+  }
+  await refresh(true)
 }

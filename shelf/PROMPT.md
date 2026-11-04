@@ -35,7 +35,8 @@ Readability and DOMPurify with their licences.
   title, excerpt, site, minutes left and a thin progress line; swipe to
   archive or favourite on a phone, J/K/E/S keys on a desk.
 - The reader, beside the list on a desk and sliding over it on a phone: set
-  in Newsreader (or Inter), eight sizes, three widths, a paper tone; the
+  in Newsreader (or Inter, or Atkinson Hyperlegible), eight sizes, three
+  widths, three line spacings, justify, a paper tone; the
   reading position kept on every device; highlights and notes anchored by
   their place and quote; a three-point summary from env.holm.ai.chat; Listen
   with the browser's voices, sentence by sentence, the sentence tinted with
@@ -73,6 +74,10 @@ Readability and DOMPurify with their licences.
   free questions answered with quoted passages to jump to; in search, a
   question answered from the whole shelf with numbered sources; suggested
   tags. ai.chat with JSON answers and daily caps.
+- A query language in search (tag:, in:, kind:, has:, minutes:, saved:,
+  from:, minus to negate) and saved views in the sidebar; sort menus; select
+  many for bulk archive, favourite, tag or delete; ⌘K; edit title and author;
+  Atkinson Hyperlegible, line spacing and justify in the reader.
 - Export one ZIP made in the browser: Markdown per source with front matter
   (Obsidian, Logseq, Notion), highlights.csv in Readwise's import layout,
   library.csv, feeds.opml and a JSON copy.

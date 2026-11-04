@@ -13,11 +13,12 @@ import { favicon, when } from './bits.js'
 
 const SIZES = [16, 17, 18, 19, 20, 22, 24, 26]
 const WIDTHS = { narrow: 560, normal: 660, wide: 780 }
+const LEADINGS = { tight: 1.45, normal: 1.62, loose: 1.85 }
 
 function settings() {
   let s = null
   try { s = JSON.parse(localStorage.getItem('shelf:read') || 'null') } catch {}
-  return { font: 'serif', size: innerWidth < 760 ? 2 : 4, width: 'normal', paper: false, ...(s || {}) }
+  return { font: 'serif', size: innerWidth < 760 ? 2 : 4, width: 'normal', paper: false, leading: 'normal', justify: false, ...(s || {}) }
 }
 function keep(s) { try { localStorage.setItem('shelf:read', JSON.stringify(s)) } catch {} }
 
@@ -515,6 +516,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
       it.kind === 'pdf' ? { label: 'Open the PDF', icon: 'fileText', onclick: () => window.open('/api/items/' + it.id + '/file', '_blank', 'noopener') } : null,
       !it.url ? null : canShare ? { label: 'Share…', icon: 'share', onclick: () => navigator.share({ title: it.title, url: it.url }).catch(() => {}) } : { label: 'Copy link', icon: 'link', onclick: () => copyText(it.url, 'Link copied') },
       { label: 'Tags and note…', icon: 'tag', onclick: () => editTags(it.id) },
+      { label: 'Title and author…', icon: 'pencil', onclick: () => editBook(it) },
       it.status === 'ready' && it.url && it.kind !== 'pdf' ? { label: 'Fetch the article again', icon: 'refreshCw', onclick: () => refetch() } : null,
       'sep',
       { label: 'Delete', icon: 'trash', danger: true, onclick: () => deleteItem(it.id) }
@@ -536,7 +538,13 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
       }
     })
     if (!result || result === true) return
-    try { await update(it.id, result); if (item && item.id === it.id) { const mine = ++token; notebook(mine) } } catch (e) { failure(e) }
+    try {
+      await update(it.id, result)
+      if (item && item.id === it.id) {
+        if (it.kind === 'notes') { const mine = ++token; notebook(mine) }
+        else { const t = art && art.querySelector('.a-title'); if (t) t.textContent = result.title; drawBar() }
+      }
+    } catch (e) { failure(e) }
   }
 
   async function deleteItem(id) {
@@ -554,6 +562,9 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     el.classList.toggle('is-paper', !!opts.paper)
     if (!art) return
     art.classList.toggle('is-sans', opts.font === 'sans')
+    art.classList.toggle('is-hyper', opts.font === 'hyper')
+    art.classList.toggle('is-justify', !!opts.justify)
+    art.style.setProperty('--leading', String(LEADINGS[opts.leading] || LEADINGS.normal))
     art.style.setProperty('--size', SIZES[opts.size] + 'px')
     art.style.setProperty('--measure', WIDTHS[opts.width] + 'px')
   }
@@ -574,12 +585,16 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
     const draw2 = () => fill(box,
       h('div.aa-row',
         h('button.serif' + (opts.font === 'serif' ? '.is-on' : ''), { type: 'button', 'aria-pressed': String(opts.font === 'serif'), onclick: () => set({ font: 'serif' }) }, 'Newsreader'),
-        h('button' + (opts.font === 'sans' ? '.is-on' : ''), { type: 'button', 'aria-pressed': String(opts.font === 'sans'), onclick: () => set({ font: 'sans' }) }, 'Inter')),
+        h('button' + (opts.font === 'sans' ? '.is-on' : ''), { type: 'button', 'aria-pressed': String(opts.font === 'sans'), onclick: () => set({ font: 'sans' }) }, 'Inter'),
+        h('button.hyper' + (opts.font === 'hyper' ? '.is-on' : ''), { type: 'button', 'aria-pressed': String(opts.font === 'hyper'), title: 'Atkinson Hyperlegible, drawn so letters are easy to tell apart', onclick: () => set({ font: 'hyper' }) }, 'Atkinson')),
       h('div.aa-size',
         h('button', { type: 'button', 'aria-label': 'Smaller text', disabled: opts.size === 0, onclick: () => set({ size: Math.max(0, opts.size - 1) }), style: { 'font-size': '13px' } }, 'A'),
         h('div.dots', SIZES.map((_, i) => h('i' + (i === opts.size ? '.is-on' : '')))),
         h('button', { type: 'button', 'aria-label': 'Larger text', disabled: opts.size === SIZES.length - 1, onclick: () => set({ size: Math.min(SIZES.length - 1, opts.size + 1) }), style: { 'font-size': '19px' } }, 'A')),
       wide() ? h('div.aa-row', Object.keys(WIDTHS).map((w) => h('button' + (opts.width === w ? '.is-on' : ''), { type: 'button', 'aria-pressed': String(opts.width === w), onclick: () => set({ width: w }) }, w[0].toUpperCase() + w.slice(1)))) : null,
+      h('div.aa-row',
+        Object.keys(LEADINGS).map((l) => h('button.lead' + (opts.leading === l ? '.is-on' : ''), { type: 'button', 'aria-label': l[0].toUpperCase() + l.slice(1) + ' line spacing', title: l[0].toUpperCase() + l.slice(1) + ' line spacing', 'aria-pressed': String(opts.leading === l), onclick: () => set({ leading: l }) }, h('span.lines.is-' + l, h('i'), h('i'), h('i')))),
+        h('button' + (opts.justify ? '.is-on' : ''), { type: 'button', 'aria-label': 'Justify', title: 'Even right edges', 'aria-pressed': String(!!opts.justify), onclick: () => set({ justify: !opts.justify }) }, h('span.lines.is-justify', h('i'), h('i'), h('i')))),
       h('div.aa-row',
         h('button' + (!opts.paper ? '.is-on' : ''), { type: 'button', 'aria-label': 'Plain page', title: 'Plain', 'aria-pressed': String(!opts.paper), onclick: () => set({ paper: false }) }, h('span.tone', { style: { background: 'var(--surface)' } })),
         h('button' + (opts.paper ? '.is-on' : ''), { type: 'button', 'aria-label': 'Paper', title: 'Paper', 'aria-pressed': String(!!opts.paper), onclick: () => set({ paper: true }) }, h('span.tone', { style: { background: 'var(--paper)' } }))))

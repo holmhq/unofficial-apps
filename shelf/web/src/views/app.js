@@ -8,13 +8,14 @@
 //   /highlights    every highlight           /read/<id>    an article (?at=<highlight>)
 //   /archive       finished
 
-import { h, ic, fill, toast, menu, haptic, reduced, wide, flip, copyText, closeMenus } from '../ui.js'
+import { h, ic, fill, toast, menu, haptic, reduced, wide, flip, copyText, closeMenus, sheet } from '../ui.js'
 import { mark, starFill } from '../icons.js'
 import * as api from '../api.js'
 import {
   lib, on, unread, favourites, archived, tagged, tags, all, minutes, tone, update, remove, highlights, keptHighlights, isWorking, makeReadable,
-  reviewSet, keptReview, findCover, books, inFeed, keptFeeds, loadFeeds, checkFeeds, isChecking, markSeen
+  reviewSet, keptReview, findCover, books, inFeed, keptFeeds, loadFeeds, checkFeeds, isChecking, markSeen, keptViews, loadViews, saveViews, bulk
 } from '../store.js'
+import { parse as parseQuery, apply as applyQuery, HELP as QUERY_HELP } from '../query.js'
 import { go, link, accountButton, credit, failure, saveSheet, saveURL, looksLikeURL, connectSheet, importSheet, keysSheet, state, followSheet, feedsSheet, uploadSheet } from '../shell.js'
 import { createReader } from '../reader.js'
 import { favicon, when, plural } from '../bits.js'
@@ -57,7 +58,8 @@ export function createApp() {
 
   const sideLinks = PLACES.map((x) => link(x.path, { class: 'side-item', 'data-path': x.path }, ic(x.icon, 18, 1.9), h('span.grow', x.label), h('span.side-count')))
   const sideTags = h('div.side-list')
-  const side = h('nav.side', { 'aria-label': 'Places' }, h('div.side-list', sideLinks), sideTags, h('div.side-foot', credit()))
+  const sideViews = h('div.side-list')
+  const side = h('nav.side', { 'aria-label': 'Places' }, h('div.side-list', sideLinks), sideViews, sideTags, h('div.side-foot', credit()))
   const tabbar = h('nav.tabbar', { 'aria-label': 'Sections' }, TABS.map((x) => link(x.path, { class: 'tab', 'data-path': x.path }, ic(x.icon, 24, 1.8), h('span', x.label))))
 
   const reader = createReader({ onClose: () => closeReader(), onNext: (id, peek) => neighbour(id, peek) })
@@ -244,9 +246,20 @@ export function createApp() {
 
   /* ---- List pages --------------------------------------------------------------------------- */
 
-  function listPage({ key, title, source, chips = null, empty: emptyFor, archive = false, sub = null, start = 'all', actions = null, footer = null }) {
+  // How a list can be ordered; each page remembers its own.
+  const SORTS = [
+    { key: 'new', label: 'Newest first', fn: (a, b) => (b.saved || 0) - (a.saved || 0) },
+    { key: 'old', label: 'Oldest first', fn: (a, b) => (a.saved || 0) - (b.saved || 0) },
+    { key: 'short', label: 'Shortest first', fn: (a, b) => (a.words || 1e9) - (b.words || 1e9) },
+    { key: 'long', label: 'Longest first', fn: (a, b) => (b.words || 0) - (a.words || 0) },
+    { key: 'opened', label: 'Recently opened', fn: (a, b) => (b.opened || 0) - (a.opened || 0) || (b.saved || 0) - (a.saved || 0) }
+  ]
+  const sortOf = (key) => { try { return localStorage.getItem('shelf:sort:' + key) || '' } catch { return '' } }
+
+  function listPage({ key, title, source, chips = null, empty: emptyFor, archive = false, sub = null, start = 'all', actions = null, footer = null, sortable = true, extra = null }) {
     const panel = h('div.panel')
-    const head = h('div.page-head', h('h1.large-title', typeof title === 'function' ? title() : title), actions)
+    const moreBtn = h('button.icon-btn.is-quiet', { type: 'button', 'aria-label': 'Sort and select', title: 'Sort and select', 'aria-haspopup': 'menu', onclick: () => pageMenu() }, ic('ellipsis', 20, 2.1))
+    const head = h('div.page-head', h('h1.large-title', typeof title === 'function' ? title() : title), h('div.head-acts', actions, moreBtn))
     const chipRow = h('div.chips')
     const rows = h('div.rows')
     const more = h('div.list-end')
@@ -257,12 +270,84 @@ export function createApp() {
     let filter = start
     let shown = 0
     let list = []
+    let sort = sortOf(key)
+    let picked = null // ids, while selecting
 
     const filtered = () => {
       const base = source()
       const f = chips ? chips().find((c) => c.key === filter) : null
-      return f ? base.filter(f.test) : base
+      const out = f ? base.filter(f.test) : base
+      const s = SORTS.find((x) => x.key === sort)
+      return s ? out.slice().sort(s.fn) : out
     }
+
+    function pageMenu() {
+      menu(moreBtn, [
+        ...(sortable ? SORTS.map((x) => ({ label: ((sort || 'new') === x.key ? '✓ ' : '') + x.label, onclick: () => { sort = x.key === 'new' ? '' : x.key; try { localStorage.setItem('shelf:sort:' + key, sort) } catch {} draw(true) } })) : []),
+        sortable ? 'sep' : null,
+        { label: 'Select…', icon: 'listChecks', onclick: () => startPicking() },
+        ...(extra ? ['sep', ...extra()] : [])
+      ], { align: 'end' })
+    }
+
+    // Selecting: tap rows to pick them, then act on them all from the bar at the bottom.
+    const bar = h('div.pick-bar')
+    function startPicking() {
+      picked = new Set()
+      el.classList.add('is-picking')
+      drawBar()
+      root.append(bar)
+      // On a desk it sits under the list it acts on.
+      if (wide()) { const r = listCol.getBoundingClientRect(); bar.style.left = r.left + r.width / 2 + 'px' } else bar.style.left = ''
+      requestAnimationFrame(() => bar.classList.add('is-in'))
+      draw(true)
+    }
+    function stopPicking() {
+      picked = null
+      el.classList.remove('is-picking')
+      bar.classList.remove('is-in')
+      setTimeout(() => bar.remove(), 300)
+      draw(true)
+    }
+    function drawBar() {
+      const n = picked ? picked.size : 0
+      const ids = picked ? [...picked] : []
+      const any = (fn) => ids.some((id) => { const i = lib.items.get(id); return i && fn(i) })
+      const run = async (changes, done) => {
+        try { await bulk(ids, changes); toast(done(ids.length)); stopPicking() } catch (e) { failure(e) }
+      }
+      const feedOnly = ids.length && ids.every((id) => (lib.items.get(id) || {}).state === 'feed')
+      fill(bar,
+        h('button.btn.plain', { type: 'button', onclick: () => { if (picked.size === list.length) picked.clear(); else for (const i of list) picked.add(i.id); drawBar(); for (const r of rows.querySelectorAll('.row-item')) r.classList.toggle('is-picked', picked.has(r.dataset.id)) } }, picked && picked.size === list.length && list.length ? 'None' : 'All'),
+        h('b.pick-n', n ? plural(n, 'item') : 'Pick some'),
+        h('div.pick-acts',
+          feedOnly ? h('button.icon-btn', { type: 'button', disabled: !n, 'aria-label': 'Save to the reading list', title: 'Save to the reading list', onclick: () => run({ state: 'unread' }, (c) => plural(c, 'post') + ' saved') }, ic('bookmarkPlus', 20, 2)) : null,
+          !feedOnly ? h('button.icon-btn', { type: 'button', disabled: !n, 'aria-label': any((i) => i.state !== 'archived') ? 'Archive' : 'Back to the reading list', title: any((i) => i.state !== 'archived') ? 'Archive' : 'Back to the reading list', onclick: () => { const to = any((i) => i.state !== 'archived') ? 'archived' : 'unread'; run({ state: to }, (c) => to === 'archived' ? plural(c, 'item') + ' archived' : plural(c, 'item') + ' back on your list') } }, ic(any((i) => i.state !== 'archived') ? 'archive' : 'rotateCcw', 20, 2)) : null,
+          h('button.icon-btn', { type: 'button', disabled: !n, 'aria-label': 'Favourite', title: 'Favourite', onclick: () => { const on = any((i) => !i.fav); run({ fav: on }, (c) => on ? plural(c, 'favourite') + ' added' : 'Removed from Favourites') } }, ic('star', 20, 2)),
+          h('button.icon-btn', { type: 'button', disabled: !n, 'aria-label': 'Tag', title: 'Tag', onclick: async () => {
+            const { tagSheet } = await import('./review.js')
+            const t = await tagSheet([])
+            if (t && t.length) run({ addTags: t }, (c) => 'Tagged ' + plural(c, 'item'))
+          } }, ic('tag', 20, 2)),
+          h('button.icon-btn.is-danger', { type: 'button', disabled: !n, 'aria-label': 'Delete', title: 'Delete', onclick: async () => {
+            const { confirm } = await import('../ui.js')
+            if (await confirm({ title: 'Delete ' + plural(n, 'item') + '?', text: 'Their highlights and notes go too. This can’t be undone.', action: 'Delete' })) run({ delete: true }, (c) => plural(c, 'item') + ' deleted')
+          } }, ic('trash', 20, 2))),
+        h('button.btn.plain.strong', { type: 'button', onclick: () => stopPicking() }, 'Done'))
+    }
+    rows.addEventListener('click', (e) => {
+      if (!picked) return
+      const row = e.target.closest('.row-item')
+      if (!row) return
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      const id = row.dataset.id
+      if (picked.has(id)) picked.delete(id)
+      else picked.add(id)
+      row.classList.toggle('is-picked', picked.has(id))
+      haptic(6)
+      drawBar()
+    }, true)
 
     function drawChips() {
       if (!chips) { chipRow.hidden = true; return }
@@ -288,8 +373,10 @@ export function createApp() {
       const have = new Map([...rows.children].filter((c) => c.dataset.key).map((c) => [c.dataset.key, c]))
       const els = next.map((i) => {
         const old = have.get(i.id)
-        if (old && old.dataset.sig === sig(i)) { old.firstChild.nextSibling.classList.toggle('is-open', reading === i.id); return old }
-        return rowEl(i, { archive })
+        if (old && old.dataset.sig === sig(i)) { old.firstChild.nextSibling.classList.toggle('is-open', reading === i.id); old.firstChild.nextSibling.classList.toggle('is-picked', !!(picked && picked.has(i.id))); return old }
+        const made = rowEl(i, { archive })
+        if (picked && picked.has(i.id)) made.querySelector('.row-item').classList.add('is-picked')
+        return made
       })
       const mutate = () => { rows.replaceChildren(...els) }
       if (full || !have.size || reduced()) mutate()
@@ -314,6 +401,7 @@ export function createApp() {
       filter: () => filter,
       ids: () => list.map((i) => i.id),
       setOpen(id) { for (const r of rows.querySelectorAll('.row-item')) r.classList.toggle('is-open', r.dataset.id === id) },
+      leave() { if (picked) stopPicking() },
       rows
     }
   }
@@ -392,7 +480,7 @@ export function createApp() {
       ]
     }
     const p = listPage({
-      key: '/feed', title: 'Feed', source: inFeed, chips: feedChips, start: 'unseen', actions,
+      key: '/feed', title: 'Feed', source: inFeed, chips: feedChips, start: 'unseen', actions, sortable: false,
       empty: (f) => {
         const feeds = keptFeeds() || []
         if (!feeds.length) return feedWelcome()
@@ -415,6 +503,101 @@ export function createApp() {
     if (!keptFeeds()) loadFeeds().catch(() => {})
     return p
   }
+
+  // A saved view: a name and a query.
+  async function editView(view) {
+    let name, query
+    const result = await sheet({
+      title: view.id ? 'Change the view' : 'Save as a view',
+      done: 'Save',
+      onDone: (close) => {
+        if (!name.value.trim()) { name.focus(); return }
+        if (!parseQuery(query.value).filters.length && !query.value.trim()) { query.focus(); return }
+        close({ name: name.value.trim(), q: query.value.trim() })
+      },
+      body: () => {
+        name = h('input.field', { type: 'text', placeholder: 'Quick reads about design', maxlength: '40', autofocus: true, 'aria-label': 'Name' })
+        name.value = view.name || ''
+        query = h('input.field.is-mono', { type: 'text', maxlength: '300', 'aria-label': 'Query', autocapitalize: 'off', spellcheck: 'false' })
+        query.value = view.q || ''
+        return [h('div.sheet-label', 'Name'), name, h('div.sheet-label', 'Shows'), query, h('p.sheet-note', 'Filters like tag:design, in:list, minutes:<10, kind:book, has:highlights, saved:<7d and from:claude, with a minus to turn one around. Views sit in the sidebar.')]
+      }
+    })
+    if (!result || result === true) return
+    const views = keptViews().slice()
+    if (view.id) { const i = views.findIndex((x) => x.id === view.id); if (i >= 0) views[i] = { ...views[i], ...result } }
+    else views.push({ id: Math.random().toString(36).slice(2, 10), ...result })
+    try {
+      const saved = await saveViews(views)
+      const made = view.id ? saved.find((x) => x.id === view.id) : saved[saved.length - 1]
+      toast(view.id ? 'View changed' : 'View saved')
+      if (made) go('/view/' + made.id)
+    } catch (e) { failure(e) }
+  }
+
+  // ⌘K: a place, an article or something to do, by typing a few letters of it.
+  let palette = null
+  function openPalette() {
+    if (palette) { palette.close(); return }
+    const input = h('input.pal-field', { type: 'text', placeholder: 'Go to, find or do…', 'aria-label': 'Go to, find or do', autocomplete: 'off', spellcheck: 'false' })
+    const list = h('div.pal-list', { role: 'listbox' })
+    const box = h('div.pal', { role: 'dialog', 'aria-label': 'Command menu' }, h('div.pal-top', ic('search', 18, 2.1), input, h('kbd', 'esc')), list)
+    const layer = h('div.pal-layer', { onclick: (e) => { if (e.target === layer) close() } }, box)
+    document.body.append(layer)
+    requestAnimationFrame(() => layer.classList.add('is-in'))
+    input.focus()
+    let at = 0
+    let shown = []
+    const commands = () => [
+      ...PLACES.map((x) => ({ label: x.label, icon: x.icon, hint: 'Go', run: () => go(x.path) })),
+      { label: 'Search', icon: 'search', hint: 'Go', run: () => go('/search') },
+      ...keptViews().map((x) => ({ label: x.name, icon: 'layers', hint: 'View', run: () => go('/view/' + x.id) })),
+      { label: 'Today’s review', icon: 'repeat', hint: 'R', run: () => import('./review.js').then((m) => m.openReview()) },
+      { label: 'Save a link', icon: 'bookmarkPlus', hint: 'A', run: () => saveSheet() },
+      { label: 'Upload a book, PDF or Markdown file', icon: 'upload', run: () => import('../shell.js').then((m) => m.pickFile()) },
+      { label: 'Follow a site', icon: 'rss', run: () => followSheet() },
+      { label: 'Add a paper book', icon: 'bookPlus', run: () => import('../shell.js').then((m) => m.bookSheet()) },
+      { label: 'Bring in links, highlights, feeds', icon: 'fileUp', run: () => importSheet() },
+      { label: 'Export your shelf', icon: 'download', run: () => import('../shell.js').then((m) => m.exportSheet()) },
+      { label: 'Keyboard shortcuts', icon: 'keyboard', hint: '?', run: () => keysSheet() },
+      ...tags().slice(0, 30).map(({ tag }) => ({ label: '#' + tag, icon: 'hash', hint: 'Tag', run: () => go('/tags/' + encodeURIComponent(tag)) }))
+    ]
+    const score = (text, q) => {
+      const t = text.toLowerCase()
+      if (t.startsWith(q)) return 3
+      if (t.includes(' ' + q)) return 2
+      if (t.includes(q)) return 1
+      let i = 0
+      for (const ch of t) if (ch === q[i]) i++
+      return i === q.length ? 0.5 : 0
+    }
+    function draw() {
+      const q = input.value.trim().toLowerCase()
+      const cmds = commands().map((c) => ({ ...c, s: q ? score(c.label, q) : 1 })).filter((c) => c.s > 0).sort((a, b) => b.s - a.s)
+      const things = q ? all().map((i) => ({ i, s: score(i.title || i.host || '', q) })).filter((x) => x.s >= 1).sort((a, b) => b.s - a.s || (b.i.saved || 0) - (a.i.saved || 0)).slice(0, 8)
+        .map(({ i, s }) => ({ label: i.title || i.host, icon: i.kind === 'book' || i.kind === 'notes' ? 'book' : i.kind === 'pdf' ? 'fileText' : i.state === 'feed' ? 'rss' : 'bookOpen', hint: i.site || i.author || i.host || '', s, run: () => openItem(i.id) })) : []
+      shown = [...cmds.slice(0, q ? 6 : 12), ...things]
+      if (q && /\s|\?$/.test(q)) shown.push({ label: 'Search for “' + input.value.trim() + '”', icon: 'search', run: () => { go('/search?q=' + encodeURIComponent(input.value.trim())) } })
+      at = Math.min(at, Math.max(0, shown.length - 1))
+      fill(list, shown.length ? shown.map((c, n) => h('button.pal-item' + (n === at ? '.is-on' : ''), { type: 'button', role: 'option', onpointermove: () => { if (at !== n) { at = n; mark() } }, onclick: () => pick(c) }, h('span.pal-ic', ic(c.icon, 16, 2)), h('span.grow.trunc', c.label), c.hint ? h('small.trunc', c.hint) : null)) : h('div.pal-none', 'Nothing matches'))
+    }
+    const mark = () => [...list.children].forEach((el, n) => el.classList.toggle('is-on', n === at))
+    function pick(c) { close(); setTimeout(() => c.run(), 0) }
+    function close() { layer.classList.remove('is-in'); setTimeout(() => layer.remove(), 180); palette = null; document.removeEventListener('keydown', onKey, true) }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close() }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); at = Math.min(shown.length - 1, at + 1); mark(); list.children[at] && list.children[at].scrollIntoView({ block: 'nearest' }) }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); at = Math.max(0, at - 1); mark(); list.children[at] && list.children[at].scrollIntoView({ block: 'nearest' }) }
+      else if (e.key === 'Enter') { e.preventDefault(); if (shown[at]) pick(shown[at]) }
+    }
+    document.addEventListener('keydown', onKey, true)
+    input.addEventListener('input', () => { at = 0; draw() })
+    draw()
+    palette = { close }
+  }
+  document.addEventListener('keydown', (e) => {
+    if (root.isConnected && (e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K') && !document.querySelector('.layer')) { e.preventDefault(); openPalette() }
+  })
 
   // No feeds yet: a field to follow a site, an OPML file, and a few to start with.
   function feedWelcome() {
@@ -600,7 +783,8 @@ export function createApp() {
     const out = h('div')
     // A question gets an offer to ask the whole shelf, and the answer sits above the results.
     const askBox = h('div.ask-slot')
-    panel.append(head, box, askBox, out, h('div.list-end'))
+    const viewBox = h('div.view-slot')
+    panel.append(head, box, askBox, viewBox, out, h('div.list-end'))
     panel.addEventListener('scroll', () => updateTitle(panel), { passive: true })
     const el = h('section.page', panel)
     let q = ''
@@ -621,20 +805,33 @@ export function createApp() {
       const url = '/search' + (q ? '?q=' + encodeURIComponent(q) : '')
       if (location.pathname === '/search' && location.pathname + location.search !== url) history.replaceState({}, '', url)
       offerAsk()
-      if (!q) { fill(out, emptyState('search', 'Search your shelf', 'Find words in the titles, the articles you saved, and your highlights and notes. Ask a question to have it answered from them.')); return }
-      const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
-      const local = all().filter((i) => { const hay = [i.title, i.site, i.host, i.excerpt, i.note, ...(i.tags || [])].join(' ').toLowerCase(); return terms.every((t) => hay.includes(t)) }).sort((a, b) => (b.saved || 0) - (a.saved || 0))
+      if (!q) {
+        fill(viewBox)
+        const views = keptViews()
+        fill(out,
+          views.length ? [h('div.section-head', 'Views'), h('div.group.views-list', views.map((x) => h('button.row', { type: 'button', onclick: () => go('/view/' + x.id) }, h('span.row-ic', ic('layers', 16, 2)), h('div.grow', h('b', x.name), h('small.trunc', x.q)), h('span.side-count', String(applyQuery(all(), x.q).length)))))] : null,
+          h('div.empty', { style: { 'margin-top': views.length ? '5vh' : '9vh' } }, h('div.empty-ic', ic('search', 28, 1.7)), h('b', 'Search your shelf'), h('p', 'Find words in the titles, the articles you saved, and your highlights and notes. Ask a question to have it answered from them. Narrow it with:')),
+          h('div.query-help', QUERY_HELP.map(([k, what]) => h('button.chip', { type: 'button', title: what, onclick: () => { const t = (field.value ? field.value + ' ' : '') + k; field.value = t; searchInput.value = t; (isPhone() ? field : searchInput).focus(); } }, h('b', k), what))))
+        return
+      }
+      // Filters (tag:, in:, kind:, minutes:…) narrow the shelf; the other words are searched for.
+      const parsed = parseQuery(q)
+      const base = parsed.filters.length ? applyQuery(all(), parsed) : all()
+      const inBase = new Set(base.map((i) => i.id))
+      const terms = parsed.words.map((w) => w.toLowerCase()).filter(Boolean)
+      const local = base.filter((i) => { const hay = [i.title, i.site, i.host, i.excerpt, i.note, i.author, ...(i.tags || [])].join(' ').toLowerCase(); return terms.every((t) => hay.includes(t)) }).sort((a, b) => (b.saved || 0) - (a.saved || 0))
+      fill(viewBox, parsed.filters.length ? h('button.save-view', { type: 'button', onclick: () => editView({ name: '', q }) }, ic('layers', 15, 2.1), 'Save as a view') : null)
       const draw = (server) => {
         const seen = new Set(local.map((i) => i.id))
-        const deep = server ? server.results.filter((r) => !seen.has(r.id) && lib.items.has(r.id)) : []
-        const marks = server ? server.marks.filter((m) => lib.items.has(m.item)) : []
+        const deep = server ? server.results.filter((r) => !seen.has(r.id) && lib.items.has(r.id) && inBase.has(r.id)) : []
+        const marks = server ? server.marks.filter((m) => lib.items.has(m.item) && inBase.has(m.item)) : []
         const snippets = new Map(server ? server.results.map((r) => [r.id, r.snippet]) : [])
         if (!local.length && !deep.length && !marks.length) {
-          fill(out, server ? (question(q) ? null : emptyState('search', 'Nothing found', `Nothing on your shelf mentions “${q}”.`)) : h('div.empty', h('span.shimmer')))
+          fill(out, server ? (question(q) ? null : emptyState('search', 'Nothing found', parsed.filters.length && !terms.length ? 'Nothing on your shelf fits that.' : `Nothing on your shelf mentions “${q}”.`)) : h('div.empty', h('span.shimmer')))
           return
         }
         fill(out,
-          local.length ? [h('div.section-head', 'Titles', h('span.n', local.length.toLocaleString())), h('div.rows', local.slice(0, 50).map((i) => rowEl(i, { archive: i.state === 'archived' })))] : null,
+          local.length ? [h('div.section-head', terms.length ? 'Titles' : 'Found', h('span.n', local.length.toLocaleString())), h('div.rows', local.slice(0, terms.length ? 50 : 200).map((i) => rowEl(i, { archive: i.state === 'archived' })))] : null,
           deep.length ? [h('div.section-head', 'In articles', h('span.n', deep.length.toLocaleString())), h('div.rows', deep.map((r) => {
             const i = lib.items.get(r.id)
             const row = rowEl({ ...i, excerpt: '' }, { archive: i.state === 'archived' })
@@ -647,8 +844,9 @@ export function createApp() {
       draw(null)
       clearTimeout(timer)
       const mine = ++asked
+      if (!terms.length) { draw({ results: [], marks: [] }); return }
       timer = setTimeout(async () => {
-        try { const r = await api.get('/api/search?q=' + encodeURIComponent(q)); if (mine === asked) draw(r) } catch { if (mine === asked) draw({ results: [], marks: [] }) }
+        try { const r = await api.get('/api/search?q=' + encodeURIComponent(parsed.plain)); if (mine === asked) draw(r) } catch { if (mine === asked) draw({ results: [], marks: [] }) }
       }, 220)
     }
     field.addEventListener('input', () => run(field.value))
@@ -697,6 +895,19 @@ export function createApp() {
     if (key === '/search') return searchPage()
     const t = /^\/tags\/(.+)$/.exec(key)
     if (t) return listPage({ key, title: '#' + t[1], source: () => tagged(t[1]), empty: () => emptyState('tag', 'No links with this tag', 'Add tags to an article from its ⋯ menu.') })
+    const v = /^\/view\/([\w-]+)$/.exec(key)
+    if (v) {
+      const view = () => keptViews().find((x) => x.id === v[1]) || { name: 'View', q: '' }
+      return listPage({
+        key, title: () => view().name,
+        source: () => applyQuery(all(), view().q).sort((a, b) => (b.saved || 0) - (a.saved || 0)),
+        empty: () => emptyState('search', 'Nothing in this view', 'Nothing on your shelf fits “' + view().q + '” right now.'),
+        extra: () => [
+          { label: 'Change the view…', icon: 'pencil', onclick: () => editView(view()) },
+          { label: 'Delete the view', icon: 'trash', danger: true, onclick: async () => { await saveViews(keptViews().filter((x) => x.id !== v[1])); go('/'); toast('View deleted', { kind: 'info' }) } }
+        ]
+      })
+    }
     return null
   }
 
@@ -709,7 +920,7 @@ export function createApp() {
     const path = decodeURIComponent(location.pathname.replace(/\/+$/, '') || '/')
     const r = /^\/read\/([A-Za-z0-9_-]{6,64})$/.exec(path)
     if (r) return { read: r[1], at: new URLSearchParams(location.search).get('at') }
-    if (['/', '/feed', '/favourites', '/highlights', '/archive', '/search'].includes(path) || /^\/tags\/[^/]+$/.test(path)) return { key: path }
+    if (['/', '/feed', '/favourites', '/highlights', '/archive', '/search'].includes(path) || /^\/tags\/[^/]+$/.test(path) || /^\/view\/[\w-]+$/.test(path)) return { key: path }
     return { key: '/', missing: path !== '/' }
   }
 
@@ -724,12 +935,14 @@ export function createApp() {
     } else listKey = key
     const p = page(key)
     if (active !== p) {
+      if (active && active.leave) active.leave()
       fill(listCol, p.el)
       active = p
     }
     p.show()
     for (const a of [...sideLinks, ...tabbar.children]) a.classList.toggle('is-on', a.dataset.path === key)
     for (const a of sideTags.querySelectorAll('.side-item')) a.classList.toggle('is-on', a.dataset.path === key)
+    for (const a of sideViews.querySelectorAll('.side-item')) a.classList.toggle('is-on', a.dataset.path === key)
     smallTitle.textContent = p.title()
     document.title = r.read ? ((lib.items.get(r.read) || {}).title || 'Shelf') : (key === '/' ? 'Shelf' : p.title() + ' · Shelf')
     if (key === '/search') { if (document.activeElement !== searchInput && wide()) searchInput.value = new URLSearchParams(location.search).get('q') || '' }
@@ -741,6 +954,14 @@ export function createApp() {
 
   function counts() {
     PLACES.forEach((x, n) => { const c = x.count(); sideLinks[n].querySelector('.side-count').textContent = c ? c.toLocaleString() : '' })
+    const views = keptViews()
+    const vkey = views.map((x) => x.id + x.name + x.q).join() + '|' + lib.v
+    if (sideViews.dataset.key !== vkey) {
+      sideViews.dataset.key = vkey
+      const items = all()
+      fill(sideViews, views.length ? h('div.side-h', 'Views') : null, views.map((x) => link('/view/' + x.id, { class: 'side-item side-view', 'data-path': '/view/' + x.id, title: x.q }, ic('layers', 17, 1.9), h('span.grow.trunc', x.name), h('span.side-count', String(applyQuery(items, x.q).length || '')))))
+      for (const a of sideViews.querySelectorAll('.side-item')) a.classList.toggle('is-on', active && a.dataset.path === active.key)
+    }
     const list = tags()
     const key = list.map((t) => t.tag + t.n).join()
     if (sideTags.dataset.key !== key) {
@@ -898,20 +1119,21 @@ export function createApp() {
     }
     // Several changes in a row redraw once.
     pending = pending
-      ? { full: pending.full || change.full, marks: pending.marks || change.marks, review: pending.review || change.review, item: change.item || pending.item }
-      : { full: change.full, marks: change.marks, review: change.review, item: change.item }
+      ? { full: pending.full || change.full, marks: pending.marks || change.marks, review: pending.review || change.review, item: change.item || pending.item, views: pending.views || change.views }
+      : { full: change.full, marks: change.marks, review: change.review, item: change.item, views: change.views }
     requestAnimationFrame(() => {
       if (!pending) return
       const c = pending
       pending = null
       if (active) active.change(c)
+      if (c.views) counts()
       for (const [key, p] of pages) if (p !== active && p.stale !== true) p.stale = true
       counts()
       markCursor()
     })
   })
 
-  setTimeout(() => { loadFeeds().then((f) => { if (f.length) checkFeeds() }).catch(() => {}) }, 2500)
+  setTimeout(() => { loadFeeds().then((f) => { if (f.length) checkFeeds() }).catch(() => {}); loadViews().catch(() => {}) }, 2500)
 
   return {
     el: root,

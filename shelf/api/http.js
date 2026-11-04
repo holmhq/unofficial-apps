@@ -130,6 +130,54 @@ async function route(request, env, url) {
 
   if (path === '/api/fetch' && method === 'GET') return fetchPage(env, k, url.searchParams.get('url'))
 
+  // Saved views: a name and a query, shown as places in the sidebar.
+  if (path === '/api/views') {
+    if (method === 'GET') return json({ views: kv.get('views:' + k) || [] })
+    if (method === 'PUT') {
+      const input = await body(request, 20_000)
+      const views = (Array.isArray(input.views) ? input.views : []).map((x) => ({ id: String(x && x.id || '').replace(/[^\w-]/g, '').slice(0, 24) || crypto.randomUUID().slice(0, 8), name: String(x && x.name || '').replace(/\s+/g, ' ').trim().slice(0, 40), q: String(x && x.q || '').replace(/\s+/g, ' ').trim().slice(0, 300) })).filter((x) => x.name && x.q).slice(0, 24)
+      kv.set('views:' + k, views)
+      const v = bump(env, k, { views: true }, from)
+      return json({ views, v })
+    }
+  }
+
+  // Many at once: archive, favourite, tag or delete what's selected.
+  if (path === '/api/items/bulk' && method === 'POST') {
+    const input = await body(request, 200_000)
+    const ids = Array.isArray(input.ids) ? input.ids.filter((id) => typeof id === 'string').slice(0, 500) : []
+    const started = Date.now()
+    let done = 0
+    for (const id of ids) {
+      if (Date.now() - started > 2400) break
+      const doc = getItem(env, k, id)
+      done++
+      if (!doc) continue
+      if (input.delete === true) {
+        for (const quote of ds.find('quotes', { k, item: id }, { limit: 500 })) { ds.delete('quotes', { id: quote.id }); try { env.holm.app.s3.delete('q/' + quote.slug + '.png') } catch {} }
+        ds.delete(ITEMS(k), { id })
+        ds.delete(TEXT(k), { item: id })
+        ds.delete(MARKS(k), { item: id })
+        try { env.holm.app.s3.delete('c/' + k + '/' + id) } catch {}
+        if (doc.kind === 'pdf') try { env.holm.app.s3.delete('f/' + k + '/' + id + '.pdf') } catch {}
+        forgetURL(env, k, doc.url)
+        continue
+      }
+      const set = {}
+      if (input.state === 'archived' || input.state === 'unread') {
+        set.state = input.state
+        set.read = input.state === 'archived' ? Date.now() : 0
+        if (doc.state === 'feed') { set.saved = Date.now(); set.seen = true }
+      }
+      if (input.seen === true && doc.state === 'feed') set.seen = true
+      if (typeof input.fav === 'boolean') set.fav = input.fav
+      if (Array.isArray(input.addTags) && input.addTags.length) set.tags = cleanTags([...(doc.tags || []), ...input.addTags])
+      if (Object.keys(set).length) ds.update(ITEMS(k), { id }, { $set: set })
+    }
+    const v = bump(env, k, { full: true }, from)
+    return json({ done, v })
+  }
+
   // Every highlight, newest first, a thousand at a time (a Kindle library can hold many more).
   if (path === '/api/highlights' && method === 'GET') {
     const cursor = url.searchParams.get('cursor')
