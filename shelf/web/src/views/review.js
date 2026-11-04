@@ -35,7 +35,34 @@ export async function openReview({ tag = '', item = '', title = '', again = fals
   const noteBtn = h('button.icon-btn.rv-act', { type: 'button', 'aria-label': 'Note', title: 'Note (N)', onclick: () => editNote() }, ic('notebookPen', 21, 1.9))
   const backBtn = h('button.icon-btn.rv-act', { type: 'button', 'aria-label': 'Previous', title: 'Previous (←)', onclick: () => move(-1) }, ic('arrowLeft', 21, 2))
   const nextBtn = h('button.btn.primary.large.rv-next', { type: 'button', onclick: () => keep() }, h('span', 'Next'), ic('arrowRight', 19, 2.3))
-  const bar = h('div.rv-bar', h('div.rv-tools', backBtn, favBtn, tagBtn, noteBtn), nextBtn)
+  const showBtn = h('button.btn.primary.large.rv-next', { type: 'button', onclick: () => reveal() }, 'Show the answer')
+  const missBtn = h('button.btn.large.rv-miss', { type: 'button', onclick: () => recall('missed') }, 'Missed it')
+  const gotBtn = h('button.btn.primary.large.rv-got', { type: 'button', onclick: () => recall('got') }, ic('check', 18, 2.4), 'Got it')
+  const actions = h('div.rv-acts', nextBtn)
+  const bar = h('div.rv-bar', h('div.rv-tools', backBtn, favBtn, tagBtn, noteBtn), actions)
+  // A plain highlight moves on with Next; a flashcard asks for its answer, then how it went.
+  function drawTools(c) {
+    const answering = !!(c && c.mark.card && !done.has(c.mark.id))
+    bar.classList.toggle('is-recall', answering && revealed)
+    if (answering) fill(actions, revealed ? [missBtn, gotBtn] : showBtn)
+    else fill(actions, nextBtn)
+  }
+  function reveal() {
+    const c = current()
+    if (!c || !c.mark.card) return
+    revealed = true
+    const old = stage.querySelector('.rv-card:not(.is-out-l):not(.is-out-r)')
+    const el = cardEl(c)
+    if (old) old.replaceWith(el)
+    swipe(el)
+    drawTools(c)
+  }
+  function recall(how) {
+    const c = current()
+    if (!c) return
+    haptic(how === 'got' ? 12 : 6)
+    act(how)
+  }
   const box = h('div.review', { role: 'dialog', 'aria-modal': 'true', 'aria-label': themed ? 'Review' : 'Daily review' }, top, prog, stage, bar)
   document.body.append(box)
   open = box
@@ -71,8 +98,32 @@ export async function openReview({ tag = '', item = '', title = '', again = fals
     return n < 120 ? 'is-l' : n < 300 ? 'is-m' : n < 700 ? 'is-s' : 'is-xs'
   }
 
+  // A flashcard shows its blanks or its question until the answer is asked for.
+  let revealed = false
+  function front(m) {
+    if (m.card.type === 'qa') return [h('div.rv-question', m.card.q), revealed ? h('blockquote.rv-quote.is-answer.' + size(m.quote), h('span', m.quote)) : null]
+    const hide = new Set(m.card.hide)
+    let n = -1
+    const parts = m.quote.split(/(\s+)/).map((part) => {
+      if (/^\s+$/.test(part) || !part) return part
+      n++
+      if (!hide.has(n)) return part
+      return revealed ? h('b.cz-shown', part) : h('span.cz-blank', { style: { width: Math.max(2.2, part.length * 0.55) + 'em' } })
+    })
+    return [h('blockquote.rv-quote.' + size(m.quote), h('span', parts))]
+  }
+
   function cardEl(c) {
     const { mark: m, item: src } = c
+    if (m.card) {
+      return h('article.rv-card.is-flash-card', { 'data-id': m.id },
+        h('button.rv-src', { type: 'button', title: src.url || src.title, onclick: () => openSource(c) },
+          cover(src),
+          h('div.grow', h('b', src.title), h('small', [src.author, src.kind === 'article' ? (src.site || src.host) : ''].filter(Boolean).join(' · ') || src.host || 'Book')),
+          h('span.rv-badge', ic('brain', 13, 2.2), 'Recall')),
+        front(m),
+        revealed && m.note ? h('div.rv-note', ic('notebookPen', 15, 2), h('div', m.note)) : null)
+    }
     return h('article.rv-card', { 'data-id': m.id },
       h('button.rv-src', { type: 'button', title: src.url || src.title, onclick: () => openSource(c) },
         cover(src),
@@ -91,6 +142,8 @@ export async function openReview({ tag = '', item = '', title = '', again = fals
     if (!c) { finish(); return }
     bar.hidden = false
     moreBtn.hidden = false
+    revealed = false
+    drawTools(c)
     count.textContent = `${at + 1} of ${cards.length}`
     backBtn.disabled = at === 0
     favBtn.classList.toggle('is-on', !!c.mark.fav)
@@ -240,6 +293,7 @@ export async function openReview({ tag = '', item = '', title = '', again = fals
         { label: 'Show again much later', icon: 'chevronsDown', onclick: () => act('later').then(() => toast('It’ll come back in a few months')) },
         { label: 'Don’t show this again', icon: 'eyeOff', onclick: () => discard(c) },
         'sep',
+        { label: c.mark.card ? 'Change the flashcard…' : 'Make a flashcard…', icon: 'brain', onclick: async () => { const after = await cardSheet(c.mark); if (after) { c.mark = after; draw() } } },
         { label: c.item.kind === 'article' ? 'How often this article comes up…' : 'How often this book comes up…', icon: 'repeat', onclick: () => frequency(c) },
         lib.items.get(c.item.id) ? { label: c.item.kind === 'notes' ? 'Open the book' : 'Open where it was highlighted', icon: 'bookOpen', onclick: () => openSource(c) } : null
       )
@@ -322,7 +376,9 @@ export async function openReview({ tag = '', item = '', title = '', again = fals
       pid = null
       if (mode !== 'x') return
       el.style.transition = ''
-      if (dx < -80) { haptic(12); el.style.transform = ''; keep() }
+      const c1 = current()
+      if (dx < -80 && c1 && c1.mark.card && !done.has(c1.mark.id)) { el.style.transform = ''; if (!revealed) reveal() }
+      else if (dx < -80) { haptic(12); el.style.transform = ''; keep() }
       else if (dx > 80 && at > 0) { el.style.transform = ''; move(-1) }
       else el.style.transform = ''
     }
@@ -336,6 +392,12 @@ export async function openReview({ tag = '', item = '', title = '', again = fals
     const k = e.key
     if (k === 'Escape') { e.preventDefault(); close(); return }
     if (!current()) { if (k === 'Enter') { e.preventDefault(); close() } return }
+    const c0 = current()
+    if (c0 && c0.mark.card && !done.has(c0.mark.id)) {
+      if (!revealed && (k === ' ' || k === 'Enter' || k === 'ArrowRight')) { e.preventDefault(); reveal(); return }
+      if (revealed && (k === '1' || k === 'm')) { e.preventDefault(); recall('missed'); return }
+      if (revealed && (k === '2' || k === 'g' || k === 'Enter' || k === ' ')) { e.preventDefault(); recall('got'); return }
+    }
     if (k === 'ArrowRight' || k === ' ' || k === 'Enter') { if (e.target.closest && e.target.closest('button') && k !== 'ArrowRight') return; e.preventDefault(); keep() }
     else if (k === 'ArrowLeft') { e.preventDefault(); move(-1) }
     else if (k === 'f' || k === 'F') { e.preventDefault(); toggleFav() }
@@ -365,6 +427,52 @@ export async function openReview({ tag = '', item = '', title = '', again = fals
   } catch (e) {
     if (!data) { fill(stage, h('div.rv-empty', h('div.rv-flame.is-quiet', ic('wifiOff', 28, 1.8)), h('h2', 'The review can’t load'), h('p', e.message), h('button.btn.large', { type: 'button', onclick: () => close() }, 'Close'))); bar.hidden = true }
   }
+}
+
+// A flashcard from a highlight: tap the words to hide, or write the question it answers.
+export async function cardSheet(m) {
+  let mode = m.card ? m.card.type : 'cloze'
+  const words = m.quote.split(/\s+/).filter(Boolean)
+  const hide = new Set(m.card && m.card.type === 'cloze' ? m.card.hide : [])
+  let question
+  let note
+  const result = await sheet({
+    title: m.card ? 'Flashcard' : 'Make a flashcard',
+    done: 'Save',
+    onDone: (close) => {
+      if (mode === 'cloze') {
+        if (!hide.size) { note.textContent = 'Tap the words to hide first.'; note.classList.add('is-bad'); return }
+        close({ type: 'cloze', hide: [...hide] })
+      } else {
+        if (!question.value.trim()) { question.focus(); return }
+        close({ type: 'qa', q: question.value.trim() })
+      }
+    },
+    body: (close) => {
+      const panel = h('div.cz-panel')
+      const drawPanel = () => {
+        if (mode === 'cloze') {
+          note = h('p.sheet-note', 'Tap the words you want to remember. In your review they’re hidden until you’ve recalled them.')
+          fill(panel, h('div.cz-words', words.map((w, n) => h('button.cz-word' + (hide.has(n) ? '.is-hidden' : ''), { type: 'button', 'aria-pressed': String(hide.has(n)), onclick: (e) => { hide.has(n) ? hide.delete(n) : hide.add(n); e.currentTarget.classList.toggle('is-hidden', hide.has(n)); e.currentTarget.setAttribute('aria-pressed', String(hide.has(n))) } }, w))), note)
+        } else {
+          question = h('textarea.field', { placeholder: 'What does this answer?', maxlength: '300', 'aria-label': 'Question', autofocus: true })
+          question.value = m.card && m.card.type === 'qa' ? m.card.q : ''
+          note = h('p.sheet-note', 'The highlight is the answer. Your review asks the question, then shows it.')
+          fill(panel, question, h('blockquote.sheet-quote', m.quote.length > 260 ? m.quote.slice(0, 250).trim() + '…' : m.quote), note)
+        }
+      }
+      const seg = segmented([{ value: 'cloze', label: 'Hide words' }, { value: 'qa', label: 'Ask a question' }], mode, (v) => { mode = v; drawPanel() }, { label: 'Kind of card' })
+      drawPanel()
+      return [seg, panel, m.card ? h('button.btn.plain.block', { type: 'button', style: { color: 'var(--red-text)' }, onclick: () => close('remove') }, 'Remove the flashcard') : null]
+    }
+  })
+  if (!result || result === true) return null
+  try {
+    const after = await editMark(m.item, m.id, { card: result === 'remove' ? null : result })
+    lib.highlights = null
+    toast(result === 'remove' ? 'Flashcard removed' : m.card ? 'Flashcard changed' : 'Flashcard made. It comes up in your daily review.')
+    return after
+  } catch (e) { failure(e); return null }
 }
 
 // Tags for a highlight: the ones used before to tap, or a new one.

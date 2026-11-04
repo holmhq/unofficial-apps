@@ -134,8 +134,21 @@ export function markDTO(m) {
   return {
     id: m.id, item: m.item, quote: m.quote, prefix: m.prefix || '', suffix: m.suffix || '', start: m.start || 0, end: m.end || 0,
     note: m.note || '', at: m.at || m._createdAt, share: m.share || '', loc: m.loc || '', tags: Array.isArray(m.tags) ? m.tags : [],
-    fav: !!m.fav, skip: !!m.skip, due: m.due || 0
+    fav: !!m.fav, skip: !!m.skip, due: m.due || 0,
+    card: m.card && typeof m.card === 'object' ? m.card : null, cardDue: m.cardDue || 0
   }
+}
+
+// A flashcard made from a highlight: words of it hidden (cloze), or a question it answers.
+export function cleanCard(card, quote) {
+  if (!card || typeof card !== 'object') return null
+  if (card.type === 'qa' && typeof card.q === 'string' && card.q.trim()) return { type: 'qa', q: card.q.replace(/\s+/g, ' ').trim().slice(0, 300) }
+  if (card.type === 'cloze' && Array.isArray(card.hide)) {
+    const words = String(quote || '').split(/\s+/).filter(Boolean).length
+    const hide = [...new Set(card.hide.map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n < words))].sort((a, b) => a - b).slice(0, 40)
+    return hide.length ? { type: 'cloze', hide } : null
+  }
+  return null
 }
 
 export const minutes = (words) => Math.max(1, Math.round((words || 0) / 230))

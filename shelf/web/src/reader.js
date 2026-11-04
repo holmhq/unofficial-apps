@@ -5,7 +5,8 @@
 // quoted words and a little text either side, so they find their place again even if the
 // article is fetched afresh.
 
-import { h, ic, fill, toast, menu, sheet, copyText, haptic, reduced, wide, closeMenus } from './ui.js'
+import { h, ic, fill, toast, menu, sheet, copyText, haptic, reduced, wide, closeMenus, toggle } from './ui.js'
+import * as api from './api.js'
 import { starFill } from './icons.js'
 import { lib, on, update, remove, progress, article, marksFor, addMark, noteMark, editMark, removeMark, summarize, makeReadable, isWorking, minutes, tone, tags as allTags, findCover } from './store.js'
 import { failure, go } from './shell.js'
@@ -378,6 +379,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
         m.fav ? h('span.star', starFill(11)) : null,
         m.loc ? h('span', m.loc) : null,
         (m.tags || []).map((t) => h('span.nb-tag', h('i', { style: { background: tone(t) } }), t)),
+        m.card ? h('span.nb-tag', ic('brain', 12, 2.2), 'Flashcard') : null,
         m.skip ? h('span', 'Not in reviews') : null))))
   }
 
@@ -386,6 +388,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
       { label: m.fav ? 'Remove from favourites' : 'Favourite', icon: 'star', onclick: () => saveNote(m, { fav: !m.fav }) },
       { label: m.note ? 'Edit note' : 'Add a note', icon: 'notebookPen', onclick: () => editNote(m) },
       { label: 'Tags…', icon: 'tag', onclick: async () => { const { tagSheet } = await import('./views/review.js'); const tags = await tagSheet(m.tags || [], m.quote); if (tags) saveNote(m, { tags }) } },
+      { label: m.card ? 'Flashcard…' : 'Make a flashcard…', icon: 'brain', onclick: async () => { const { cardSheet } = await import('./views/review.js'); const after = await cardSheet(m); if (after) { marks = marks.map((x) => (x.id === m.id ? after : x)); drawNotes() } } },
       !m.end ? { label: 'Edit highlight', icon: 'pencil', onclick: () => addTyped(m) } : null,
       { label: 'Copy', icon: 'copy', onclick: () => copyText(m.quote, 'Copied') },
       'sep',
@@ -504,6 +507,7 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
         { label: 'Review this book', icon: 'repeat', onclick: () => import('./views/review.js').then((m) => m.openReview({ item: it.id, title: it.title })) },
         { label: 'Add a highlight', icon: 'plus', onclick: () => addTyped() },
         { label: 'Title and author…', icon: 'pencil', onclick: () => editBook(it) },
+        it.marks ? { label: 'Share your highlights…', icon: 'share', onclick: () => shareAll(it) } : null,
         'sep',
         { label: 'Delete the book', icon: 'trash', danger: true, onclick: () => deleteItem(it.id) }
       ], { align: 'end' })
@@ -517,10 +521,40 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
       !it.url ? null : canShare ? { label: 'Share…', icon: 'share', onclick: () => navigator.share({ title: it.title, url: it.url }).catch(() => {}) } : { label: 'Copy link', icon: 'link', onclick: () => copyText(it.url, 'Link copied') },
       { label: 'Tags and note…', icon: 'tag', onclick: () => editTags(it.id) },
       { label: 'Title and author…', icon: 'pencil', onclick: () => editBook(it) },
+      it.marks ? { label: 'Share your highlights…', icon: 'share', onclick: () => shareAll(it) } : null,
       it.status === 'ready' && it.url && it.kind !== 'pdf' ? { label: 'Fetch the article again', icon: 'refreshCw', onclick: () => refetch() } : null,
       'sep',
       { label: 'Delete', icon: 'trash', danger: true, onclick: () => deleteItem(it.id) }
     ], { align: 'end' })
+  }
+
+  // A public page with this one's highlights, always the current ones; notes if you say so.
+  async function shareAll(it) {
+    let state0
+    try { state0 = await api.get('/api/items/' + it.id + '/share') } catch (e) { failure(e); return }
+    let notes = !!state0.notes
+    let slug = state0.slug
+    const make = async () => { const r = await api.post('/api/items/' + it.id + '/share', { notes }); slug = r.slug; return r }
+    try { if (!slug) await make() } catch (e) { failure(e); return }
+    const url = () => location.origin + '/s/' + slug
+    sheet({
+      title: 'Share your highlights',
+      cancel: null,
+      done: 'Done',
+      body: (close) => {
+        const field = h('input.field.is-mono', { type: 'text', value: url(), readonly: true, 'aria-label': 'Link', onfocus: (e) => e.target.select() })
+        return [
+          h('p.sheet-note', `Anyone with the link sees your ${it.marks === 1 ? 'highlight' : it.marks + ' highlights'} from “${it.title}”, its title and link, and your first name. It stays up to date as you highlight.`),
+          h('div.save-field', field, h('button.btn', { type: 'button', onclick: () => copyText(url(), 'Link copied') }, ic('copy', 17, 2), 'Copy')),
+          h('label.row.share-notes', h('div.grow', h('b', 'Show my notes too'), h('small', 'Off, your notes stay private.')), toggle(notes, async (on) => { notes = on; try { await make() } catch (e) { failure(e) } }, 'Show my notes too')),
+          navigator.share && !wide() ? h('button.btn.primary.large.block', { type: 'button', onclick: () => navigator.share({ url: url(), title: 'Highlights from ' + it.title }).catch(() => {}) }, ic('share', 18, 2), 'Share…') : null,
+          h('a.btn.plain.block', { href: '/s/' + slug, target: '_blank', rel: 'noopener' }, ic('externalLink', 16, 2), 'See the page'),
+          h('button.btn.plain.block', { type: 'button', style: { color: 'var(--red-text)' }, onclick: async () => {
+            try { await api.del('/api/items/' + it.id + '/share'); close(); toast('The link no longer works') } catch (e) { failure(e) }
+          } }, 'Stop sharing')
+        ]
+      }
+    })
   }
 
   async function editBook(it) {
@@ -833,6 +867,12 @@ export function createReader({ onClose = () => {}, onNext = null } = {}) {
         try { const after = await editMark(item.id, m.id, { tags }); marks = marks.map((x) => (x.id === m.id ? after : x)); lib.highlights = null; toast(tags.length ? 'Tagged' : 'Tags removed') } catch (e) { failure(e) }
       } }, ic('tag', 16, 2), m.tags && m.tags.length ? m.tags.length === 1 ? m.tags[0] : m.tags.length + ' tags' : 'Tag'),
       h('button', { type: 'button', onclick: async () => { closePops(); const { shareHighlight } = await import('./share.js'); shareHighlight(item, m) } }, ic(m.share ? 'link' : 'share', 16, 2), m.share ? 'Shared' : 'Share'),
+      h('button.is-icon' + (m.card ? '.is-on' : ''), { type: 'button', 'aria-label': m.card ? 'Flashcard' : 'Make a flashcard', title: m.card ? 'Flashcard' : 'Make a flashcard', onclick: async () => {
+        closePops()
+        const { cardSheet } = await import('./views/review.js')
+        const after = await cardSheet(m)
+        if (after) marks = marks.map((x) => (x.id === m.id ? after : x))
+      } }, ic('brain', 16, 2)),
       h('button.is-icon', { type: 'button', 'aria-label': 'Copy', title: 'Copy', onclick: () => { copyText(m.quote, 'Copied'); closePops() } }, ic('copy', 16, 2)),
       h('button.danger.is-icon', { type: 'button', 'aria-label': 'Remove', title: 'Remove', onclick: async () => {
         closePops()

@@ -27,7 +27,7 @@
 
 import {
   who, fail, Fail, ITEMS, TEXT, MARKS, itemDTO, markDTO, getItem, allItems, saveLink, forgetURL, cleanTags, bump, channel,
-  version, sha, minutes, host, LIMIT
+  version, sha, minutes, host, LIMIT, cleanCard
 } from './lib.js'
 export { markDTO }
 
@@ -68,6 +68,9 @@ async function route(request, env, url) {
   const from = request.headers.get('x-shelf-page') || ''
 
   if (path === '/api/me' && method === 'GET') return me(env, url)
+
+  const shared = /^\/(api\/)?s\/([A-Za-z0-9]{8,32})$/.exec(path)
+  if (shared && method === 'GET') return shared[1] ? sharedJSON(env, shared[2]) : sharedPage(env, url, shared[2])
 
   const q = /^\/(api\/)?q\/([A-Za-z0-9]{8,32})(\/card(?:\.png)?)?$/.exec(path)
   if (q && method === 'GET') {
@@ -155,6 +158,7 @@ async function route(request, env, url) {
       if (!doc) continue
       if (input.delete === true) {
         for (const quote of ds.find('quotes', { k, item: id }, { limit: 500 })) { ds.delete('quotes', { id: quote.id }); try { env.holm.app.s3.delete('q/' + quote.slug + '.png') } catch {} }
+        for (const page of ds.find('pages', { k, item: id }, { limit: 5 })) ds.delete('pages', { id: page.id })
         ds.delete(ITEMS(k), { id })
         ds.delete(TEXT(k), { item: id })
         ds.delete(MARKS(k), { item: id })
@@ -234,6 +238,7 @@ async function route(request, env, url) {
 
     if (part === '' && method === 'DELETE') {
       for (const quote of ds.find('quotes', { k, item: id }, { limit: 500 })) { ds.delete('quotes', { id: quote.id }); try { env.holm.app.s3.delete('q/' + quote.slug + '.png') } catch {} }
+      for (const page of ds.find('pages', { k, item: id }, { limit: 5 })) ds.delete('pages', { id: page.id })
       ds.delete(ITEMS(k), { id })
       ds.delete(TEXT(k), { item: id })
       ds.delete(MARKS(k), { item: id })
@@ -295,6 +300,28 @@ async function route(request, env, url) {
     }
   }
 
+  // An article's highlights on a public page that always shows the current ones.
+  m = /^\/api\/items\/([A-Za-z0-9_-]+)\/share$/.exec(path)
+  if (m) {
+    const doc = getItem(env, k, m[1])
+    if (!doc) return err(404, 'not_found', 'That isn’t on your shelf any more.')
+    const kept = ds.find('pages', { k, item: doc.id }, { limit: 1 })[0]
+    if (method === 'GET') return json(kept ? { slug: kept.slug, notes: !!kept.notes } : { slug: null })
+    if (method === 'POST') {
+      const input = await body(request, 2000)
+      const notes = input.notes === true
+      if (kept) { ds.update('pages', { id: kept.id }, { $set: { notes } }); return json({ slug: kept.slug, notes }) }
+      const slug = crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+      const by = String(caller.member.name || '').trim().split(/\s+/)[0].slice(0, 40)
+      ds.insert('pages', { slug, k, item: doc.id, notes, by, at: Date.now() })
+      return json({ slug, notes }, 201)
+    }
+    if (method === 'DELETE') {
+      if (kept) ds.delete('pages', { id: kept.id })
+      return json({ ok: true })
+    }
+  }
+
   m = /^\/api\/marks\/([A-Za-z0-9_-]+)\/share$/.exec(path)
   if (m) {
     const mark = ds.findOne(MARKS(k), m[1])
@@ -347,6 +374,10 @@ async function route(request, env, url) {
       if (typeof input.fav === 'boolean') set.fav = input.fav
       if (typeof input.quote === 'string' && input.quote.trim() && !mark.end) set.quote = input.quote.trim().slice(0, 5000)
       if (typeof input.loc === 'string' && !mark.end) set.loc = input.loc.replace(/\s+/g, ' ').trim().slice(0, 40)
+      if ('card' in input) {
+        set.card = cleanCard(input.card, set.quote || mark.quote)
+        if (set.card && !mark.card) { set.cardDue = Date.now(); set.cardIvl = 0 }
+      }
       ds.update(MARKS(k), { id: mark.id }, { $set: set })
       const after = markDTO({ ...mark, ...set })
       const v = bump(env, k, { mark: after }, from)
@@ -609,6 +640,54 @@ async function quotePage(env, url, slug) {
   headers.set('content-type', 'text/html; charset=utf-8')
   headers.set('cache-control', 'no-store')
   return new Response(html, { status: q ? 200 : 404, headers })
+}
+
+function sharedDoc(env, slug) {
+  return env.holm.app.ds.find('pages', { slug }, { limit: 1 })[0] || null
+}
+
+// What anyone with the link sees: the article, its highlights now, and notes if the owner chose.
+function sharedData(env, slug) {
+  const page = sharedDoc(env, slug)
+  if (!page) return null
+  const doc = getItem(env, page.k, page.item)
+  if (!doc) return null
+  const marks = env.holm.app.ds.find(MARKS(page.k), { item: doc.id }, { limit: 1000, order: 'asc' })
+  const num = (m) => { const n = /\d+/.exec(m.loc || ''); return n ? Number(n[0]) : 0 }
+  marks.sort((a, b) => (a.end ? a.start - b.start : 0) || num(a) - num(b) || (a.at || 0) - (b.at || 0))
+  return {
+    title: doc.title || doc.host || 'Untitled', url: doc.url || '', site: doc.site || '', host: doc.host || '', author: doc.author || '',
+    kind: doc.kind || 'article', image: doc.img ? '/i/' + doc.img : null, by: page.by || '', at: page.at,
+    highlights: marks.filter((m) => !m.skip).map((m) => ({ quote: String(m.quote).replace(/\s+/g, ' ').trim(), note: page.notes ? m.note || '' : '', loc: m.loc || '' }))
+  }
+}
+
+function sharedJSON(env, slug) {
+  const data = sharedData(env, slug)
+  if (!data) return err(404, 'not_found', 'This page isn’t shared any more.')
+  return json(data, 200, { 'cache-control': 'no-store' })
+}
+
+async function sharedPage(env, url, slug) {
+  const shell = await env.holm.web.fetch(new Request(new URL('/', url), { headers: { accept: 'text/html' } }))
+  let html = await shell.text()
+  const data = sharedData(env, slug)
+  if (data) {
+    const title = esc('Highlights from ' + data.title)
+    const n = data.highlights.length
+    const description = esc(n + (n === 1 ? ' highlight' : ' highlights') + (data.by ? ' by ' + data.by : '') + ' from ' + data.title + (data.site || data.host ? ' · ' + (data.site || data.host) : '') + ', in Shelf.')
+    const image = esc(url.origin + (data.image || '/social_preview.png'))
+    html = html
+      .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+      .replace(/<meta[^>]+(property|name)="(og:title|og:description|og:image|og:url|og:type|twitter:title|twitter:description|twitter:image|twitter:card|description)"[^>]*>\s*/g, '')
+      .replace('</head>', `<meta name="description" content="${description}">\n<meta property="og:type" content="article">\n<meta property="og:title" content="${title}">\n<meta property="og:description" content="${description}">\n<meta property="og:image" content="${image}">\n<meta property="og:url" content="${esc(url.origin + url.pathname)}">\n<meta name="twitter:card" content="summary_large_image">\n</head>`)
+  }
+  const headers = new Headers(shell.headers)
+  headers.delete('content-length')
+  headers.delete('etag')
+  headers.set('content-type', 'text/html; charset=utf-8')
+  headers.set('cache-control', 'no-store')
+  return new Response(html, { status: data ? 200 : 404, headers })
 }
 
 function esc(value) {

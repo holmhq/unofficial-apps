@@ -769,6 +769,20 @@ mark.hl.is-flash { animation: flash 1.4s var(--ease-out); }
 .qp-mark { width: 44px; height: 44px; border-radius: 12px; flex: none; }
 .qp-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 @media (max-width: 600px) { .qp-cta .grow { flex-basis: calc(100% - 60px); } .qp-btns { width: 100%; } .qp-btns .btn { flex: 1; } }
+/* An article's highlights, shared */
+.sp-main { padding-top: 5vh; }
+.sp-head { display: flex; align-items: center; gap: 16px; }
+.sp-cover { flex: none; width: 64px; border-radius: 3px 6px 6px 3px; box-shadow: 0 8px 18px rgba(0, 0, 0, .16); }
+.sp-title { margin: 0; font-family: var(--serif); font-size: clamp(26px, 4vw, 36px); line-height: 1.12; font-weight: 560; letter-spacing: -.02em; text-wrap: pretty; }
+.sp-title a { color: var(--paper-ink); }
+.sp-title svg { margin-left: 4px; vertical-align: 2px; color: var(--ink-3); }
+.sp-head small { display: block; margin-top: 6px; color: var(--ink-2); font-size: 13.5px; }
+.sp-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 26px; }
+.sp-quote { margin: 0; font-family: var(--serif); font-size: clamp(19px, 2.6vw, 22px); line-height: 1.5; font-variation-settings: 'opsz' 20; color: var(--paper-ink); }
+.sp-quote span { background: linear-gradient(transparent 56%, color-mix(in srgb, var(--hl) 45%, transparent) 56%, color-mix(in srgb, var(--hl) 45%, transparent) 94%, transparent 94%); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.sp-note { display: flex; gap: 8px; margin: 10px 0 0; color: var(--ink); font-size: 15px; line-height: 1.5; }
+.sp-note svg { flex: none; margin-top: 3px; color: var(--ink-3); }
+.sp-loc { display: block; margin-top: 8px; color: var(--ink-3); font-size: 12.5px; font-weight: var(--w-label); }
 
 /* ---- Theme change ---------------------------------------------------------------------------------------- */
 
@@ -1084,6 +1098,29 @@ mark.hl.is-passage { background: color-mix(in srgb, var(--blue) 22%, transparent
 .pal-item small { flex: none; max-width: 40%; color: var(--ink-3); font-size: 12.5px; }
 .pal-ic { flex: none; width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; background: var(--fill-2); color: var(--ink-2); }
 .pal-none { padding: 18px; color: var(--ink-3); text-align: center; font-size: 14px; }
+
+/* ---- Flashcards ------------------------------------------------------------------------------------ */
+.rv-badge { flex: none; align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 99px; background: color-mix(in srgb, var(--blue) 12%, transparent); color: var(--blue-text); font: var(--w-strong) 12px/1 var(--font); }
+.rv-question { font: var(--w-title) clamp(22px, 4.6vw, 27px)/1.3 var(--font); letter-spacing: -.02em; color: var(--paper-ink); text-wrap: balance; }
+.rv-quote.is-answer { margin-top: 18px; padding-top: 16px; border-top: .5px solid color-mix(in srgb, var(--paper-ink) 14%, transparent); animation: rv-rise .35s var(--ease-out); }
+.cz-blank { display: inline-block; height: .95em; margin: 0 .08em; vertical-align: -.12em; border-radius: 4px; background: color-mix(in srgb, var(--paper-ink) 12%, transparent); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--paper-ink) 30%, transparent); }
+.cz-shown { font-weight: inherit; background: color-mix(in srgb, var(--blue) 18%, transparent); border-radius: 3px; padding: 0 2px; animation: rv-rise .3s var(--ease-out); }
+.rv-acts { display: flex; gap: 8px; }
+@media (max-width: 759px) {
+  .rv-bar.is-recall .rv-tools { display: none; }
+  .rv-bar.is-recall .rv-acts { flex: 1; }
+  .rv-bar.is-recall .rv-acts .btn { flex: 1; min-width: 0; }
+}
+.rv-miss { min-width: 112px; }
+.rv-got { min-width: 112px; gap: 8px; }
+.cz-panel { display: grid; gap: 12px; margin-top: 4px; }
+.cz-words { display: flex; flex-wrap: wrap; gap: 3px 0; padding: 14px 12px; border-radius: 14px; background: var(--surface); font-family: var(--serif); font-size: 18px; line-height: 1.5; }
+.cz-word { padding: 1px 3px; border: 0; border-radius: 6px; background: none; color: var(--ink); font: inherit; cursor: pointer; transition: background .15s, color .15s; }
+@media (hover: hover) { .cz-word:hover { background: var(--fill-2); } }
+.cz-word.is-hidden { background: var(--ink); color: var(--bg); }
+.pop button.is-icon.is-on { color: var(--blue-text); }
+.share-notes { margin: 2px 0; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-1); }
+.nb-tag svg { color: var(--blue-text); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }

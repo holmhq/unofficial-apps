@@ -10,7 +10,7 @@
 // answered from here. An address that ends like a file (/icon-512.png) is that file, even
 // typed into the address bar; every other address is a page and gets the shell.
 
-const VERSION = '0.7.0'
+const VERSION = '0.8.0'
 const CACHE = 'shelf-' + VERSION
 const ARTICLES = 'shelf-articles'
 const PICTURES = 'shelf-pictures'
@@ -20,7 +20,7 @@ const FILES = [
   '/fonts/atkinson-latin.woff2', '/fonts/atkinson-bold-latin.woff2', '/fonts/atkinson-italic-latin.woff2', '/src/styles.css',
   '/src/main.js', '/src/ui.js', '/src/icons.js', '/src/theme.js', '/src/api.js', '/src/live.js', '/src/store.js', '/src/shell.js', '/src/bits.js',
   '/src/extract.js', '/src/reader.js', '/src/listen.js', '/src/importer.js', '/src/share.js', '/src/zip.js', '/src/export.js', '/src/feeds.js', '/src/books.js', '/src/md.js', '/src/pdfview.js', '/src/ask.js', '/src/query.js',
-  '/src/views/app.js', '/src/views/landing.js', '/src/views/add.js', '/src/views/quote.js', '/src/views/review.js',
+  '/src/views/app.js', '/src/views/landing.js', '/src/views/add.js', '/src/views/quote.js', '/src/views/review.js', '/src/views/page.js',
   '/vendor/readability/Readability.js', '/vendor/dompurify/purify.es.mjs'
 ]
 // The PDF viewer (1.7 MB) is kept the first time a PDF is opened, not installed with the app.

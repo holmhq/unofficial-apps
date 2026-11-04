@@ -4,7 +4,7 @@
 // as "pending" until Shelf is next open on one of the person's devices, which then fetches it
 // and makes it readable.
 
-import { who, Fail, ITEMS, TEXT, MARKS, itemDTO, getItem, saveLink, cleanTags, bump, minutes, origin, host } from './lib.js'
+import { who, Fail, ITEMS, TEXT, MARKS, itemDTO, markDTO, getItem, saveLink, cleanTags, bump, minutes, origin, host } from './lib.js'
 
 const CODES = { 400: 'APP_INVALID_INPUT', 401: 'APP_UNAUTHORIZED', 403: 'APP_FORBIDDEN', 404: 'APP_NOT_FOUND', 409: 'APP_CONFLICT', 413: 'APP_INVALID_INPUT', 422: 'APP_INVALID', 429: 'APP_RATE_LIMITED' }
 
@@ -238,4 +238,76 @@ function markdown(text) {
     out.push('<p>' + inline(lines.join(' ')) + '</p>')
   }
   return out.join('\n')
+}
+
+/* ---- Highlights by Claude, and the daily review ---------------------------------------------------- */
+
+const shortMark = (m, doc) => ({
+  id: m.id,
+  quote: String(m.quote).replace(/\s+/g, ' ').trim(),
+  note: m.note || undefined,
+  where: m.loc || undefined,
+  tags: m.tags && m.tags.length ? m.tags : undefined,
+  favourite: m.fav || undefined,
+  item: doc ? doc.id : m.item,
+  title: doc ? doc.title || doc.host : undefined,
+  author: doc && doc.author ? doc.author : undefined
+})
+
+export function opHighlightSave(input, env) {
+  return op(env, (k) => {
+    const { ds } = env.holm.app
+    const doc = getItem(env, k, input.id)
+    if (!doc) throw new Fail(404, 'not_found', 'No saved item has that id. Call items_list or items_search to find one.')
+    const quote = String(input.quote || '').trim()
+    if (!quote || quote.length > 5000) throw new Fail(400, 'bad_quote', 'Pass the words to highlight, up to a few paragraphs.')
+    if (ds.count(MARKS(k), { item: doc.id }) >= 500) throw new Fail(409, 'full', 'This item already has 500 highlights.')
+    const mark = {
+      item: doc.id, quote, prefix: '', suffix: '', start: 0, end: 0,
+      note: String(input.note || '').slice(0, 4000),
+      loc: String(input.where || '').replace(/\s+/g, ' ').trim().slice(0, 40),
+      tags: cleanTags(input.tags || []),
+      at: Date.now(), due: Date.now() + 3 * 864e5, via: 'claude'
+    }
+    mark.id = ds.insert(MARKS(k), mark)
+    const marks = ds.count(MARKS(k), { item: doc.id })
+    const moved = doc.state === 'feed' ? { state: 'unread', seen: true, saved: Date.now() } : {}
+    ds.update(ITEMS(k), { id: doc.id }, { $set: { marks, ...moved } })
+    bump(env, k, { item: itemDTO({ ...doc, marks, ...moved }), mark: markDTO(mark) })
+    return { highlight: shortMark(mark, doc), hint: doc.status === 'ready' ? 'The highlight shows in the article where these words appear.' : undefined }
+  })
+}
+
+export function opHighlightUpdate(input, env) {
+  return op(env, (k) => {
+    const { ds } = env.holm.app
+    const mark = typeof input.id === 'string' && /^[A-Za-z0-9_-]{6,64}$/.test(input.id) ? ds.findOne(MARKS(k), input.id) : null
+    if (!mark) throw new Fail(404, 'not_found', 'No highlight has that id. Call highlights_list to find one.')
+    const set = {}
+    if (typeof input.note === 'string') set.note = input.note.slice(0, 4000)
+    if (Array.isArray(input.tags)) set.tags = cleanTags(input.tags)
+    if (typeof input.favourite === 'boolean') set.fav = input.favourite
+    if (!Object.keys(set).length) return { highlight: shortMark(mark, getItem(env, k, mark.item)) }
+    ds.update(MARKS(k), { id: mark.id }, { $set: set })
+    const after = { ...mark, ...set }
+    bump(env, k, { mark: markDTO(after) })
+    return { highlight: shortMark(after, getItem(env, k, mark.item)) }
+  })
+}
+
+// A few highlights worth seeing again today, drawn the way the daily review draws them.
+export function opReview(input, env) {
+  return op(env, async (k) => {
+    const { ds } = env.holm.app
+    const { pick } = await import('./review.js')
+    const n = Math.max(1, Math.min(15, Math.round(input.limit || 5)))
+    const now = Date.now()
+    const pool = []
+    const seen = new Set()
+    for (const order of ['asc', 'desc']) for (const m of ds.find(MARKS(k), { due: { $lte: now } }, { limit: 200, order })) if (!seen.has(m.id) && !m.skip && m.quote) { seen.add(m.id); pool.push(m) }
+    const docs = new Map()
+    const docOf = (id) => { if (!docs.has(id)) docs.set(id, getItem(env, k, id)); return docs.get(id) }
+    const picked = pick(pool, n, new Date().toISOString().slice(0, 10) + ':claude', (id) => { const d = docOf(id); return d ? { freq: d.freq || 'normal' } : null }, now)
+    return { highlights: picked.map((m) => shortMark(m, docOf(m.item))), hint: 'These are highlights due to be seen again. The daily review in Shelf spaces them out once the person goes through it there.' }
+  })
 }

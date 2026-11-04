@@ -78,12 +78,16 @@ Readability and DOMPurify with their licences.
   from:, minus to negate) and saved views in the sidebar; sort menus; select
   many for bulk archive, favourite, tag or delete; ⌘K; edit title and author;
   Atkinson Hyperlegible, line spacing and justify in the reader.
+- Flashcards from highlights (hide words, or a question), spaced on their
+  own and joining the daily review; a public, always-current page of an
+  article's highlights (notes optional); MCP tools to save and change
+  highlights and to read today's review.
 - Export one ZIP made in the browser: Markdown per source with front matter
   (Obsidian, Logseq, Notion), highlights.csv in Readwise's import layout,
   library.csv, feeds.opml and a JSON copy.
 - MCP tools (auth "user", each checking the caller): list, read, search,
-  save (optionally with the article's text, readable at once), update, and
-  highlights.
+  save (optionally with the article's text, readable at once), update,
+  highlights, save a highlight, change a highlight, today's review.
 - Realtime: every change reaches the person's other open pages at once.
 - A native-feeling Apple-quality UI on phone and desktop, light and dark: a
   fixed shell where only panels scroll; a sidebar of places on a desk, a tab

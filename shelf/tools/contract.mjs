@@ -58,6 +58,27 @@ const operations = {
       id: { type: 'string', minLength: 6, maxLength: 64, description: 'Only this article’s highlights.' },
       limit: { type: 'integer', minimum: 1, maximum: 200, description: 'How many (default 50).' }
     }))
+,
+  'highlights.save': tool('opHighlightSave', 'write', 'Highlight a passage',
+    'Saves a highlight on an item the person has: the words, and optionally a note, tags and where it is (a page or location, for books). The words should be copied exactly from the item so Shelf can find them in the article. Highlights come back in the person’s daily review.',
+    obj({
+      id: { type: 'string', minLength: 6, maxLength: 64, description: 'The item id.' },
+      quote: { type: 'string', minLength: 1, maxLength: 5000, description: 'The words to highlight, exactly as they are in the item.' },
+      note: { type: 'string', maxLength: 4000, description: 'A note on it.' },
+      where: { type: 'string', maxLength: 40, description: 'Page or location, such as "Page 112", for a book without its text in Shelf.' },
+      tags: { type: 'array', items: { type: 'string', maxLength: 32 }, maxItems: 8 }
+    }, ['id', 'quote']), { idempotency: 'optional' }),
+  'highlights.update': tool('opHighlightUpdate', 'write', 'Change a highlight',
+    'Changes a highlight’s note, tags or favourite. Only the fields you pass change.',
+    obj({
+      id: { type: 'string', minLength: 6, maxLength: 64, description: 'The highlight id, from highlights_list.' },
+      note: { type: 'string', maxLength: 4000 },
+      tags: { type: 'array', items: { type: 'string', maxLength: 32 }, maxItems: 12, description: 'The full new list of tags.' },
+      favourite: { type: 'boolean' }
+    }, ['id']), { idempotency: 'optional' }),
+  'review.today': tool('opReview', 'read', 'Highlights to see again today',
+    'Returns a few of the person’s highlights that are due to be seen again, chosen the way Shelf’s daily review chooses them: every book and article in turn, favourites more often.',
+    obj({ limit: { type: 'integer', minimum: 1, maximum: 15, description: 'How many (default 5).' } }))
 }
 for (const op of Object.values(operations)) if (op.risk === 'read') op.sensitive = true
 

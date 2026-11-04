@@ -68,6 +68,10 @@ served as files: `api/` and `holm.json` are not public URLs.
   good, add a note or a tag. Every source gets its turn, you choose how often
   a book or article comes up, and finishing a review keeps a streak. Review
   a single book or tag whenever you like.
+- **Flashcards.** Turn a highlight into a card: tap words to hide, or write
+  the question it answers. Due cards join the daily review after the
+  highlights; show the answer, then say whether you got it, and each card
+  comes back later the better you know it.
 - **Kindle and Readwise highlights.** Bring in a Kindle's `My Clippings.txt`
   (or a Bookcision file) and a Readwise CSV export. Each book becomes a
   notebook on your shelf with its cover from Open Library and its highlights
@@ -82,6 +86,9 @@ served as files: `api/` and `holm.json` are not public URLs.
   Notion), `highlights.csv` in the layout Readwise's CSV import takes,
   `library.csv` with everything you saved, and a full JSON copy. The articles
   can come too, as Markdown.
+- **Share an article's highlights.** One link to a page with all your
+  highlights from an article or book (and your notes, if you choose), which
+  stays up to date as you highlight. Stop sharing and the link goes dead.
 - **Share a highlight.** Tap a highlight and choose Share: Shelf makes a link
   to a page with the words, the article's title and link, and your first name
   (never your notes), and draws its link-preview card in the reader's
@@ -113,7 +120,8 @@ served as files: `api/` and `holm.json` are not public URLs.
 - **Claude reads it with you.** Connect Shelf to Claude as a custom connector
   at `https://<your-host>/_holm/mcp` and sign in. Claude can list what's on
   your reading list (say, everything under ten minutes) or new in your Feed,
-  read an article,
+  read an article, highlight a passage or change a highlight, go over
+  today's review,
   search, read your highlights and notes, save links, and archive, favourite
   or tag them. When Claude has already read an article, it can save its text
   with the link, and the article is readable at once.
@@ -168,7 +176,8 @@ the Holm credit sits in the footer.
   a PNG the sharer's browser draws on a canvas and uploads.
 - **Claude's tools** are named operations with `auth: "user"`, each scoped to
   the caller: `items_list`, `items_read`, `items_search`, `items_save`,
-  `items_update` and `highlights_list`. `api/main.js` exports one-line
+  `items_update`, `highlights_list`, `highlights_save`, `highlights_update`
+  and `review_today`. `api/main.js` exports one-line
   wrappers that import `api/ops.js`, so Holm's contract scan stays small.
   `node shelf/tools/contract.mjs` writes `api/contract.json`.
 - **One answer for the list.** `GET /api/library` returns every link. A
@@ -236,6 +245,16 @@ the Holm credit sits in the footer.
   (`web/src/query.js`), and only the words in it go to the server's search.
   **Many at once** goes through `POST /api/items/bulk`, a few seconds' worth
   per request, with one version bump.
+- **Flashcards** are a `card` on a highlight (`{type: "cloze", hide: [word
+  numbers]}` or `{type: "qa", q}`) with their own `cardDue` and `cardIvl`:
+  Got it multiplies the wait by two and a half (three days the first time),
+  Missed brings the card back tomorrow. A new day's review adds up to four
+  due cards after its highlights.
+- **Shared pages** (`/s/<slug>`) are a document in a shared `pages`
+  collection naming the owner, the item and whether notes show; the page
+  reads the highlights each time, so it's always current, and deleting the
+  document (or the item) ends it. It's served from `fetch` with its own Open
+  Graph tags, like a shared highlight.
 - **Export** is made in the browser: `web/src/zip.js` writes an uncompressed
   ZIP (and reads ZIP exports with `DecompressionStream`), with no library.
   Highlights come from `GET /api/highlights` a page at a time, since a paged

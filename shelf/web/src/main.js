@@ -18,6 +18,13 @@ const early = globalThis.__shelf || {}
 let appView = null
 
 async function render() {
+  const page = /^\/s\/([A-Za-z0-9]{8,32})\/?$/.exec(location.pathname)
+  if (page) {
+    const { sharedPage } = await import('./views/page.js')
+    appView = null
+    fill(root, sharedPage(page[1]).el)
+    return
+  }
   const shared = /^\/q\/([A-Za-z0-9]{8,32})\/?$/.exec(location.pathname)
   if (shared) {
     const { quotePage } = await import('./views/quote.js')

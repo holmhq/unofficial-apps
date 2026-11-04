@@ -83,7 +83,10 @@ export function review(request, env, url, { k }) {
       const usedItems = new Set()
       for (const id of have) { const m = ds.findOne(MARKS(k), id); if (m) usedItems.add(m.item) }
       const more = pick(pool, n - have.size, day, (id) => itemOf(id), now, usedItems).map((m) => m.id)
-      set = { ids: [...(set ? set.ids : []), ...more], done: set ? set.done : [] }
+      // Flashcards that are due join a new day's review, after the highlights, a few at a time.
+      const cards = set ? [] : ds.find(MARKS(k), { cardDue: { $lte: now } }, { limit: 30, order: 'asc' })
+        .filter((m) => m.card && !m.skip && !more.includes(m.id) && itemOf(m.item)).sort((a, b) => (a.cardDue || 0) - (b.cardDue || 0)).slice(0, 4).map((m) => m.id)
+      set = { ids: [...(set ? set.ids : []), ...more, ...cards], done: set ? set.done : [] }
       kv.set('rv:' + k + ':' + day, set, 3 * DAY)
       // Look again at most every ten minutes.
       if (set.ids.length < n) kv.set('rvtop:' + k + ':' + day, 1, 10 * 60 * 1000)
@@ -124,6 +127,9 @@ export function review(request, env, url, { k }) {
       else if (input.action === 'sooner') { set.ivl = 4; set.due = now + 4 * DAY }
       else if (input.action === 'discard') { set.skip = true }
       else if (input.action === 'restore') { set.skip = false; set.due = now }
+      // A flashcard: remembered, it waits longer each time; missed, it comes back tomorrow.
+      else if (input.action === 'got' && mark.card) { const c = Number(mark.cardIvl) || 0; set.cardIvl = c ? Math.min(365, Math.round(c * 2.5)) : 3; set.cardDue = now + set.cardIvl * DAY }
+      else if (input.action === 'missed' && mark.card) { set.cardIvl = 1; set.cardDue = now + DAY }
       else return err(400, 'bad_action', 'That isn’t something a review can do.')
       ds.update(MARKS(k), { id: mark.id }, { $set: set })
       const key = 'rv:' + k + ':' + day
@@ -169,7 +175,7 @@ function shuffle(list, seed) {
 
 // Draw n highlights: weighted by favourite, by how often its source should come up and by how
 // long it has waited, and at most one per source until every source has had a turn.
-function pick(pool, n, day, sourceOf, now, used = new Set()) {
+export function pick(pool, n, day, sourceOf, now, used = new Set()) {
   const r = rng(day)
   const weighted = []
   for (const m of pool) {

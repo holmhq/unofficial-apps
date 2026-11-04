@@ -436,6 +436,212 @@
     }
    },
    "sensitive": true
+  },
+  "highlights.save": {
+   "handler": "opHighlightSave",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Highlight a passage",
+   "description": "Saves a highlight on an item the person has: the words, and optionally a note, tags and where it is (a page or location, for books). The words should be copied exactly from the item so Shelf can find them in the article. Highlights come back in the person’s daily review.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "minLength": 6,
+      "maxLength": 64,
+      "description": "The item id."
+     },
+     "quote": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 5000,
+      "description": "The words to highlight, exactly as they are in the item."
+     },
+     "note": {
+      "type": "string",
+      "maxLength": 4000,
+      "description": "A note on it."
+     },
+     "where": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "Page or location, such as \"Page 112\", for a book without its text in Shelf."
+     },
+     "tags": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 32
+      },
+      "maxItems": 8
+     }
+    },
+    "required": [
+     "id",
+     "quote"
+    ],
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "idempotency": "optional"
+  },
+  "highlights.update": {
+   "handler": "opHighlightUpdate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Change a highlight",
+   "description": "Changes a highlight’s note, tags or favourite. Only the fields you pass change.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "minLength": 6,
+      "maxLength": 64,
+      "description": "The highlight id, from highlights_list."
+     },
+     "note": {
+      "type": "string",
+      "maxLength": 4000
+     },
+     "tags": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 32
+      },
+      "maxItems": 12,
+      "description": "The full new list of tags."
+     },
+     "favourite": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "id"
+    ],
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "idempotency": "optional"
+  },
+  "review.today": {
+   "handler": "opReview",
+   "auth": "user",
+   "risk": "read",
+   "summary": "Highlights to see again today",
+   "description": "Returns a few of the person’s highlights that are due to be seen again, chosen the way Shelf’s daily review chooses them: every book and article in turn, favourites more often.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 15,
+      "description": "How many (default 5)."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
   }
  }
 }
