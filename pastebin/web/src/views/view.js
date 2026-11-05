@@ -1,7 +1,8 @@
 // A paste: owner controls, the fuse, highlighted text, media, the burn seal
 // and the gone states.
 
-import { h, icon, api, bytes, ago, left, fullDate, copyText, confirmDialog, toast, spinner, slugify, EXPIRY, plural, store, local, shareUrl } from '../lib.js'
+import { h, icon, api, bytes, ago, left, fullDate, copyText, confirmDialog, toast, spinner, slugify, EXPIRY, plural, store, local, shareUrl, scrollPanelTo } from '../lib.js'
+import { copyField } from '../mcp.js'
 import { highlight, splitLines, langName, extFor, langForFile, detect, HIGHLIGHT_LIMIT } from '../code.js'
 import { renderMarkdown } from '../markdown.js'
 
@@ -75,8 +76,8 @@ export function mountView(main, slug, ctx) {
     let justMade = false
     try { justMade = sessionStorage.getItem('pb.created') === paste.slug; sessionStorage.removeItem('pb.created') } catch (e) { /* ignore */ }
 
-    const field = h('input.link-field', { value: paste.url, readonly: true, 'aria-label': 'Link to this paste', onfocus: e => e.target.select() })
-    const copyBtn = h('button.btn.btn-primary', { type: 'button', onclick: () => copyText(paste.url, 'Link copied') }, icon('copy'), 'Copy link')
+    // The link is one click-to-copy field, never an input beside a Copy button.
+    const field = copyField(paste.url)
     const shareBtn = navigator.share
       ? h('button.btn.btn-icon', { type: 'button', 'aria-label': 'Share', title: 'Share', onclick: () => navigator.share({ url: paste.url, title: paste.title || 'Paste' }).catch(() => {}) }, icon('share'))
       : null
@@ -124,7 +125,7 @@ export function mountView(main, slug, ctx) {
       : (owner.views ? 'Viewed ' + plural(owner.views, 'time') : 'No views yet')
 
     return h('section.owner-bar', { class: justMade ? 'just-made' : null, 'aria-label': 'Your paste' },
-      h('div.link-row', field, copyBtn, shareBtn),
+      h('div.link-row', field, shareBtn),
       paste.burnAfterRead ? h('p.owner-note', icon('flame'), 'Only you see this preview. Anyone else can open the link once, then it’s destroyed.') : null,
       h('div.owner-controls',
         expiry,
@@ -302,7 +303,7 @@ export function codeSheet(text, lang, { name, rawUrl, slug, downloadUrl } = {}) 
         // A shared link may point at a heading.
         if (location.hash.startsWith('#md-')) {
           const target = document.getElementById(decodeURIComponent(location.hash.slice(1)))
-          if (target) target.scrollIntoView()
+          if (target) scrollPanelTo(target)
         }
       })
       .catch(() => { setMode('source'); modeSwitch.remove() })

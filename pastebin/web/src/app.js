@@ -1,11 +1,12 @@
 // pastebin: router, session, theme and sign-in.
 
-import { h, icon, api, spinner, local } from './lib.js'
+import { h, icon, api, spinner, local, scrollPanelTo, store } from './lib.js'
 import { mountCompose } from './views/compose.js'
 import { mountView } from './views/view.js'
 import { mountMine } from './views/mine.js'
 import { mountKeys } from './views/keys.js'
 import { mcpSheet } from './mcp.js'
+import { togglePalette } from './palette.js'
 
 const main = document.getElementById('main')
 let me = null
@@ -14,16 +15,21 @@ let mcp = null
 let current = null
 let meReady = null
 
+// Who was here last time, so the avatar and the signed-in pages draw at once on a reload;
+// /api/me corrects it a moment later if that changed.
+me = store.get('pb.me', null)
+mcp = store.get('pb.mcp', null)
+
 const ctx = {
   me: () => me,
-  setMe(next) { me = next; renderAccount() },
+  setMe(next) { me = next; store.set('pb.me', me); renderAccount() },
   navigate,
   signIn,
 }
 
 // ── theme ──────────────────────────────────────────────────
 
-const THEMES = [['light', 'sun', 'Light'], ['system', 'system', 'System'], ['dark', 'moon', 'Dark']]
+const THEMES = [['light', 'sun', 'Light'], ['system', 'system', 'Auto'], ['dark', 'moon', 'Dark']]
 
 function savedTheme() {
   try { return localStorage.getItem('pb.theme') || 'system' } catch (e) { return 'system' }
@@ -41,18 +47,19 @@ function applyTheme(choice) {
 }
 applyTheme(savedTheme())
 
-// Light / System / Dark, shown inside the account menu.
+function setTheme(id) {
+  try { localStorage.setItem('pb.theme', id) } catch (e) { /* private mode */ }
+  applyTheme(id)
+}
+
+// Light / Auto / Dark as three icons, shown inside the account menu.
 function themeSwitch() {
   const group = h('div.theme', { role: 'group', 'aria-label': 'Theme' })
   const paint = () => group.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.theme === savedTheme())))
   for (const [id, ico, label] of THEMES) {
     group.append(h('button', {
       type: 'button', 'data-theme': id, 'aria-label': label + ' theme', title: label,
-      onclick: () => {
-        try { localStorage.setItem('pb.theme', id) } catch (e) { /* private mode */ }
-        applyTheme(id)
-        paint()
-      },
+      onclick: () => { setTheme(id); paint() },
     }, icon(ico)))
   }
   paint()
@@ -68,8 +75,10 @@ async function refreshMe() {
     const res = await api('GET', '/api/me')
     me = res.authenticated ? res.member : null
     mcp = res.mcp || null
+    store.set('pb.me', me)
+    store.set('pb.mcp', mcp)
   } catch (e) {
-    me = null
+    // Offline: keep who we last knew, so the page still draws.
   }
   renderAccount()
   return me
@@ -80,10 +89,11 @@ function renderAccount() {
   const face = me
     ? h('img', { src: local(me.avatar) || '/auth/avatar?seed=' + encodeURIComponent(me.id), alt: '', referrerpolicy: 'no-referrer' })
     : icon('user')
+  // A 44px target around a 34px face, so it's easy to tap without looking bigger.
   const btn = h('button.avatar-btn', {
     type: 'button', class: me ? null : 'is-guest', 'aria-haspopup': 'menu', 'aria-expanded': 'false',
     'aria-label': me ? 'Account and settings' : 'Sign in and settings',
-  }, face)
+  }, h('span.avatar-face', face))
   btn.addEventListener('click', e => { e.stopPropagation(); openMenu(btn) })
   host.replaceChildren(btn)
 }
@@ -107,7 +117,8 @@ function openMenu(anchor) {
         h('div.menu-sep'),
         theme)
   const r = anchor.getBoundingClientRect()
-  menu.style.top = (r.bottom + window.scrollY + 8) + 'px'
+  menu.style.position = 'fixed'
+  menu.style.top = (r.bottom + 8) + 'px'
   menu.style.right = Math.max(12, document.documentElement.clientWidth - r.right) + 'px'
   document.body.append(menu)
   anchor.setAttribute('aria-expanded', 'true')
@@ -136,8 +147,9 @@ async function signOut() {
     // 307 to /auth/login is the success signal; don't let fetch follow it as a POST.
     await fetch('/auth/logout', { method: 'POST', credentials: 'include', redirect: 'manual' })
   } catch (e) { /* the cookie is cleared server-side regardless */ }
-  me = null
-  renderAccount()
+  // Signing out leaves nothing of the account on this device.
+  try { Object.keys(localStorage).filter(k => /^pb\.(mine|keys)\./.test(k)).forEach(k => localStorage.removeItem(k)) } catch (e) { /* private mode */ }
+  ctx.setMe(null)
   navigate('/', true)
 }
 
@@ -205,20 +217,63 @@ function route() {
   } else if (path === '/mine' || path === '/keys') {
     nav = path.slice(1)
     document.title = (nav === 'mine' ? 'My pastes' : 'API keys') + ' · pastebin'
-    // These pages depend on who is signed in; wait for the session once.
-    const token = current = {}
-    main.replaceChildren(spinner())
-    meReady.then(() => {
-      if (current !== token) return
-      current = (nav === 'mine' ? mountMine : mountKeys)(main, ctx)
-    })
+    // These pages depend on who is signed in. Whoever was here last draws at once; if the
+    // session says otherwise, the page is drawn again for whoever it is.
+    const mount = nav === 'mine' ? mountMine : mountKeys
+    const was = me && me.id
+    if (was) {
+      current = mount(main, ctx)
+      const token = current
+      meReady.then(() => { if (current === token && (me && me.id) !== was) route() })
+    } else {
+      const token = current = {}
+      main.replaceChildren(spinner())
+      meReady.then(() => {
+        if (current !== token) return
+        current = mount(main, ctx)
+      })
+    }
   } else {
     current = mountView(main, '__missing__', ctx)
   }
   // The composer is the home page; elsewhere a quiet button leads back to it.
   document.querySelector('.new-btn').hidden = nav === 'new'
-  if (!location.hash) window.scrollTo(0, 0)
+  if (!location.hash) main.scrollTop = 0
 }
+
+// The window never scrolls; <main> does. The bar frosts once something scrolls under it.
+const topBar = document.getElementById('top')
+main.addEventListener('scroll', () => topBar.classList.toggle('glass', main.scrollTop > 2), { passive: true })
+
+// A heading's # link keeps its address, but the panel scrolls by hand: letting the browser
+// follow an in-page anchor would move the fixed shell too.
+document.addEventListener('click', e => {
+  const a = e.target.closest('a.md-anchor')
+  if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  e.preventDefault()
+  history.replaceState(null, '', a.getAttribute('href'))
+  scrollPanelTo(a.parentElement)
+})
+
+// ⌘K: the places and actions of the account menu, from the keyboard.
+const commands = () => [
+  { label: 'New paste', icon: 'plus', run: () => navigate('/') },
+  ...(me ? [
+    { label: 'My pastes', icon: 'list', run: () => navigate('/mine') },
+    { label: 'API keys', icon: 'key', run: () => navigate('/keys') },
+    { label: 'Connect via MCP…', icon: 'mcp', run: () => mcpSheet(mcp, document.querySelector('.avatar-btn')) },
+  ] : []),
+  ...THEMES.map(([id, ico, label]) => ({ label: label + ' theme', icon: ico, hint: savedTheme() === id ? 'Current' : null, run: () => setTheme(id) })),
+  me
+    ? { label: 'Sign out', icon: 'out', run: signOut }
+    : { label: 'Sign in', icon: 'user', run: () => signIn().catch(() => {}) },
+]
+document.addEventListener('keydown', e => {
+  if (!(e.metaKey || e.ctrlKey) || (e.key !== 'k' && e.key !== 'K') || e.altKey || e.shiftKey) return
+  if (document.querySelector('dialog[open], .signin, .lightbox')) return
+  e.preventDefault()
+  togglePalette(commands)
+})
 
 document.addEventListener('click', e => {
   const a = e.target.closest('a[data-link]')
@@ -241,3 +296,8 @@ renderAccount()
 meReady = refreshMe()
 route()
 meReady.then(() => { if (current && current.onMe) current.onMe() })
+
+// The app shell: every file of this version is kept on the device, so pages open at once.
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}))
+}

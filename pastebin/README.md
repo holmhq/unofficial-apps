@@ -32,13 +32,21 @@ deploy. They are still public source in this repository.
   the link, and the draft and options are remembered. The composer is an app
   screen: however much you paste, the page stays still and only the editor
   scrolls.
+- **Feels like an app:** the window never scrolls. The header and footer stay
+  put and frost over what scrolls under them; each page scrolls in its own
+  panel. A service worker keeps this version's page files on the device, so
+  pages open at once, and your pastes and keys draw from the last copy while
+  the server is asked. Pastes themselves are never kept: each opens from the
+  server. ⌘K (Ctrl+K) opens a command menu with every place and action of the
+  avatar menu.
 - **Share:**
   - Expiry from 10 minutes to 30 days, or never. A fuse line on the paste
     burns down to the deadline.
   - Burn after reading: the first opener sees the paste, then it is deleted.
     Link unfurlers can't burn it, because opening needs a click; the owner's
     own preview never burns it.
-  - Revoke or delete at any time.
+  - Revoke or delete at any time. The link, and a new API key, are
+    click-to-copy fields.
 - **Read:**
   - Markdown renders as GitHub-flavoured Markdown (tables, task lists,
     strikethrough, autolinks, highlighted code, heading anchors). It's styled
@@ -67,9 +75,9 @@ deploy. They are still public source in this repository.
 - **Look:** a minimal "cyanotype" design. Light is Prussian ink on white
   paper; dark is the print itself, pale ink on Prussian blue. Ember marks
   anything that burns. The header holds only the brand and an avatar menu
-  (your pastes, API keys, Connect via MCP, the light / system / dark switch,
-  sign-out). A small
-  footer says it's a Holm app, links here, and has Send feedback, which opens
+  (your pastes, API keys, Connect via MCP, the light / auto / dark switch,
+  sign-out). A small frosted
+  footer says it's a Holm app, links here, and has Feedback, which opens
   a feedback form over the page. Fonts and the highlighter are vendored, so
   nothing loads from a CDN.
 
@@ -87,6 +95,7 @@ holm.json               name, version, colour, SPA routing, no generated web
                         surface, store metadata
 web/                    public files, served as-is:
   index.html            shell; applies the saved theme before first paint
+  sw.js                 service worker: keeps this version's page files, never a paste
   src/                  browser app: router, composer, viewer, lists, Markdown,
                         the Connect via MCP sheet (ES modules)
   vendor/highlight/     highlight.js 11.11.1 (BSD-3-Clause)
@@ -105,6 +114,7 @@ api/pastes.js           create, list, owner actions, public read, burn claim, fi
 api/keys.js             API keys and /api/me
 api/lib.js              validation, expiry state, purge, safe file responses
 scripts/smoke.sh        runtime smoke through `holm test run` (not deployed)
+tools/check.mjs         checks sw.js lists every file and follows holm.json (not deployed)
 holm.symbol.svg         app icon: one black path that stores paint on the theme colour
 listing/                store listing and screenshots (not deployed)
 ```
@@ -172,7 +182,7 @@ holm @<peer> settings set settings.apps.<app-id>.brand.icon_url /assets/icon-192
 holm @<peer> settings set settings.apps.<app-id>.theme.accent '#173a72'
 ```
 
-The footer's Send feedback uses a local copy at
+The footer's Feedback uses a local copy at
 `pastebin/web/vendor/feedback/embed.js` and frames the
 [feedback](../feedback/) app. Set `data-project` and `data-origin` in
 `pastebin/web/index.html` to your own project, or remove that script and
@@ -258,7 +268,9 @@ pb revoke <slug>                  # kill the link now
 
 ## Testing
 
-Run `holm app validate --spec-v1 pastebin` from the repository root. It
+Run `node pastebin/tools/check.mjs` after changing any web file or the
+version: the service worker must list every file and carry holm.json's
+version. Run `holm app validate --spec-v1 pastebin` from the repository root. It
 checks confined ingestion only: it does not execute the API or its imports.
 `scripts/smoke.sh` still calls the older `holm test run` interface and is not
 v1 runtime proof. On a disposable node, exercise creation, uploads, owner

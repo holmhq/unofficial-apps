@@ -16,7 +16,10 @@ back to env.holm.web.fetch(request). No build step or third-party runtime CDN;
 vendor the Markdown parser, sanitizer, highlighter and fonts with licenses.
 
 - Make a minimal cyanotype design, light/dark/system themes, excellent on
-  phones and desktop. The page stays still; only the editor scrolls.
+  phones and desktop. The window never scrolls: frosted bars stay put and
+  only the page's panel (or the editor) scrolls. A versioned service worker
+  keeps every page file so pages open at once; it never keeps a paste.
+  ⌘K opens a command menu with the avatar menu's places and actions.
 - Paste text/code with syntax highlighting and safe GitHub-flavoured
   Markdown (Preview/Source), plus images, video, audio or any file. Put the
   attachment icon at the editor's top right; support drop and paste.
@@ -28,7 +31,8 @@ vendor the Markdown parser, sanitizer, highlighter and fonts with licenses.
   promise automatic idle cleanup or claim race safety without testing it.
 - Centre a split create button reading “Create [one-time] link [with] my
   name for [1h] ▾”; crossing out those words toggles them without layout shift.
-- Put pastes, theme and API keys in the avatar menu. Show keys once, store
+- Put pastes, theme and API keys in the avatar menu. Links and new keys
+  are click-to-copy fields. Show keys once, store
   SHA-256 hashes, check ownership on every owner route. Add JSON/multipart
   HTTP creation and a small POSIX sh CLI using curl/jq. Read form files via
   request.formData() and arrayBuffer(); do not expose private files directly.
@@ -137,6 +141,12 @@ owner's message (`llms-full.txt` is the full guide's name):
 Feedback had them:
 
 > Can we now add it for overlap, domains, pastebin
+
+**Iteration 8** came from a sweep of every app in the repository against
+its cookbook (the fixed shell, ⌘K, click-to-copy fields, the service
+worker), started by the owner's:
+
+> Sure do cookbook sweep
 
 The build request uses the current public v1 reference and spells out the
 repository's listing conventions. It does not require private docs or a

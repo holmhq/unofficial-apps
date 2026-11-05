@@ -249,8 +249,9 @@ export function mountCompose(main, ctx) {
   }
 
   function openExpiry(anchor) {
+    // A second click on either button closes the menu, and its listeners go with it.
     const open = document.querySelector('.menu.expiry-menu')
-    if (open) { open.remove(); return }
+    if (open) { open.close ? open.close() : open.remove(); return }
     const menu = h('div.menu.expiry-menu', { role: 'menu' },
       h('div.menu-label', 'Link expires'),
       EXPIRY.map(([v, label]) => h('button', {
@@ -273,6 +274,7 @@ export function mountCompose(main, ctx) {
       document.removeEventListener('keydown', onKey)
       anchor.focus()
     }
+    menu.close = close
     const outside = e => { if (!menu.contains(e.target) && !anchor.contains(e.target)) close() }
     const onKey = e => {
       if (e.key === 'Escape') { e.preventDefault(); close() }
@@ -355,7 +357,7 @@ export function mountCompose(main, ctx) {
       document.body.classList.remove('dragging')
       document.body.classList.remove('shell')
       const menu = document.querySelector('.menu.expiry-menu')
-      if (menu) menu.remove()
+      if (menu) menu.close ? menu.close() : menu.remove()
       files.forEach(it => it.url && URL.revokeObjectURL(it.url))
     },
   }

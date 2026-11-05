@@ -1,6 +1,6 @@
 {
   "name": "pastebin",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "title": "pastebin",
   "description": "Private-first text, code and media pastes with expiring links and burn-after-read sharing.",
   "themeColor": "#173a72",
@@ -17,7 +17,8 @@
   },
   "publish": {
     "exclude": [
-      "/listing/"
+      "/listing/",
+      "/tools/"
     ]
   },
   "ext": {

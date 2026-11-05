@@ -1,7 +1,8 @@
 // API keys: create (shown once), list, revoke, and copy-ready examples.
 
-import { h, icon, api, ago, fullDate, copyText, confirmDialog, toast, spinner } from '../lib.js'
+import { h, icon, api, ago, fullDate, copyText, confirmDialog, toast, spinner, store } from '../lib.js'
 import { highlight } from '../code.js'
+import { copyField } from '../mcp.js'
 
 export function mountKeys(main, ctx) {
   let destroyed = false
@@ -21,14 +22,16 @@ export function mountKeys(main, ctx) {
   const createBtn = h('button.btn.btn-primary', { type: 'submit' }, icon('key'), 'Create key')
   const form = h('form.create-key', { onsubmit: e => { e.preventDefault(); create() } }, nameInput, createBtn)
 
-  main.replaceChildren(spinner())
+  // The page draws at once from this device's copy of the list, and again only if it changed.
+  const cacheKey = 'pb.keys.' + ctx.me().id
+  let shown = store.get(cacheKey, null)
+  if (shown) paint(shown)
+  else main.replaceChildren(spinner())
   load()
 
-  async function load() {
-    try {
-      const { keys } = await api('GET', '/api/keys')
-      if (destroyed) return
-      renderList(keys || [])
+  function paint(keys) {
+    renderList(keys)
+    if (!main.contains(list)) {
       main.replaceChildren(h('section.page.page-narrow',
         h('header.page-head', h('h1', 'API keys'),
           h('p', 'A key can create, list and revoke your pastes, and nothing else. Revoke a key and anything using it stops working at once.')),
@@ -36,16 +39,28 @@ export function mountKeys(main, ctx) {
         form,
         list,
         examples()))
+    }
+  }
+
+  async function load() {
+    try {
+      const { keys } = await api('GET', '/api/keys')
+      if (destroyed) return
+      store.set(cacheKey, keys || [])
+      if (shown && JSON.stringify(shown) === JSON.stringify(keys || [])) return
+      shown = keys || []
+      paint(shown)
     } catch (err) {
       if (destroyed) return
       if (err.status === 401) { ctx.setMe(null); ctx.navigate('/keys', true); return }
+      if (shown) { toast(err.message, 'error'); return }
       main.replaceChildren(h('section.page.page-narrow', h('div.empty', h('h2', 'Couldn’t load your keys'), h('p', err.message))))
     }
   }
 
   function renderList(keys) {
     if (!keys.length) {
-      list.replaceChildren(h('div.empty', h('p', { style: { margin: 0 } }, 'No keys yet. Name your first one above.')))
+      list.replaceChildren(h('div.empty', h('p', { style: { margin: '0 auto' } }, 'No keys yet. Name your first one above.')))
       return
     }
     list.replaceChildren(...keys.map(k => {
@@ -72,11 +87,11 @@ export function mountKeys(main, ctx) {
       nameInput.value = ''
       reveal.replaceChildren(h('div.key-new', { role: 'status' },
         h('p', h('strong', 'Copy your new key now. '), 'It won’t be shown again.'),
-        h('div.link-row',
-          h('input.link-field', { value: res.key, readonly: true, 'aria-label': 'New API key', onfocus: e => e.target.select() }),
-          h('button.btn.btn-primary', { type: 'button', onclick: () => copyText(res.key, 'Key copied') }, icon('copy'), 'Copy key'))))
+        copyField(res.key)))
       const { keys } = await api('GET', '/api/keys')
-      renderList(keys || [])
+      shown = keys || []
+      store.set(cacheKey, shown)
+      renderList(shown)
     } catch (err) {
       toast(err.message, 'error')
     } finally {
@@ -94,6 +109,8 @@ export function mountKeys(main, ctx) {
     try {
       await api('DELETE', '/api/keys/' + encodeURIComponent(k.id))
       node.remove()
+      shown = (shown || []).filter(x => x.id !== k.id)
+      store.set(cacheKey, shown)
       if (!list.querySelector('.row')) renderList([])
       toast('Key revoked')
     } catch (err) { toast(err.message, 'error') }

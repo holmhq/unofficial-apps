@@ -1,6 +1,6 @@
 // The owner's pastes: state, timers, quick copy, revoke and delete.
 
-import { h, icon, api, ago, fullDate, copyText, confirmDialog, toast, spinner, plural, shareUrl } from '../lib.js'
+import { h, icon, api, ago, fullDate, copyText, confirmDialog, toast, spinner, plural, shareUrl, store } from '../lib.js'
 
 export function mountMine(main, ctx) {
   let destroyed = false
@@ -20,29 +20,46 @@ export function mountMine(main, ctx) {
     return { destroy() {} }
   }
 
-  main.replaceChildren(spinner())
+  // The first page draws at once from this device's copy and redraws only if the server's
+  // answer differs.
+  const cacheKey = 'pb.mine.' + ctx.me().id
+  let shown = null
+  const cached = store.get(cacheKey, null)
+  if (cached) draw(cached, false)
+  else main.replaceChildren(spinner())
   load(false)
+
+  function draw(res, append) {
+    cursor = res.cursor || null
+    if (!append) list.replaceChildren()
+    for (const p of res.pastes || []) list.append(row(p))
+    more.hidden = !cursor
+    more.disabled = false
+    if (!list.children.length) {
+      main.replaceChildren(h('section.page.page-narrow', h('div.empty',
+        h('h2', 'No pastes yet'),
+        h('p', 'Paste some text or drop a file, and the link will show up here with its timer.'),
+        h('a.btn.btn-primary', { href: '/', 'data-link': true }, icon('plus'), 'New paste'))))
+    } else if (!append) main.replaceChildren(page)
+  }
 
   async function load(append) {
     more.disabled = true
     try {
       const res = await api('GET', '/api/pastes' + (append && cursor ? '?cursor=' + encodeURIComponent(cursor) : ''))
       if (destroyed) return
-      cursor = res.cursor || null
-      if (!append) list.replaceChildren()
-      for (const p of res.pastes || []) list.append(row(p))
-      more.hidden = !cursor
-      more.disabled = false
-      if (!append) main.replaceChildren(page)
-      if (!list.children.length) {
-        main.replaceChildren(h('section.page.page-narrow', h('div.empty',
-          h('h2', 'No pastes yet'),
-          h('p', 'Paste some text or drop a file, and the link will show up here with its timer.'),
-          h('a.btn.btn-primary', { href: '/', 'data-link': true }, icon('plus'), 'New paste'))))
+      if (!append) {
+        const json = JSON.stringify(res)
+        store.set(cacheKey, res)
+        if (json === (shown ?? JSON.stringify(cached))) { more.disabled = false; return }
+        shown = json
       }
+      draw(res, append)
     } catch (err) {
       if (destroyed) return
       if (err.status === 401) { ctx.setMe(null); ctx.navigate('/mine', true); return }
+      // Keep what's on screen; say what went wrong.
+      if (append || cached) { more.disabled = false; toast(err.message, 'error'); return }
       main.replaceChildren(h('section.page.page-narrow', h('div.empty',
         h('h2', 'Couldn’t load your pastes'), h('p', err.message),
         h('button.btn.btn-primary', { type: 'button', onclick: () => { main.replaceChildren(spinner()); load(false) } }, 'Try again'))))
@@ -82,6 +99,7 @@ export function mountMine(main, ctx) {
     try {
       const res = await api('POST', '/api/pastes/' + encodeURIComponent(p.slug) + '/revoke')
       node.replaceWith(row(res.paste || Object.assign({}, p, { state: 'revoked' })))
+      store.del(cacheKey)
       toast('Link revoked')
     } catch (err) { toast(err.message, 'error') }
   }
@@ -98,6 +116,7 @@ export function mountMine(main, ctx) {
     try {
       await api('DELETE', '/api/pastes/' + encodeURIComponent(p.slug))
       node.remove()
+      store.del(cacheKey)
       toast('Deleted')
       if (!list.children.length && !cursor) load(false)
     } catch (err) { toast(err.message, 'error') }
