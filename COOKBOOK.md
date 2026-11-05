@@ -36,7 +36,10 @@ references.
   cross it out in place rather than removing it.
 - **Footer:** small, frosted, stuck to the bottom, with a tiny Holm mark
   ("A Holm app"), Source and Feedback. This is the only place Holm branding
-  goes.
+  goes. Every page has it: when it lives in a sidebar, it moves to the end
+  of the panel whenever the sidebar is hidden or there's a tab bar instead
+  (Kalendar's tabs on a phone and Domains' pages with the sidebar hidden
+  had none).
 - **Search-first apps put the search in the navbar.** The first search can
   start from a big field in a hero, which then moves up into the navbar while
   the rest of the hero fades away. A moving element must land exactly on
@@ -58,12 +61,21 @@ references.
 - **What goes in it:** who you are, the app's own places (Saved, Analytics
   for admins only), **Connect via MCP…**, the theme switch, and Sign in or
   Sign out.
+- **It takes a 44 px tap** even when the face is smaller: wrap a 32–36 px
+  circle in a 44 px button, with negative margins so the bar doesn't move.
+  Other bar buttons that look 40 px reach 44 px with an invisible
+  `::after` on coarse pointers.
 - **Labels are one to three words**, such as "Import…", not "Bring in links,
   highlights, feeds…". One long label widens the whole menu.
 - **What stays out:** Holm branding, Source links and anything else that
   belongs in the footer.
 - **The theme switch is three icons:** sun, moon and auto, each with an
   `aria-label` and a `title`, and no words. Labels make the menu wider.
+- **⌘K opens a command menu**, in every app with an account: the app's
+  places and main actions, Connect via MCP…, the theme and Sign in or out.
+  Anything else typed there runs the app's own search. Focusing a search
+  box isn't ⌘K; give that `/`. A second ⌘K, Escape or a click outside
+  closes it, and focus goes back where it was.
 
 ## Connect via MCP
 
@@ -145,7 +157,9 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   as tall as the tallest and never changes height between tabs. It fits a
   390 × 844 phone without scrolling. Each Tools row's line fits on one line
   there. Closing the sheet puts focus back on whatever opened it, or on the
-  avatar button when that was a menu item, which is gone by then. On desktop it's wide enough for the
+  avatar button when that was a menu item or ⌘K, which are gone by then.
+  Skip a remembered element that sits inside the closing sheet, or focus
+  lands on the page body. On desktop it's wide enough for the
   zyt command on one line, with some to spare: about 640 px for a narrow
   mono, 720 px for Fragment Mono. A modal `<dialog>` is capped by the
   browser at the viewport minus about 38 px, so set `max-width: none`
@@ -167,10 +181,13 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   The whole field is one button (`role="button"`, Enter and Space copy too)
   holding the value on one line in 12.5 px mono, with a copy icon at its
   end. Pointing at it tints the field and fades in Copy over the end of the
-  value. A click turns the icon into a green tick and the word into Copied
-  for 1.6 s, with no toast. A value too long for the line scrolls sideways
+  value. The field's background is opaque, or the value shows through the
+  fade under Copy. A click turns the icon into a green tick and the word
+  into Copied for 1.6 s, with no toast. A value too long for the line scrolls sideways
   under a fade. If the clipboard refuses, select the value and say so. In a
-  grid, give the column `minmax(0, 1fr)` or the line widens the sheet. Copy
+  grid, give the column `minmax(0, 1fr)`, in the phone layout too, and the
+  field `min-width: 0`, or the line widens the sheet (Feedback's share link
+  pushed a phone page to 558 px). Copy
   Shelf's `copyField` (`shelf/web/src/ui.js`). When the icons sit in
   wrapper spans, as Relay's do, give the copy icon and the tick their own
   classes: `:first-of-type` would pick the word's span, and the copy icon
@@ -207,6 +224,11 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   menus, a few clear choices and plain text that turns bold when chosen.
 - **A row of chips is one line.** Suggestions, tags and filters scroll
   sideways with a soft fade at the edge; they never wrap onto a second line.
+  Choices in a form, like an event's length, are a chip row too, and open
+  with the chosen one in view.
+- **Names get the room before tools.** In a narrow row on a phone, hide a
+  control a gesture already covers, such as zoom buttons where pinch works,
+  before clipping a name (Kalendar's booking page showed "Sing…").
 - **No lines that repeat what the screen already shows**, such as a count
   of results above the results, or a sentence explaining the chips under it.
   Put a count inside a chip ("All 16") and longer explanations in a tooltip.
@@ -215,7 +237,8 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   number, and toggle tokens for options. Changes apply as they're made, and
   a dot on the button shows when filters differ from the defaults.
 - **Use words that can't be misread.** A domain you can register is
-  "Available", never "free", which reads as "costs nothing".
+  "Available", never "free", which reads as "costs nothing". Format amounts
+  so nothing dangles: zero is "$0", not "$0.".
 - **Design every dropdown.** Don't leave a bare native `<select>` in a styled
   app.
 - **Hover is subtle.** Icons don't grow, links in the chrome don't underline,
@@ -240,7 +263,9 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 
 - **Motion has to mean something:** a card rises when it arrives, a free
   result flashes, a sheet comes up, a live dot pulses. Respect
-  `prefers-reduced-motion`.
+  `prefers-reduced-motion`. A global `.01ms` rule under it also needs
+  `animation-iteration-count: 1`, and infinite animations (spinners,
+  skeleton pulses, playing bars) stop by name, or they flicker.
 - **Results arrive as a calm, even stream.** Lookups come back in bursts, so
   queue the results and reveal one card at a time, about every 15–30 ms
   (quicker when many are waiting), appended in order. Each card fades and
@@ -267,15 +292,35 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 - **Leave file addresses alone.** Only page addresses get the cached shell:
   typing `/icon-512.png` must open the image. Pass every `^/_` path (Holm's
   own surfaces) straight through.
+- **Never precache a `.html` address.** Holm answers `/x.html` with a 308 to
+  `/x`, and a page can't be answered with a redirected response, so the
+  navigation fails. Keep such pages at `/x` (Feedback's `/widget`), and
+  let `.html` addresses go to the network.
+- **A server-rendered site opens from its worker too.** Keep the rendered
+  front page, open every page address from it, refresh it in the
+  background, and redraw only when the API's answer differs (Catalog).
+  Where each page is its own server document, as Margin's posts are, pass
+  navigations to the network and keep only the static files.
+- **A cached shell has no admin links.** Holm writes the admin surfaces
+  (`__HOLM_SURFACES__`) into the page it serves, and the copy the worker
+  kept may be from before sign-in. When someone is signed in, read them
+  from a `no-store` fetch of `/` (Kalendar's, Ralk's and the games').
+- **Register the worker straight away.** In a module with top-level
+  `await`, the `load` event has passed by the time the code runs, so a
+  `load` listener never registers it.
 - **Don't take a version you haven't got the data for.** A page that bumps
   its stored version after a bulk change (an import) is then told "same" and
   never redraws. Ask for the whole list after such a change, and only move
   the version on with the data it describes.
 - **Draw from cache first.** Pages draw at once from a local cache and redraw
   only if the server's answer changed. `index.html` can prefetch the first
-  page's JSON while modules load.
+  page's JSON while modules load. With nothing kept yet, show the loading
+  line until the node answers, so someone signed in elsewhere never sees
+  "Nothing here" flash before their data. Signing out clears the cache.
 - **Switching tabs doesn't refetch** or redraw the whole page. Keep tabs alive
-  with their scroll, and redraw only the part that changed.
+  with their scroll, and redraw only the part that changed. A page taken out
+  of the document forgets its scroll, so save the panel's `scrollTop` when
+  its tab leaves and set it again after it's back (Shelf went 600 → 0).
 - **Keep the server fast.** Holm loads `api/main.js` on every request, so
   keep its static imports tiny, answer cheap requests first and `import()` the
   rest. Keep memos in `env.holm.app.kv`, not in module variables.
@@ -299,12 +344,17 @@ after the first deploy.
   `holm app identity symbol`), with icons at `/icon-512.png` and
   `/icon-192.png`, plus `social_preview.png`.
 - **Node settings for the app:** `brand.name`, `brand.icon_url`,
-  `theme.accent` and `brand.social_preview_url`. An app moved from an older
+  `brand.favicon_url`, `theme.accent` and `brand.social_preview_url`.
+  Without a favicon setting, the sign-in page can show the node's icon
+  (Domains did). An app moved from an older
   folder keeps its old settings; look at them and reset any stale ones.
 - **The sign-in page** shows the app's name, icon and accent, not the
   node's.
 - **A shared link** unfurls with the app's own short title, description and
-  image, and its `og:image` answers 200.
+  image, and its `og:image` answers 200 at a full address. Don't write the
+  picture's tags into `index.html`: a relative `/og.png` there stops some
+  sites showing it. Set `brand.social_preview_url` and Holm adds them, with
+  the host (Feedback and Pastebin had relative ones).
 - **Logos match.** The feedback widget's icon and the tab icon match the
   app's logo.
 
@@ -419,14 +469,15 @@ couldn't check.
       scrolls sideways at 375 px or 390 px wide.
 - [ ] The frame doesn't jump between pages or while data loads.
 - [ ] Any sidebar holds places, not controls, and it hides.
-- [ ] The footer is there and stuck to the bottom, and Holm branding appears
-      only there.
+- [ ] The footer is on every page, with the sidebar hidden and on a phone,
+      stuck to the bottom, and Holm branding appears only there.
 
 **Account button and menus**
 
 - [ ] The round avatar sits at the top right, signed out too.
 - [ ] Clicking it a second time closes the menu, and so do Escape and a click
-      outside. The same holds for every other menu button in the app.
+      outside. The same holds for every other menu button in the app, and
+      for ⌘K, which opens a command menu of places and actions.
 - [ ] The menu has no Holm line or Source link. The theme switch is icons
       only, and admin links show only for admins.
 - [ ] Menu labels are one to three words. Signed in, the menu and ⌘K have
@@ -458,8 +509,10 @@ couldn't check.
 
 - [ ] Reloading each page shows no flicker and no replayed entrance; data
       draws from cache at once.
-- [ ] Switching tabs or sections doesn't refetch or redraw the whole page.
-- [ ] Reduced motion is respected, and nothing jerks or jitters.
+- [ ] Switching tabs or sections doesn't refetch or redraw the whole page,
+      and each tab comes back at its own scroll.
+- [ ] Reduced motion is respected: nothing jerks, jitters, or flickers in an
+      endless loop.
 - [ ] Results that arrive in bursts still appear as a steady, ordered
       stream, with nothing reshuffling.
 - [ ] The service worker version follows `holm.json`, `/icon-512.png` opens
@@ -476,7 +529,7 @@ couldn't check.
       app's logo.
 - [ ] The sign-in page shows the app's name, icon and accent.
 - [ ] A shared link unfurls with the app's own title, description and image,
-      and `og:image` answers 200.
+      and `og:image` is a full address that answers 200.
 
 **Holm and release**
 
