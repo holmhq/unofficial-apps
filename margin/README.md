@@ -323,7 +323,9 @@ Then:
 - **Feedback.** Send feedback goes to the owner's feedback app. Set
   `project` and `origin` in `loadFeedback()` in `web/margin/reader.js` to
   your own project, and `FEEDBACK_ORIGIN` in `api/pages.js` (the pages' CSP
-  lets it frame the form), or remove `{{{margin.credit}}}`'s button.
+  lets it frame the form), or remove `{{{margin.credit}}}`'s button. Studio
+  is a static page, so the node's policy has to let it frame the form too:
+  `holm @<peer> policy set security.csp.frame_src https://feedback.zyt.app --app <app-id>`.
 - **Invite emails** need the node's email sending (section 12 of the guide).
   Without it, Margin shows the link to send yourself.
 - **Uploads** follow the node's request body limit (1 MiB by default):
