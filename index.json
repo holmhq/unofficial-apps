@@ -622,11 +622,11 @@
     {
       "name": "feedback",
       "path": "feedback",
-      "version": "0.19.0",
-      "tag": "feedback/v0.19.0",
-      "h1": "h1:d9twm7ugdrRgyFlExNExCaXPpnTrQgsKx69tEFZedig=",
+      "version": "0.19.1",
+      "tag": "feedback/v0.19.1",
+      "h1": "h1:TO+Ea5y4rQOkcCupGQ2Pn/4PxGZ+TWlAihaQSPCYwNc=",
       "files": 68,
-      "size": 938991,
+      "size": 938792,
       "title": "feedback",
       "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
       "themeColor": "#c2410c",
@@ -636,7 +636,7 @@
         "subtitle": "Feedback for websites, shops and events",
         "category": "Developer tools",
         "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-        "whatsNew": "feedback now feels like an app: the header and a small footer stay put while each page scrolls under them, the app opens at once, and your projects show straight away. ⌘K jumps to your projects, stats, keys or Connect via MCP. Links, the Holm-site command and new API keys copy with one click.",
+        "whatsNew": "feedback now feels like an app: the header and a small footer stay put while each page scrolls under them, the app opens at once, and your projects show straight away. ⌘K jumps to your projects, stats, keys or Connect via MCP. Links, the Holm-site command and new API keys copy with one click. A shared link now shows its picture everywhere.",
         "featured": true,
         "related": [
           "kalendar",
@@ -787,6 +787,11 @@
       ],
       "prompt": "Build a feedback app using https://holmhq.com/llms-full.txt as the only Holm\nreference; Holm's own https://github.com/holmhq/cdn is allowed for feed-stars.\nRead the v1 sections 9–12 first. Use holm.json with web.spa true, public web/\nfiles and api/main.js exporting default { async fetch(request, env) }.\nUse env.holm auth/DS/KV/S3/image, standard Request/Response and same-origin\nbrowser API calls; fall back to env.holm.web.fetch(request). No build step.\nUse relative server imports, request.formData() and File.arrayBuffer() for\nuploads; no global holm/request/respond and no request.files API.\n\n- Signed-in people make one project per website, shop or event. Supply a\n  one-tag widget: a button in a shadow root opens an iframe form; also a\n  stand-alone feedback page at a custom address, with SVG QR code/poster.\n- Design/Form tabs customize title, words, colour, logo, cover, icon, button\n  label/corner/style and theme, with a live preview. Website kinds: Issue,\n  Idea, Question; places: Praise, Problem, Idea. Add optional/required stars,\n  contact email/phone and up to eight text/select/radio/checkbox questions.\n  Support four files, 8 MiB total, and a one-tap phone photo; photo or rating\n  alone can send. Shrink big photos in the browser before upload (at most\n  2048 px, JPEG quality 0.82), and turn iPhone HEIC photos into JPEG. Strip query/fragment from the sending page's address.\n- One private inbox per project: ticket numbers, statuses, notes and a team\n  thread, sort/search/filter for hundreds of items. Only the owner sees\n  files/contact details. The optional public page shows selected items,\n  votes once per browser, and comments only after owner approval. The owner\n  can file an item themselves and share one item by an unguessable link\n  that needs no sign-in and shows no private fields.\n- Keep spam out with a trap field, project caps and allowed sites, honestly\n  described as casual-misuse guards, not strong sender authentication.\n  Track daily visits, QR/email-link visits, opens, sends, votes and comments\n  in app KV; no visitor tracking. “Where it's live” separates local copies.\n- Add typed operations for public widget settings and JSON feedback with keyed retries, plus a signed-in owner's private inbox, mark-done, filing and sharing actions and dashboard counts; keep all existing routes and file flows.\n- API keys: show once, hash SHA-256, accept bearer tokens on owner routes,\n  check project ownership, return the setup snippet; keys cannot mint keys.\n- Make it refined on phones/desktop, light/dark/system. The window never\n  scrolls: a frosted header and a small frosted footer stay put and each\n  page scrolls in its own panel. A round avatar menu for keys, theme, stats\n  and /changelog, and ⌘K with the same places and actions. Anything to copy\n  is a click-to-copy field. A versioned service worker keeps every page\n  file, never anything sent, and the projects list draws from the last\n  visit. An optional footer Feedback link to a project I supply.\n- Vendor fonts, QR code code and icons with licenses. For feed-stars use\n  Holm's CDN pinned to a commit and v-X.Y.Z folder with integrity, plus plain\n  stars as fallback. Copy embed.js into other Holm sites when their CSP\n  requires it and allow the feedback origin in the site's frame-src.\n  The guide does not guarantee frame-ancestors defaults: set deliberate\n  web.headers for framing, inspect both responses and test the iframe.\n- Make holm.symbol.svg and run holm app identity generate for the icons,\n  manifest and social card; author og:image tags only to keep a hand-made\n  social preview. Add authored social metadata in web/index.html. Make\n  listing/listing.json plus sample screenshots; these are repo conventions,\n  not a Holm store schema documented by the guide. Use holm.json version.\n\nRun holm app validate --spec-v1 feedback. With my approval, deploy with\nholm @<peer> app deploy feedback --spec-v1 --host feedback.<my-domain>.\nAsk before replacing a host or moving an older-format app. Validation does\nnot run the app: test cross-site embedding, uploads, ownership, comments,\nvotes/stats and mobile/desktop light/dark. Inspect the target settings schema\nbefore setting sign-in branding. Report any guide or runtime gaps honestly.",
       "history": [
+        {
+          "version": "0.19.0",
+          "date": "2026-11-05",
+          "whatsNew": "feedback now feels like an app: the header and a small footer stay put while each page scrolls under them, the app opens at once, and your projects show straight away. ⌘K jumps to your projects, stats, keys or Connect via MCP. Links, the Holm-site command and new API keys copy with one click."
+        },
         {
           "version": "0.18.0",
           "date": "2026-11-05",
@@ -1675,11 +1680,11 @@
     {
       "name": "pastebin",
       "path": "pastebin",
-      "version": "0.5.0",
-      "tag": "pastebin/v0.5.0",
-      "h1": "h1:CnO/AQd0Fs6uIHKNjlMYDLv88nicbXdGUQ+RoYuA/t0=",
+      "version": "0.5.1",
+      "tag": "pastebin/v0.5.1",
+      "h1": "h1:gMzcwecnHO1q/BBddvRX8qno0g+HJQh81usshTZZyCk=",
       "files": 56,
-      "size": 897543,
+      "size": 897486,
       "title": "pastebin",
       "description": "Private-first text, code and media pastes with expiring links and burn-after-read sharing.",
       "themeColor": "#173a72",
@@ -1689,7 +1694,7 @@
         "subtitle": "Links that expire or burn",
         "category": "Utilities",
         "description": "Paste text, code or files and share them behind a link that expires, opens only once, or can be revoked at any time.\n\nCode is highlighted as you type. Markdown renders like GitHub's, and images, video and audio play in place. Your name stays off the paste unless you choose to show it.\n\nAPI keys and a small command-line tool let scripts and agents file pastes for you.",
-        "whatsNew": "pastebin now feels like an app: the header and footer stay put while the page scrolls under them, pages open at once from the last visit, and ⌘K jumps to your pastes, API keys, Connect via MCP or the theme. A paste's link and a new API key copy with one click. Pastes are still never kept on the device.",
+        "whatsNew": "pastebin now feels like an app: the header and footer stay put while the page scrolls under them, pages open at once from the last visit, and ⌘K jumps to your pastes, API keys, Connect via MCP or the theme. A paste's link and a new API key copy with one click. Pastes are still never kept on the device. A shared link now shows its picture everywhere.",
         "featured": true,
         "related": [
           "zend",
@@ -1780,6 +1785,11 @@
       ],
       "prompt": "Build a private-first pastebin using only https://holmhq.com/llms-full.txt for\nHolm. Read its v1 sections 9–12 first. Make holm.json, public web/ files and\napi/main.js exporting default { async fetch(request, env) }. Set web.spa\ntrue, use env.holm for storage/auth, return standard Responses and fall\nback to env.holm.web.fetch(request). No build step or third-party runtime CDN;\nvendor the Markdown parser, sanitizer, highlighter and fonts with licenses.\n\n- Make a minimal cyanotype design, light/dark/system themes, excellent on\n  phones and desktop. The window never scrolls: frosted bars stay put and\n  only the page's panel (or the editor) scrolls. A versioned service worker\n  keeps every page file so pages open at once; it never keeps a paste.\n  ⌘K opens a command menu with the avatar menu's places and actions.\n- Paste text/code with syntax highlighting and safe GitHub-flavoured\n  Markdown (Preview/Source), plus images, video, audio or any file. Put the\n  attachment icon at the editor's top right; support drop and paste.\n- Signed-in owners create expiring, one-time or revocable links. Hide their\n  name/avatar by default. A sealed link needs a click to open, so unfurlers\n  cannot burn it; the owner's preview must not burn it. Use a documented DS\n  transaction to claim once; check expiry on access and delete expired blobs\n  then. The guide does not document ifRevision or blob TTL options: do not\n  promise automatic idle cleanup or claim race safety without testing it.\n- Centre a split create button reading “Create [one-time] link [with] my\n  name for [1h] ▾”; crossing out those words toggles them without layout shift.\n- Put pastes, theme and API keys in the avatar menu. Links and new keys\n  are click-to-copy fields. Show keys once, store\n  SHA-256 hashes, check ownership on every owner route. Add JSON/multipart\n  HTTP creation and a small POSIX sh CLI using curl/jq. Read form files via\n  request.formData() and arrayBuffer(); do not expose private files directly.\n- Expose the main actions as MCP tools (named operations, auth \"user\", each\n  checking the owner): list and read your pastes without burning one-time\n  ones, create, change, revoke and delete, and open a shared link, sealed\n  until the person agrees to burn a one-time paste. Put Connect via MCP… in\n  the avatar menu: a sheet with the connector address to click and copy,\n  and tabs for Claude, ChatGPT, Claude Code and what the tools do.\n- Add safe file downloads, no-referrer/noindex, a Holm/source footer, and an\n  optional footer feedback link only if I supply a feedback project.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 pastebin. With my approval, deploy with\nholm @<peer> app deploy pastebin --spec-v1 --host pastebin.<my-domain>.\nNever replace an occupied host or move an older-format app without asking.\nValidation does not run the app: test uploads, expiry, revocation and two\nsimultaneous one-time opens, plus mobile/desktop in light/dark. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in branding.",
       "history": [
+        {
+          "version": "0.5.0",
+          "date": "2026-11-05",
+          "whatsNew": "pastebin now feels like an app: the header and footer stay put while the page scrolls under them, pages open at once from the last visit, and ⌘K jumps to your pastes, API keys, Connect via MCP or the theme. A paste's link and a new API key copy with one click. Pastes are still never kept on the device."
+        },
         {
           "version": "0.4.0",
           "date": "2026-11-05",
