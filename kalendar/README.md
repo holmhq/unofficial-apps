@@ -193,9 +193,13 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
 - Sound: quiet Web Audio cues for a tap, a pick, a snap, a step, a booking (a
   small chime), a request sent and a mistake; off with one switch.
 - Phones get one step per screen and a tab bar; wide screens get a card with
-  the event beside the strip, and a sidebar with your link. Profile's tab
-  shows your picture. Public pages end in a frosted bar like Catalog's: A
-  Holm app, Source and Send feedback.
+  the event beside the strip, and a sidebar with your link that hides with
+  one click. ⌘K goes to a tab, copies or opens your link, opens Connect via
+  MCP… or changes the theme. Profile's tab shows your picture. Public pages
+  end in a frosted bar like Catalog's: A Holm app, Source and Send feedback;
+  your own tabs end with the same line on a phone, and keep it in the
+  sidebar on a desk. Rows of choices, such as an event's length, stay on one
+  line and scroll sideways under a fade.
 
 ## How it's built
 

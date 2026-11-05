@@ -9,6 +9,8 @@ import * as t from '../time.js'
 
 const slugify = (v) => String(v || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
 
+// A row of choices on one line. On a narrow screen it scrolls sideways under a soft fade
+// at the edge it goes on past, and opens with the chosen one in view.
 function chips(options, value, onchange, label) {
   const box = h('div.chips', { role: 'radiogroup', 'aria-label': label })
   const paint = () => { for (const b of box.children) { const on = b.dataset.v === String(value); b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)) } }
@@ -16,6 +18,20 @@ function chips(options, value, onchange, label) {
     box.append(h('button.chip', { type: 'button', role: 'radio', 'data-v': String(o.value), onclick: () => { value = o.value; paint(); sound.tap(); haptic(4); onchange(o.value) } }, o.icon ? ic(o.icon, 15, 2.1) : null, o.label))
   }
   paint()
+  const edges = () => {
+    box.classList.toggle('is-more-l', box.scrollLeft > 1)
+    box.classList.toggle('is-more-r', box.scrollLeft + box.clientWidth < box.scrollWidth - 1)
+  }
+  box.addEventListener('scroll', edges, { passive: true })
+  let first = true
+  new ResizeObserver(() => {
+    if (first && box.clientWidth) {
+      first = false
+      const on = box.querySelector('.chip.on')
+      if (on && on.offsetLeft + on.offsetWidth > box.clientWidth - 16) box.scrollLeft = on.offsetLeft - 16
+    }
+    edges()
+  }).observe(box)
   return box
 }
 

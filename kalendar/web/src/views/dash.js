@@ -4,12 +4,12 @@
 // save as you make them. Like tabs in an app, each keeps its place while
 // you're on another, and draws from what this browser saw last before the
 // server's answer quietly brings it up to date.
-import { h, ic, fill, avatar, sheet, menu, segmented, toggle, toast, haptic, copyText, flip, nope, collapsing, reduced, wide } from '../ui.js'
+import { h, ic, fill, avatar, sheet, menu, segmented, toggle, toast, haptic, copyText, flip, nope, collapsing, reduced, wide, palette } from '../ui.js'
 import * as api from '../api.js'
 import * as store from '../store.js'
 import * as theme from '../theme.js'
 import * as cover from '../cover.js'
-import { state, topBar, go, failure, prettyURL, pageURL, linkField, linkParts, share, holmFooter, mine } from '../shell.js'
+import { state, topBar, brand, go, failure, prettyURL, pageURL, linkField, linkParts, share, holmFooter, mine, mcpSheet, signOut } from '../shell.js'
 import { sound } from '../sound.js'
 import * as t from '../time.js'
 import { zonePayload, city } from '../zones.js'
@@ -60,9 +60,44 @@ export function dash(tab) {
     return b
   }))
   const shareBtn = h('button.icon-btn', { type: 'button', 'aria-label': 'Share your link', onclick: () => share(host().handle) }, ic('share', 19, 2))
-  const bar = topBar({ right: [shareBtn] })
+  const sideBtn = h('button.icon-btn.side-btn', { type: 'button', 'aria-label': 'Hide sidebar', title: 'Hide sidebar', onclick: () => toggleSide() }, ic('panelLeft', 20, 1.9))
+  const bar = topBar({ left: [sideBtn, brand()], right: [shareBtn] })
+  // The footer: in the sidebar on a desk, at the end of each tab on a phone or when the
+  // sidebar is hidden.
+  const foot = h('div.dash-foot', holmFooter({ bar: false }))
   const el = h('div.app.dash', bar, h('div.dash-body', side, main), tabbar)
   collapsing(bar, main)
+
+  // The sidebar hides with one click on a desk, and stays as it was left.
+  function toggleSide(hidden = !el.classList.contains('is-side-hidden')) {
+    el.classList.toggle('is-side-hidden', hidden)
+    side.inert = hidden
+    sideBtn.setAttribute('aria-label', hidden ? 'Show sidebar' : 'Hide sidebar')
+    sideBtn.title = hidden ? 'Show sidebar' : 'Hide sidebar'
+    try { localStorage.setItem('kalendar:side', hidden ? 'hidden' : 'shown') } catch {}
+  }
+  try { if (localStorage.getItem('kalendar:side') === 'hidden') toggleSide(true) } catch {}
+
+  // ⌘K: a tab or something to do, by typing a few letters of it.
+  let pal = null
+  const commands = () => [
+    ...TABS.map((x) => ({ label: x.label, icon: x.icon, hint: 'Go', run: () => go(x.path) })),
+    { label: 'Copy your link', icon: 'copy', run: () => copyText(pageURL(host().handle), 'Link copied') },
+    { label: 'Open your page', icon: 'externalLink', run: () => window.open(pageURL(host().handle), '_blank', 'noopener') },
+    { label: 'Connect via MCP…', icon: 'mcp', run: () => mcpSheet() },
+    { label: 'Light', icon: 'sun', hint: 'Appearance', run: () => theme.setMode('light') },
+    { label: 'Dark', icon: 'moon', hint: 'Appearance', run: () => theme.setMode('dark') },
+    { label: 'Auto', icon: 'monitor', hint: 'Appearance', run: () => theme.setMode('system') },
+    { label: 'Sign out', icon: 'logOut', run: () => signOut() }
+  ]
+  const onCmdK = (e) => {
+    if (!el.isConnected || !(e.metaKey || e.ctrlKey) || e.altKey || (e.key !== 'k' && e.key !== 'K')) return
+    if (pal) { e.preventDefault(); pal.close(); return }
+    if (document.querySelector('.layer, .sheet-layer')) return
+    e.preventDefault()
+    pal = palette(commands(), { onClose: () => { pal = null } })
+  }
+  document.addEventListener('keydown', onCmdK)
 
   // Profile's tab shows your picture, like an app's account tab.
   function face() { return h('span.tab-face', avatar({ key: host().handle, name: host().name, picture: host().picture })) }
@@ -99,7 +134,7 @@ export function dash(tab) {
       page = { bookings: bookingsTab, events: eventsTab, hours: hoursTab, insights: insightsTab, profile: profileTab }[id]()
       pages.set(id, page)
     }
-    fill(main, page.el)
+    fill(main, page.el, foot)
     main.scrollTop = page.top || 0
     main.dispatchEvent(new Event('scroll'))
     if (!built && page.refresh) page.refresh()
@@ -606,6 +641,14 @@ export function dash(tab) {
     const days = Array.from({ length: 7 }, (_, i) => (first + i) % 7)
     const offList = h('div.group.offs')
     const tools = h('div.week-tools')
+    // A soft fade on the edge the row goes on past.
+    const edges = () => {
+      tools.classList.toggle('is-more-l', tools.scrollLeft > 1)
+      tools.classList.toggle('is-more-r', tools.scrollLeft + tools.clientWidth < tools.scrollWidth - 1)
+    }
+    tools.addEventListener('scroll', edges, { passive: true })
+    new ResizeObserver(edges).observe(tools)
+    new MutationObserver(edges).observe(tools, { childList: true })
 
     let timer = null
     function save(change, label = 'Saved') {
@@ -867,7 +910,7 @@ export function dash(tab) {
       if (x.id !== s.tab) show(x.id)
       return true
     },
-    leave() { document.removeEventListener('visibilitychange', onVisible); for (const page of pages.values()) if (page.leave) page.leave() },
+    leave() { if (pal) pal.close(); document.removeEventListener('keydown', onCmdK); document.removeEventListener('visibilitychange', onVisible); for (const page of pages.values()) if (page.leave) page.leave() },
     clock() { rebuild() },
     me() { paintLink(); paintFaces(); badges(); theme.setAccent(host().theme, { scope: 'me' }); cover.keep() }
   }

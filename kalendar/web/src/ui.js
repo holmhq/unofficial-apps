@@ -434,3 +434,66 @@ export function transition(change, type = null) {
   t.finished.finally(() => { if (document.documentElement.dataset.vt === type) delete document.documentElement.dataset.vt })
   return t.updateCallbackDone
 }
+
+/* ---- ⌘K ------------------------------------------------------------------------- */
+
+// A command menu: a field, then the commands that match what's typed, best first. Each
+// command is { label, icon, hint, run }. Enter or a click runs one; Escape, a click
+// outside or ⌘K again closes it. Returns { close }.
+export function palette(commands, { placeholder = 'Go to or do…', onClose = null } = {}) {
+  const input = h('input.pal-field', { type: 'text', placeholder, 'aria-label': placeholder.replace(/…$/, ''), autocomplete: 'off', spellcheck: 'false' })
+  const list = h('div.pal-list', { role: 'listbox' })
+  const box = h('div.pal', { role: 'dialog', 'aria-label': 'Command menu' }, h('div.pal-top', ic('search', 18, 2.1), input, h('kbd', 'esc')), list)
+  const layer = h('div.pal-layer', { onclick: (e) => { if (e.target === layer) close() } }, box)
+  const opener = document.activeElement
+  document.body.append(layer)
+  requestAnimationFrame(() => layer.classList.add('is-in'))
+  input.focus()
+  let at = 0
+  let shown = []
+  const score = (text, q) => {
+    const t = text.toLowerCase()
+    if (t.startsWith(q)) return 3
+    if (t.includes(' ' + q)) return 2
+    if (t.includes(q)) return 1
+    let i = 0
+    for (const ch of t) if (ch === q[i]) i++
+    return i === q.length ? 0.5 : 0
+  }
+  function draw() {
+    const q = input.value.trim().toLowerCase()
+    shown = commands.map((c) => ({ ...c, s: q ? Math.max(score(c.label, q), c.hint ? score(c.hint, q) - 1 : 0) : 1 })).filter((c) => c.s > 0).sort((a, b) => b.s - a.s)
+    at = Math.min(at, Math.max(0, shown.length - 1))
+    fill(list, shown.length ? shown.map((c, n) => h('button.pal-item' + (n === at ? '.is-on' : ''), { type: 'button', role: 'option', onpointermove: () => { if (at !== n) { at = n; mark() } }, onclick: () => pick(c) }, h('span.pal-ic', ic(c.icon, 16, 2)), h('span.grow.trunc', c.label), c.hint ? h('small.trunc', c.hint) : null)) : h('div.pal-none', 'Nothing matches'))
+  }
+  // Keep the chosen row in view by scrolling the list itself, never the page.
+  function mark() {
+    [...list.children].forEach((x, n) => x.classList.toggle('is-on', n === at))
+    const row = list.children[at]
+    if (!row) return
+    if (row.offsetTop < list.scrollTop) list.scrollTop = row.offsetTop - 6
+    else if (row.offsetTop + row.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = row.offsetTop + row.offsetHeight - list.clientHeight + 6
+  }
+  function pick(c) { close(true); setTimeout(() => c.run(), 0) }
+  let closed = false
+  function close(picked = false) {
+    if (closed) return
+    closed = true
+    layer.classList.remove('is-in')
+    setTimeout(() => layer.remove(), 180)
+    document.removeEventListener('keydown', onKey, true)
+    if (!picked && opener && opener.focus && document.contains(opener)) opener.focus({ preventScroll: true })
+    if (onClose) onClose()
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close() }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); at = Math.min(shown.length - 1, at + 1); mark() }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); at = Math.max(0, at - 1); mark() }
+    else if (e.key === 'Enter') { e.preventDefault(); if (shown[at]) pick(shown[at]) }
+    else if (e.key === 'Tab') e.preventDefault()
+  }
+  document.addEventListener('keydown', onKey, true)
+  input.addEventListener('input', () => { at = 0; draw() })
+  draw()
+  return { close }
+}

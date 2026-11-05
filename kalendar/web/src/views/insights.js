@@ -110,10 +110,11 @@ export function insights({ host, days, onDays }) {
         : h('div.links-empty', ic('qrCode', 22, 1.9), h('p', 'Make a link for a flyer, a newsletter or a talk. Its visits, scans and bookings show here, apart from the rest.')))
   }
 
+  // The city, then its country in grey, so a narrow card cuts the country before the city.
   function place(zone) {
     const c = countries && countries.COUNTRY[countries.ZONE[zone]]
-    if (zone === 'other') return 'Elsewhere'
-    return c ? `${city(zone)}, ${c}` : city(zone)
+    if (zone === 'other') return { label: 'Elsewhere' }
+    return { label: city(zone), sub: c || null }
   }
 
   function delta(cur, prev) {
@@ -132,7 +133,7 @@ export function insights({ host, days, onDays }) {
     if (!rows.length) return h('p.panel-empty', 'Nothing yet.')
     const top = Math.max(...rows.map((r) => r.n))
     return h('div.bar-rows', rows.map((r, i) => h('div.bar-row', { title: `${fmt(r.n)}`, style: { '--i': String(i) } },
-      h('div.bar-head', h('span.bar-name', r.icon ? ic(r.icon, 15, 2) : null, r.dot ? h('i.ev-dot', { style: { '--event': r.dot } }) : null, h('span.trunc', r.label)), h('span.bar-val.num', total ? pct(r.n, total) : fmt(r.n))),
+      h('div.bar-head', h('span.bar-name', r.icon ? ic(r.icon, 15, 2) : null, r.dot ? h('i.ev-dot', { style: { '--event': r.dot } }) : null, h('span.trunc', { title: r.sub ? `${r.label}, ${r.sub}` : r.label }, r.label, r.sub ? h('span.bar-sub', ', ' + r.sub) : null)), h('span.bar-val.num', total ? pct(r.n, total) : fmt(r.n))),
       h('div.bar-track', h('span', { style: { width: `${Math.max(2, (r.n / top) * 100)}%` } })))))
   }
 
@@ -188,7 +189,7 @@ export function insights({ host, days, onDays }) {
     }
     const sources = (r.sources || []).map((x) => ({ label: source(x.key), n: x.n }))
     const devices = (r.devices || []).filter((x) => x.n).map((x) => ({ label: (DEVICES[x.key] || [x.key])[0], icon: (DEVICES[x.key] || [])[1] || null, n: x.n }))
-    const zones = (r.zones || []).map((x) => ({ label: place(x.key), n: x.n }))
+    const zones = (r.zones || []).map((x) => ({ ...place(x.key), n: x.n }))
     const linkRows = (r.links || []).map((x) => { const k = String(x.key).replace(/^link:/, ''); return { label: LINKS[k] || k, n: x.n } })
     const eventRows = (r.events || []).filter((e) => e.clicks).map((e) => ({ label: e.title, dot: colorOf(e.color), n: e.clicks }))
     const clicks = [...eventRows, ...linkRows].sort((a, b) => b.n - a.n).slice(0, 8)
@@ -217,7 +218,7 @@ export function insights({ host, days, onDays }) {
         panel('Event types', 'Views of each booking page, and how many booked',
           (r.events || []).length ? h('div.ev-table',
             h('div.ev-tr.head', h('span', 'Event'), h('span', 'Views'), h('span', 'Booked'), h('span', 'Rate')),
-            (r.events || []).map((e) => h('div.ev-tr', h('span.ev-name', h('i.ev-dot', { style: { '--event': colorOf(e.color) } }), h('span.trunc', e.title)), h('span.num', fmt(e.views)), h('span.num', fmt(e.bookings)), h('span.num.quiet', pct(e.bookings, e.views))))) : h('p.panel-empty', 'Nothing yet.'))))
+            (r.events || []).map((e) => h('div.ev-tr', h('span.ev-name', h('i.ev-dot', { style: { '--event': colorOf(e.color) } }), h('span.trunc', { title: e.title }, e.title)), h('span.num', fmt(e.views)), h('span.num', fmt(e.bookings)), h('span.num.quiet', pct(e.bookings, e.views))))) : h('p.panel-empty', 'Nothing yet.'))))
   }
 
   load()

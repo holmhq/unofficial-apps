@@ -181,7 +181,6 @@ function accountMenu(anchor) {
     m ? 'sep' : null,
     m ? { label: 'Connect via MCP…', icon: 'mcp', onclick: () => mcpSheet(anchor) } : null,
     'sep',
-    FEEDBACK_PROJECT ? { label: 'Send feedback', icon: 'messageSquareText', onclick: feedback } : null,
     m ? { label: 'Sign out', icon: 'logOut', onclick: signOut } : { label: 'Sign in', icon: 'user', onclick: signIn }
   ]
   menu(anchor, items, { align: 'end' })

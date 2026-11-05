@@ -100,7 +100,11 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   a file, such as an icon, still opens that file), pages drawn at once
   from the last answers kept in the browser and refreshed quietly, motion
   only for changes. Public pages end in a frosted footer: A Holm app, Source,
-  Send feedback (the repo's feedback app, embed.js vendored).
+  Send feedback (the repo's feedback app, embed.js vendored); the host's
+  tabs keep that line in the sidebar on a desk and end with it on a phone,
+  and the account menu holds none of it. The sidebar hides with one click,
+  ⌘K goes to a tab, copies or opens the host's link, opens Connect via MCP…
+  or changes the theme, and rows of choices stay on one line.
 - For this repository's store, use holm.json version, holm.symbol.svg (one
   black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,
   category, description, whatsNew and sample screenshots. These are repo
@@ -273,3 +277,11 @@ Offered Connect via MCP for the apps whose tools had no sheet yet (Kalendar,
 Deck, Margin and Ralk), and tools for Zend, Roll and Until, the owner said:
 
 > yes, do both batches
+
+**Kalendar 0.11.0: a sweep against the cookbook**
+
+Version 0.11.0 came from a sweep of every app in the repository against its
+cookbook (⌘K, a sidebar that hides, the footer on phones, 16 px fields,
+choices on one line). Offered the sweep, the owner answered:
+
+> Sure do cookbook sweep
