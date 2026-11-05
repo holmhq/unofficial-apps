@@ -198,8 +198,8 @@
       "handler": "opGuide",
       "auth": "public",
       "risk": "read",
-      "summary": "Read how to manage a Kalendar booking page (call this first)",
-      "description": "Returns {guide}: what each tool does, how times are written, and what only the app can change.",
+      "summary": "How Kalendar's tools work",
+      "description": "Call this first. Returns {guide}: what each tool does, how times are written, and what only the app can change.",
       "input": {
         "type": "object",
         "properties": {},
@@ -595,7 +595,7 @@
       "handler": "opEventsList",
       "auth": "user",
       "risk": "read",
-      "summary": "Your kinds of meeting (event types)",
+      "summary": "Your kinds of meeting",
       "description": "Returns each event type with its id, link, length, location, rules and whether it is shown.",
       "input": {
         "type": "object",

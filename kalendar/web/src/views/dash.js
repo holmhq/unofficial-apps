@@ -9,7 +9,7 @@ import * as api from '../api.js'
 import * as store from '../store.js'
 import * as theme from '../theme.js'
 import * as cover from '../cover.js'
-import { state, topBar, go, failure, prettyURL, pageURL, share, holmFooter, mine } from '../shell.js'
+import { state, topBar, go, failure, prettyURL, pageURL, linkField, linkParts, share, holmFooter, mine } from '../shell.js'
 import { sound } from '../sound.js'
 import * as t from '../time.js'
 import { zonePayload, city } from '../zones.js'
@@ -39,14 +39,14 @@ export function dash(tab) {
   const main = h('div.panel.dash-main')
   const navButtons = new Map()
   const tabButtons = new Map()
-  const linkText = h('span.link-text')
+  // Your link, to click and copy, in the sidebar and above Bookings on a phone.
+  const linkFields = [linkField(host().handle), linkField(host().handle)]
+  const openLink = h('a.btn.small.tinted', { href: pageURL(host().handle), target: '_blank', rel: 'noopener' }, ic('externalLink', 15, 2.2), 'Open')
   const side = h('nav.side', { 'aria-label': 'Kalendar' },
     h('div.side-link',
       h('small', 'Your link'),
-      linkText,
-      h('div.link-actions',
-        h('button.btn.small.tinted', { type: 'button', onclick: () => { copyText(pageURL(host().handle), 'Link copied'); sound.pop() } }, ic('copy', 15, 2.2), 'Copy'),
-        h('a.btn.small.tinted', { href: pageURL(host().handle), target: '_blank', rel: 'noopener' }, ic('externalLink', 15, 2.2), 'Open'))),
+      linkFields[0],
+      h('div.link-actions', openLink)),
     TABS.map((x) => {
       const b = h('button.side-item', { type: 'button', onclick: () => switchTo(x.id) }, x.id === 'profile' ? face() : ic(x.icon, 19, 2), h('span.grow', x.label), h('span.badge', { hidden: true }))
       navButtons.set(x.id, b)
@@ -68,7 +68,10 @@ export function dash(tab) {
   function face() { return h('span.tab-face', avatar({ key: host().handle, name: host().name, picture: host().picture })) }
   function paintFaces() { for (const old of el.querySelectorAll('.tab-face')) old.replaceWith(face()) }
 
-  function paintLink() { fill(linkText, h('span.link-host', `${location.host}/`), h('span.link-handle', `@${host().handle}`)) }
+  function paintLink() {
+    for (const f of linkFields) f.setValue(pageURL(host().handle), linkParts(host().handle))
+    openLink.href = pageURL(host().handle)
+  }
 
   function switchTo(id) {
     if (id === s.tab) { main.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' }); return }
@@ -133,9 +136,7 @@ export function dash(tab) {
     seg.querySelectorAll('button')[1].append(h('span.seg-count', { 'data-view': 'requests', hidden: true }))
     const box = h('section.tab-page',
       h('h1.large-title', 'Bookings'),
-      h('div.mobile-link.only-narrow',
-        h('div.grow', h('small', 'Your link'), h('span.link-text', prettyURL(host().handle))),
-        h('button.icon-btn.tinted', { type: 'button', 'aria-label': 'Copy your link', onclick: () => { copyText(pageURL(host().handle), 'Link copied'); sound.pop() } }, ic('copy', 18, 2))),
+      h('div.mobile-link.only-narrow', h('small', 'Your link'), linkFields[1]),
       h('div.seg-wrap', seg),
       list)
     load(list)

@@ -127,11 +127,16 @@ Only `web/` is served as files: `api/` and `holm.json` are not public URLs.
   visitor's browser tells visitors apart, the place comes from their browser's
   time zone (never an address), browsers asking not to be tracked send
   nothing, and your own visits don't count.
-- **From Claude.** Connect Claude's MCP connector to
-  `https://<your-kalendar>/_holm/mcp` and sign in: Claude can read and change
-  your profile, hours, days off and event types, list your meetings and
-  requests, accept or decline requests, cancel bookings, look up open times,
-  make tracked links and read your insights. It reads `guide.get` first.
+- **From Claude.** **Connect via MCP…** in the account menu shows the
+  connector address to click and copy, with steps for Claude, ChatGPT and
+  Claude Code, and what the tools do. Once connected and signed in, Claude
+  can read and change your profile, hours, days off and event types, list
+  your meetings and requests, accept or decline requests, cancel bookings,
+  look up open times, make tracked links and read your insights. It reads
+  `guide.get` first.
+- **Links to click and copy.** Your link, the calendar feed and the MCP
+  address are each one field: click it (or press Enter) and it's copied,
+  with a tick in place of the copy icon.
 - **Your calendar.** A private feed (`/feed/<secret>.ics`) to subscribe to in
   Apple Calendar, Google Calendar or Outlook, with a button to make a new link.
 
@@ -209,7 +214,7 @@ api/tz.js          offset tables, wall time ↔ UTC, dates written out without I
 api/mail.js        the emails, HTML and plain text
 api/ics.js         iCalendar files and Google/Outlook links
 web/sw.js          the app shell: every file of this version, installed all or nothing
-web/src/           the page: main.js (routes), shell.js, ui.js, views/…
+web/src/           the page: main.js (routes), shell.js (account menu, Connect via MCP), ui.js, views/…
 web/src/store.js   what the page last saw, so it draws at once and catches up
 web/src/timeline.js  the strip of days: shading, spans, the meeting clip, zoom, swaps and trades
 web/src/track.js   the visit beacon: views, clicks, picks, time on page, the link's tag
@@ -237,7 +242,8 @@ Holm primitives it uses:
   `meetings.cancel`, `requests.accept`/`requests.decline`, `slots.list`,
   `stats.get`, `links.*`) use `auth: "user"`, so anyone signed in can connect Claude,
   and each acts only on the caller's own page. Holm serves them at
-  `/_holm/mcp`; `guide.get` is public.
+  `/_holm/mcp`; `guide.get` is public. `/api/me` answers with this host's
+  connector address (`mcp`), which the Connect via MCP sheet shows.
 - **Named operations** (`api/contract.json`): `bookings.create` is public,
   behind Holm's proof-of-work challenge (solved in the background from
   `/_holm/challenge.js` while the guest types) and six calls a minute, with an
@@ -428,6 +434,9 @@ only give to `https://` and `localhost` pages. On a local node, add a
   from time zones (several countries share some); requests from bookings made
   without a visit (a direct link, a browser that asks not to be tracked) can
   push a rate past what was counted, so rates stop at 100%.
+- **The Connect via MCP sheet can't say whether Claude is connected.** Holm
+  doesn't tell an app that yet, so the sheet shows how to connect and no
+  status.
 - **Claude can't do the first setup.** Choosing the link and changing the time
   zone happen in the app, because the zone's offsets come from the browser.
   A host's zone doesn't follow them by itself when they travel; the app

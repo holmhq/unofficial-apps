@@ -5,7 +5,7 @@
 // and profiles), your link, email about bookings and the address it goes
 // to, and the private calendar feed of your bookings. Like your hours, it
 // saves as you type.
-import { h, ic, fill, avatar, toggle, nope, copyText, confirm, toast, menu, segmented } from '../ui.js'
+import { h, ic, fill, avatar, toggle, nope, copyText, copyField, confirm, toast, menu, segmented } from '../ui.js'
 import * as api from '../api.js'
 import * as store from '../store.js'
 import { state, failure, prettyURL, pageURL, share, paintAccounts } from '../shell.js'
@@ -418,14 +418,12 @@ export function profileTab({ onSaved }) {
       api.get('/api/me').then((r) => { if (r.host) { state.me.host = r.host; store.keep('me', state.me); drawMails() } }).catch(() => {})
     }
   }
-  const feedBox = h('code.feed-url')
-  const paintFeed = () => { feedBox.textContent = host().feed }
-  paintFeed()
+  const feedBox = copyField(host().feed, { label: 'Copy your feed link' })
+  const paintFeed = () => feedBox.setValue(host().feed)
   const feed = h('div.group.feed-group',
     h('p.feed-text', 'Subscribe to this private link in Apple Calendar, Google Calendar or Outlook to see every booking there. Anyone with it can read your bookings.'),
     feedBox,
     h('div.link-actions',
-      h('button.btn.small.tinted', { type: 'button', onclick: () => { copyText(host().feed, 'Feed link copied'); sound.pop() } }, ic('copy', 15, 2.2), 'Copy'),
       h('a.btn.small.tinted', { href: host().feed.replace(/^https?:/, 'webcal:'), onclick: (e) => { e.currentTarget.href = host().feed.replace(/^https?:/, 'webcal:') } }, ic('calendarPlus', 15, 2.2), 'Subscribe'),
       h('button.btn.small', { type: 'button', onclick: async () => {
         if (!await confirm({ title: 'Make a new feed link?', text: 'The old link stops working, so calendars using it stop updating.', action: 'New link' })) return

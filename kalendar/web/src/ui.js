@@ -98,7 +98,7 @@ export function toast(text, { kind = 'good', ms: duration } = {}) {
 // sheet({ title, body(close), cancel, done, ... }) resolves with what close()
 // was given, or undefined when dismissed. On a phone it rises from the
 // bottom and can be pulled down; on a wide screen it's a dialog.
-export function sheet({ title = '', label = null, body, cancel = 'Cancel', done = null, onDone = null, wide: isWide = false, plain = false }) {
+export function sheet({ title = '', label = null, body, cancel = 'Cancel', done = null, onDone = null, wide: isWide = false, plain = false, cls = '' }) {
   return new Promise((resolve) => {
     let closed = false
     const previous = document.activeElement
@@ -116,7 +116,7 @@ export function sheet({ title = '', label = null, body, cancel = 'Cancel', done 
       if (event.key === 'Tab') trapFocus(event, box)
     }
     const doneBtn = done ? h('button.btn.plain.strong.r', { type: 'button', onclick: () => (onDone ? onDone(close) : close(true)) }, done) : h('span.r')
-    const box = h('div.sheet' + (isWide ? '.wide' : '') + (plain ? '.plain' : ''), { role: 'dialog', 'aria-modal': 'true', 'aria-label': label || title || 'Options' },
+    const box = h('div.sheet' + (isWide ? '.wide' : '') + (plain ? '.plain' : '') + (cls ? '.' + cls : ''), { role: 'dialog', 'aria-modal': 'true', 'aria-label': label || title || 'Options' },
       h('div.grabber'),
       h('div.sheet-head', cancel ? h('button.btn.plain.l', { type: 'button', onclick: () => close() }, cancel) : h('span.l'), h('h2', title), doneBtn),
       h('div.sheet-body', body(close)))
@@ -292,10 +292,11 @@ export function closeMenus() {
 
 /* ---- Segmented control ----------------------------------------------------------- */
 
-export function segmented(options, value, onchange, { label = 'Choose' } = {}) {
+// iconsOnly: each button shows its icon, with the label as its name and tooltip.
+export function segmented(options, value, onchange, { label = 'Choose', iconsOnly = false } = {}) {
   const thumb = h('span.thumb', { 'aria-hidden': 'true' })
-  const box = h('div.seg', { role: 'group', 'aria-label': label }, thumb)
-  const buttons = options.map(o => h('button', { type: 'button', 'aria-pressed': String(o.value === value), onclick: () => pick(o.value) }, o.icon ? ic(o.icon, 15, 2) : null, o.label))
+  const box = h('div.seg' + (iconsOnly ? '.is-icons' : ''), { role: 'group', 'aria-label': label }, thumb)
+  const buttons = options.map(o => h('button', { type: 'button', 'aria-pressed': String(o.value === value), onclick: () => pick(o.value), ...(iconsOnly ? { 'aria-label': o.label, title: o.label } : {}) }, o.icon ? ic(o.icon, iconsOnly ? 17 : 15, 2) : null, iconsOnly ? null : o.label))
   box.append(...buttons)
   function place(animate) {
     const i = options.findIndex(o => o.value === value)
@@ -340,6 +341,46 @@ export function flip(container, mutate) {
 export function nope(el) {
   if (!el || reduced()) return
   el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-7px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(2px)' }, { transform: 'none' }], { duration: 380, easing: 'ease-out' })
+}
+
+// Anything to copy (a link, an address, a command) is one field you click:
+// the value on one line, a copy icon at its end that turns into a tick.
+// `show` is what it reads when that differs from what it copies (text, or
+// nodes such as a link's host and handle), and `cls` adds a class to the
+// field. setValue() changes both later.
+export function copyField(value, { show = null, label = 'Copy', cls = '' } = {}) {
+  const text = h('code.copy-value', show || value)
+  const word = h('span.copy-word', { 'aria-live': 'polite' }, 'Copy')
+  let timer
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(value) } catch {
+      getSelection().selectAllChildren(text)
+      toast('Couldn’t copy. It’s selected, so copy it by hand.', { kind: 'bad' })
+      return
+    }
+    haptic()
+    el.classList.add('is-copied')
+    word.textContent = 'Copied'
+    clearTimeout(timer)
+    timer = setTimeout(() => { el.classList.remove('is-copied'); word.textContent = 'Copy' }, 1600)
+  }
+  const el = h('div.copy-field' + (cls ? '.' + cls : ''), {
+    role: 'button',
+    tabindex: '0',
+    'aria-label': `${label}: ${value}`,
+    onclick: copy,
+    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy() } }
+  }, text, h('span.copy-cue', word, h('span.cf-copy', ic('copy', 16, 2)), h('span.cf-tick', ic('check', 16, 2.4))))
+  const fade = () => el.classList.toggle('is-long', text.scrollLeft + text.clientWidth < text.scrollWidth - 1)
+  text.addEventListener('scroll', fade, { passive: true })
+  if (typeof ResizeObserver === 'function') new ResizeObserver(fade).observe(text)
+  el.setValue = (next, nextShow = null) => {
+    value = next
+    text.replaceChildren(...[nextShow || next].flat())
+    el.setAttribute('aria-label', `${label}: ${next}`)
+    fade()
+  }
+  return el
 }
 
 export async function copyText(text, what = 'Copied') {

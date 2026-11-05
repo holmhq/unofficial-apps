@@ -1,8 +1,8 @@
 // First time signed in: choose your link, say roughly when you're free,
 // and you're live. Two event types are ready to go.
-import { h, ic, fill, avatar, nope, copyText, haptic, reduced } from '../ui.js'
+import { h, ic, fill, avatar, nope, haptic, reduced } from '../ui.js'
 import * as api from '../api.js'
-import { state, topBar, holmFooter, failure, go, prettyURL, pageURL, share, loadMe } from '../shell.js'
+import { state, topBar, holmFooter, failure, go, prettyURL, pageURL, linkField, share, loadMe } from '../shell.js'
 import { sound } from '../sound.js'
 import { here, zoneName, zonePayload, city } from '../zones.js'
 import { zonePicker } from './zone-picker.js'
@@ -147,9 +147,8 @@ export function onboard() {
       h('h1', 'You’re live'),
       h('p.sub', 'Share your link anywhere: email, chat, your bio.'),
       h('div.link-card',
-        h('span.link-text', prettyURL(host.handle)),
+        linkField(host.handle),
         h('div.link-actions',
-          h('button.btn.small.tinted', { type: 'button', onclick: () => { copyText(pageURL(host.handle), 'Link copied'); sound.pop() } }, ic('copy', 15, 2.2), 'Copy'),
           h('button.btn.small.tinted', { type: 'button', onclick: () => share(host.handle) }, ic('share', 15, 2.2), 'Share'))),
       h('p.fine', 'We made a 15-minute chat and a 30-minute meeting to start you off.'),
       h('button.btn.primary.large.block', { type: 'button', onclick: () => go('/', { replace: true }) }, 'Go to my bookings'),

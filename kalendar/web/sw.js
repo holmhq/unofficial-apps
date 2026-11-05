@@ -15,7 +15,7 @@
 // /manifest.webmanifest) is that file, even typed into the address bar;
 // handles and event slugs may hold dots, so /@… is always a page.
 
-const VERSION = '0.9.0'
+const VERSION = '0.10.0'
 const CACHE = 'kalendar-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',

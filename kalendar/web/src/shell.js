@@ -1,6 +1,6 @@
 // What every page shares: who's signed in, moving between pages, the top
 // bar with its round account button, the account menu, and the footer.
-import { h, ic, fill, avatar, menu, segmented, toggle, haptic, copyText, toast } from './ui.js'
+import { h, ic, fill, avatar, menu, segmented, toggle, haptic, copyText, copyField, sheet, toast } from './ui.js'
 import { mark, HOLM } from './icons.js'
 import * as api from './api.js'
 import * as store from './store.js'
@@ -80,6 +80,11 @@ export function link(href, attrs, ...kids) {
 
 export const pageURL = (handle) => `${location.origin}/@${handle}`
 export const prettyURL = (handle) => `${location.host}/@${handle}`
+
+// Your link to click and copy: its host, then the handle that matters,
+// laid out by the place it sits in.
+export const linkField = (handle) => copyField(pageURL(handle), { show: linkParts(handle), label: 'Copy your link', cls: 'is-link' })
+export const linkParts = (handle) => [h('span.link-host', `${location.host}/`), h('span.link-handle', `@${handle}`)]
 
 export function signIn() {
   location.href = state.me && state.me.loginURL ? state.me.loginURL : '/auth/login'
@@ -162,7 +167,7 @@ function accountMenu(anchor) {
     const r = themes.getBoundingClientRect()
     theme.setMode(value, { x: r.left + r.width / 2, y: r.top + r.height / 2 })
     sound.tap()
-  }, { label: 'Appearance' })
+  }, { label: 'Appearance', iconsOnly: true })
   const analytics = me.admin && surfaces && typeof surfaces.analytics === 'string' ? surfaces.analytics : null
   const items = [
     m
@@ -173,11 +178,72 @@ function accountMenu(anchor) {
     row('volume2', 'Sounds', toggle(sound.on, (v) => { sound.set(v); if (!v) sound.toggle(false) }, 'Sounds')),
     row('clock', '24-hour time', toggle(clock24(), (v) => { setClock24(v); sound.toggle(v); dispatchEvent(new Event('kalendar:clock')) }, '24-hour time')),
     analytics ? { label: 'Analytics', icon: 'chartColumn', onclick: () => window.open(analytics, '_blank', 'noopener') } : null,
+    m ? 'sep' : null,
+    m ? { label: 'Connect via MCP…', icon: 'mcp', onclick: () => mcpSheet(anchor) } : null,
     'sep',
     FEEDBACK_PROJECT ? { label: 'Send feedback', icon: 'messageSquareText', onclick: feedback } : null,
     m ? { label: 'Sign out', icon: 'logOut', onclick: signOut } : { label: 'Sign in', icon: 'user', onclick: signIn }
   ]
   menu(anchor, items, { align: 'end' })
+}
+
+/* ---- Connect via MCP ------------------------------------------------------------- */
+
+// How to add Kalendar to Claude, ChatGPT or Claude Code, and what its tools
+// do. The address comes from /api/me, so each host shows its own.
+export function mcpSheet(opener = null) {
+  const address = (state.me && state.me.mcp) || location.origin + '/_holm/mcp'
+  const command = 'claude mcp add --transport http kalendar ' + address
+  const row = (lead, title, text) => h('div.mcp-row', lead, h('div.grow', h('b', title), h('small', text)))
+  const step = (n, title, text) => row(h('span.mcp-ic.is-num', String(n)), title, text)
+  const can = (icon, title, text) => row(h('span.mcp-ic', ic(icon, 17, 2)), title, text)
+  // Every pane sits in the same grid cell, so the sheet is as tall as the
+  // tallest and never changes height between tabs.
+  const panes = {
+    claude: h('div.group',
+      step(1, 'Open Settings, then Connectors', 'On claude.ai or in the Claude app.'),
+      step(2, 'Add a custom connector', 'Name it Kalendar and paste the address.'),
+      step(3, 'Connect and sign in', 'Allow access once. Claude sees only your Kalendar.')),
+    chatgpt: h('div.group',
+      step(1, 'Turn on Developer mode', 'In Settings, under Apps, then Advanced. On the web, on paid plans.'),
+      step(2, 'Create a connector', 'Name it Kalendar, paste the address and choose OAuth.'),
+      step(3, 'Connect and sign in', 'Then pick Kalendar from + in a chat.')),
+    code: h('div.mcp-stack',
+      copyField(command, { label: 'Copy the command' }),
+      h('p.mcp-note', 'Run it in a terminal, then type ', h('code', '/mcp'), ' in Claude Code and sign in.')),
+    tools: h('div.group',
+      can('calendarCheck', 'Your bookings', 'See them, answer requests, cancel.'),
+      can('clock', 'Your hours', 'Weekly hours, paused days, days off.'),
+      can('calendarPlus', 'Kinds of meeting', 'Add or change what people can book.'),
+      can('chartColumn', 'Links and visits', 'Saved links, and what each brings in.'))
+  }
+  const show = (v) => Object.entries(panes).forEach(([k, el]) => { el.classList.toggle('is-on', k === v); el.inert = k !== v })
+  show('claude')
+  return sheet({
+    title: 'Connect via MCP',
+    cancel: null,
+    done: 'Done',
+    wide: true,
+    cls: 'mcp-sheet',
+    body: () => h('div.mcp-stack',
+      h('div.mcp-hero', { 'aria-hidden': 'true' },
+        h('img.mcp-app', { src: '/icon-192.png', alt: '', width: 60, height: 60 }),
+        h('span.mcp-link', h('i'), h('i'), h('i'), h('i'), h('i')),
+        h('span.mcp-tile', ic('mcp', 32))),
+      h('div.mcp-label', 'Connector address'),
+      copyField(address, { label: 'Copy the connector address' }),
+      segmented([
+        { value: 'claude', label: 'Claude' },
+        { value: 'chatgpt', label: 'ChatGPT' },
+        { value: 'code', label: 'Claude Code' },
+        { value: 'tools', label: 'Tools' }
+      ], 'claude', (v) => { show(v); sound.tap() }, { label: 'Where to connect' }),
+      h('div.mcp-panes', ...Object.values(panes)))
+  }).then(() => {
+    // The menu item that opened it is gone, so focus goes back to the account button.
+    const back = opener && opener.isConnected ? opener : document.querySelector('.avatar-btn')
+    if (back) back.focus({ preventScroll: true })
+  })
 }
 
 /* ---- Footer and feedback ------------------------------------------------------- */

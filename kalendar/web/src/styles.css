@@ -804,9 +804,7 @@ blockquote, .quote { margin: 0; padding: 11px 14px; border-radius: 14px; backgro
 .preset.on .radio { box-shadow: inset 0 0 0 11px var(--accent); }
 .preset.on .radio::after { transform: scale(1); }
 .link-card { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; padding: 18px; border-radius: 18px; background: var(--fill-2); }
-.link-text { font-size: 17px; font-weight: var(--w-strong); letter-spacing: -.014em; overflow-wrap: anywhere; }
-.link-host { display: block; font-size: 12.5px; font-weight: var(--w-body); color: var(--ink-2); letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.link-handle { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.link-card .copy-field { align-self: stretch; }
 .link-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .onboard-card.done .done-mark { margin-bottom: 2px; }
 
@@ -822,10 +820,10 @@ blockquote, .quote { margin: 0; padding: 11px 14px; border-radius: 14px; backgro
 .title-row .large-title { margin-bottom: 8px; }
 .page-sub { margin: -2px 0 18px; color: var(--ink-2); font-size: 14.5px; }
 .seg-wrap { margin: 4px 0 18px; }
-.mobile-link { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 12px 8px 12px 16px; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-1); }
-.mobile-link .grow { display: flex; flex-direction: column; }
-.mobile-link small { font-size: 12px; color: var(--ink-2); font-weight: var(--w-label); }
-.mobile-link .link-text { font-size: 15.5px; }
+.mobile-link { display: flex; flex-direction: column; gap: 8px; margin: 0 0 14px; padding: 12px; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-1); }
+.mobile-link small { margin: 0 4px; font-size: 12px; color: var(--ink-2); font-weight: var(--w-label); }
+.mobile-link .copy-field { --cf-base: var(--bg-grouped); box-shadow: none; }
+:root.dark .mobile-link .copy-field { --cf-base: #2c2c2e; }
 
 .tabbar { flex: none; display: flex; justify-content: space-around; padding: 6px 8px calc(6px + var(--sab)); background: var(--glass); -webkit-backdrop-filter: saturate(1.8) blur(20px); backdrop-filter: saturate(1.8) blur(20px); box-shadow: 0 -.5px 0 var(--glass-line); }
 .tab { flex: 1; max-width: 140px; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 50px; padding-top: 4px; border: 0; background: none; color: var(--ink-3); font-size: 10.5px; font-weight: var(--w-label); letter-spacing: .005em; cursor: pointer; }
@@ -927,7 +925,8 @@ blockquote, .quote { margin: 0; padding: 11px 14px; border-radius: 14px; backgro
   .side { display: flex; flex-direction: column; gap: 4px; flex: none; width: 268px; padding: 16px 12px; background: var(--bg); border-right: .5px solid var(--line); overflow-y: auto; }
   .side-link { display: flex; flex-direction: column; gap: 4px; margin: 0 4px 16px; padding: 16px; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-1); }
   .side-link small { font-size: 12px; color: var(--ink-2); font-weight: var(--w-label); }
-  .side-link .link-text { font-size: 17px; margin: 2px 0 10px; line-height: 1.3; }
+  .side-link .copy-field { margin: 4px 0 8px; --cf-base: var(--bg-grouped); box-shadow: none; }
+  :root.dark .side-link .copy-field { --cf-base: #2c2c2e; }
   .side-link { position: relative; }
   .side-item { display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 12px; border: 0; border-radius: 11px; background: none; color: var(--ink); font-size: 15px; font-weight: var(--w-label); cursor: pointer; text-align: left; transition: background .15s; }
   .side-item svg { color: var(--ink-2); }
@@ -1015,7 +1014,6 @@ blockquote, .quote { margin: 0; padding: 11px 14px; border-radius: 14px; backgro
 .rule > span { display: flex; flex-direction: column; font-size: 15px; font-weight: var(--w-label); }
 .rule > span small { font-size: 13px; color: var(--ink-2); font-weight: var(--w-body); }
 .rule .select { width: auto; min-height: 36px; padding: 6px 32px 6px 12px; border: 0; background-color: var(--fill-2) !important; font-size: 14.5px; font-weight: var(--w-label); text-align: right; }
-.feed-url { display: block; padding: 10px 12px; border-radius: 10px; background: var(--fill-2); font: 12.5px/1.4 ui-monospace, 'SF Mono', Menlo, monospace; color: var(--ink-2); word-break: break-all; user-select: all; }
 /* A search field that stays put at the top of a sheet while its list scrolls. */
 .search-bar { position: sticky; top: -6px; z-index: 2; flex: none; margin: -6px -16px -10px; padding: 6px 16px 10px; background: var(--bg-grouped); }
 .search { flex: none; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 11px; background: var(--fill); color: var(--ink-2); }
@@ -1062,6 +1060,8 @@ blockquote, .quote { margin: 0; padding: 11px 14px; border-radius: 14px; backgro
 .seg { position: relative; display: flex; padding: 2px; border-radius: 10px; background: var(--fill); }
 .seg button { position: relative; z-index: 1; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 10px; border: 0; background: none; color: var(--ink); font-size: 13.5px; font-weight: var(--w-label); cursor: pointer; white-space: nowrap; transition: font-weight .2s; }
 .seg button[aria-pressed="true"] { font-weight: var(--w-strong); }
+.seg.is-icons button { color: var(--ink-2); transition: color .2s; }
+.seg.is-icons button[aria-pressed="true"] { color: var(--ink); }
 .seg .thumb { position: absolute; z-index: 0; top: 2px; bottom: 2px; left: 0; border-radius: 8px; background: var(--raised); box-shadow: 0 3px 8px rgba(0, 0, 0, .12), 0 3px 1px rgba(0, 0, 0, .04), 0 0 0 .5px rgba(0, 0, 0, .04); transition: transform .36s var(--ease), width .36s var(--ease); }
 :root.dark .seg .thumb { background: #636366; }
 
@@ -1370,3 +1370,71 @@ button.lk-tr:active { background: var(--fill-2); }
 .framer-bar { display: flex; align-items: center; gap: 8px; max-width: 420px; width: 100%; margin: 0 auto; }
 .framer-zoom { flex: 1; min-width: 0; accent-color: var(--accent); }
 .framer-hint { margin: 0; text-align: center; font-size: 13px; line-height: 1.4; color: var(--ink-2); text-wrap: balance; }
+
+/* ---- Copy fields ---------------------------------------------------------------------------- */
+
+/* One field to click: the value on one line in mono, a copy icon at its end
+   that turns into a tick, and Copy fading in over the value on hover. */
+.copy-field { --cf-base: var(--surface); --cf-bg: var(--cf-base); display: flex; align-items: center; gap: 10px; min-width: 0; height: 46px; padding: 0 14px; border-radius: 12px; background: var(--cf-bg); box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s, box-shadow .15s; }
+:root.dark .copy-field, :root.dark .sheet .copy-field { --cf-base: #2c2c2e; }
+.copy-field:active { --cf-bg: color-mix(in srgb, var(--cf-base), var(--ink) 8%); }
+.copy-field:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 2px; }
+@media (hover: hover) { .copy-field:hover { --cf-bg: color-mix(in srgb, var(--cf-base), var(--ink) 4%); box-shadow: inset 0 0 0 1px var(--fill-3); } }
+.copy-value { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; white-space: nowrap; font: 12.5px/46px ui-monospace, 'SF Mono', Menlo, Consolas, monospace; letter-spacing: 0; }
+.copy-value::-webkit-scrollbar { display: none; }
+.copy-field.is-long .copy-value { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.copy-cue { position: relative; flex: none; display: grid; color: var(--ink-3); transition: color .15s; }
+.copy-cue > .cf-copy, .copy-cue > .cf-tick { grid-area: 1 / 1; display: grid; transition: opacity .15s, transform .25s var(--spring); }
+.copy-cue > .cf-tick { opacity: 0; transform: scale(.5); color: var(--green); }
+.copy-word { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); padding: 3px 7px 3px 26px; background: linear-gradient(to right, transparent, var(--cf-bg) 20px); color: var(--ink-2); font: var(--w-strong) 13px/1.2 var(--font); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; }
+@media (hover: hover) { .copy-field:hover .copy-cue { color: var(--ink); } .copy-field:hover .copy-word { opacity: 1; } }
+.copy-field.is-copied .copy-word { opacity: 1; color: var(--green-text); }
+.copy-field.is-copied .cf-copy { opacity: 0; transform: scale(.5); }
+.copy-field.is-copied .cf-tick { opacity: 1; transform: none; }
+
+/* ---- Connect via MCP ---------------------------------------------------------------------- */
+
+.mcp-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.mcp-hero { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 2px 0 4px; }
+.mcp-app { width: 60px; height: 60px; border-radius: 14px; box-shadow: var(--shadow-1); }
+.mcp-tile { width: 60px; height: 60px; border-radius: 14px; display: grid; place-items: center; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+:root.dark .mcp-tile { background: #2c2c2e; }
+.mcp-link { display: flex; gap: 6px; }
+.mcp-link i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); opacity: .45; animation: mcp-flow 2.4s var(--ease) infinite; }
+.mcp-link i:nth-child(2) { animation-delay: .12s; }
+.mcp-link i:nth-child(3) { animation-delay: .24s; }
+.mcp-link i:nth-child(4) { animation-delay: .36s; }
+.mcp-link i:nth-child(5) { animation-delay: .48s; }
+@keyframes mcp-flow { 0%, 36%, 100% { opacity: .45; transform: none; } 14% { opacity: 1; transform: scale(1.3); background: var(--ink); } }
+/* By name: the global reduced-motion rule shortens durations, and an infinite
+   animation run at .01ms flickers. */
+@media (prefers-reduced-motion: reduce) { .mcp-link i { animation-name: none; opacity: .7; } }
+.mcp-label { margin: 4px 4px -6px; font-size: 13px; font-weight: var(--w-strong); color: var(--ink-2); }
+.mcp-panes { display: grid; grid-template-columns: minmax(0, 1fr); }
+.mcp-panes > * { grid-area: 1 / 1; align-self: start; }
+.mcp-panes > :not(.is-on) { visibility: hidden; }
+.mcp-panes > .is-on { animation: mcp-pane .22s var(--ease); }
+@keyframes mcp-pane { from { opacity: 0; transform: translateY(4px); } }
+.mcp-row { position: relative; display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 9px 12px 9px 14px; }
+.mcp-row + .mcp-row::before { content: ''; position: absolute; top: 0; left: 56px; right: 0; height: .5px; background: var(--line); }
+.mcp-row .grow { min-width: 0; }
+.mcp-row b { display: block; font-size: 15px; font-weight: var(--w-strong); }
+.mcp-row small { display: block; color: var(--ink-2); font-size: 13px; line-height: 1.38; }
+.mcp-ic { flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-text); }
+.mcp-ic.is-num { font-size: 14px; font-weight: var(--w-strong); font-variant-numeric: tabular-nums; }
+.mcp-note { margin: 0 4px; color: var(--ink-2); font-size: 13.5px; line-height: 1.5; }
+.mcp-note code { padding: .1em .35em; border-radius: 5px; background: var(--fill); color: var(--ink); font: 12.5px ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+/* Wide enough on a desk for the whole Claude Code command on one line. */
+@media (min-width: 760px) { .sheet.mcp-sheet { width: min(680px, 100%); } }
+/* A link to copy: its host, then the handle in the app's own type. Stacked
+   in the narrow sidebar, on one line elsewhere. */
+.copy-field.is-link .copy-value { display: flex; align-items: baseline; overflow: hidden; font: inherit; line-height: 1.3; letter-spacing: -.012em; }
+.link-host { flex: none; color: var(--ink-2); font-size: 14px; font-weight: var(--w-body); white-space: nowrap; }
+.link-handle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15.5px; font-weight: var(--w-strong); }
+.copy-field.is-link.is-long .copy-value { -webkit-mask-image: none; mask-image: none; }
+.side-link .copy-field.is-link { height: auto; padding: 10px 12px 10px 14px; }
+.side-link .copy-field.is-link .copy-value { flex-direction: column; align-items: stretch; }
+.side-link .link-host { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; }
+.side-link .link-handle { font-size: 17px; }
+.link-card .copy-field.is-link { height: 52px; }
+.link-card .link-handle { font-size: 17px; }

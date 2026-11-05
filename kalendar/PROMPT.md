@@ -52,6 +52,11 @@ third-party runtime CDN; vendor Inter and Lucide icons with their licences.
   their booking, and Insights shows each link's visitors, scans and bookings. Expose the host's management (profile, hours,
   event types, meetings, requests, open times, insights) as auth "user"
   named operations, so Claude can run it all over Holm's MCP endpoint.
+  Connect via MCP… in the account menu, with the MCP mark, opens a sheet:
+  the app's icon joined to the mark by five moving dots, the connector
+  address to click and copy, and tabs for Claude, ChatGPT, Claude Code and
+  what the tools do. Every link to copy (yours, the feed) is one field you
+  click, never a box beside a Copy button.
 - The server has no Intl, so have the host's browser send its zone's UTC
   offsets for the next year and turn hours into real times on the server.
 - Email both sides with env.holm.email: beautifully designed HTML (tables,
@@ -261,3 +266,10 @@ answered:
 
 and chose a drawn cover by default, with an image of their own as the
 other choice.
+
+**Kalendar 0.10.0: Connect via MCP**
+
+Offered Connect via MCP for the apps whose tools had no sheet yet (Kalendar,
+Deck, Margin and Ralk), and tools for Zend, Roll and Until, the owner said:
+
+> yes, do both batches

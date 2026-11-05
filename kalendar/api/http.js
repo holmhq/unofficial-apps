@@ -1,7 +1,7 @@
 // Kalendar's HTTP side: the JSON API the page uses, calendar files, and the
 // page itself, with a host's name in the title and social card of /@handle.
 //
-//   GET    /api/me                         who's signed in, their host profile, sign-in/out URLs
+//   GET    /api/me                         who's signed in, their host profile, sign-in/out URLs, MCP address
 //   GET    /api/handle?h=                  is this link free?
 //   POST   /api/host                       become a host { handle, name, tz, tzLabel, tzTable, weekly }
 //   PATCH  /api/host                       change profile, hours, paused days, days, zone, saved links (tags), notify, rotateFeed
@@ -110,7 +110,9 @@ async function api(request, env, url) {
       counts: host ? counts(env, host, now) : null,
       admin: m ? auth.isAppAdmin() : false,
       loginURL: auth.getLoginURL(next.startsWith('/') && !next.startsWith('//') ? next : '/'),
-      logoutURL: auth.getLogoutURL()
+      logoutURL: auth.getLogoutURL(),
+      // This host's connector address, for the Connect via MCP sheet.
+      mcp: base + '/_holm/mcp'
     })
   }
 
