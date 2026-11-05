@@ -11,11 +11,12 @@
 // that ends like a file (/icon-512.png) is that file, even typed into the
 // address bar; every other address is a page and gets the shell.
 
-const VERSION = '0.1.2'
+const VERSION = '0.1.3'
 const CACHE = 'snake-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
-  '/src/app.js', '/src/audio.js', '/src/controls.js', '/src/game.js', '/src/icons.js', '/src/render.js', '/src/rules.js', '/src/state.js', '/src/styles.css', '/src/theme.js', '/src/ui.js'
+  '/src/app.js', '/src/audio.js', '/src/controls.js', '/src/game.js', '/src/icons.js', '/src/render.js', '/src/rules.js', '/src/state.js', '/src/styles.css', '/src/theme.js', '/src/ui.js',
+  '/src/feedback.js', '/vendor/feedback/embed.js'
 ]
 const FILE = /^\/.*\.[a-z0-9]+$/i
 const PASS = /^\/(_[^/]*|api|auth|\.well-known)(\/|$)|^\/sw\.js$/
