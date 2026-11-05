@@ -9,15 +9,16 @@
 // shell; an address that ends like a file (/icon-512.png) is that file, even typed into the
 // address bar.
 
-const VERSION = '0.4.0'
+const VERSION = '0.4.1'
 const CACHE = 'domains-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
-  '/fonts/inter-latin.woff2', '/data/tlds.json', '/src/styles.css?v=0.4.0', '/src/main.js?v=0.4.0',
+  '/fonts/inter-latin.woff2', '/data/tlds.json', '/src/styles.css?v=0.4.1', '/src/main.js?v=0.4.1',
   '/src/main.js', '/src/dom.js', '/src/icons.js', '/src/api.js', '/src/theme.js', '/src/shell.js', '/src/settings.js', '/src/palette.js',
   '/src/catalog.js', '/src/gen.js', '/src/search.js', '/src/saved.js', '/src/lists.js',
   '/src/providers/index.js', '/src/providers/namecheap.js', '/src/providers/rdap.js',
   '/src/views/search.js', '/src/views/filters.js', '/src/views/cards.js', '/src/views/collections.js', '/src/views/shared.js', '/src/views/about.js',
+  '/src/feedback.js', '/vendor/feedback/embed.js'
 ]
 const FILE = /^\/.*\.[a-z0-9]+$/i
 const PASS = /^\/(_[^/]*|api|auth|\.well-known)(\/|$)|^\/sw\.js$/

@@ -194,6 +194,13 @@ holm @<peer> settings set settings.apps.<app-id>.brand.social_preview_url /socia
 holm @<peer> settings set settings.apps.<app-id>.theme.accent '#1d1d1f'
 ```
 
+The footer's **Feedback** opens a project's form from
+[feedback.zyt.app](https://feedback.zyt.app) in a panel. `web/vendor/feedback/embed.js`
+is a copy of its widget, loaded the first time someone asks for it; point
+`PROJECT` in `web/src/feedback.js` at your own project, or drop the Feedback links. The
+form is framed from that origin, so let the app frame it:
+`holm @<peer> policy set security.csp.frame_src https://feedback.zyt.app --app <app-id>`.
+
 **Refreshing the data.** To refresh prices, run `node domains/tools/catalog.mjs`.
 It opens Namecheap's feeds in Chromium through `playwright-core`. To refresh
 the RDAP list, run `node domains/tools/rdap.mjs`.

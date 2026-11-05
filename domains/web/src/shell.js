@@ -3,6 +3,7 @@
 // account menu, one layer for popovers, sheets and modals, click-to-copy fields, and the
 // Connect via MCP sheet.
 
+import { FEEDBACK_URL } from './feedback.js'
 import { $, $$, esc, act, phone, rel, toast, copy, haptic } from './dom.js'
 import { svg, svgMark, svgHolm } from './icons.js'
 import * as api from './api.js'
@@ -15,9 +16,24 @@ export const state = { me: null, view: 'search', listId: null, sideOn: false, la
 
 try { state.sideOn = localStorage.getItem('domains:side') === '1' } catch {}
 
+// Holm writes the addresses of its own pages for this app, analytics among them, into the
+// page it serves to the people allowed to see them. The copy of the page the service worker
+// keeps may be from before sign-in, so an admin's browser reads them from a fresh copy (the
+// worker lets a no-store request through) and puts them where the page looks for them.
+let surfacesAsked = false
+function freshSurfaces() {
+  if (surfacesAsked) return
+  surfacesAsked = true
+  fetch('/', { cache: 'no-store' }).then((r) => r.text()).then((page) => {
+    const m = /__HOLM_SURFACES__\s*=\s*(\{[^}]*\})/.exec(page)
+    globalThis.__HOLM_SURFACES__ = m ? JSON.parse(m[1]) : undefined
+  }).catch(() => { surfacesAsked = false })
+}
+
 export async function loadMe() {
   const back = encodeURIComponent(location.pathname + location.search)
   try { state.me = await api.get('/api/me?return=' + back) } catch { state.me = { signed_in: false, login_url: '/auth/login', logout_url: null } }
+  if (state.me.signed_in && state.me.admin) freshSurfaces()
   return state.me
 }
 export function signIn() { location.href = state.me && state.me.login_url ? state.me.login_url : '/auth/login' }
@@ -72,7 +88,7 @@ export function sideHTML() {
 // The footer line: in the sidebar's foot on a desk, and at the end of each page when the
 // sidebar is hidden or on a phone. The only place Holm's name appears.
 export function creditHTML() {
-  return `<p class="credit"><a href="https://holmhq.com" target="_blank" rel="noopener">${svgHolm(11)}<span>A Holm app</span></a><i></i><a href="/about" data-act="nav">How it works</a><i></i><a href="${SOURCE}" target="_blank" rel="noopener">Source</a></p>`
+  return `<p class="credit"><a href="https://holmhq.com" target="_blank" rel="noopener">${svgHolm(11)}<span>A Holm app</span></a><i></i><a href="/about" data-act="nav">How it works</a><i></i><a href="${FEEDBACK_URL}" target="_blank" rel="noopener" data-feedback>Feedback</a><i></i><a href="${SOURCE}" target="_blank" rel="noopener">Source</a></p>`
 }
 export const pageCreditHTML = () => `<div class="page-credit">${creditHTML()}</div>`
 
