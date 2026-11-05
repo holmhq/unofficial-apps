@@ -18,9 +18,10 @@ Margin is open source and runs on Holm: https://github.com/holmhq/unofficial-app
 
 ## Writing with Claude
 
-Add `/_holm/mcp` on this server as a custom connector in Claude (Settings → Connectors), or
-run `claude mcp add --transport http margin https://<this server>/_holm/mcp` in Claude Code,
-then sign in. Start with `me_get`: it lists your names and your workspaces. Every other tool
+Add `/_holm/mcp` on this server as a custom connector in Claude (Settings → Connectors) or
+ChatGPT, or run `claude mcp add --transport http margin https://<this server>/_holm/mcp` in
+Claude Code, then sign in. Anyone signed in can; each tool allows only what the person can
+do in Studio. Start with `me_get`: it lists your names and your workspaces. Every other tool
 takes a `workspace`. Posts are Markdown; drafts unless the person asks to publish.
 Fence code with its language to have it highlighted; write maths in LaTeX, `$…$` inline
 or `$$` lines around a display formula. Readers
@@ -32,8 +33,6 @@ and drawings: `media_upload` takes an SVG drawing as text or a small photo as ba
 `media_link` returns a one-hour link the person opens to add photos and videos, or that you
 send files to with `curl -F file=@photo.jpg <link>`. Put the Markdown each returns on a line
 of its own; pages pick the right size of a photo themselves.
-
-Today Holm lets only the server's admins use these tools; everyone can write in Studio.
 
 ## Reading
 

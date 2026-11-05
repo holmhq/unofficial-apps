@@ -2,11 +2,11 @@
   "operations": {
     "me.get": {
       "handler": "opMe",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
-      "summary": "Start here: who you are on Margin, your names, and your workspaces",
-      "description": "Returns your main name and personas (pass one as `as` to write or comment under it), every workspace you are on with your role there (pass its address as `workspace` to other tools), and short guidance. Readers cannot tell your personas are you; never mention which names belong together in posts or comments. Pass `workspace` to also get what you can do there.",
+      "summary": "See who you are, your names and workspaces",
+      "description": "Call this first. Returns your main name and personas (pass one as `as` to write or comment under it), every workspace you are on with your role there (pass its address as `workspace` to other tools), and short guidance. Readers cannot tell your personas are you; never mention which names belong together in posts or comments. Pass `workspace` to also get what you can do there.",
       "input": {
         "type": "object",
         "properties": {
@@ -45,7 +45,7 @@
     },
     "identities.list": {
       "handler": "opIdentitiesList",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "Your names: your main name and personas",
@@ -83,7 +83,7 @@
     },
     "workspaces.create": {
       "handler": "opWorkspacesCreate",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
@@ -143,7 +143,7 @@
     },
     "posts.list": {
       "handler": "opPostsList",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "List posts you can edit: drafts and published",
@@ -206,7 +206,7 @@
     },
     "posts.get": {
       "handler": "opPostsGet",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "Read one post with its full Markdown",
@@ -253,7 +253,7 @@
     },
     "posts.create": {
       "handler": "opPostsCreate",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
@@ -369,7 +369,7 @@
     },
     "posts.update": {
       "handler": "opPostsUpdate",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
@@ -486,7 +486,7 @@
     },
     "posts.delete": {
       "handler": "opPostsDelete",
-      "auth": "member",
+      "auth": "user",
       "risk": "destructive",
       "sensitive": true,
       "summary": "Delete a post with its comments and claps",
@@ -533,11 +533,11 @@
     },
     "comments.inbox": {
       "handler": "opInbox",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
-      "summary": "Comments on your posts that need you: waiting for approval, or not answered",
-      "description": "Writers and admins. pending: comments held for approval. unanswered: threads whose latest message is not from the post's blog. Each item has the comment, the quoted passage it is about (if any), the comment it replies to, and the post. To help the writer: reply with comments.reply only to ordinary comments that a friendly, short answer settles (thanks, simple questions the post answers, clarifications). Do not reply, and ask the writer instead, when a comment is a complaint, criticism that needs judgment, legal, medical, financial or security matters, personal data, pricing or promises, anything heated or political, or anything you are unsure about. Approve or reject pending comments only when the writer asked you to. Covers one workspace; pass `workspace`.",
+      "summary": "See comments that need you",
+      "description": "Comments on your posts waiting for approval, or not yet answered. Writers and admins. pending: comments held for approval. unanswered: threads whose latest message is not from the post's blog. Each item has the comment, the quoted passage it is about (if any), the comment it replies to, and the post. To help the writer: reply with comments.reply only to ordinary comments that a friendly, short answer settles (thanks, simple questions the post answers, clarifications). Do not reply, and ask the writer instead, when a comment is a complaint, criticism that needs judgment, legal, medical, financial or security matters, personal data, pricing or promises, anything heated or political, or anything you are unsure about. Approve or reject pending comments only when the writer asked you to. Covers one workspace; pass `workspace`.",
       "input": {
         "type": "object",
         "properties": {
@@ -593,7 +593,7 @@
     },
     "comments.list": {
       "handler": "opCommentsList",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "Read every comment on a post, with quotes and replies",
@@ -640,12 +640,12 @@
     },
     "comments.reply": {
       "handler": "opCommentsReply",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
-      "summary": "Reply to a comment, as the post's blog by default",
-      "description": "Plain text, a few sentences, in the writer's voice; links are fine. Writers who edit the post answer as its blog unless `as` names another. Only reply to ordinary comments a short answer settles; for anything sensitive, critical, legal, personal, about money or promises, or that you are unsure of, ask the writer first and do not reply.",
+      "summary": "Reply to a comment",
+      "description": "Answers as the post’s blog by default. Plain text, a few sentences, in the writer's voice; links are fine. Writers who edit the post answer as its blog unless `as` names another. Only reply to ordinary comments a short answer settles; for anything sensitive, critical, legal, personal, about money or promises, or that you are unsure of, ask the writer first and do not reply.",
       "input": {
         "type": "object",
         "properties": {
@@ -702,12 +702,12 @@
     },
     "comments.create": {
       "handler": "opCommentsCreate",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
-      "summary": "Comment on a post, optionally on a quoted passage or as a persona",
-      "description": "post_id and body are required. quote.exact anchors the comment to a passage of the post (copy it exactly, 600 characters at most; prefix and suffix are the few words around it when the passage repeats). parent_id makes it a reply. Writers may comment under one of your names with `as`. sample true marks a comment as sample content, shown only to the team: use it to fill a post with example discussion for screenshots or design reviews. Never post invented comments as if they were real readers on a live blog.",
+      "summary": "Comment on a post",
+      "description": "Optionally on a quoted passage, or as one of your personas. post_id and body are required. quote.exact anchors the comment to a passage of the post (copy it exactly, 600 characters at most; prefix and suffix are the few words around it when the passage repeats). parent_id makes it a reply. Writers may comment under one of your names with `as`. sample true marks a comment as sample content, shown only to the team: use it to fill a post with example discussion for screenshots or design reviews. Never post invented comments as if they were real readers on a live blog.",
       "input": {
         "type": "object",
         "properties": {
@@ -792,7 +792,7 @@
     },
     "comments.moderate": {
       "handler": "opCommentsModerate",
-      "auth": "member",
+      "auth": "user",
       "risk": "destructive",
       "sensitive": true,
       "summary": "Approve, reject or delete a comment",
@@ -848,7 +848,7 @@
     },
     "personas.create": {
       "handler": "opPersonasCreate",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
@@ -910,7 +910,7 @@
     },
     "personas.update": {
       "handler": "opPersonasUpdate",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
@@ -970,7 +970,7 @@
     },
     "personas.delete": {
       "handler": "opPersonasDelete",
-      "auth": "member",
+      "auth": "user",
       "risk": "destructive",
       "sensitive": true,
       "summary": "Remove one of your personas",
@@ -1017,7 +1017,7 @@
     },
     "media.list": {
       "handler": "opMediaList",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "List your photos, drawings and videos to use in posts",
@@ -1061,7 +1061,7 @@
     },
     "media.upload": {
       "handler": "opMediaUpload",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
@@ -1121,7 +1121,7 @@
     },
     "media.link": {
       "handler": "opMediaUploadLink",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "sensitive": true,
       "summary": "Get a link that adds photos and videos to your library",
@@ -1168,7 +1168,7 @@
     },
     "workspace.get": {
       "handler": "opWorkspaceGet",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "See a workspace's settings (owners and admins)",
@@ -1214,7 +1214,7 @@
     },
     "workspace.update": {
       "handler": "opWorkspaceUpdate",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
@@ -1336,7 +1336,7 @@
     },
     "workspace.leave": {
       "handler": "opWorkspaceLeave",
-      "auth": "member",
+      "auth": "user",
       "risk": "destructive",
       "sensitive": true,
       "summary": "Leave a workspace",
@@ -1382,7 +1382,7 @@
     },
     "team.list": {
       "handler": "opTeamList",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "List a workspace's team and open invites (owners and admins)",
@@ -1428,7 +1428,7 @@
     },
     "team.update": {
       "handler": "opTeamUpdate",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
@@ -1491,7 +1491,7 @@
     },
     "themes.list": {
       "handler": "opThemesList",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "List themes and which one is live",
@@ -1537,7 +1537,7 @@
     },
     "themes.reference": {
       "handler": "opThemesReference",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "How themes work: files, template data, hooks and rules",
@@ -1575,7 +1575,7 @@
     },
     "themes.get": {
       "handler": "opThemesGet",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "Download every file of a theme to study or change",
@@ -1622,7 +1622,7 @@
     },
     "themes.validate": {
       "handler": "opThemesValidate",
-      "auth": "member",
+      "auth": "user",
       "risk": "read",
       "sensitive": true,
       "summary": "Check a theme without saving it",
@@ -1717,7 +1717,7 @@
     },
     "themes.activate": {
       "handler": "opThemesActivate",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
@@ -1773,7 +1773,7 @@
     },
     "invites.create": {
       "handler": "opInvitesCreate",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
@@ -1835,7 +1835,7 @@
     },
     "invites.revoke": {
       "handler": "opInvitesRevoke",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,

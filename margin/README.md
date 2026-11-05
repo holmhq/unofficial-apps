@@ -28,8 +28,8 @@ are not public URLs.
   examples, each with its latest drawn cover, and the way in. Margin's admins
   can make the front page one workspace's home, or one writer's page, instead.
 - **Starting out.** Sign in, pick your name and handle, name your workspace,
-  copy an invite link for your team, and see how to connect Claude: four
-  short steps at `/new`.
+  copy an invite link for your team, and connect Claude: four short steps
+  at `/new`.
 - **Workspaces.** Each has its own address, logo, theme, home page and rules.
   Its home is the latest posts, a curated one (posts its owners pin, in their
   order, then the rest), or one writer's page. Owners and admins invite people
@@ -97,10 +97,17 @@ are not public URLs.
 
 ### Writing with Claude
 
-Connect Claude (Settings → Connectors → Add custom connector) or Claude Code
-(`claude mcp add --transport http margin https://<your host>/_holm/mcp`) and
-sign in. Claude gets these tools, each limited to what the person could do in
-Studio, in the workspace it names:
+**Connect via MCP…** in the account menu (More on a phone) opens one sheet:
+the connector address to click and copy, with tabs for Claude, ChatGPT and
+Claude Code (`claude mcp add --transport http margin https://<your host>/_holm/mcp`)
+and what the tools do. The Write with Claude page, You and the last step of
+`/new` open the same sheet. Anyone signed in can connect. Each tool checks
+the caller itself, with the same rules as Studio, in the workspace it names:
+writers write and edit their own posts and answer comments on them; owners
+and admins also edit everyone's posts, moderate, and run the workspace, its
+team and its invites; only owners add or remove owners. Saving a new theme
+stays with Margin's admins, the node's own, because a theme renders every
+workspace's pages.
 
 | Tools | What for |
 | --- | --- |
@@ -204,8 +211,15 @@ field and hook; Claude reads it through `themes_reference`, and
   whose) is Margin's own, and an account's link to its personas never leaves
   the server except to the account and the owners of a workspace it writes
   in.
-- **Tools for Claude.** `api/contract.json` declares member operations, which
+- **Tools for Claude.** `api/contract.json` declares the operations, which
   Holm serves as MCP tools at `/_holm/mcp` behind its own sign-in and consent.
+  All but `themes_save` use `auth: "user"`, open to anyone signed in on the
+  node, and check workspace roles in `ops.js` through the same functions as
+  the routes; `themes_save` uses `auth: "member"`, so Holm itself keeps it to
+  the node's admins. Operations can't read `web/`, so the built-in themes'
+  stylesheets and font licences have a copy in `api/theme-assets/` for
+  `themes_get`; `node tools/theme-assets.mjs` fails if a copy drifts
+  (`--write` refreshes them).
   `api/main.js` loads `ops.js` with `import()` only when a tool is called and
   exports thin wrappers, because Holm's contract scan stops at a budget on
   regex-heavy modules (`CONTRACT_RESOURCE_LIMIT`).
@@ -230,6 +244,7 @@ holm.symbol.svg           the app icon: lines of text with a note beside them
 api/main.js               entry: fetch and the operation handlers
 api/lib/cache.js          the fast path: cached pages, 304s, versioned files
 api/contract.json         the operations (MCP tools)
+api/theme-assets/         copies of the built-in themes' text assets, for themes_get
 api/http.js, ops.js       the JSON API, and the operations' bodies
 api/pages.js, landing.js  reading pages, feeds, sitemap, link previews; Margin's front page
 api/covers.js             the drawn covers (also served to browsers)
@@ -307,10 +322,6 @@ Then:
 
 ## Known limits
 
-- **Claude for people who aren't node admins.** Holm offers member tools only
-  to people with read access to the app's Space, which today means the node's
-  admins. Everyone else writes in Studio and can't connect Claude yet; Margin
-  says so where it shows the connector.
 - **A redeploy ends Claude's sign-in**; connect again afterwards.
 - Video is stored as it is sent: Holm has no video processing, so send
   H.264 MP4 (or MOV) for every browser, 20 MB at most. Claude's

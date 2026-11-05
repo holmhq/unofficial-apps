@@ -136,6 +136,8 @@ async function api(request, env, url) {
     const out = me(env, ctx);
     out.login_url = env.holm.auth.getLoginURL(url.searchParams.get('return') || '/');
     out.logout_url = ctx.member ? env.holm.auth.getLogoutURL() : null;
+    // This host's connector address, for the Connect via MCP sheet.
+    out.mcp = url.origin + '/_holm/mcp';
     return json(out);
   }
   if (root === 'me' && id === 'blog' && method === 'POST') {
@@ -269,7 +271,7 @@ async function api(request, env, url) {
       const input = await readJSON(request, 9000000);
       return json(saveTheme(env, ctx, input.files), 201);
     }
-    if (id && sub === 'files' && method === 'GET') { requireMember(ctx); return json(await themeFiles(env, id, o)); }
+    if (id && sub === 'files' && method === 'GET') { requireMember(ctx); return json(await themeFiles(env, id)); }
     if (id && sub === 'activate' && method === 'POST') { requireWsAdmin(ctx); return json(activateTheme(env, ctx, id, (await body()).settings)); }
     if (id && !sub && method === 'DELETE') {
       requireAdmin(ctx);

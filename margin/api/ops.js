@@ -276,7 +276,7 @@ export async function opThemesGet(input, env) {
   try {
     const ctx = scoped(env, input, true);
     requireMember(ctx);
-    return await themeFiles(env, input.id, origin(env));
+    return await themeFiles(env, input.id);
   } catch (error) { return fail(error); }
 }
 export function opThemesValidate(input, env) {

@@ -1,7 +1,8 @@
 // Margin Studio: a workspace's posts, comments, team and settings; your names and personas;
 // Claude; and, for Margin's admins, Margin itself. Starting out (/new) and invites
 // (/join/<code>) live here too.
-import { api, remembered, esc, h, $, $$, toast, ago, icons, sheet, menu, copy, upload, pickFile, setTheme, currentTheme, setWorkspace, currentWorkspace } from './lib.js';
+import { api, remembered, esc, h, $, $$, toast, ago, icons, sheet, menu, copy, copyField, upload, pickFile, setTheme, currentTheme, setWorkspace, currentWorkspace } from './lib.js';
+import { mcpSheet } from './mcp.js';
 import { makeZip, readZip } from './zip.js';
 
 const root = document.getElementById('app');
@@ -251,17 +252,15 @@ function workspaceStep(first) {
 async function inviteStep(ws) {
   root.innerHTML = `<div class="center"><div class="welcome ob">${steps(2)}
     <h1>Invite your team</h1><p>They sign in, pick a handle, and write in ${esc(ws.name)}.</p>
-    <div class="group"><div class="field"><label>Invite link</label><div class="code-box"><span data-link>Making a link…</span><button class="btn small primary" data-copy disabled>${icons.copy}Copy</button></div><small>Works once and lasts 14 days. Make as many as you need in Team.</small></div>
+    <div class="group"><div class="field"><label>Invite link</label><div data-link></div><small>Works once and lasts 14 days. Make as many as you need in Team.</small></div>
     <div class="field"><label for="ie">Or send it to</label><div class="row-inline"><input id="ie" class="input" type="email" placeholder="name@company.com" autocapitalize="none"><button class="btn small" data-send>Send</button></div><small data-sent></small></div></div>
     <button class="btn primary ob-go" data-next>Continue</button><button class="btn plain ob-skip" data-next>Skip for now</button></div></div>`;
-  let link = '';
+  const field = copyField('', 'Making a link…');
+  $('[data-link]', root).replaceWith(field);
   try {
     const r = await api('/api/invites', { method: 'POST', body: { role: 'writer' } });
-    link = r.link;
-    $('[data-link]', root).textContent = link;
-    $('[data-copy]', root).disabled = false;
-  } catch (error) { $('[data-link]', root).textContent = error.message; }
-  $('[data-copy]', root).addEventListener('click', () => copy(link, 'Invite link copied'));
+    field.set(r.link);
+  } catch (error) { field.querySelector('.copy-value').textContent = error.message; }
   $('[data-send]', root).addEventListener('click', async () => {
     const email = $('#ie', root).value.trim();
     if (!email) return;
@@ -274,16 +273,12 @@ async function inviteStep(ws) {
   $$('[data-next]', root).forEach((b) => b.addEventListener('click', () => claudeStep(ws)));
 }
 
+// Where a page mentions Claude, one row opens the Connect via MCP sheet rather than repeat it.
 function connectBlock() {
-  const url = `${location.origin}/_holm/mcp`;
-  return `<div class="group"><div class="field"><label>In Claude</label><small style="margin:0 0 8px">Settings → Connectors → Add custom connector, then paste:</small><div class="code-box wrap"><span>${esc(url)}</span><button class="btn small" data-copy-url>${icons.copy}Copy</button></div></div>
-    <div class="field"><label>In Claude Code</label><div class="code-box wrap"><span>claude mcp add --transport http margin ${esc(url)}</span><button class="btn small" data-copy-cli>${icons.copy}Copy</button></div></div></div>
-    ${me.admin ? '' : '<p class="ob-note">For now, Holm opens these tools only to this server’s admins. Everyone can write in Studio until it opens them to all.</p>'}`;
+  return `<div class="group"><button type="button" class="row link mcp-open" data-mcp><span class="mcp-ic">${icons.mcp}</span><span class="row-main"><span class="row-title">Connect via MCP</span><span class="row-sub">Add Margin to Claude, ChatGPT or Claude Code.</span></span><span class="chev">${icons.chev}</span></button></div>`;
 }
 function wireConnect(scope) {
-  const url = `${location.origin}/_holm/mcp`;
-  $('[data-copy-url]', scope)?.addEventListener('click', () => copy(url, 'Address copied'));
-  $('[data-copy-cli]', scope)?.addEventListener('click', () => copy(`claude mcp add --transport http margin ${url}`, 'Command copied'));
+  $('[data-mcp]', scope)?.addEventListener('click', (e) => mcpSheet(me.mcp, e.currentTarget));
 }
 
 function claudeStep(ws) {
@@ -444,9 +439,9 @@ function accountMenu(anchor) {
   const items = [];
   if (me.handle) items.push({ label: 'Your page', icon: icons.user, href: `/@${me.handle}`, blank: true });
   if (me.admin && analytics) items.push({ label: 'Analytics', icon: icons.chart, href: analytics, blank: true });
-  if (items.length) items.push('-');
-  for (const [t, label, icon] of [['light', 'Light', icons.sun], ['dark', 'Dark', icons.moon], ['system', 'Match device', icons.monitor]]) items.push({ label, icon, checked: theme === t, run: () => setTheme(t) });
-  items.push('-', { label: 'Sign out', icon: icons.out, danger: true, run: signOut });
+  items.push({ label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp, anchor) });
+  items.push('-');
+  items.push(themeChoices(), '-', { label: 'Sign out', icon: icons.out, danger: true, run: signOut });
   menu(anchor, items);
 }
 
@@ -454,11 +449,15 @@ function moreMenu(anchor) {
   const items = navItems().filter((n) => n.key !== 'sep' && !['posts', 'comments', 'you'].includes(n.key)).map((n) => ({ label: n.label, icon: icons[n.icon], run: () => go(n.path) }));
   items.push({ label: 'Switch workspace', icon: icons.updown, run: () => switcher(anchor) });
   items.push('-');
-  const theme = currentTheme();
-  const NAME = { light: 'Light', dark: 'Dark', system: 'Match device' };
-  items.push({ label: 'Appearance', note: NAME[theme], icon: { light: icons.sun, dark: icons.moon, system: icons.monitor }[theme], run: () => { const next = { system: 'light', light: 'dark', dark: 'system' }[theme]; setTheme(next); toast(`Appearance: ${NAME[next]}`); } });
-  items.push({ label: 'Sign out', icon: icons.out, danger: true, run: signOut });
+  items.push({ label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp, anchor) });
+  items.push(themeChoices(), '-', { label: 'Sign out', icon: icons.out, danger: true, run: signOut });
   menu(anchor, items);
+}
+
+// The theme switch: three icons, never the words, so the menu stays narrow.
+function themeChoices() {
+  const theme = currentTheme();
+  return { label: 'Appearance', choices: [['light', 'Light', icons.sun], ['dark', 'Dark', icons.moon], ['system', 'Match device', icons.monitor]].map(([t, label, icon]) => ({ label, icon, checked: theme === t, run: () => setTheme(t) })) };
 }
 
 async function signOut() {
@@ -680,9 +679,9 @@ function inviteSheet(done) {
     try {
       const r = await api('/api/invites', { method: 'POST', body: { email: $('#ie', form).value || undefined, role: $('#ir', form).value } });
       s.body.innerHTML = `<p style="margin:0 4px 14px;color:var(--muted)">Send this link${r.email ? ` to ${esc(r.email)}` : ''}. It works once and expires in 14 days.</p>
-        <div class="code-box"><span>${esc(r.link)}</span><button class="btn small primary" data-copy>${icons.copy}Copy</button></div>
+        <div data-link></div>
         ${r.emailed ? `<p style="margin:12px 4px 0;font-size:13.5px;color:${r.emailed.ok ? 'var(--accent-text)' : 'var(--muted)'}">${r.emailed.ok ? `Emailed to ${esc(r.email)}.` : `Not emailed (${esc(r.emailed.message || r.emailed.code || 'mail is off')}); send the link yourself.`}</p>` : ''}`;
-      $('[data-copy]', s.body).addEventListener('click', () => copy(r.link, 'Invite link copied'));
+      $('[data-link]', s.body).replaceWith(copyField(r.link));
       done();
     } catch (error) { toast(error.message); }
   });
@@ -941,7 +940,6 @@ function claudeView(panel, top) {
   panel.innerHTML = `<div class="page"><h2 class="page-title">Write with Claude</h2>
     <p class="page-lead">Connect Claude to Margin and it can draft and publish posts under your names, answer ordinary comments in your voice, and ask you about the rest. It only ever does what you can do here, in the workspaces you’re on.</p>
     ${connectBlock()}
-    <p class="group-note" style="margin:-8px 4px 24px">In Claude Code, type /mcp to sign in.</p>
     <div class="group-title">Try asking</div>
     <div class="prompt-list">
       <div class="prompt">“Write a draft for ${esc(w ? w.name : 'my workspace')} about what we learned shipping v2. Keep it under 800 words and give me the preview link.”</div>

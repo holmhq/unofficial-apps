@@ -356,7 +356,7 @@ export function deleteTheme(env, id, active) {
 }
 
 // Every file of a theme, for download, editing over MCP, or making a copy.
-export async function themeFiles(env, id, origin) {
+export async function themeFiles(env, id) {
   const files = {};
   const binaries = [];
   if (BUILT_IN.includes(id)) {
@@ -376,9 +376,12 @@ export async function themeFiles(env, id, origin) {
     for (const asset of manifest.assets || []) {
       const url = `/themes/${id}/${asset}`;
       if (TEXT_TYPES[extOf(asset)]) {
-        const res = await env.holm.web.fetch(new Request(origin + url));
+        // The page loads these from web/themes/; the tools can't reach web/, so they read the
+        // copies in theme-assets/ (tools/theme-assets.mjs keeps them the same).
+        let text = null;
+        try { text = p.read(`theme-assets/${id}/${asset}`); } catch { text = null; }
         // A copy keeps working without re-uploading fonts: point at the built-in's files.
-        if (res.ok) files[`assets/${asset}`] = (await res.text()).replace(/url\((['"]?)(?![a-z]+:|\/)([^'")]+\.(woff2?|ttf|otf|png|jpe?g|webp|gif|avif|ico))\1\)/gi, (m, q, file) => `url(${q}/themes/${id}/${file}${q})`);
+        if (typeof text === 'string') files[`assets/${asset}`] = text.replace(/url\((['"]?)(?![a-z]+:|\/)([^'")]+\.(woff2?|ttf|otf|png|jpe?g|webp|gif|avif|ico))\1\)/gi, (m, q, file) => `url(${q}/themes/${id}/${file}${q})`);
       } else binaries.push({ path: `assets/${asset}`, url });
     }
   } else {

@@ -74,7 +74,13 @@ script is in the folder.
   for its admins. MCP tools for Claude that take a workspace: write and edit
   posts, answer only ordinary comments (asking about anything sensitive),
   comment under any of your names, manage personas, start and run workspaces
-  (settings, the team and its roles, invites, leaving), and work on themes. A short /llms.txt for agents.
+  (settings, the team and its roles, invites, leaving), and work on themes.
+  Use auth "user" so anyone signed in can connect, with each tool checking
+  workspace roles itself as Studio does; keep saving a theme to the node's
+  admins. Connect via MCP… in the account menu with the MCP mark opens one
+  sheet with the connector address to click and copy, and tabs for Claude,
+  ChatGPT, Claude Code and what the tools do; pages that mention Claude open
+  it. A short /llms.txt for agents.
 - Sample content: two fictional teams with their own logos (made with
   holm app identity), writers, posts and comments, loaded from Studio.
 - UI refined like Apple's apps: Inter, one accent, frosted bars, sheets on
@@ -168,3 +174,10 @@ with placeholders.
 > and do a "attention to detail pass" which will take the app to proper refinement
 
 > - do all fine edits like that
+
+**Margin 0.7.0: Claude for everyone signed in, and Connect via MCP**
+
+The tools were open only to the node's admins. Offered to give Kalendar, Deck,
+Margin and Ralk the repository's Connect via MCP sheet, the owner replied:
+
+> yes, do both batches

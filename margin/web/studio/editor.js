@@ -5,7 +5,7 @@ import {
   Editor, Node, Extension, mergeAttributes, StarterKit, Placeholder, CharacterCount, TaskList, TaskItem, TableKit,
   Markdown, Suggestion, BubbleMenu, Image, Plugin, PluginKey, NodeSelection, nodeInputRule, InputRule,
 } from '/vendor/editor/tiptap.js';
-import { api, esc, h, $, $$, toast, icons, sheet, menu, copy, upload, pickFile, ago } from './lib.js';
+import { api, esc, h, $, $$, toast, icons, sheet, menu, copyField, upload, pickFile, ago } from './lib.js';
 
 const VIDEO = /\.(mp4|webm|mov|m4v)(\?|#|$)/i;
 const KINDS = ['note', 'tip', 'important', 'warning', 'caution'];
@@ -989,10 +989,12 @@ export async function editorView(root, { me, id, go }) {
         const url = location.origin + post.url;
         const done = h(`<div style="text-align:center;padding:8px 8px 4px"><div class="empty-icon" style="margin:0 auto 14px">${icons.check}</div>
           <h2 style="margin:0 0 6px;font-size:21px">${was ? 'Updated' : 'Published'}</h2><p style="margin:0 0 18px;color:var(--muted)">It’s live at</p>
-          <div class="code-box" style="margin-bottom:16px;text-align:left"><span>${esc(url)}</span><button class="btn small" data-copy>${icons.copy}</button></div>
+          <div data-link style="margin-bottom:16px;text-align:left"></div>
           <div style="display:flex;gap:8px;justify-content:center"><a class="btn primary" href="${esc(post.url)}" target="_blank" rel="noopener">View post</a><a class="btn" href="${home}" data-nav>Back to posts</a></div></div>`);
         const s2 = sheet(post.title, done);
-        $('[data-copy]', done).addEventListener('click', () => copy(url, 'Link copied'));
+        const field = copyField(url);
+        field.style.cssText = 'margin-bottom:16px;text-align:left';
+        $('[data-link]', done).replaceWith(field);
         $$('[data-nav]', done).forEach((a) => a.addEventListener('click', () => { s2.close(); editor.destroy(); }));
       } catch { /* toast shown */ }
     });

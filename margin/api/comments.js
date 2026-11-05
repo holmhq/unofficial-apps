@@ -114,7 +114,8 @@ export function createComment(env, ctx, postId, input, via = 'web') {
   let parentId = null;
   if (input.parent_id) {
     const parent = byId(env, 'comments', input.parent_id);
-    if (!parent || parent.postId !== post.id) reject(404, 'not_found', 'The comment you reply to is gone.');
+    // Only to a comment this person can see: not one held for approval, or turned down, that isn't theirs.
+    if (!parent || parent.postId !== post.id || !visible(env, ctx, post, parent, canEdit(env, ctx, post))) reject(404, 'not_found', 'The comment you reply to is gone.');
     parentId = parent.parentId || parent.id;
   }
   let as = null;

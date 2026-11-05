@@ -105,12 +105,14 @@ export const icons = {
   monitor: P('<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8m-4-4v4"/>'),
   sun: P('<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>'),
   chart: P('<path d="M3 3v18h18M18 17V9M13 17V5M8 17v-3"/>'),
+  // The MCP logo's two strokes (shelf/tools/mcp.svg), filled.
+  mcp: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="stroke:none"><path fill="currentColor" d="M15.228,3.596C14.355,2.745 12.942,2.745 12.068,3.596L3.642,11.859C3.351,12.142 2.881,12.142 2.589,11.859C2.45,11.723 2.371,11.537 2.371,11.342C2.371,11.148 2.45,10.962 2.589,10.826L11.015,2.563C12.472,1.146 14.825,1.146 16.281,2.563C17.107,3.366 17.501,4.52 17.335,5.661C18.49,5.497 19.659,5.879 20.494,6.694L20.538,6.738C21.235,7.416 21.629,8.348 21.629,9.32C21.629,10.293 21.235,11.225 20.538,11.903L12.917,19.375C12.871,19.421 12.845,19.483 12.845,19.548C12.845,19.611 12.871,19.674 12.917,19.719L14.482,21.254C14.622,21.39 14.7,21.577 14.7,21.771C14.7,21.965 14.622,22.152 14.482,22.287C14.191,22.571 13.721,22.571 13.429,22.287L11.864,20.753C11.539,20.437 11.355,20.002 11.355,19.548C11.355,19.093 11.539,18.658 11.864,18.342L19.485,10.869C19.903,10.462 20.139,9.902 20.139,9.319C20.139,8.736 19.903,8.177 19.485,7.77L19.441,7.727C18.568,6.877 17.158,6.876 16.284,7.725L10.006,13.882L9.918,13.968C9.627,14.252 9.156,14.252 8.865,13.968C8.725,13.833 8.647,13.646 8.647,13.452C8.647,13.258 8.725,13.071 8.865,12.935L15.231,6.692C15.647,6.285 15.882,5.727 15.882,5.145C15.882,4.562 15.647,4.003 15.228,3.596ZM14.175,5.661C14.314,5.526 14.393,5.339 14.393,5.145C14.393,4.951 14.314,4.764 14.175,4.629C13.884,4.345 13.413,4.345 13.121,4.629L6.89,10.74C6.193,11.418 5.799,12.35 5.799,13.322C5.799,14.295 6.193,15.227 6.89,15.904C8.346,17.322 10.699,17.322 12.156,15.904L18.388,9.793C18.527,9.657 18.606,9.471 18.606,9.277C18.606,9.082 18.527,8.896 18.388,8.76C18.097,8.477 17.626,8.477 17.334,8.76L11.103,14.872C10.229,15.722 8.816,15.722 7.943,14.872C7.524,14.465 7.289,13.905 7.289,13.322C7.289,12.739 7.524,12.18 7.943,11.773L14.175,5.661Z"/></svg>',
   feedback: P('<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/>'),
 };
 
 export function sheet(title, content, options = {}) {
   const scrim = h('<div class="scrim"></div>');
-  const box = h(`<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-head"><h2>${esc(title)}</h2><button type="button" class="icon-btn filled" data-close aria-label="Close">${icons.close}</button></div><div class="sheet-body"></div></div>`);
+  const box = h(`<div class="sheet${options.className ? ' ' + esc(options.className) : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" tabindex="-1"><div class="sheet-head"><h2>${esc(title)}</h2><button type="button" class="icon-btn filled" data-close aria-label="Close">${icons.close}</button></div><div class="sheet-body"></div></div>`);
   const body = box.querySelector('.sheet-body');
   if (typeof content === 'string') body.innerHTML = content; else body.append(content);
   const close = () => { scrim.remove(); box.remove(); document.removeEventListener('keydown', onKey); options.onClose?.(); handle.onClose?.(); };
@@ -119,7 +121,8 @@ export function sheet(title, content, options = {}) {
   box.querySelector('[data-close]').addEventListener('click', close);
   document.addEventListener('keydown', onKey);
   document.body.append(scrim, box);
-  setTimeout(() => box.querySelector('input, textarea, select')?.focus(), 80);
+  // The first field, or the sheet itself, so focus is inside it without a ring on a button.
+  setTimeout(() => (box.querySelector('input, textarea, select') || box).focus({ preventScroll: true }), 80);
   const handle = { body, close, box };
   return handle;
 }
@@ -134,6 +137,18 @@ export function menu(anchor, items) {
   el._anchor = anchor;
   for (const item of items) {
     if (item === '-') { el.append(h('<div class="sep" role="separator"></div>')); continue; }
+    // A row of icon choices, such as the theme: each is named for screen readers and on hover.
+    if (item.choices) {
+      const row = h(`<div class="menu-choices" role="group" aria-label="${esc(item.label)}"></div>`);
+      for (const c of item.choices) {
+        const b = h(`<button type="button" role="menuitemradio" aria-label="${esc(c.label)}" title="${esc(c.label)}" aria-checked="${!!c.checked}"></button>`);
+        b.innerHTML = c.icon;
+        b.addEventListener('click', () => { close(); c.run(); });
+        row.append(b);
+      }
+      el.append(row);
+      continue;
+    }
     const b = h(item.href ? `<a role="menuitem" href="${esc(item.href)}"${item.blank ? ' target="_blank" rel="noopener"' : ''}></a>` : `<button type="button" role="${item.checked !== undefined ? 'menuitemradio' : 'menuitem'}"></button>`);
     b.innerHTML = `${item.icon || ''}<span class="menu-label">${esc(item.label)}</span>${item.note ? `<span class="menu-note">${esc(item.note)}</span>` : ''}${item.checked ? `<span class="menu-check">${icons.check}</span>` : ''}`;
     if (item.checked !== undefined) b.setAttribute('aria-checked', String(!!item.checked));
@@ -176,6 +191,38 @@ export function menu(anchor, items) {
   document.addEventListener('pointerdown', off, true);
   document.addEventListener('keydown', keys, true);
   window.addEventListener('resize', close);
+  return el;
+}
+
+// Anything to copy (an address, a command, a link) is one button: the value on one line in
+// mono with a copy icon at its end. Pointing at it fades in Copy; a click turns the icon into
+// a green tick and the word into Copied for 1.6 s. A value too long for the line scrolls
+// under a fade. field.set(value) fills it in later; until then it does nothing.
+export function copyField(value = '', placeholder = '') {
+  const el = h(`<div class="copy-field" role="button" tabindex="0"><code class="copy-value"></code><span class="copy-cue"><span class="copy-word" aria-live="polite">Copy</span><span class="cf-copy">${icons.copy}</span><span class="cf-tick">${icons.check}</span></span></div>`);
+  const text = el.querySelector('.copy-value');
+  const word = el.querySelector('.copy-word');
+  let current = '';
+  let timer;
+  const fade = () => el.classList.toggle('is-long', text.scrollLeft + text.clientWidth < text.scrollWidth - 1);
+  el.set = (next) => { current = next || ''; text.textContent = current || placeholder; el.classList.toggle('is-empty', !current); el.setAttribute('aria-disabled', String(!current)); requestAnimationFrame(fade); };
+  const run = async () => {
+    if (!current) return;
+    try { await navigator.clipboard.writeText(current); } catch {
+      getSelection().selectAllChildren(text);
+      toast('Couldn’t copy. It’s selected, so copy it by hand.');
+      return;
+    }
+    el.classList.add('is-copied');
+    word.textContent = 'Copied';
+    clearTimeout(timer);
+    timer = setTimeout(() => { el.classList.remove('is-copied'); word.textContent = 'Copy'; }, 1600);
+  };
+  el.addEventListener('click', run);
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); run(); } });
+  text.addEventListener('scroll', fade, { passive: true });
+  new ResizeObserver(fade).observe(text);
+  el.set(value);
   return el;
 }
 
