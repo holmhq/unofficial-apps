@@ -66,6 +66,6 @@ if (kept && kept.signed_in && !shared) {
 addEventListener('focus', lookAgain)
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') lookAgain() })
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname.endsWith('localhost'))) {
   navigator.serviceWorker.register('/sw.js').catch(() => {})
 }

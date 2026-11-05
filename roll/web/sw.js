@@ -9,7 +9,7 @@
 // is ever answered from here. An address that ends like a file (/icon-512.png) is that
 // file, even typed into the address bar; every other address is a page and gets the shell.
 
-const VERSION = '0.2.0'
+const VERSION = '0.3.0'
 const CACHE = 'roll-' + VERSION
 const PHOTOS = 'roll-photos'
 const FILES = [

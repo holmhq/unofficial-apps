@@ -62,7 +62,8 @@ vendor Inter and ThumbHash with their licences.
   bar on a phone; a round avatar button with a three-icon theme switch and
   storage use; Holm's credit only in the footer, on one line even in the
   sidebar. A versioned service worker
-  precaches the app and keeps thumbnails.
+  precaches the app and keeps thumbnails. ⌘K on a desk goes to places,
+  albums and cities, uploads, selects and opens Connect via MCP….
 - For this repository's store, use holm.json version, holm.symbol.svg and
   listing/ with screenshots of sample photos only.
 ```
@@ -92,3 +93,10 @@ repository was to have them. Offered tools for Zend, Roll and Until, the
 owner answered:
 
 > yes, do both batches
+
+Version 0.3.0 came from a sweep of every app against the repository's
+cookbook: ⌘K, cards that lift rather than zoom, larger touch areas in the
+top bar, and loading animations that stand still with reduced motion. The
+owner asked:
+
+> Sure do cookbook sweep

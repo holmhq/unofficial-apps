@@ -75,7 +75,9 @@ its ThumbHash before the thumbnail arrives, and fade in without jumping.
 Light and dark, with photos on black in the dark, and less motion when the
 device asks for it. The round avatar button holds who you are, your storage,
 Connect via MCP…, a three-icon theme switch and Sign out; the Holm credit
-sits in the footer.
+sits in the footer. On a desk, ⌘K (Ctrl+K) goes to a place, an album or a
+city, or uploads, selects or connects via MCP, from a few letters. Cards
+lift a little under the pointer; nothing grows.
 
 ## How it's built
 

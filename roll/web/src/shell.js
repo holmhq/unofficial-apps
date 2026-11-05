@@ -137,8 +137,13 @@ export function mcpSheet() {
   }
   const show = (v) => Object.entries(panes).forEach(([k, el]) => { el.classList.toggle('is-on', k === v); el.inert = k !== v })
   show('claude')
-  // The menu item that opened it is gone, so closing goes back to the account button.
-  const back = () => { const b = [...document.querySelectorAll('.avatar-btn')].find((x) => x.offsetParent); if (b) b.focus({ preventScroll: true }) }
+  // A menu item that opened it is gone by now, so closing goes back to the account button.
+  const back = () => {
+    const at = document.activeElement
+    if (at && at !== document.body && !at.closest('.layer')) return
+    const b = [...document.querySelectorAll('.avatar-btn')].find((x) => x.offsetParent)
+    if (b) b.focus({ preventScroll: true })
+  }
   return sheet({
     title: 'Connect via MCP',
     cancel: null,

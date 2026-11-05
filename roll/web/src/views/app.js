@@ -9,7 +9,7 @@
 import { h, ic, haptic, toast, menu, confirm, reduced, closeMenus, fill } from '../ui.js'
 import { mark, heartFill } from '../icons.js'
 import { lib, on, timeline, favorites, trash, inAlbum, atPlace, albums, places, memories, search, suggestions, emptyTrash, updateAlbum, deleteAlbum, change, photoURL } from '../store.js'
-import { go, link, accountButton, credit, usage, favorite, toTrash, restore, deleteForGood, albumPicker, download, askName, shareSheet, removeFromAlbum, failure, plural, viewerActions } from '../shell.js'
+import { go, link, accountButton, credit, usage, mcpSheet, favorite, toTrash, restore, deleteForGood, albumPicker, download, askName, shareSheet, removeFromAlbum, failure, plural, viewerActions } from '../shell.js'
 import { photosPage, emptyState } from './photos.js'
 import { memoryStrip, playMemory } from '../memories.js'
 import { pickFiles, acceptDrops } from '../upload.js'
@@ -485,8 +485,77 @@ export function createApp() {
 
   acceptDrops(() => currentAlbum(), () => !document.querySelector('.layer, .picker'))
 
+  // ⌘K: a place, an album or something to do, by typing a few letters of it.
+  let palette = null
+  function openPalette() {
+    if (palette) { palette.close(); return }
+    const opener = document.activeElement
+    const input = h('input.pal-field', { type: 'text', placeholder: 'Go to, find or do…', 'aria-label': 'Go to, find or do', autocomplete: 'off', spellcheck: 'false' })
+    const list = h('div.pal-list', { role: 'listbox' })
+    const box = h('div.pal', { role: 'dialog', 'aria-label': 'Command menu' }, h('div.pal-top', ic('search', 18, 2.1), input, h('kbd', 'esc')), list)
+    const layer = h('div.pal-layer', { onclick: (e) => { if (e.target === layer) close() } }, box)
+    document.body.append(layer)
+    requestAnimationFrame(() => layer.classList.add('is-in'))
+    input.focus()
+    let at = 0
+    let shown = []
+    const commands = () => [
+      ...PLACES.map((x) => ({ label: x.label, icon: x.icon, hint: 'Go', run: () => go(x.path) })),
+      { label: 'Search', icon: 'search', hint: '/', run: () => go('/search') },
+      { label: 'Upload photos', icon: 'upload', run: () => pickFiles(currentAlbum() ? currentAlbum().id : null) },
+      active && active.grid && active.list && active.list.length ? { label: 'Select photos', icon: 'squareCheck', run: () => startSelecting() } : null,
+      { label: 'Connect via MCP…', icon: 'mcp', run: () => mcpSheet() },
+      ...albums().map((a) => ({ label: a.title, icon: 'bookImage', hint: 'Album', run: () => go('/albums/' + a.id) })),
+      ...places().slice(0, 40).map((x) => ({ label: x.name.split(',')[0], icon: 'mapPin', hint: 'Place', run: () => go('/places/' + encodeURIComponent(x.name)) }))
+    ].filter(Boolean)
+    const score = (text, q) => {
+      const t = text.toLowerCase()
+      if (t.startsWith(q)) return 3
+      if (t.includes(' ' + q)) return 2
+      if (t.includes(q)) return 1
+      let i = 0
+      for (const ch of t) if (ch === q[i]) i++
+      return i === q.length ? 0.5 : 0
+    }
+    function draw() {
+      const q = input.value.trim().toLowerCase()
+      const all = commands()
+      shown = q ? all.map((c) => ({ ...c, s: score(c.label, q) })).filter((c) => c.s > 0).sort((a, b) => b.s - a.s).slice(0, 12) : all.slice(0, 12)
+      if (q) shown.push({ label: 'Search for “' + input.value.trim() + '”', icon: 'search', run: () => go('/search?q=' + encodeURIComponent(input.value.trim())) })
+      at = Math.min(at, Math.max(0, shown.length - 1))
+      fill(list, shown.length ? shown.map((c, n) => h('button.pal-item' + (n === at ? '.is-on' : ''), { type: 'button', role: 'option', onpointermove: () => { if (at !== n) { at = n; markAt() } }, onclick: () => pick(c) }, h('span.pal-ic', ic(c.icon, 16, 2)), h('span.grow.trunc', c.label), c.hint ? h('small.trunc', c.hint) : null)) : h('div.pal-none', 'Nothing matches'))
+    }
+    const markAt = () => [...list.children].forEach((el, n) => el.classList.toggle('is-on', n === at))
+    // Keeps the chosen row in view by scrolling the list itself; scrollIntoView would move the shell too.
+    function reveal() {
+      const el = list.children[at]
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const frame = list.getBoundingClientRect()
+      if (r.top < frame.top + 6) list.scrollTop -= frame.top + 6 - r.top
+      else if (r.bottom > frame.bottom - 6) list.scrollTop += r.bottom - frame.bottom + 6
+    }
+    function pick(c) { close(); setTimeout(() => c.run(), 0) }
+    function close() {
+      layer.classList.remove('is-in'); setTimeout(() => layer.remove(), 180); palette = null; document.removeEventListener('keydown', onKey, true)
+      if (opener && opener !== document.body && opener.isConnected) opener.focus({ preventScroll: true })
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close() }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); at = Math.min(shown.length - 1, at + 1); markAt(); reveal() }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); at = Math.max(0, at - 1); markAt(); reveal() }
+      else if (e.key === 'Enter') { e.preventDefault(); if (shown[at]) pick(shown[at]) }
+      else if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); e.stopPropagation(); close() }
+    }
+    document.addEventListener('keydown', onKey, true)
+    input.addEventListener('input', () => { at = 0; draw() })
+    draw()
+    palette = { close }
+  }
+
   document.addEventListener('keydown', (e) => {
-    if (viewerOpen() || document.querySelector('.layer, .picker, .story')) return
+    if (viewerOpen() || document.querySelector('.layer, .picker, .story, .pal-layer')) return
+    if (root.isConnected && (e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); openPalette(); return }
     const typing = e.target.closest && e.target.closest('input, textarea')
     if (e.key === 'Escape' && active && (active.selection.size || active.selection.active)) active.selection.clear()
     else if ((e.metaKey || e.ctrlKey) && e.key === 'a' && !typing && active && active.list) { e.preventDefault(); active.selection.set(active.list.map((p) => p.id), true) }
