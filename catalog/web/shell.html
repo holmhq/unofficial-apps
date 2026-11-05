@@ -35,8 +35,10 @@
   <link rel="modulepreload" href="/src/start.js">
 </head>
 <body>
+  <!-- The window never scrolls: this panel does, under a header and a footer that stay put. -->
+  <div class="scroller" id="scroller">
   <a class="skip" href="#main">Skip to content</a>
-  <header class="top">
+  <div class="bar" id="bar"><header class="top">
     <a class="brand" href="/" data-link>
       <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0Z"/><path fill="var(--paper)" d="M6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>
       <span>unofficial</span>
@@ -45,7 +47,7 @@
       <a class="top-link" href="/start" data-link><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.2 7.3 7.3 2.2-7.3 2.2-2.2 7.3-2.2-7.3L2.5 12l7.3-2.2z"/></svg>Get started</a>
       <div class="account" id="account"></div>
     </div>
-  </header>
+  </header></div>
 
   <main id="main" tabindex="-1">
     <p class="status">Loading the apps…</p>
@@ -66,6 +68,7 @@
       <span>Send feedback</span>
     </button>
   </footer>
+  </div>
 
   <dialog class="sheet" id="install" aria-labelledby="install-title"></dialog>
   <dialog class="sheet" id="review" aria-labelledby="review-title"></dialog>

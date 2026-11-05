@@ -13,15 +13,20 @@ export const viewer = () => ({ me, admin })
 export const onViewer = fn => listeners.push(fn)
 
 // Who is looking, from the API; notify tells the page to read the index again.
-export async function loadViewer(notify = true) {
+// quiet leaves the page alone when the answer is who the page already shows,
+// as when a page opened from the kept copy checks in with the server.
+export async function loadViewer(notify = true, { quiet = false } = {}) {
+  const was = JSON.stringify([me, admin])
   try {
     const body = await api('GET', '/api/me')
     me = body.member
     admin = !!body.admin
   } catch {
+    if (quiet) return
     me = null
     admin = false
   }
+  if (quiet && JSON.stringify([me, admin]) === was) return
   render()
   if (notify) listeners.forEach(fn => fn())
 }
@@ -72,7 +77,7 @@ function render() {
     type: 'button', class: 'avatar-btn', 'aria-haspopup': 'menu', 'aria-expanded': 'false',
     'aria-label': me ? `Account: ${me.name}` : 'Sign in',
     onclick: event => { event.stopPropagation(); toggleMenu(button) }
-  }, me ? el('img', { src: me.avatar, alt: '', referrerpolicy: 'no-referrer' }) : glyph(PERSON))
+  }, el('span', { class: 'avatar-face' }, me ? el('img', { src: me.avatar, alt: '', referrerpolicy: 'no-referrer' }) : glyph(PERSON)))
   $('#account').replaceChildren(button)
 }
 

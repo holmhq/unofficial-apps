@@ -86,8 +86,11 @@ third-party runtime CDN; vendor fonts and any libraries with licenses.
   responseType: 'file'. Keep screenshots as public static files in web/
   until a documented, tested proxy/cache path is available; disclose that
   gap. Make light/dark mobile/desktop layouts, no sideways scrolling, and a
-  small Holm/source footer that stays at the bottom over the scrolling page,
-  frosted. The avatar menu (a second tap closes it) has a light/dark/
+  fixed shell: the window never scrolls, one panel does, under a header that
+  frosts once the page runs under it and a small Holm/source footer that
+  stays at the bottom, frosted. A versioned service worker keeps every file
+  and the front page; pages open from it and redraw only if the API says
+  something changed. The avatar menu (a second tap closes it) has a light/dark/
   same-as-device switch, kept in the browser and applied before first
   paint, and Analytics from __HOLM_SURFACES__.
 
@@ -332,3 +335,9 @@ they are a shipped Holm store protocol. It uses the public v1 guide for
 runtime and deploy behavior and states the node-role and binary-fetch gaps.
 The quoted history explains the requested experience; the detailed design,
 install sheet and screenshots were the agent's work.
+
+Version 0.16.0 came from a sweep of every app in this repository against
+its cookbook: the store became a fixed shell whose panel scrolls, and opens
+from a service worker. The owner's message was:
+
+> Sure do cookbook sweep

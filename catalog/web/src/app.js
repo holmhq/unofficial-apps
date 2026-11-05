@@ -254,7 +254,7 @@ function storefront() {
     const url = new URL(location.href)
     if (value.trim()) url.searchParams.set('q', value.trim())
     else url.searchParams.delete('q')
-    history.replaceState(null, '', url)
+    history.replaceState(history.state, '', url)
     mark()
     fill()
   }
@@ -410,27 +410,45 @@ feedback.addEventListener('pointerenter', preloadFeedback)
 feedback.addEventListener('focus', preloadFeedback)
 feedback.addEventListener('click', () => globalThis.HolmFeedback && globalThis.HolmFeedback.open())
 
-// Links inside the store change the page without reloading it.
+// The window never scrolls; this panel does. The header frosts once the page
+// runs under it.
+const scroller = $('#scroller')
+const bar = $('#bar')
+const frost = () => bar.classList.toggle('is-scrolled', scroller.scrollTop > 2)
+scroller.addEventListener('scroll', frost, { passive: true })
+
+// Links inside the store change the page without reloading it. Each page in
+// the history keeps how far down it was, so Back lands where it left off.
 document.addEventListener('click', event => {
   const link = event.target.closest('a[data-link]')
   if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
   event.preventDefault()
+  history.replaceState({ ...history.state, y: scroller.scrollTop }, '')
   if (link.href !== location.href) history.pushState(null, '', link.href)
   route()
-  scrollTo({ top: 0, behavior: 'instant' })
+  scroller.scrollTo({ top: 0, behavior: 'instant' })
+  frost()
   main.focus({ preventScroll: true })
 })
-addEventListener('popstate', route)
+addEventListener('popstate', () => {
+  route()
+  scroller.scrollTo({ top: (history.state && history.state.y) || 0, behavior: 'instant' })
+  frost()
+})
+history.scrollRestoration = 'manual'
 
-async function load() {
+async function load({ quiet = false } = {}) {
   try {
     const response = await fetch('/api/index?ref=' + encodeURIComponent(ref), { cache: 'no-store' })
     const body = await response.json()
     if (!body.ok) throw new Error(body.error?.message || 'The index could not be read.')
-    index = body.index
     applyTint(body.settings && body.settings.tint)
+    // A page drawn from the kept copy redraws only if the store changed since.
+    if (quiet && JSON.stringify(body.index) === JSON.stringify(index)) return
+    index = body.index
     route()
   } catch (error) {
+    if (quiet) return
     // The guide reads well without the apps.
     if (isStart()) return
     main.replaceChildren(el('div', { class: 'status error' },
@@ -451,6 +469,11 @@ if (boot && boot.index) {
   applyTint(boot.settings && boot.settings.tint)
   setViewer(boot.viewer)
   route()
+  // Opened from the copy the service worker keeps: it may be a little behind, so
+  // check who's here and what's in the store, and redraw only what changed.
+  if (navigator.serviceWorker && navigator.serviceWorker.controller && ref === 'main') {
+    loadViewer(true, { quiet: true }).then(() => load({ quiet: true }))
+  }
 } else {
   loadViewer(false)
   if (isStart()) route()
@@ -460,3 +483,8 @@ if (boot && boot.index) {
 // Signing in or out can change what's visible (admins see hidden apps), so
 // the index is read again for the new viewer.
 onViewer(() => load())
+
+// The store opens from files kept in this browser (web/sw.js).
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname.endsWith('localhost'))) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {})
+}

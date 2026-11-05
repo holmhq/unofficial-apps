@@ -89,6 +89,16 @@ export function stars(rating, label = true) {
 
 export const date = value => new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 
+// Scrolls the page's panel to an element, clear of the header. scrollIntoView
+// and #anchors would try to move the fixed shell too.
+export function reveal(target) {
+  const scroller = document.getElementById('scroller')
+  if (!target || !scroller) return
+  const bar = document.getElementById('bar')
+  const top = target.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - (bar ? bar.offsetHeight : 0) - 8
+  scroller.scrollTo({ top: Math.max(0, top), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+}
+
 export function applyTint(tint) {
   if (!/^#[0-9a-fA-F]{6}$/.test(tint || '')) return
   document.documentElement.style.setProperty('--tint', tint)

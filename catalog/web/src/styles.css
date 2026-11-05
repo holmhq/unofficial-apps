@@ -63,22 +63,14 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
-/* Whatever gains focus or is scrolled to stays clear of the footer. */
-html { -webkit-text-size-adjust: 100%; scroll-padding-bottom: 4.5rem; }
-@media (prefers-reduced-motion: no-preference) {
-  html { scroll-behavior: smooth; }
-}
+/* The window never scrolls; the scroller under the header and footer does. */
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  /* The footer sits at the bottom of the window even on a short page. */
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  /* Nothing may widen the page sideways, whatever an engine does with a
-     stray element; scrollers inside the page keep their own scrolling. */
-  overflow-x: clip;
+  position: fixed;
+  inset: 0;
   background: var(--paper);
   color: var(--ink);
   font: 400 1.0625rem/1.55 var(--font);
@@ -91,6 +83,42 @@ a:hover { text-decoration-color: currentColor; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 main:focus { outline: none; }
 
+.scroller {
+  height: 100%;
+  overflow-y: auto;
+  /* Nothing may widen the page sideways, whatever an engine does with a
+     stray element; scrollers inside the page keep their own scrolling. */
+  overflow-x: clip;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+  /* The footer sits at the bottom of the window even on a short page. */
+  display: flex;
+  flex-direction: column;
+  /* Whatever gains focus or is scrolled to stays clear of the header and footer. */
+  scroll-padding-top: 5.5rem;
+  scroll-padding-bottom: 4.5rem;
+}
+.scroller::-webkit-scrollbar { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .scroller { scroll-behavior: smooth; }
+}
+
+/* The header stays put. At the top it sits on the page as before; once the page
+   scrolls under it, it turns to frosted glass with a hairline. */
+.bar {
+  position: sticky; top: 0; z-index: 20; flex: none;
+  transition: background-color 200ms ease, box-shadow 200ms ease;
+}
+.bar.is-scrolled {
+  background: color-mix(in oklab, var(--paper) 72%, transparent);
+  -webkit-backdrop-filter: saturate(1.8) blur(18px);
+  backdrop-filter: saturate(1.8) blur(18px);
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--rule) 75%, transparent);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .bar.is-scrolled { background: color-mix(in oklab, var(--paper) 94%, transparent); }
+}
+
 code, pre, input { font-family: var(--mono); font-variant-ligatures: none; }
 code { font-size: 0.88em; white-space: nowrap; }
 
@@ -98,7 +126,7 @@ h1, h2 { margin: 0; font-weight: 700; letter-spacing: -0.02em; }
 h2 { font-size: 1.35rem; line-height: 1.2; }
 
 .skip {
-  position: absolute; left: 1rem; top: -3rem; z-index: 2;
+  position: fixed; left: 1rem; top: -3rem; z-index: 30;
   background: var(--ink); color: var(--paper); padding: 0.5rem 0.8rem; border-radius: 6px;
 }
 .skip:focus { top: 1rem; }
@@ -222,6 +250,11 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
   cursor: pointer;
 }
 .get:hover { filter: brightness(0.97); }
+/* A finger gets 44 px: the pill reaches further than it looks. */
+@media (pointer: coarse) {
+  .get { position: relative; }
+  .get::before { content: ""; position: absolute; inset: -0.45rem -0.25rem; }
+}
 [data-theme="dark"] .get:hover { filter: brightness(1.15); }
 
 /* Store front */
@@ -592,15 +625,23 @@ main { flex: 1 0 auto; padding-bottom: 3.5rem; }
 
 .account { position: relative; display: flex; align-items: center; }
 .avatar-btn {
-  width: 2.25rem; height: 2.25rem; padding: 0;
+  /* 44 px for a finger; the circle inside stays 36 px, where it was. */
+  width: 2.75rem; height: 2.75rem; margin: -0.25rem; padding: 0.25rem;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%; background: none;
+  color: var(--ink-2); cursor: pointer;
+}
+.avatar-face {
+  width: 2.25rem; height: 2.25rem;
   display: grid; place-items: center;
   border: 1px solid var(--rule); border-radius: 50%;
-  background: var(--sheet); color: var(--ink-2);
-  overflow: hidden; cursor: pointer;
+  background: var(--sheet);
+  overflow: hidden; pointer-events: none;
 }
 .avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
 .avatar-btn svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
-.avatar-btn:hover { border-color: var(--ink-3); color: var(--ink); }
+.avatar-btn:hover { color: var(--ink); }
+.avatar-btn:hover .avatar-face { border-color: var(--ink-3); }
 .menu {
   position: absolute; right: 0; top: calc(100% + 0.5rem); z-index: 20;
   min-width: 14rem; padding: 0.4rem;

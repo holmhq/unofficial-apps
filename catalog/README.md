@@ -143,8 +143,18 @@ out of this app's deploy. They are still public source in this repository.
   browser and is applied before the first paint.
   Each app brings its colour through its icon, and everything else takes the
   tint. Fonts are vendored, so nothing loads from a CDN. A footer links to
-  Holm and the source and has Send feedback, as in pastebin. It stays at the
-  bottom of the window, and the page scrolls on under its frosted glass.
+  Holm and the source and has Send feedback, as in pastebin. The window
+  never scrolls: one panel does, between a header and that footer which stay
+  put, and the header turns to frosted glass once the page runs under it.
+  Back returns to where each page was left.
+- **Opens at once:** a service worker (`web/sw.js`) keeps every file of the
+  current version, all or nothing, and the front page with its index. Every
+  page address opens from that copy, then asks the API who's here and what's
+  in the store, and redraws only if something changed; each launch fetches a
+  fresh front page for the next. File addresses (`/icon-512.png`,
+  `/llms.txt`), `/api/`, `/auth/` and Holm's own `/_…` addresses always go to
+  the server, and so does a `?ref=` preview. `node catalog/tools/check.mjs`
+  checks the worker's version and file list.
 - **Link previews:** an app page shared in a chat or a post shows that app's
   name, description and cover, the 1200×630 card in its `listing/cover.png`
   (see the root README), instead of the store's own card.
@@ -182,6 +192,7 @@ web/                public files, served as-is:
   src/admin.js      /admin
   src/lib.js        DOM and API helpers, the app icon, counting, commands, tabs
   src/styles.css    the whole design, light and dark
+  sw.js             keeps this version's files; pages open from them
   assets/           icon, favicon and fonts (SIL OFL 1.1)
   vendor/feedback/  embed.js from this repository's feedback app (MIT)
   vendor/hairline/  Hairline's figure kernel (MIT), for the guide's belt
@@ -193,6 +204,7 @@ api/index.js        reads index.json and screenshots from GitHub, cached
 api/store.js        settings, counters and reviews
 api/lib.js          responses, request checks, who is asking
 holm.symbol.svg     this app's own icon
+tools/check.mjs     checks web/sw.js against holm.json and web/ (not deployed)
 listing/            this app's store listing (not deployed)
 ```
 
@@ -295,7 +307,8 @@ holm @<peer> policy set security.csp.frame_src "https://feedback.example.com" --
 
 Fonts are served with a one-year `Cache-Control` from `web.headers` in
 `holm.json`; give a changed font a new file name. Shell files keep Holm's
-`no-cache`, so a deploy shows at once.
+`no-cache`; a deploy shows on the launch after the service worker installs
+the new version, which a VERSION bump in `web/sw.js` brings.
 
 The API:
 

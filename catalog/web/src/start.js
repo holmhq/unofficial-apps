@@ -4,7 +4,7 @@
 // each place Holm can run (with what the agent will ask), and lists what
 // Holm gives an app. The agent's own instructions are /llms.txt; the commands
 // follow https://holmhq.com/llms-full.txt.
-import { el, icon, store, node, command, tabbed, ADDRESS, REPO } from './lib.js'
+import { el, icon, store, node, command, tabbed, reveal, ADDRESS, REPO } from './lib.js'
 
 const HOLM = 'https://holmhq.com'
 const REFERENCE = 'https://holmhq.com/llms-full.txt'
@@ -57,7 +57,7 @@ function glyph(name) {
 const jump = id => event => {
   event.preventDefault()
   const target = document.getElementById(id)
-  if (target) target.scrollIntoView({ block: 'start' })
+  reveal(target)
 }
 
 // What the reader has chosen: the app to start with and where Holm runs.
@@ -145,7 +145,7 @@ function copyButton(apps) {
       await navigator.clipboard.writeText(plain(PROMPTS.computer(chosen(apps))))
       button.textContent = 'Copied. Paste it into your agent'
     } catch {
-      document.getElementById('setup')?.scrollIntoView({ block: 'start' })
+      reveal(document.getElementById('setup'))
     }
     setTimeout(() => { button.textContent = 'Copy the prompt' }, 2400)
   })
@@ -374,7 +374,7 @@ export function startPage(index, show, back) {
   // A link to a section, such as /start#setup, lands on it.
   if (location.hash) {
     const target = document.getElementById(decodeURIComponent(location.hash.slice(1)))
-    if (target) requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }))
+    if (target) requestAnimationFrame(() => reveal(target))
   }
 }
 
