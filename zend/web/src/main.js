@@ -6,7 +6,7 @@ import { h, fill, ic, wide, menu, toast, segmented, haptic, $ } from './ui.js'
 import { mark, HOLM } from './icons.js'
 import * as theme from './theme.js'
 import { sound } from './sound.js'
-import { store, on, loadMe, loadState, loadThreads, loadDrafts, connect, unread } from './store.js'
+import { store, on, loadMe, loadState, loadThreads, loadDrafts, connect, unread, kept, keep, forget } from './store.js'
 import { list } from './views/list.js'
 import { thread } from './views/thread.js'
 import { compose } from './views/compose.js'
@@ -15,9 +15,13 @@ import { developers } from './views/developers.js'
 import { phone } from './views/phone.js'
 import { welcome } from './views/welcome.js'
 import { mcpSheet } from './mcp.js'
+import { openPalette, paletteOpen } from './palette.js'
 import * as api from './api.js'
 
 theme.apply()
+// The first draw after a launch shows the page as it is; entrances play only when
+// something changes after that.
+document.documentElement.classList.add('first-draw')
 
 const TABS = [
   { id: 'chats', path: '/', name: 'Chats', icon: 'chats', active: 'chatsFill' },
@@ -193,8 +197,12 @@ function swipeBack(app, main) {
   main.addEventListener('pointercancel', end)
 }
 
-// The wide screen's conversation pane with nothing open.
+// The wide screen's conversation pane with nothing open. It's drawn again only when
+// whether a phone is connected changes, so a fresh answer that says the same thing
+// doesn't replay its entrance.
+let homePhone = null
 function home() {
+  homePhone = !!(store.state && store.state.phone)
   const el = h('div', { style: { display: 'contents' } },
     h('header.bar', h('span.right', accountButton())),
     h('div.empty.fade-in',
@@ -225,8 +233,8 @@ function avatarOf(member) {
   return el
 }
 
-function accountMenu(anchor) {
-  const member = store.me.member
+// Light, dark or the device's choice, as three icons.
+export function themeSwitch() {
   const seg = segmented(
     [{ value: 'light', label: 'Light', icon: 'sun' }, { value: 'dark', label: 'Dark', icon: 'moon' }, { value: 'system', label: 'Match this device', icon: 'monitor' }],
     theme.mode(),
@@ -235,6 +243,12 @@ function accountMenu(anchor) {
       theme.setMode(value, { x: r.left + r.width / 2, y: r.top + r.height / 2 })
     },
     { label: 'Appearance', icons: true })
+  return seg
+}
+
+function accountMenu(anchor) {
+  const member = store.me.member
+  const seg = themeSwitch()
   const soundRow = h('button.menu-item', { type: 'button', role: 'menuitemcheckbox', 'aria-checked': String(sound.on), onclick: () => {
     sound.set(!sound.on)
     soundRow.setAttribute('aria-checked', String(sound.on))
@@ -263,6 +277,7 @@ export function footNote() {
 }
 
 async function signOut() {
+  forget()
   try { await fetch(store.me.logoutURL, { method: 'POST', headers: { accept: 'application/json' } }) } catch {}
   location.href = '/'
 }
@@ -273,11 +288,31 @@ export function signIn() {
 
 /* ---- Keyboard ------------------------------------------------------------------- */
 
+// What ⌘K offers besides conversations.
+function commands() {
+  const phoneOn = store.state && store.state.phone
+  const account = () => [...document.querySelectorAll('.avatar-btn')].find((b) => b.offsetParent) || null
+  return [
+    { label: 'Chats', icon: 'chats', hint: 'Go', run: () => go('/') },
+    phoneOn ? { label: 'New text', icon: 'compose', hint: 'N', run: () => go('/new') } : null,
+    { label: 'Templates', icon: 'templates', hint: 'Go', run: () => go('/templates') },
+    { label: 'API keys', icon: 'code', hint: 'Go', run: () => go('/developers') },
+    { label: 'Phone', icon: 'phone', hint: 'Go', run: () => go('/phone') },
+    { label: 'Rules for texting', icon: 'shield', run: () => go('/phone#rules') },
+    { label: sound.on ? 'Turn sounds off' : 'Turn sounds on', icon: sound.on ? 'mute' : 'sound', run: () => sound.set(!sound.on) },
+    { label: 'Connect via MCP…', icon: 'mcp', run: () => mcpSheet(account()) },
+    { label: 'Sign out', icon: 'logout', run: signOut }
+  ].filter(Boolean)
+}
+
 addEventListener('keydown', (event) => {
-  if (!shell || $('.layer') || $('.menu')) return
+  if (!shell || $('.layer') || $('.menu') || paletteOpen()) return
   const mod = event.metaKey || event.ctrlKey
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName)
   if (mod && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    openPalette(commands)
+  } else if (!typing && !mod && event.key === '/') {
     event.preventDefault()
     if (route.tab !== 'chats') go('/')
     requestAnimationFrame(() => shell.list.focusSearch())
@@ -305,14 +340,28 @@ on((event) => {
       if (t && wide()) toast(`${t.name || 'New reply'}: ${t.last.body}`, { kind: 'info' })
     }
   }
-  if (event.type === 'state' && route && route.name === 'home') render()
+  if (event.type === 'state' && route && route.name === 'home' && homePhone !== !!(store.state && store.state.phone)) render()
 })
 
 async function boot() {
+  // Draw at once from what the last launch kept; the server's answers then redraw only
+  // the parts that changed.
+  const last = kept()
+  if (last) {
+    Object.assign(store, { me: last.me, state: last.state, threads: last.threads, drafts: last.drafts })
+    render()
+    settle()
+  }
   await loadMe()
+  const same = last && store.me.member && last.me.channel === store.me.channel
   if (store.me.member) {
+    if (last && !same) {
+      Object.assign(store, { state: null, threads: null, drafts: null })
+      if (shell) { shell.app.remove(); shell = null; view = null; route = null }
+    }
     try {
       await Promise.all([loadState(), loadThreads(), loadDrafts()])
+      keep()
     } catch (error) {
       toast(error.message, { kind: 'bad' })
     }
@@ -322,9 +371,18 @@ async function boot() {
     if (p && p.kind !== 'demo' && Date.now() - (p.checkedAt || 0) > 10 * 60000) {
       api.post('/api/phone/check').then(loadState).catch(() => {})
     }
-  }
-  render()
+  } else forget()
+  if (!same) render()
+  settle()
 }
+
+function settle() {
+  requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove('first-draw')))
+}
+
+// The list kept for the next launch follows what this page last saw.
+addEventListener('pagehide', keep)
+document.addEventListener('visibilitychange', () => { if (document.hidden) keep() })
 
 boot()
 

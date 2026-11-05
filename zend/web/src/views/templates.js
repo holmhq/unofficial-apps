@@ -6,7 +6,7 @@ import { store, on, loadTemplates } from '../store.js'
 import { checkTemplate, VAR_TYPES, VAR_MAX, VAR_LIMIT } from '../sms.js'
 import { blanks } from '../composer.js'
 import { sound } from '../sound.js'
-import { accountButton } from '../main.js'
+import { accountButton, footNote } from '../main.js'
 import * as api from '../api.js'
 
 export function templates() {
@@ -21,7 +21,8 @@ export function templates() {
         h('div.group', Object.entries(VAR_TYPES).slice(0, 4).map(([type, name]) => h('div.item',
           h('code', { style: { 'font-family': 'var(--mono)', 'font-size': '14px', width: '128px', color: 'var(--accent-text)' } }, `{#${type}#}`),
           h('span.t', name)))),
-        h('p.section-foot', `Up to ${VAR_LIMIT} blanks of ${VAR_MAX} characters each, with at least 30% of the text fixed.`))))
+        h('p.section-foot', `Up to ${VAR_LIMIT} blanks of ${VAR_MAX} characters each, with at least 30% of the text fixed.`))),
+    footNote())
   const bar = h('header.bar.grouped',
     h('span.small-title', 'Templates'),
     h('span.right', h('button.icon-btn', { type: 'button', 'aria-label': 'New template', title: 'New template', onclick: () => edit(null) }, ic('plus', 25, 2)), accountButton()))

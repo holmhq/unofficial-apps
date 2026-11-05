@@ -5,12 +5,12 @@ import { h, fill, ic, sheet, confirm, toast, collapsing, ago, nope, reveal, wide
 import { store, on, loadState, loadThreads } from '../store.js'
 import { normalizePhone, formatPhone } from '../sms.js'
 import { sound } from '../sound.js'
-import { go, accountButton } from '../main.js'
+import { go, accountButton, footNote } from '../main.js'
 import * as api from '../api.js'
 
 export function phone(params) {
   const page = h('div.page.fade-in')
-  const panel = h('div.panel.page-wrap', page)
+  const panel = h('div.panel.page-wrap', page, footNote())
   const bar = h('header.bar.grouped', h('span.small-title', 'Phone'), h('span.right', accountButton()))
   collapsing(bar, panel)
   let shownDemo = false

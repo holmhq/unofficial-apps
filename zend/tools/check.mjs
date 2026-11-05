@@ -1,7 +1,7 @@
-// Release check for Zend's text rules and vault (not deployed):
+// Release check for Zend's text rules, vault and service worker (not deployed):
 //   node tools/check.mjs
-// It fails if api/sms.js and web/src/sms.js differ, or any case below
-// gives the wrong answer. CASES and run() are exported so the same cases
+// It fails if api/sms.js and web/src/sms.js differ, any case below gives
+// the wrong answer, or sw.js's version, file list or address rules are off. CASES and run() are exported so the same cases
 // can be run inside a scratch Holm app, whose JavaScript engine differs
 // from Node's (see the README).
 
@@ -110,9 +110,27 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const longer = 'x'.repeat(100)
   assert.equal(await open(env, await seal(env, longer, 'c'), 'c'), longer)
 
+  // The service worker: its version is the app's, it precaches every page file and
+  // nothing that isn't there, page addresses get the shell, file addresses stay files,
+  // and Holm's own addresses (/_…), the API, sign-in and hooks go to the network.
+  const { readdirSync, statSync, existsSync } = await import('node:fs')
+  const web = root + 'web/'
+  const sw = readFileSync(web + 'sw.js', 'utf8')
+  const version = JSON.parse(readFileSync(root + 'holm.json', 'utf8')).version
+  assert.equal(sw.match(/const VERSION = '([^']+)'/)[1], version, 'sw.js VERSION must match holm.json')
+  const files = [...sw.match(/const FILES = \[([\s\S]*?)\]/)[1].matchAll(/'([^']+)'/g)].map(m => m[1])
+  for (const f of files) if (f !== '/') assert.ok(existsSync(web + f.slice(1)), `sw.js lists ${f}, which isn't in web/`)
+  const walk = (dir) => readdirSync(dir).flatMap(n => statSync(dir + n).isDirectory() ? walk(dir + n + '/') : [dir + n])
+  for (const f of walk(web + 'src/')) assert.ok(files.includes('/' + f.slice(web.length)), `sw.js doesn't precache ${f.slice(web.length)}`)
+  const FILE = new RegExp(sw.match(/const FILE = \/(.+)\/i/)[1], 'i')
+  const PASS = new RegExp(sw.match(/const PASS = \/(.+)\/\n/)[1])
+  for (const p of ['/', '/t/%2B919876543210', '/new', '/templates', '/developers', '/phone']) assert.ok(!FILE.test(p) && !PASS.test(p), `${p} should open the shell`)
+  for (const p of ['/icon-512.png', '/manifest.webmanifest', '/assets/inter-latin.woff2']) assert.ok(FILE.test(p), `${p} should stay a file`)
+  for (const p of ['/_holm/mcp', '/_analytics/', '/api/me', '/auth/login', '/hooks/smsgate/x', '/sw.js']) assert.ok(PASS.test(p), `${p} should pass through to the network`)
+
   if (failed) {
     console.error(`${failed} of ${CASES.length} cases failed`)
     process.exit(1)
   }
-  console.log(`✓ ${CASES.length} text-rule cases and the vault checks pass; api/sms.js matches web/src/sms.js`)
+  console.log(`✓ ${CASES.length} text-rule cases and the vault checks pass; api/sms.js matches web/src/sms.js; sw.js is version ${version} and lists every page file`)
 }

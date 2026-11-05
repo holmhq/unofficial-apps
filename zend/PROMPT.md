@@ -51,7 +51,11 @@ runtime CDN; vendor the font and icons with their licences.
   bubbles with tails and the time inside, sheets that slide up, a round
   avatar account button even when signed out, whose menu closes when it's
   tapped again and holds light/dark/auto as three icons (Holm branding stays
-  in the footer), motion and quiet sounds. Installable, with a network-first service worker.
+  in the footer at the end of each tab), motion and quiet sounds. ⌘K opens
+  a command menu of tabs, conversations and actions, Connect via MCP…
+  among them. Installable, with a versioned service worker that keeps every
+  page file and opens the app from them; the conversation list draws at
+  once from the last launch's copy, which sign-out clears.
 - For this repository's store, use holm.json version, holm.symbol.svg (one
   black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,
   category, description, whatsNew and sample screenshots. These are repo
@@ -112,3 +116,10 @@ had offered to give Zend, Roll and Until tools, with Zend asking before it
 sends; the owner replied:
 
 > yes, do both batches
+
+**Iteration 5** (0.4.0) came from a sweep of every app in this repository
+against its cookbook: a ⌘K command menu, a sign-in menu on the signed-out
+avatar, the footer on every tab, and a launch that draws at once. The
+owner's message was:
+
+> Sure do cookbook sweep

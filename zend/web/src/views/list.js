@@ -6,7 +6,7 @@ import { h, fill, ic, avatar, listWhen, flip, wide, menu, sheet, confirm, toast,
 import { ticks } from '../icons.js'
 import { store, on, loadThreads, emit } from '../store.js'
 import { formatPhone, normalizePhone } from '../sms.js'
-import { go, accountButton } from '../main.js'
+import { go, accountButton, footNote } from '../main.js'
 import * as api from '../api.js'
 
 export const label = (t) => (t && t.name) || formatPhone(t.number)
@@ -24,14 +24,14 @@ export function list() {
     if (event.key === 'Enter') { const first = rows.querySelector('.row'); first && first.click() }
     if (event.key === 'Escape') { search.value = ''; query = ''; clear.hidden = true; draw(); search.blur() }
   })
-  const searchBox = h('label.search', ic('search', 17, 2.2), search, clear, h('kbd.only-wide', { 'aria-hidden': 'true' }, navigator.platform.startsWith('Mac') ? '⌘K' : 'Ctrl K'))
+  const searchBox = h('label.search', ic('search', 17, 2.2), search, clear, h('kbd.only-wide', { 'aria-hidden': 'true' }, '/'))
 
   const ink = h('span.ink', { 'aria-hidden': 'true' })
   const folders = h('div.folders', { role: 'tablist', 'aria-label': 'Show' }, ink)
   const rows = h('div.rows', { role: 'list' })
   const draftsBox = h('section.drafts', { 'aria-label': 'Drafts to send', hidden: true })
   const strip = h('button.phone-strip', { type: 'button', onclick: () => go('/phone') })
-  const panel = h('div.panel', h('h1.large-title', 'Chats'), searchBox, folders, draftsBox, rows)
+  const panel = h('div.panel', h('h1.large-title', 'Chats'), searchBox, folders, draftsBox, rows, footNote())
   const compose = h('button.icon-btn', { type: 'button', 'aria-label': 'New text', title: 'New text (N)', onclick: () => newText() }, ic('compose', 23, 1.8))
   const bar = h('header.bar', h('span.small-title', 'Chats'), h('span.right', compose, h('span.only-narrow', accountButton())))
   collapsing(bar, panel)

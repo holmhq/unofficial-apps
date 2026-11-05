@@ -25,6 +25,24 @@ export function emit(event) {
   }
 }
 
+// What the last launch drew (who's here, the phone, the conversation list and drafts),
+// kept in this browser so the next launch draws at once and then takes the server's
+// answer. Signing out, or the server saying nobody is signed in, forgets it.
+const KEPT = 'zend:kept'
+export function kept() {
+  try {
+    const v = JSON.parse(localStorage.getItem(KEPT))
+    return v && v.v === 1 && v.me && v.me.member && Array.isArray(v.threads) ? v : null
+  } catch { return null }
+}
+export function keep() {
+  if (!store.me || !store.me.member || !store.threads) return
+  try { localStorage.setItem(KEPT, JSON.stringify({ v: 1, me: store.me, state: store.state, threads: store.threads, drafts: store.drafts })) } catch {}
+}
+export function forget() {
+  try { localStorage.removeItem(KEPT) } catch {}
+}
+
 export async function loadMe() {
   try {
     store.me = await api.get('/api/me')

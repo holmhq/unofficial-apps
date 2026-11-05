@@ -75,12 +75,19 @@ phone reports, and a reply pops in from the side. Small sounds, made on the
 spot with Web Audio, mark a sent text, a delivery and a reply; turn them
 off in the account menu, which also holds Light, Dark and Auto (switching
 reveals the new theme in a circle where you tapped). On a computer, Ctrl or
-⌘ K searches, N starts a new text, Alt ↑ and ↓ move between
-conversations, and Escape closes the open one. Everything honours reduced
-motion.
+⌘ K opens a command menu (the tabs, a conversation by name, number or what
+was said, new text, sounds, Connect via MCP… and sign-out), / searches the
+list, N starts a new text, Alt ↑ and ↓ move between conversations, and
+Escape closes the open one. Everything honours reduced motion.
 
 The account button is always a round avatar at the top: your picture when
-signed in, a plain one that leads to sign-in when not.
+signed in, a plain one when not, whose menu holds sign-in and the theme
+switch. A small footer (A Holm app, Source) ends each tab's page.
+
+The page opens straight from its service worker, which keeps every page
+file of the current version, and draws the conversation list from the copy
+the last launch kept in the browser (cleared on sign-out), then takes the
+server's answer. Conversations themselves load from the server.
 
 ## India's rules, and what Zend does about them
 
@@ -132,7 +139,8 @@ api/vault.js            encrypts each phone's sign-in under VAULT_KEY
 api/sms.js              exact copy of web/src/sms.js
 api/lib.js              small shared helpers
 web/index.html          the page shell, with the saved theme applied before first paint
-web/sw.js               network-first offline cache of the page's files
+web/sw.js               keeps every page file of this version; the app opens from it
+web/src/palette.js      the ⌘K command menu
 web/src/main.js         start-up, the shell, routing, account menu, shortcuts, swipe back
 web/src/mcp.js          the Connect via MCP sheet
 web/src/ui.js           elements, avatars, times, sheets, menus, toasts, list animation

@@ -1,10 +1,10 @@
 // The signed-out page: what Zend is, a conversation playing on a phone, and
 // sign-in. The account button is the same round avatar as when signed in.
 
-import { h, fill, ic, avatar, clock, collapsing } from '../ui.js'
+import { h, fill, ic, avatar, clock, collapsing, menu } from '../ui.js'
 import { mark, ticks } from '../icons.js'
 import { store } from '../store.js'
-import { footNote } from '../main.js'
+import { footNote, themeSwitch } from '../main.js'
 import * as api from '../api.js'
 
 export function welcome() {
@@ -18,7 +18,17 @@ export function welcome() {
   }
   const bar = h('header.bar',
       h('span.brand', h('span.mark', mark(19)), 'Zend'),
-      h('span.right', h('button.avatar-btn', { type: 'button', 'aria-label': 'Sign in', onclick: () => signIn() }, h('span.avatar.ghost', ic('user', 18, 2)))))
+      h('span.right', account()))
+  // Signed out, the avatar opens a small menu: sign-in and the theme switch.
+  function account() {
+    const btn = h('button.avatar-btn', { type: 'button', 'aria-label': 'Sign in and appearance', 'aria-haspopup': 'menu', onclick: () => menu(btn, [
+      h('div.menu-note', 'Sign in to text from your phone.'),
+      themeSwitch(),
+      'sep',
+      { label: 'Sign in', icon: 'user', onclick: () => signIn() }
+    ]) }, h('span.avatar.ghost', ic('user', 18, 2)))
+    return btn
+  }
   const panel = h('div.panel',
       h('section.hero',
         h('div',

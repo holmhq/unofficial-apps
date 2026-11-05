@@ -5,7 +5,7 @@ import { h, fill, ic, sheet, confirm, toast, collapsing, copyText, copyField, li
 import { store, loadState } from '../store.js'
 import { normalizePhone, formatPhone } from '../sms.js'
 import { sound } from '../sound.js'
-import { accountButton, go } from '../main.js'
+import { accountButton, go, footNote } from '../main.js'
 import * as api from '../api.js'
 
 export function developers() {
@@ -49,7 +49,8 @@ export function developers() {
           ['GET', '/api/v1/templates', 'Your templates and their blanks']
         ].map(([verb, path, what]) => h('div.item', { style: { 'align-items': 'flex-start' } },
           h('code', { style: { 'font-family': 'var(--mono)', 'font-size': '11.5px', 'font-weight': '700', width: '38px', 'margin-top': '3px', color: verb === 'POST' ? 'var(--accent-text)' : 'var(--ink-2)' } }, verb),
-          h('span.t', h('code', { style: { 'font-family': 'var(--mono)', 'font-size': '14px' } }, path), h('small', what))))))))
+          h('span.t', h('code', { style: { 'font-family': 'var(--mono)', 'font-size': '14px' } }, path), h('small', what))))))),
+    footNote())
   const bar = h('header.bar.grouped', h('span.small-title', 'API'), h('span.right', accountButton()))
   collapsing(bar, panel)
 
