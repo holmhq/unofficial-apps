@@ -73,10 +73,20 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 - **Every app ships MCP tools.** Its main actions are named operations in
   `api/contract.json` with `auth: "user"`, each checking the caller, and
   Holm serves them at `/_holm/mcp`. Named operations can't call out of the
-  app (see the runtime notes), so tools work on the app's own data.
+  app (see the runtime notes), so tools work on the app's own data. Keep
+  the contract in `api/contract.json`, not inline in `main.js`: the store
+  reads only that file. An operation whose `auth` is an object without
+  `discover`, like Feedback's `accounts.create`, is HTTP-only and the store
+  doesn't list it.
+- **Cover what people do in the app**, not just its first screen: Relay's
+  tools catch up on unread messages, read and send, list friends, and send
+  and answer invites. Wrap the app's own handlers so the access checks stay
+  in one place, and keep its privacy rules in the tools' answers.
 - **The account menu has Connect via MCP…** when you're signed in, with the
   MCP mark as its icon. ⌘K has it too. It opens one sheet, never a page,
   and other sheets that mention Claude link to it rather than repeat it.
+  An app whose account lives in a Settings tab, like Relay, puts it there
+  instead: a Connect section with one Connect via MCP row.
 - **The sheet shows the bare minimum.** It shows the app's icon joined to the
   MCP mark by five dots, and the connector address to click and copy. Under
   that is a segmented control: **Claude · ChatGPT · Claude Code · Tools**.
@@ -92,7 +102,9 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 
   There's no intro paragraph. The panes share one grid cell, so the sheet is
   as tall as the tallest and never changes height between tabs. It fits a
-  390 × 844 phone without scrolling.
+  390 × 844 phone without scrolling. Each Tools row's line fits on one line
+  there. Closing the sheet puts focus back on the avatar button, since the
+  menu item that opened it is gone.
 - **The dots keep moving while the sheet is open.** A wave runs from the app
   to the mark every 2.4 s and rests between waves. With reduced motion they
   stand still; turn the animation off by name, because a global
@@ -113,7 +125,10 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   for 1.6 s, with no toast. A value too long for the line scrolls sideways
   under a fade. If the clipboard refuses, select the value and say so. In a
   grid, give the column `minmax(0, 1fr)` or the line widens the sheet. Copy
-  Shelf's `copyField` (`shelf/web/src/ui.js`).
+  Shelf's `copyField` (`shelf/web/src/ui.js`). When the icons sit in
+  wrapper spans, as Relay's do, give the copy icon and the tick their own
+  classes: `:first-of-type` would pick the word's span, and the copy icon
+  would stay under the tick.
 - **Summaries are read by people too.** Each operation's `summary` appears
   in the Tools tab, here and on the app's page in the store, so write it as
   a plain line on what the tool does. Instructions for the agent, such as
@@ -289,6 +304,13 @@ current guide too, since some of them will change.
   each, with progress kept in KV.
 - **There's no `Intl` on the server.** Time zones come from the browser.
   `toLocaleString` with options can throw.
+- **An app with a contract turns the generated web surface off.** Set
+  `surfaces.web.renderer` to `"off"` in `holm.json`, or the deploy stops
+  with `V1_FEATURE_LATER: generated-web`; validate only lists it as a
+  diagnostic.
+- **Page cursors are long.** A `ds.find` cursor runs to about 500
+  characters, so a tool's `before` or `cursor` input needs a `maxLength` of
+  a few thousand. Pass it back untouched.
 - **Calls out of the app go in raw routes.** Named operations (the ones MCP
   exposes) can't call `net.fetch` or `ai.chat` and have no secrets, so do
   outbound work in a `fetch` route.
