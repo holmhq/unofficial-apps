@@ -3,8 +3,8 @@
 // network fails or takes more than four seconds. Nothing under /api/ or
 // /auth/ is ever cached: a member's trackers stay with the node.
 
-const CACHE = 'until-shell-v1'
-const SHELL = ['/', '/src/styles.css', '/src/app.js', '/src/ui.js', '/src/icons.js', '/src/dates.js', '/fonts/manrope-latin.woff2']
+const CACHE = 'until-shell-v2'
+const SHELL = ['/', '/src/styles.css', '/src/app.js', '/src/ui.js', '/src/icons.js', '/src/dates.js', '/src/mcp.js', '/fonts/manrope-latin.woff2']
 
 self.addEventListener('install', event => {
   self.skipWaiting()

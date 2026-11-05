@@ -3,6 +3,10 @@
 // Signed-out visitors keep their trackers in the browser. Signed-in members
 // keep them here, in their own document store, so they follow them to every
 // device; a browser hands its trackers over once with /api/import-local.
+//
+// The named operations at the end are the tools Claude uses through Holm's
+// MCP endpoint (/_holm/mcp); contract.json describes them, and their code is
+// in ops.js. They send their requests through the routes here.
 
 const json = (body, status = 200) =>
   Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
@@ -101,11 +105,16 @@ export default {
     if (path === '/api/health' && method === 'GET') return json({ ok: true })
 
     if (path === '/api/me' && method === 'GET') {
+      // Tools have no request to read the address from, so their links use the last one seen.
+      const appKV = env.holm.app.kv
+      if (appKV.get('site:origin') !== url.origin) appKV.set('site:origin', url.origin)
       const next = url.searchParams.get('next') || '/'
       return json({
         member: member && { name: member.name || '', email: member.email || '', picture: member.picture || null },
         loginURL: auth.getLoginURL(next.startsWith('/') && !next.startsWith('//') ? next : '/'),
-        logoutURL: member ? auth.getLogoutURL() : null
+        logoutURL: member ? auth.getLogoutURL() : null,
+        // This host's connector address, for the Connect via MCP sheet.
+        mcp: member ? url.origin + '/_holm/mcp' : null
       })
     }
 
@@ -144,11 +153,23 @@ export default {
       if (method === 'PATCH') {
         const body = await readJSON(request)
         if (!body) return fail(400, 'Send the changes as JSON.')
-        const merged = { ...trackerDTO(current), ...body }
+        const { rate, ...fields } = body
+        const merged = { ...trackerDTO(current), ...fields }
         // A new start keeps the length; a target date sent without a count
         // sets the length instead.
-        if (body.targetDate != null && body.count == null) delete merged.count
+        if (fields.targetDate != null && fields.count == null) delete merged.count
         else delete merged.targetDate
+        // One day's stars, { day, stars } with 0 to clear, join the ratings
+        // already stored, so a rating made elsewhere meanwhile is kept.
+        if (rate && typeof rate === 'object' && fields.ratings === undefined) {
+          const stars = Math.round(Number(rate.stars))
+          if (!isDay(rate.day)) return fail(400, 'Say which day, as YYYY-MM-DD.')
+          if (!(stars >= 0 && stars <= 5)) return fail(400, 'Give 1 to 5 stars, or 0 to clear the day.')
+          if (daysBetween(current.startDate, rate.day) < 0 || daysBetween(rate.day, current.targetDate) < 0) return fail(400, 'That day is outside the tracker.')
+          merged.ratings = { ...(current.ratings || {}) }
+          if (stars) merged.ratings[rate.day] = stars
+          else delete merged.ratings[rate.day]
+        }
         const { tracker, error } = readTracker(merged)
         if (error) return fail(400, error)
         const next = { ...tracker, sourceLocalId: tracker.sourceLocalId || current.sourceLocalId || null, updatedAt: new Date().toISOString() }
@@ -206,3 +227,11 @@ export default {
     return fail(404, 'No such route.')
   }
 }
+
+const ops = () => import('./ops.js')
+export async function trackersList(input, env, ctx) { return (await ops()).trackersList(input, env, ctx) }
+export async function trackersGet(input, env, ctx) { return (await ops()).trackersGet(input, env, ctx) }
+export async function trackersCreate(input, env, ctx) { return (await ops()).trackersCreate(input, env, ctx) }
+export async function trackersUpdate(input, env, ctx) { return (await ops()).trackersUpdate(input, env, ctx) }
+export async function daysRate(input, env, ctx) { return (await ops()).daysRate(input, env, ctx) }
+export async function trackersDelete(input, env, ctx) { return (await ops()).trackersDelete(input, env, ctx) }

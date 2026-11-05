@@ -1,10 +1,14 @@
 // Until's page: the list of trackers, the sheets that add, edit and rate
 // them, and the account menu. Signed out, trackers live in this browser;
-// signed in, they live in the member's own storage on the node.
+// signed in, they live in the member's own storage on the node. Claude can
+// change them too (the MCP tools), so a signed-in page takes the account's
+// trackers again whenever it comes back into view with nothing of its own
+// still being saved.
 
 import { h, openSheet, closeTopSheet, say } from './ui.js'
 import { icon } from './icons.js'
 import * as days from './dates.js'
+import { openMcpSheet } from './mcp.js'
 
 const LOCAL = 'until:countdowns:v1'   // signed-out trackers, on this device
 const SETTINGS = 'until:settings:v1'  // colour and appearance
@@ -25,6 +29,7 @@ const store = {
 
 const state = {
   me: null,
+  mcp: null, // this host's connector address, from /api/me
   loginURL: '/auth/login',
   logoutURL: null,
   mode: 'loading', // 'device' signed out, 'account' signed in, 'offline' signed in with no network
@@ -85,6 +90,7 @@ async function start() {
   try {
     const me = await api(`/api/me?next=${encodeURIComponent(location.pathname)}`)
     state.me = me.member
+    state.mcp = me.mcp || null
     state.loginURL = me.loginURL
     state.logoutURL = me.logoutURL
   } catch (error) {
@@ -139,8 +145,36 @@ addEventListener('online', () => { if (state.mode === 'offline') start() })
 
 // A page left open overnight moves on to the new day when it's looked at again.
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && state.shownOn !== days.today() && state.mode !== 'loading') render()
+  if (document.visibilityState !== 'visible') return
+  if (state.shownOn !== days.today() && state.mode !== 'loading') render()
+  refresh()
 })
+addEventListener('focus', () => refresh())
+
+// Saves in flight, and a count of every save started, so a look at the
+// account that crosses a save never puts back what the save just changed.
+let saving = 0
+let edits = 0
+let lastLook = 0
+
+// Back in view: the account's trackers, if they changed somewhere else, such
+// as on another device or through Claude, while nothing here is being saved.
+async function refresh() {
+  if (state.mode !== 'account' || saving || Date.now() - lastLook < 2000) return
+  lastLook = Date.now()
+  const at = edits
+  let list
+  try { list = await api('/api/countdowns') } catch { return }
+  if (state.mode !== 'account' || saving || edits !== at) return
+  const next = list.countdowns.map(days.normalize)
+  if (JSON.stringify(next) !== JSON.stringify(state.trackers)) keep(next)
+}
+
+async function whileSaving(work) {
+  saving++
+  edits++
+  try { return await work() } finally { saving-- }
+}
 
 // ── Saving ──
 
@@ -156,9 +190,9 @@ function keep(trackers) {
 async function saveTracker(fields, existing, key) {
   const now = new Date().toISOString()
   if (state.mode === 'account') {
-    const { countdown } = existing
-      ? await api(`/api/countdowns/${encodeURIComponent(existing.id)}`, { method: 'PATCH', body: fields })
-      : await api('/api/countdowns', { method: 'POST', body: { ...fields, sourceLocalId: key } })
+    const { countdown } = await whileSaving(() => existing
+      ? api(`/api/countdowns/${encodeURIComponent(existing.id)}`, { method: 'PATCH', body: fields })
+      : api('/api/countdowns', { method: 'POST', body: { ...fields, sourceLocalId: key } }))
     const t = days.normalize(countdown)
     keep(existing ? state.trackers.map(x => x.id === t.id ? t : x) : [...state.trackers.filter(x => x.id !== t.id), t])
   } else if (state.mode === 'device') {
@@ -172,7 +206,7 @@ async function saveTracker(fields, existing, key) {
 }
 
 async function removeTracker(t) {
-  if (state.mode === 'account') await api(`/api/countdowns/${encodeURIComponent(t.id)}`, { method: 'DELETE' })
+  if (state.mode === 'account') await whileSaving(() => api(`/api/countdowns/${encodeURIComponent(t.id)}`, { method: 'DELETE' }))
   else if (state.mode !== 'device') throw new Error("You're offline. Reconnect to make changes.")
   keep((state.mode === 'device' ? deviceTrackers() : state.trackers).filter(x => x.id !== t.id))
 }
@@ -491,7 +525,8 @@ function openRating(id) {
     else delete ratings[day]
     save.disabled = clear.disabled = true
     try {
-      await saveTracker({ ratings }, t)
+      // The account takes just this day, so a day rated elsewhere meanwhile is kept.
+      await saveTracker(state.mode === 'account' ? { rate: { day, stars } } : { ratings }, t)
       sheet.close()
     } catch (error) {
       problem.textContent = error.message
@@ -549,6 +584,7 @@ function renderAccount(keepOpen = false) {
         segment('appearance', 'dark', icon('moon', 18), 'Dark'),
         segment('appearance', 'system', icon('monitor', 18), 'Same as device'))),
     surfaces?.analytics && h('a', { class: 'menu-row', href: surfaces.analytics, target: '_blank', rel: 'noopener' }, icon('chart-column', 15), h('span', {}, 'Analytics')),
+    me && state.mode !== 'offline' && h('button', { class: 'menu-row', type: 'button', onclick: connect }, icon('mcp', 15), h('span', {}, 'Connect via MCP…')),
     state.mode === 'offline' ? null : me
       ? h('button', { class: 'menu-row', type: 'button', onclick: signOut }, icon('log-out', 15), h('span', {}, 'Sign out'))
       : h('button', { class: 'menu-row', type: 'button', onclick: () => { location.href = state.loginURL } }, icon('log-in', 15), h('span', {}, 'Sign in')))
@@ -573,6 +609,13 @@ document.addEventListener('pointerdown', event => { if (!accountRoot.contains(ev
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && !closeTopSheet() && closeMenu()) accountRoot.querySelector('.avatar-btn').focus()
 })
+
+// The sheet hands focus back to the avatar button when it closes.
+function connect() {
+  closeMenu()
+  accountRoot.querySelector('.avatar-btn').focus({ preventScroll: true })
+  openMcpSheet(state.mcp)
+}
 
 // Holm signs out on POST only; the synced copy goes with the session.
 async function signOut() {

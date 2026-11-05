@@ -1143,6 +1143,298 @@ svg {
   min-height: 46px;
 }
 
+/* ── Connect via MCP ── */
+
+.mcp-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mcp-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 2px 0 4px;
+}
+
+.mcp-app,
+.mcp-tile {
+  width: 58px;
+  height: 58px;
+  border-radius: 15px;
+}
+
+.mcp-app {
+  box-shadow: 0 10px 24px -16px rgba(8, 18, 14, 0.7);
+}
+
+.mcp-tile {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
+  color: var(--ink);
+}
+
+.mcp-link {
+  display: flex;
+  gap: 6px;
+}
+
+.mcp-link i {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--ink-muted);
+  opacity: 0.45;
+  animation: mcpFlow 2.4s ease-in-out infinite;
+}
+
+.mcp-link i:nth-child(2) { animation-delay: 0.12s; }
+.mcp-link i:nth-child(3) { animation-delay: 0.24s; }
+.mcp-link i:nth-child(4) { animation-delay: 0.36s; }
+.mcp-link i:nth-child(5) { animation-delay: 0.48s; }
+
+.mcp-label {
+  margin: 2px 0 -6px 2px;
+}
+
+.copy-field {
+  --cf-bg: color-mix(in srgb, var(--surface-strong) 92%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 46px;
+  padding: 0 13px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--cf-bg);
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 130ms ease, border-color 130ms ease;
+}
+
+.copy-field:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 65%, transparent);
+}
+
+.copy-field:active {
+  --cf-bg: color-mix(in srgb, var(--accent-soft) 40%, var(--surface-strong));
+}
+
+.copy-value {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+  font: 500 12.5px/46px ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+}
+
+.copy-value::-webkit-scrollbar {
+  display: none;
+}
+
+.copy-field.is-long .copy-value {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+
+.copy-cue {
+  position: relative;
+  flex: none;
+  display: grid;
+  color: var(--ink-muted);
+  transition: color 130ms ease;
+}
+
+.copy-cue svg {
+  grid-area: 1 / 1;
+  transition: opacity 150ms ease, transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.copy-cue .cf-tick {
+  opacity: 0;
+  transform: scale(0.5);
+  color: var(--accent);
+}
+
+.copy-word {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 3px 7px 3px 26px;
+  background: linear-gradient(to right, transparent, var(--cf-bg) 20px);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 760;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.copy-field.is-copied .copy-word {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.copy-field.is-copied .cf-copy {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.copy-field.is-copied .cf-tick {
+  opacity: 1;
+  transform: none;
+}
+
+.mcp-seg {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
+}
+
+.mcp-seg .seg-btn {
+  flex: 1 1 auto;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.mcp-seg .seg-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  outline-offset: -1px;
+}
+
+/* Every pane shares one cell, so the sheet keeps the tallest one's height. */
+.mcp-panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mcp-panes > * {
+  grid-area: 1 / 1;
+  align-self: start;
+}
+
+.mcp-panes > :not(.is-on) {
+  visibility: hidden;
+}
+
+.mcp-panes > .is-on {
+  animation: mcpPane 220ms ease-out;
+}
+
+.mcp-list {
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+}
+
+.mcp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+}
+
+.mcp-row + .mcp-row {
+  border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+}
+
+.mcp-t {
+  min-width: 0;
+}
+
+.mcp-t strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 760;
+  letter-spacing: -0.005em;
+}
+
+.mcp-t span {
+  display: block;
+  margin-top: 1px;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.mcp-ic {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: color-mix(in srgb, var(--accent) 78%, var(--ink));
+}
+
+.mcp-ic.num {
+  font-size: 0.86rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.mcp-code {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mcp-note {
+  margin: 0 2px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.mcp-note code {
+  font: 500 0.8rem ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  color: var(--ink);
+}
+
+@media (hover: hover) {
+  .copy-field:hover {
+    --cf-bg: color-mix(in srgb, var(--accent-soft) 40%, var(--surface-strong));
+    border-color: var(--line-strong);
+  }
+
+  .copy-field:hover .copy-cue {
+    color: var(--ink);
+  }
+
+  .copy-field:hover .copy-word {
+    opacity: 1;
+  }
+
+  .mcp-seg .seg-btn:not(.active):hover {
+    color: var(--ink-soft);
+  }
+}
+
+@keyframes mcpFlow {
+  0%, 36%, 100% { opacity: 0.45; transform: none; }
+  14% { opacity: 1; transform: scale(1.3); background: var(--accent); }
+}
+
+@keyframes mcpPane {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
 /* Hover only where there is a pointer, so nothing sticks after a tap. */
 @media (hover: hover) {
   .countdown-card:hover {
@@ -1211,6 +1503,16 @@ svg {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+  }
+
+  /* Stopped by name: a 1 ms run of an endless animation would flicker. */
+  .mcp-link i,
+  .mcp-panes > .is-on {
+    animation: none;
+  }
+
+  .mcp-link i {
+    opacity: 0.7;
   }
 }
 

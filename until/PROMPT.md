@@ -30,6 +30,15 @@ the font and icons with their licences.
 - Two colours, green and pink, each light and dark or following the device,
   in the account menu. Installable, with a network-first service worker; offline,
   show the last synced copy read only.
+- MCP tools as named operations in api/contract.json with auth "user", each
+  going through the app's own routes for the signed-in member: list trackers
+  with days left, read one with its ratings, add, change, rate a day (never a
+  future one; a per-day rating that keeps the others) and delete. Each takes
+  the person's date, since the server has no time zone. Connect via MCP… in
+  the account menu, signed in, opens a sheet with the connector address to
+  click and copy, and tabs for Claude, ChatGPT, Claude Code and what the tools
+  do. A signed-in page takes the account's trackers again when it comes back
+  into view.
 - For this repository's store, use holm.json version, holm.symbol.svg (one
   black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,
   category, description, whatsNew and sample screenshots. These are repo
@@ -50,3 +59,10 @@ repository. This folder is its rewrite without one, from this message, typed
 as-is to a coding agent after it had checked the old app against App Spec v1:
 
 > Yes, rewrite and import
+
+**Iteration 2.** Version 0.2.0 added the MCP tools and the Connect via MCP
+sheet. After the repository made MCP standard, the agent offered to bring
+four apps that already had tools up to it, then to give Zend, Roll and Until
+tools of their own. This was the reply:
+
+> yes, do both batches
