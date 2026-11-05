@@ -88,10 +88,10 @@ are not public URLs.
 - **Studio** at `/studio`, with a workspace switcher: posts, the comment
   inbox, the team and invites, the workspace's settings (home page, comments,
   cover style, theme, menu), your names and personas, and how to connect
-  Claude. Like a native app: the avatar at the top right, a sidebar of places
-  that hides (or a tab bar on a phone), the Holm credit with Feedback and
-  Source at the foot, and ⌘K (Ctrl K) to jump to a place, a post or an
-  action.
+  Claude. Like a native app: the avatar at the top right (signed out too,
+  with the theme and Sign in), a sidebar of places that hides (or a tab bar
+  on a phone), the Holm credit with Feedback and Source at the foot, and ⌘K
+  (Ctrl K) to jump to a place, a post or an action.
 - **Margin's own settings** (the node's admins, in Studio → Margin): who can
   join (anyone; anyone to read and comment, with new workspaces by invitation;
   or invited people only), the front page, which workspaces it shows, the one

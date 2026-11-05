@@ -107,6 +107,9 @@
 .m-seg { display: flex; margin: 4px 6px 6px; padding: 2px; border-radius: 10px; background: color-mix(in srgb, var(--m-ink) 7%, transparent); }
 .m-seg button { flex: 1; height: 32px; padding: 0 10px; white-space: nowrap; border: 0; border-radius: 8px; background: transparent; color: var(--m-ink); font: 500 13.5px var(--m-font); cursor: pointer; }
 .m-seg button[aria-pressed="true"] { background: var(--m-surface); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.m-seg-icons button { display: grid; place-items: center; padding: 0; color: var(--m-muted); }
+.m-seg-icons button[aria-pressed="true"] { color: var(--m-ink); }
+.m-seg-icons svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---------- claps and actions ---------- */
 .m-actions { display: flex; align-items: center; gap: 6px; font: 600 14.5px var(--m-font); color: var(--m-ink); position: relative; }

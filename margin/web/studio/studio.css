@@ -488,3 +488,17 @@ p, .row-sub, small { text-wrap: pretty; }
 /* Keep centred cards within the screen even when a link inside them is long. */
 .center { grid-template-columns: minmax(0, 1fr); }
 .welcome { justify-self: center; min-width: 0; }
+
+/* Signed out: the top bar with Margin's name and the avatar, the card, the credit under it. */
+.solo { height: 100%; display: flex; flex-direction: column; background: var(--bg); }
+.solo .center { flex: 1 0 auto; min-height: 0; }
+.solo-brand { display: flex; align-items: center; gap: 8px; margin-right: auto; min-width: 0; color: var(--ink); font-size: 16px; letter-spacing: -.01em; }
+.solo-brand .mark-svg { width: 22px; height: 22px; color: var(--accent); flex: none; }
+.solo-brand b { font-weight: 650; }
+.solo-credit { padding: 8px 16px calc(24px + var(--sab)); }
+
+/* The avatar is a 44 px tap on touch screens, around its 32 px circle. */
+@media (pointer: coarse) {
+  .avatar-btn { position: relative; }
+  .avatar-btn::after { content: ''; position: absolute; inset: -5px; }
+}

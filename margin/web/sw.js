@@ -13,7 +13,7 @@
 // is ever answered from here. The maths renderer (KaTeX) and the cover drawings are kept
 // the first time Studio uses them.
 
-const VERSION = '0.8.0'
+const VERSION = '0.8.1'
 const CACHE = 'margin-' + VERSION
 const FILES = [
   '/studio', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',

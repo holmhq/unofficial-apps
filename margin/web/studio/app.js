@@ -171,9 +171,23 @@ const slugOf = (name) => (name || '').toLowerCase().normalize('NFKD').replace(/[
 
 function signedOut() {
   document.title = 'Studio — Margin';
-  root.innerHTML = `<div class="center"><div class="welcome">${marginMark()}<h1>Margin Studio</h1>
+  solo(`<div class="welcome">${marginMark()}<h1>Margin Studio</h1>
     <p>Sign in to write, answer comments and run your workspace.</p>
-    <a class="btn primary" style="width:100%;height:46px" href="${esc(me.login_url)}">Sign in</a></div></div>`;
+    <a class="btn primary" style="width:100%;height:46px" href="${esc(me.login_url)}">Sign in</a></div>`);
+}
+
+// Signed out, Studio keeps its top bar: Margin's name on the left, back to reading, and the
+// round avatar at the right, whose menu has the theme and Sign in. The credit sits under
+// the page.
+function solo(content) {
+  root.innerHTML = `<div class="solo">
+    <header class="top solo-top"><a class="solo-brand" href="/">${MARK}<b>Margin</b></a><button type="button" class="avatar-btn" data-me aria-label="Sign in" aria-haspopup="menu"><span class="avatar avatar-empty">${icons.user}</span></button></header>
+    <div class="panel"><div class="center">${content}</div><div class="solo-credit">${credit()}</div></div></div>`;
+  $('[data-me]', root).addEventListener('click', (e) => menu(e.currentTarget, [
+    { custom: h(`<div class="menu-head"><span class="avatar avatar-empty">${icons.user}</span><span><b>Not signed in</b><small>Sign in to write</small></span></div>`) }, '-',
+    themeChoices(), '-', { label: 'Sign in', icon: icons.in, href: me.login_url },
+  ]));
+  wireCredit(root);
 }
 
 // ---------- starting out: your name, a workspace, an invite, Claude ----------
@@ -207,10 +221,10 @@ function checkAs(input, hint, kind, render) {
 async function newView(url) {
   document.title = 'Start — Margin';
   if (!me.signed_in) {
-    root.innerHTML = `<div class="center"><div class="welcome ob">${marginMark()}<h1>Start writing</h1>
+    solo(`<div class="welcome ob">${marginMark()}<h1>Start writing</h1>
       <p>Sign in, pick your name, and start a workspace for your team. It takes a minute.</p>
       <a class="btn primary ob-go" href="${esc(me.login_url)}">Sign in to start</a>
-      <p class="ob-small">Already invited? Open the link you were sent.</p></div></div>`;
+      <p class="ob-small">Already invited? Open the link you were sent.</p></div>`);
     return;
   }
   if (me.needs_handle) return nameStep();
@@ -348,9 +362,9 @@ async function joinView(code) {
   }
   const role = invite.role === 'admin' ? 'an admin' : 'a writer';
   if (!me.signed_in) {
-    root.innerHTML = `<div class="center"><div class="welcome ob">${logo}<h1>Join ${esc(invite.workspace)}</h1>
+    solo(`<div class="welcome ob">${logo}<h1>Join ${esc(invite.workspace)}</h1>
       <p>${esc(invite.invited_by || 'The team')} invited you to write in ${esc(invite.workspace)} as ${role}.${invite.email ? ` Sign in with ${esc(invite.email)}.` : ''}</p>
-      <a class="btn primary ob-go" href="${esc(me.login_url)}">Sign in to accept</a></div></div>`;
+      <a class="btn primary ob-go" href="${esc(me.login_url)}">Sign in to accept</a></div>`);
     return;
   }
   const mine = me.identities || [];
