@@ -194,6 +194,41 @@ export async function copyText(text) {
   return ok
 }
 
+// Something to copy, such as a share link, as one click-to-copy field: the
+// value on one line in mono with a copy icon at its end. Pointing at it fades
+// in Copy; a click (or Enter or Space) turns the icon into a tick and the
+// word into Copied for 1.6 s. A long value scrolls sideways under a fade. If
+// the clipboard refuses, the value is selected to copy by hand.
+export function copyField(value, label = 'Copy') {
+  const text = h('code', { class: 'copy-value' }, value)
+  const word = h('span', { class: 'copy-word', 'aria-live': 'polite' }, 'Copy')
+  const copyIcon = icon('copy', 15)
+  const tick = icon('check', 15)
+  copyIcon.classList.add('copy-icon')
+  tick.classList.add('copy-tick')
+  let timer
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(value) } catch {
+      getSelection().selectAllChildren(text)
+      toast('Couldn’t copy. It’s selected, so copy it by hand.', { tone: 'error' })
+      return
+    }
+    el.classList.add('is-copied')
+    word.textContent = 'Copied'
+    clearTimeout(timer)
+    timer = setTimeout(() => { el.classList.remove('is-copied'); word.textContent = 'Copy' }, 1600)
+  }
+  const el = h('div', {
+    class: 'copy-field', role: 'button', tabindex: '0', 'aria-label': label, title: label,
+    onclick: copy,
+    onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy() } }
+  }, text, h('span', { class: 'copy-cue' }, word, copyIcon, tick))
+  const fade = () => el.classList.toggle('is-long', text.scrollLeft + text.clientWidth < text.scrollWidth - 1)
+  text.addEventListener('scroll', fade, { passive: true })
+  new ResizeObserver(fade).observe(text)
+  return el
+}
+
 export function download(href, filename) {
   const a = h('a', { href, download: filename })
   document.body.append(a)

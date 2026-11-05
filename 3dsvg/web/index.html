@@ -36,7 +36,7 @@
     <div class="tools" id="tools"></div>
     <div class="actions" id="actions"></div>
     <aside class="settings glass" id="settings" aria-label="Settings" hidden></aside>
-    <div class="camera" id="camera"></div>
+    <div class="camera is-still" id="camera"></div>
     <footer class="foot" id="foot">
       <a href="https://holmhq.com">
         <svg viewBox="0 0 32 32" width="12" height="12" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0ZM6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>
@@ -45,11 +45,13 @@
       <a href="https://github.com/holmhq/unofficial-apps/tree/main/3dsvg">Source</a>
       <span aria-hidden="true">·</span>
       <a href="https://github.com/renatoworks/3dsvg">Based on 3dsvg</a>
+      <span aria-hidden="true">·</span>
+      <button type="button" id="feedback">Feedback</button>
     </footer>
   </main>
   <script type="module" src="/src/app.js"></script>
   <!-- Feedback goes to the owner's feedback app. A copy of its embed.js lives here because Holm
-       pages run only their own scripts; the account menu's Send feedback opens the form. -->
+       pages run only their own scripts; Feedback in the footer opens the form. -->
   <script src="/vendor/feedback/embed.js" data-project="8busr3vm" data-origin="https://feedback.zyt.app" data-color="#4f46e5" data-button="none" async></script>
 </body>
 </html>

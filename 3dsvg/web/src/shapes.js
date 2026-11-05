@@ -2,7 +2,7 @@
 // links. Everything here needs a signed-in member; signed out, the design
 // still stays in this browser.
 
-import { h, dialog, toast, copyText, isPhone } from './ui.js'
+import { h, dialog, toast, copyText, copyField, isPhone } from './ui.js'
 import { icon } from './icons.js'
 import { state, on, emit, setShape, replaceDesign, isDirty } from './state.js'
 import { defaultDesign, normalize } from './design.js'
@@ -167,10 +167,8 @@ function shareBox(shape, after = () => {}) {
         h('button', { class: 'btn small', type: 'button', onclick: e => run(e.currentTarget, async () => { shape = await setSharing(shape.id, true); paint(); after(); await copyText(shareURL(shape.shareToken)); toast('Link copied') }) }, icon('link', 14), 'Create share link'))
       return
     }
-    const field = h('input', { class: 'field', readonly: true, value: shareURL(token), 'aria-label': 'Share link', onfocus: e => e.target.select() })
     box.replaceChildren(
-      h('div', { class: 'share-link' }, field,
-        h('button', { class: 'btn small', type: 'button', title: 'Copy link', onclick: async () => { await copyText(shareURL(token)); toast('Link copied') } }, icon('copy', 14))),
+      copyField(shareURL(token), 'Copy share link'),
       h('p', {}, 'Saving again updates what the link shows.'),
       h('div', { class: 'row' },
         h('a', { class: 'btn small ghost', href: shareURL(token), target: '_blank', rel: 'noopener' }, icon('external-link', 14), 'Open'),

@@ -46,12 +46,13 @@ public URLs.
 - **No account needed:** the design on screen stays in the browser between
   visits.
 - **Signed in:** the round avatar at the top right holds the appearance
-  (light, dark or the device's), feedback and sign-out. Save keeps the
+  (light, dark or the device's) and sign-out, and shows your picture at
+  once on the next visit. Save keeps the
   shape in My shapes with a thumbnail; open, rename or delete it there. A
   dot on Save marks unsaved changes to the open shape.
 - **Share links:** any saved shape can get a read-only link,
   `/s/<token>`, where anyone can turn and zoom it and open a copy in their
-  own editor. Saving again updates what the link shows; turning the link off
+  own editor. The link copies with one click on it. Saving again updates what the link shows; turning the link off
   deletes the shared copy. The page carries the shape's name and picture for
   link previews, and asks search engines not to index it.
 
@@ -63,7 +64,7 @@ holm.symbol.svg         app icon: the pixel invader
 holm.generated.json     record of the icons Holm generated from the symbol
 api/main.js             sign-in, saved shapes, share links and share pages
 web/index.html          the page shell, an import map for three.js, the feedback tag
-web/sw.js               network-first offline cache of the page's files
+web/sw.js               app shell: every page file of a version, kept all or nothing
 web/src/app.js          start-up: the editor, or a shared shape at /s/<token>
 web/src/editor.js       wires the stage, panels, camera and drag and drop
 web/src/scene.js        the 3D view: lights, environment, contact shadow, controls, exports
@@ -87,6 +88,7 @@ web/src/icons.js        the Lucide icons it uses, copied in
 web/fonts/              Geist for the interface; the ten text fonts in text/
 web/vendor/             three.js, opentype.js, ffmpeg.wasm, the feedback embed, licences
 listing/                store listing and screenshots (not deployed)
+tools/check.mjs         release check for the app shell (not deployed)
 ```
 
 The Holm primitives it uses, all described in
@@ -140,9 +142,15 @@ the original's code. A few things changed on the way:
 - On phones the panels move clear of the top buttons, and the settings rise
   from the bottom and lift the stage so the shape stays in view.
 - Accounts, saved shapes, share links and the avatar menu are new. The
-  original's feedback button and GitHub badge are gone; Send feedback is in
-  the menu, and the footer carries the Holm credit, the source and the
-  original's link.
+  original's feedback button and GitHub badge are gone. The footer, a small
+  frosted line at the bottom (under the camera bar on narrow screens),
+  carries the Holm credit, the source, the original's link and Feedback.
+- It opens like an app: a service worker keeps every page file of a version,
+  all or nothing, and answers from them, so nothing waits on the network
+  and the editor works offline. A deploy changes the version and the next
+  launch takes it. The 32 MB video converter loads the first time a video
+  is made. `node tools/check.mjs` checks that the worker lists every file
+  and carries the version in `holm.json`.
 
 ## Deploy your own
 
@@ -160,7 +168,7 @@ provider). With the app id printed by the deploy:
   1 MiB request body limit. Raise
   `settings.node.policy.runtime.request_body_max_bytes` (for example to
   `8388608`) if your members use their own textures.
-- **Feedback:** Send feedback opens a form from the owner's
+- **Feedback:** Feedback in the footer opens a form from the owner's
   [feedback](../feedback/) app through a local copy of its `embed.js`. Set
   `data-project` and `data-origin` in `web/index.html` to your own project,
   or remove that tag. The site must be allowed to frame it:

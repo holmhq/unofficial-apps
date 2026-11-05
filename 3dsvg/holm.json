@@ -1,6 +1,6 @@
 {
   "name": "3dsvg",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "title": "3dsvg",
   "shortName": "3dsvg",
   "description": "Turn SVGs, text and pixel art into interactive 3D. Export 4K images, video and 3D models; sign in to keep your shapes and share them by link.",
@@ -13,7 +13,8 @@
   },
   "publish": {
     "exclude": [
-      "/listing/"
+      "/listing/",
+      "/tools/"
     ]
   },
   "ext": {

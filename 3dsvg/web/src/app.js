@@ -14,4 +14,8 @@ if (share) {
 }
 loadMe()
 
+// Feedback in the footer opens the feedback app's form (its embed.js loads
+// from /vendor/feedback at the end of the page).
+document.getElementById('feedback')?.addEventListener('click', () => (globalThis.HolmFeedback || globalThis.ZytFeedback)?.open?.())
+
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})

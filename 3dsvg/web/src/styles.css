@@ -12,6 +12,7 @@
   --gutter: 20px;
   --safe-l: env(safe-area-inset-left, 0px);
   --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
   --font: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -151,6 +152,7 @@ a { color: inherit; }
 }
 .btn.primary { background: var(--primary); border-color: transparent; color: var(--primary-ink); }
 .btn.ghost { border-color: transparent; }
+a.btn { text-decoration: none; }
 .btn.danger { color: var(--danger); }
 .btn.block { width: 100%; }
 .btn.small { min-height: 30px; padding: 0 10px; font-size: 12px; }
@@ -300,9 +302,35 @@ a { color: inherit; }
 .save-pop { width: min(320px, calc(100vw - 2 * var(--gutter))); padding: 14px; display: grid; gap: 12px; }
 .save-pop h3 { margin: 0; font-size: 14px; font-weight: 600; }
 .save-pop p { margin: 0; color: var(--muted); font-size: 12px; }
-.share-box { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
-.share-link { display: flex; gap: 6px; }
-.share-link input { flex: 1; min-width: 0; font: 12px var(--mono); }
+.share-box { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* A click-to-copy field: the value on one line, Copy on hover, a tick after. */
+.copy-field {
+  /* Opaque, so the Copy word's fade hides the value under it. */
+  --cf-base: color-mix(in oklch, var(--card-solid), oklch(0.09 0 0) 50%); --cf-bg: var(--cf-base); --cf-ok: oklch(0.74 0.16 150);
+  display: flex; align-items: center; gap: 10px; min-width: 0; height: 38px; padding: 0 12px;
+  border: 1px solid var(--line-strong); border-radius: 8px; background: var(--cf-bg); color: var(--fg);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s, border-color 0.15s;
+}
+:root[data-theme='light'] .copy-field { --cf-base: color-mix(in oklch, var(--card-solid), oklch(1 0 0) 70%); --cf-ok: oklch(0.52 0.15 150); }
+.copy-field:focus-visible { outline: none; border-color: var(--primary); }
+.copy-field:active { --cf-bg: color-mix(in oklch, var(--cf-base), var(--fg) 8%); }
+@media (hover: hover) { .copy-field:hover { --cf-bg: color-mix(in oklch, var(--cf-base), var(--fg) 5%); } }
+.copy-value { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; white-space: nowrap; font: 12.5px/38px var(--mono); }
+.copy-value::-webkit-scrollbar { display: none; }
+.copy-field.is-long .copy-value { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.copy-cue { position: relative; flex: none; display: grid; color: var(--muted); transition: color 0.15s; }
+.copy-cue svg { grid-area: 1 / 1; transition: opacity 0.15s, transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.copy-tick { opacity: 0; transform: scale(0.5); color: var(--cf-ok); }
+.copy-word {
+  position: absolute; right: 100%; top: 50%; transform: translateY(-50%); padding: 3px 7px 3px 24px;
+  background: linear-gradient(to right, transparent, var(--cf-bg) 18px); color: var(--muted);
+  font: 500 12.5px/1.2 var(--font); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s;
+}
+@media (hover: hover) { .copy-field:hover .copy-cue { color: var(--fg); } .copy-field:hover .copy-word { opacity: 1; } }
+.copy-field.is-copied .copy-word { opacity: 1; color: var(--cf-ok); }
+.copy-field.is-copied .copy-icon { opacity: 0; transform: scale(0.5); }
+.copy-field.is-copied .copy-tick { opacity: 1; transform: none; }
 
 /* ── Settings panel (right) ── */
 
@@ -404,6 +432,8 @@ input[type='range']::-moz-range-thumb { width: 12px; height: 12px; border-radius
   transform: translateX(-50%);
   animation: rise 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
+/* It rises when it comes back after a recording, not on every load. */
+.camera.is-still { animation: none; }
 @keyframes rise { from { opacity: 0; transform: translate(-50%, 40px); } }
 .pill-bar {
   display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 99px;
@@ -518,7 +548,7 @@ input[type='range']::-moz-range-thumb { width: 12px; height: 12px; border-radius
 
 .toast {
   position: fixed; z-index: 200; left: 50%; bottom: 120px;
-  display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px);
+  display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100vw - 32px);
   padding: 10px 16px; border-radius: 12px;
   background: var(--card-solid); border: 1px solid var(--line-strong); box-shadow: var(--shadow);
   font-size: 13px; opacity: 0; pointer-events: none;
@@ -542,12 +572,15 @@ input[type='range']::-moz-range-thumb { width: 12px; height: 12px; border-radius
 /* ── Footer ── */
 
 .foot {
-  position: absolute; z-index: 10; right: calc(16px + var(--safe-r)); bottom: 14px;
-  display: flex; align-items: center; gap: 6px;
-  color: oklch(1 0 0 / 0.55); font-size: 11px;
+  position: absolute; z-index: 10; right: calc(16px + var(--safe-r)); bottom: 12px;
+  display: flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px;
+  background: var(--card); border: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2); backdrop-filter: blur(16px) saturate(1.2);
+  color: var(--muted); font-size: 11px;
 }
-.foot a { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
-@media (hover: hover) { .foot a:hover { color: #fff; } }
+.foot a, .foot button { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; white-space: nowrap; flex: none; }
+.foot button { padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+@media (hover: hover) { .foot a:hover, .foot button:hover { color: var(--fg); } }
 
 /* ── Share viewer ── */
 
@@ -581,14 +614,19 @@ input[type='range']::-moz-range-thumb { width: 12px; height: 12px; border-radius
   .stage { transition: transform 0.25s ease; }
   .app.settings-open .stage { transform: translateY(-24dvh); }
   .app.settings-open .camera { display: none; }
-  .foot { display: none; }
-  .camera { bottom: 16px; }
   .toast { bottom: 140px; }
+  /* 16 px or more, or iOS zooms the page when one takes focus. */
   .field, .select, .code-area { font-size: 16px; }
-  .code-area { font-size: 14px; }
 }
 
-@media (display-mode: standalone) {
+/* Where the footer can't fit beside the camera bar, it sits under it,
+   across the bottom. */
+@media (max-width: 899px) {
+  .foot { right: auto; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 16px); bottom: calc(6px + var(--safe-b)); }
+  .camera { bottom: calc(34px + var(--safe-b)); }
+  .app.settings-open .foot { display: none; }
+}
+@media (display-mode: standalone) and (min-width: 900px) {
   .camera { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (display-mode: standalone) and (min-width: 768px) {
@@ -598,6 +636,17 @@ input[type='range']::-moz-range-thumb { width: 12px; height: 12px; border-radius
   .settings-body { padding-bottom: env(safe-area-inset-bottom, 0px); }
 }
 
+/* On touch screens every control takes a tap over at least 44 × 44 px
+   without growing what you see: an invisible ring around the smaller ones. */
+@media (pointer: coarse) {
+  .icon-btn:not(.more), .seg-btn, .pill { position: relative; }
+  .round-btn::after, .icon-btn::after, .seg-btn::after, .pill::after {
+    content: ''; position: absolute; inset: min(0px, calc((100% - 44px) / 2));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  /* A looping animation at 0.01ms flickers, so these stop by name. */
+  .spinner, .hint.pulse, .rec-dot { animation: none !important; }
 }

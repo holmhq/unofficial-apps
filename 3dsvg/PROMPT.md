@@ -24,16 +24,22 @@ with their licences, keeping 3dsvg's licence and credit.
   (with trimming and MP4 or WebM through ffmpeg.wasm) and 3D model exports,
   the embed code, and the same look. Fix what you find on the way.
 - Signed out, keep the design in localStorage. Add sign-in: a round avatar
-  at the top right whose menu holds Light, Dark or System as three icons,
-  Send feedback and Sign out, and closes when it's tapped again. Holm
-  branding and the source link stay in the footer.
+  at the top right whose menu holds Light, Dark or System as three icons
+  and Sign out, and closes when it's tapped again. Holm branding, the
+  source link and Feedback stay in a small frosted footer, which on narrow
+  screens sits under the camera bar.
 - Signed in, Save keeps a shape in member storage with a thumbnail. My
   shapes lists them to open, rename and delete. Mark unsaved changes.
 - Any saved shape can get a revocable read-only share link, copied into
   shared storage under a random token and refreshed on each save. Its page
   shows the shape alone with "Edit a copy", and its own link-preview tags.
-- Phones first, light and dark, installable with a network-first service
-  worker that never caches member data or the video converter.
+  The link is a click-to-copy field, not an input with a Copy button.
+- Phones first, light and dark, installable. A versioned service worker
+  precaches every page file, all or nothing, and answers cache-first; it
+  never caches member data, share pages or the video converter, keeps file
+  addresses as files and lets Holm's /_ paths through. A check script ties
+  its version to holm.json. The avatar draws at once from this browser, and
+  nothing replays its entrance on a fresh page.
 - For this repository's store, use holm.json version, holm.symbol.svg (one
   black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,
   category, description, whatsNew and sample screenshots. These are repo
@@ -68,3 +74,8 @@ another app's account menu (Domains), and applied here:
 > - clicking it again doesnt dismiss it
 
 > yes, fix ralk, zend and 3dsvg; then /close
+
+Version 0.1.3 came from a sweep of every app in the repository against its
+cookbook (COOKBOOK.md), after the owner was offered one:
+
+> Sure do cookbook sweep

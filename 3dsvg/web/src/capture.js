@@ -57,7 +57,7 @@ export function createCamera(root, viewer) {
   // ── The bar ──
 
   function paint() {
-    if (recording) { root.hidden = true; return }
+    if (recording) { root.hidden = true; root.classList.remove('is-still'); return }
     root.hidden = false
     const cyc = opts.mode === 'video' && cycleSeconds()
     const cycles = cyc && h('div', { class: 'pill-bar' }, [1, 2, 3].map(n =>
