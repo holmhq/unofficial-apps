@@ -539,6 +539,7 @@ export function createApp() {
   let palette = null
   function openPalette() {
     if (palette) { palette.close(); return }
+    const back = document.activeElement
     const input = h('input.pal-field', { type: 'text', placeholder: 'Go to, find or do…', 'aria-label': 'Go to, find or do', autocomplete: 'off', spellcheck: 'false' })
     const list = h('div.pal-list', { role: 'listbox' })
     const box = h('div.pal', { role: 'dialog', 'aria-label': 'Command menu' }, h('div.pal-top', ic('search', 18, 2.1), input, h('kbd', 'esc')), list)
@@ -557,7 +558,7 @@ export function createApp() {
       { label: 'Upload a book, PDF or Markdown file', icon: 'upload', run: () => import('../shell.js').then((m) => m.pickFile()) },
       { label: 'Follow a site', icon: 'rss', run: () => followSheet() },
       { label: 'Add a paper book', icon: 'bookPlus', run: () => import('../shell.js').then((m) => m.bookSheet()) },
-      { label: 'Connect via MCP', icon: 'mcp', run: () => mcpSheet() },
+      { label: 'Connect via MCP…', icon: 'mcp', run: () => mcpSheet() },
       { label: 'Import links, highlights, feeds', icon: 'fileUp', run: () => importSheet() },
       { label: 'Export your shelf', icon: 'download', run: () => import('../shell.js').then((m) => m.exportSheet()) },
       { label: 'Keyboard shortcuts', icon: 'keyboard', hint: '?', run: () => keysSheet() },
@@ -583,12 +584,24 @@ export function createApp() {
       fill(list, shown.length ? shown.map((c, n) => h('button.pal-item' + (n === at ? '.is-on' : ''), { type: 'button', role: 'option', onpointermove: () => { if (at !== n) { at = n; mark() } }, onclick: () => pick(c) }, h('span.pal-ic', ic(c.icon, 16, 2)), h('span.grow.trunc', c.label), c.hint ? h('small.trunc', c.hint) : null)) : h('div.pal-none', 'Nothing matches'))
     }
     const mark = () => [...list.children].forEach((el, n) => el.classList.toggle('is-on', n === at))
+    // Keeps the chosen row in view by scrolling the list itself; scrollIntoView would move the shell too.
+    function reveal() {
+      const el = list.children[at]
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const box = list.getBoundingClientRect()
+      if (r.top < box.top + 6) list.scrollTop -= box.top + 6 - r.top
+      else if (r.bottom > box.bottom - 6) list.scrollTop += r.bottom - box.bottom + 6
+    }
     function pick(c) { close(); setTimeout(() => c.run(), 0) }
-    function close() { layer.classList.remove('is-in'); setTimeout(() => layer.remove(), 180); palette = null; document.removeEventListener('keydown', onKey, true) }
+    function close() {
+      layer.classList.remove('is-in'); setTimeout(() => layer.remove(), 180); palette = null; document.removeEventListener('keydown', onKey, true)
+      if (back && back !== document.body && back.isConnected) back.focus({ preventScroll: true })
+    }
     function onKey(e) {
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close() }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); at = Math.min(shown.length - 1, at + 1); mark(); list.children[at] && list.children[at].scrollIntoView({ block: 'nearest' }) }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); at = Math.max(0, at - 1); mark(); list.children[at] && list.children[at].scrollIntoView({ block: 'nearest' }) }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); at = Math.min(shown.length - 1, at + 1); mark(); reveal() }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); at = Math.max(0, at - 1); mark(); reveal() }
       else if (e.key === 'Enter') { e.preventDefault(); if (shown[at]) pick(shown[at]) }
     }
     document.addEventListener('keydown', onKey, true)
@@ -935,12 +948,16 @@ export function createApp() {
       key = pages.has(listKey) ? listKey : (item && item.state === 'archived' ? '/archive' : item && item.state === 'feed' ? '/feed' : '/')
     } else listKey = key
     const p = page(key)
+    // A page taken out of the document forgets its scroll, so it's kept here and given back.
+    let back = null
     if (active !== p) {
-      if (active && active.leave) active.leave()
+      if (active) { active.scrolled = active.panel.scrollTop; if (active.leave) active.leave() }
       fill(listCol, p.el)
       active = p
+      back = p.scrolled || 0
     }
     p.show()
+    if (back) p.panel.scrollTop = back
     for (const a of [...sideLinks, ...tabbar.children]) a.classList.toggle('is-on', a.dataset.path === key)
     for (const a of sideTags.querySelectorAll('.side-item')) a.classList.toggle('is-on', a.dataset.path === key)
     for (const a of sideViews.querySelectorAll('.side-item')) a.classList.toggle('is-on', a.dataset.path === key)

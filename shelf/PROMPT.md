@@ -150,3 +150,10 @@ Shelf 0.8.3 came from one more, about the size of that sheet:
 > - that dot animation on top should cycle?
 > - so that it shows always?
 > - also, is there any way to show status of connect?
+
+Shelf 0.8.4 came from a sweep of every app against the repository's
+cookbook: lists keep their scroll across tabs, larger touch areas in the
+top bar, an avatar alone at the top of the landing page, and loading
+animations that stand still with reduced motion. The owner asked:
+
+> Sure do cookbook sweep

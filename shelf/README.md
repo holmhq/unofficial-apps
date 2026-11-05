@@ -133,7 +133,7 @@ served as files: `api/` and `holm.json` are not public URLs.
 ### How it feels
 
 A native-app shell: the window never scrolls, bars stay put, and only the
-panels move. A sidebar of places on a desk, which hides with one click, and a
+panels move; each list keeps its place while you're on another tab. A sidebar of places on a desk, which hides with one click, and a
 tab bar on a phone, where rows swipe left to archive and right to favourite,
 and a swipe from the left edge closes the article. Ink-black controls, with
 yellow used for one thing: your reading (highlights, progress, the article

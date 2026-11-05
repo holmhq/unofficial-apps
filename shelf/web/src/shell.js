@@ -94,7 +94,7 @@ function accountMenu(anchor) {
     'sep',
     m ? { label: 'Save a link', icon: 'bookmarkPlus', onclick: () => saveSheet() } : null,
     m ? { label: 'Follow a site…', icon: 'rss', onclick: () => followSheet() } : null,
-    m ? { label: 'Add a paper book…', icon: 'bookPlus', onclick: () => bookSheet() } : null,
+    m ? { label: 'Add a book…', icon: 'bookPlus', onclick: () => bookSheet() } : null,
     m ? { label: 'Save from anywhere', icon: 'share', onclick: () => connectSheet() } : null,
     m ? 'sep' : null,
     m ? { label: 'Connect via MCP…', icon: 'mcp', onclick: () => mcpSheet() } : null,
@@ -248,11 +248,19 @@ export function mcpSheet() {
   }
   const show = (v) => Object.entries(panes).forEach(([k, el]) => { el.classList.toggle('is-on', k === v); el.inert = k !== v })
   show('claude')
+  // A menu item that opened it is gone by now, so closing goes back to the account button.
+  const back = () => {
+    const at = document.activeElement
+    if (at && at !== document.body && !at.closest('.layer')) return
+    const b = [...document.querySelectorAll('.avatar-btn')].find((x) => x.offsetParent)
+    if (b) b.focus({ preventScroll: true })
+  }
   return sheet({
     title: 'Connect via MCP',
     cancel: null,
     done: 'Done',
     wide: true,
+    onClose: back,
     body: () => h('div.sheet-stack',
       h('div.mcp-hero', { 'aria-hidden': 'true' },
         h('img.mcp-app', { src: '/icon-192.png', alt: '', width: 60, height: 60 }),

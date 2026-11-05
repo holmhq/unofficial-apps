@@ -36,7 +36,7 @@ function demoRow(s) {
 export function landing() {
   const feature = (icon, title, text) => h('div.l-f', h('span.ic', ic(icon, 19, 2)), h('b', title), h('p', text))
   const el = h('div.landing',
-    h('header.l-top.glass', h('span.brand', h('span.brand-mark', mark(17)), h('span.brand-name', 'Shelf')), h('span.grow'), h('button.btn.plain', { type: 'button', onclick: signIn }, 'Sign in'), accountButton()),
+    h('header.l-top.glass', h('span.brand', h('span.brand-mark', mark(17)), h('span.brand-name', 'Shelf')), h('span.grow'), accountButton()),
     h('section.l-hero',
       h('div.l-copy',
         h('span.l-kicker', h('i'), 'Read-later, on your own server'),
