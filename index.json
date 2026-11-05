@@ -494,11 +494,11 @@
     {
       "name": "domains",
       "path": "domains",
-      "version": "0.4.0",
-      "tag": "domains/v0.4.0",
-      "h1": "h1:VY5EHuWLB99tP4hxi3dMoF37dRYyQQ6dTgnAQCo2R3w=",
-      "files": 51,
-      "size": 529880,
+      "version": "0.4.1",
+      "tag": "domains/v0.4.1",
+      "h1": "h1:WeDC6+Ccc4lWnahk+5trg+ipP2QQ7CDMggVTs8RYjAE=",
+      "files": 53,
+      "size": 548534,
       "title": "Domains",
       "description": "Find a short domain that's still available: shorter spellings, sound-alikes and AI ideas, checked live. Save the good ones and share a list by link.",
       "themeColor": "#1d1d1f",
@@ -508,7 +508,7 @@
         "subtitle": "Short domains that are still available",
         "category": "Productivity",
         "description": "Type a name and Domains tries the shorter versions of it: clipped forms, sound-alikes, initials, a dropped vowel, domain hacks and AI ideas, including real words from the same world. From harbour labs it finds harbr, quay and berth; from flicker, flickr. Names nobody could say are left out.\n\nEvery name is checked live with Namecheap, shortest first, and only the available ones show, as cards that settle in one after another. One row of ideas sits above them: tap one to see only its names, or ask for more like the ones you like.\n\nFilters open from the search field in one compact panel: extensions, length, which ideas to make, and price. Tap a name for its first-year and renewal prices and a link to register it.\n\nStar the good ones and collect them into lists, with a note. Sign in and share a list by link: whoever opens it sees every name on one page, checked again live, no account needed.",
-        "whatsNew": "Press ⌘K to jump to Saved, a list or Filters, connect Claude, or search a name from anywhere. The footer now shows on every page, even with the sidebar hidden, and small buttons are easier to tap on a phone.",
+        "whatsNew": "Press ⌘K to jump to Saved, a list or Filters, connect Claude, or search a name from anywhere. The footer now shows on every page, even with the sidebar hidden, and small buttons are easier to tap on a phone. The footer has a Feedback link: tell us what you think in a short form without leaving the app. Admins see Analytics in the account menu right after signing in.",
         "featured": false,
         "related": [
           "pastebin",
@@ -613,6 +613,11 @@
       "prompt": "Build \"Domains\", an app for finding a short domain name that is still\navailable, using only https://holmhq.com/llms-full.txt for Holm. Read its v1\nsections 9–12, \"Make an app feel finished\" and \"Make it feel native\" first.\nMake holm.json, public web/ files and api/main.js exporting\ndefault { fetch(request, env) }. No build step or third-party runtime CDN;\nvendor Inter with its licence.\n\n- From what someone types, make shorter labels in the browser: clipped forms,\n  sound-alikes (zach, zack, zak), initials, a dropped last vowel (flickr),\n  with switches for prefixes/suffixes and domain hacks (inter.net), and a\n  length limit. Leave out labels nobody could say (zchr). Add AI ideas from\n  env.holm.ai.chat, cached in KV: nicknames, other spellings, short forms,\n  real words from the same world (harbour: quay, berth, moor), blends and a\n  few new words, plus one short caption of how it read the input. A second\n  round, \"More like these\", asks for names in the style of the ones that came\n  back available and the ones starred.\n- Pair every label with the extensions picked and check the shortest whole\n  names first. Lookups go through provider adapters so a service can be\n  swapped. The first is Namecheap: its search page's WebSocket, from the\n  browser, with the page's CSP allowing that socket. Fall back to an RDAP\n  adapter (IANA bootstrap, env.holm.net.fetch) when it can't be reached.\n- Show only available names, as cards: the name on one line (smaller type\n  for longer names), its first-year price, why it was suggested, a star to\n  save it and a button to add it to a list. Lookups answer in bursts, so\n  reveal the cards one at a time at an even, quick pace, appended in order,\n  premium names last; nothing reshuffles. Above them, one row of the ideas\n  tried with a count each, never more than one line (it scrolls sideways):\n  tap one to see only its names; ideas with nothing available fold away at\n  the end. No line that repeats what the screen shows. Say \"Available\",\n  never \"free\".\n- Start on a hero with one big search field and a few example searches. The\n  first search moves that field up into the navbar while the rest of the\n  hero fades; clearing it goes back the same way, landing exactly.\n- Filters open from a button in the search field as one compact panel:\n  extension presets above the extensions themselves, a length ruler, which\n  ideas to make, a first-year price ruler and \"hide premium names\". Changes\n  apply as they're made.\n- A name up close: first-year and renewal prices, why it was suggested, a\n  link to register it, save and add to a list. Saved names and lists live in\n  the browser, or on the account when signed in. A list has a name and a\n  note; sharing it makes a link that opens for anyone without signing in: all\n  its names on one page, checked again live, each with a link to register,\n  and a link preview with the list's name.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places (Search, Saved,\n  lists) that starts hidden on desktop, a tab bar on phones; a round avatar\n  button top right whose menu toggles closed when tapped again, holds a\n  light/dark/auto switch as three icons and sign-in, and never Holm branding\n  (that goes in the footer line: in the sidebar's foot, or at the end of the\n  page when the sidebar is hidden or on a phone). Buttons a finger taps are\n  44 px, even where they look smaller.\n- ⌘K opens a command menu: the places, each list, new list, filters, the\n  sidebar, Connect via MCP… and sign-in, by a few letters; anything else\n  typed searches for that name.\n- MCP tools as named operations with auth \"user\", each checking the caller:\n  suggest names the way the search makes them (they can't be checked from a\n  tool, so say \"unchecked\" and link to the search, which checks them live),\n  list, save and unsave names, and list, read, make, change, share and delete\n  lists. Connect via MCP… in the account menu with the MCP mark opens a sheet\n  with the connector address to click and copy, and tabs for Claude, ChatGPT,\n  Claude Code and what the tools do. A page that comes back into view takes\n  changes made elsewhere.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/listing.json with sample screenshots. These are repo conventions,\n  not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 domains. With my approval, deploy with\nholm @<peer> app deploy domains --spec-v1 --host domains.<my-domain>. Test a\nsearch end to end, More like these, the fallback, saving, a shared list\nopened signed out, phone and desktop, light and dark.",
       "history": [
         {
+          "version": "0.4.0",
+          "date": "2026-11-05",
+          "whatsNew": "Press ⌘K to jump to Saved, a list or Filters, connect Claude, or search a name from anywhere. The footer now shows on every page, even with the sidebar hidden, and small buttons are easier to tap on a phone."
+        },
+        {
           "version": "0.3.0",
           "date": "2026-11-05",
           "whatsNew": "Connect Domains to Claude, ChatGPT or Claude Code from the account menu. Ask for short names to try, save the good ones, and make, fill and share lists without leaving the chat; Domains checks them live when you open the link. Share links now copy with one click."
@@ -632,11 +637,11 @@
     {
       "name": "feedback",
       "path": "feedback",
-      "version": "0.19.1",
-      "tag": "feedback/v0.19.1",
-      "h1": "h1:TO+Ea5y4rQOkcCupGQ2Pn/4PxGZ+TWlAihaQSPCYwNc=",
+      "version": "0.19.2",
+      "tag": "feedback/v0.19.2",
+      "h1": "h1:3f2/N+jidDk1heTwCoQdlb7JphmBhZp82ocPdbPDZyw=",
       "files": 68,
-      "size": 938792,
+      "size": 939250,
       "title": "feedback",
       "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
       "themeColor": "#c2410c",
@@ -646,7 +651,7 @@
         "subtitle": "Feedback for websites, shops and events",
         "category": "Developer tools",
         "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-        "whatsNew": "feedback now feels like an app: the header and a small footer stay put while each page scrolls under them, the app opens at once, and your projects show straight away. ⌘K jumps to your projects, stats, keys or Connect via MCP. Links, the Holm-site command and new API keys copy with one click. A shared link now shows its picture everywhere.",
+        "whatsNew": "feedback now feels like an app: the header and a small footer stay put while each page scrolls under them, the app opens at once, and your projects show straight away. ⌘K jumps to your projects, stats, keys or Connect via MCP. Links, the Holm-site command and new API keys copy with one click. A shared link now shows its picture everywhere. You can now have up to 30 projects.",
         "featured": true,
         "related": [
           "kalendar",
@@ -797,6 +802,11 @@
       ],
       "prompt": "Build a feedback app using https://holmhq.com/llms-full.txt as the only Holm\nreference; Holm's own https://github.com/holmhq/cdn is allowed for feed-stars.\nRead the v1 sections 9–12 first. Use holm.json with web.spa true, public web/\nfiles and api/main.js exporting default { async fetch(request, env) }.\nUse env.holm auth/DS/KV/S3/image, standard Request/Response and same-origin\nbrowser API calls; fall back to env.holm.web.fetch(request). No build step.\nUse relative server imports, request.formData() and File.arrayBuffer() for\nuploads; no global holm/request/respond and no request.files API.\n\n- Signed-in people make one project per website, shop or event. Supply a\n  one-tag widget: a button in a shadow root opens an iframe form; also a\n  stand-alone feedback page at a custom address, with SVG QR code/poster.\n- Design/Form tabs customize title, words, colour, logo, cover, icon, button\n  label/corner/style and theme, with a live preview. Website kinds: Issue,\n  Idea, Question; places: Praise, Problem, Idea. Add optional/required stars,\n  contact email/phone and up to eight text/select/radio/checkbox questions.\n  Support four files, 8 MiB total, and a one-tap phone photo; photo or rating\n  alone can send. Shrink big photos in the browser before upload (at most\n  2048 px, JPEG quality 0.82), and turn iPhone HEIC photos into JPEG. Strip query/fragment from the sending page's address.\n- One private inbox per project: ticket numbers, statuses, notes and a team\n  thread, sort/search/filter for hundreds of items. Only the owner sees\n  files/contact details. The optional public page shows selected items,\n  votes once per browser, and comments only after owner approval. The owner\n  can file an item themselves and share one item by an unguessable link\n  that needs no sign-in and shows no private fields.\n- Keep spam out with a trap field, project caps and allowed sites, honestly\n  described as casual-misuse guards, not strong sender authentication.\n  Track daily visits, QR/email-link visits, opens, sends, votes and comments\n  in app KV; no visitor tracking. “Where it's live” separates local copies.\n- Add typed operations for public widget settings and JSON feedback with keyed retries, plus a signed-in owner's private inbox, mark-done, filing and sharing actions and dashboard counts; keep all existing routes and file flows.\n- API keys: show once, hash SHA-256, accept bearer tokens on owner routes,\n  check project ownership, return the setup snippet; keys cannot mint keys.\n- Make it refined on phones/desktop, light/dark/system. The window never\n  scrolls: a frosted header and a small frosted footer stay put and each\n  page scrolls in its own panel. A round avatar menu for keys, theme, stats\n  and /changelog, and ⌘K with the same places and actions. Anything to copy\n  is a click-to-copy field. A versioned service worker keeps every page\n  file, never anything sent, and the projects list draws from the last\n  visit. An optional footer Feedback link to a project I supply.\n- Vendor fonts, QR code code and icons with licenses. For feed-stars use\n  Holm's CDN pinned to a commit and v-X.Y.Z folder with integrity, plus plain\n  stars as fallback. Copy embed.js into other Holm sites when their CSP\n  requires it and allow the feedback origin in the site's frame-src.\n  The guide does not guarantee frame-ancestors defaults: set deliberate\n  web.headers for framing, inspect both responses and test the iframe.\n- Make holm.symbol.svg and run holm app identity generate for the icons,\n  manifest and social card; author og:image tags only to keep a hand-made\n  social preview. Add authored social metadata in web/index.html. Make\n  listing/listing.json plus sample screenshots; these are repo conventions,\n  not a Holm store schema documented by the guide. Use holm.json version.\n\nRun holm app validate --spec-v1 feedback. With my approval, deploy with\nholm @<peer> app deploy feedback --spec-v1 --host feedback.<my-domain>.\nAsk before replacing a host or moving an older-format app. Validation does\nnot run the app: test cross-site embedding, uploads, ownership, comments,\nvotes/stats and mobile/desktop light/dark. Inspect the target settings schema\nbefore setting sign-in branding. Report any guide or runtime gaps honestly.",
       "history": [
+        {
+          "version": "0.19.1",
+          "date": "2026-11-05",
+          "whatsNew": "feedback now feels like an app: the header and a small footer stay put while each page scrolls under them, the app opens at once, and your projects show straight away. ⌘K jumps to your projects, stats, keys or Connect via MCP. Links, the Holm-site command and new API keys copy with one click. A shared link now shows its picture everywhere."
+        },
         {
           "version": "0.19.0",
           "date": "2026-11-05",
@@ -1241,11 +1251,11 @@
     {
       "name": "margin",
       "path": "margin",
-      "version": "0.8.0",
-      "tag": "margin/v0.8.0",
-      "h1": "h1:hnMIhjQhCtJ/3iRZAIE/nP7eEG8VLLEFIs3eObZLMbY=",
+      "version": "0.8.1",
+      "tag": "margin/v0.8.1",
+      "h1": "h1:jPRCrQ6MubFKAwc7dcyX9Yp1+dhPwofuRjs81I2JHig=",
       "files": 152,
-      "size": 4179324,
+      "size": 4182105,
       "title": "Margin",
       "description": "A writing platform for teams: workspaces, personas, quote comments, drawn covers, swappable themes and Claude as a co-writer.",
       "themeColor": "#1a7f64",
@@ -1255,7 +1265,7 @@
         "subtitle": "A place for your team to write, with Claude on it",
         "category": "Productivity",
         "description": "A writing platform for teams, at your own address. Readers comment in the margin beside any passage, and Claude can draft and publish posts and answer comments as you.\n\nSign in, pick your name, and start a workspace for your team at its own address, such as /lumen. Invite the people who write with a single-use link. Each writer has a page there, like /lumen/@maya, and can keep personas: other names to write and comment under, which readers can't link back to them. One person can be in many workspaces.\n\nAny post can have a drawn cover instead of a photo: an isometric line drawing in the workspace's style, on paper, in a flat colour or in bold blocks, that moves under your pointer. Point at a day and it lifts out of the calendar; move across a battery and the sun crosses the sky while it charges.\n\nReaders comment the way they would in a book's margin: select any passage, add a note, and it stays highlighted for everyone, with the conversation beside it. Or respond to the whole post. Anyone signed in comments on any workspace, under the name they pick, and each workspace decides whether comments from outside its team wait for approval. Claps go up to fifty a person.\n\nThe editor is block-based like Notion, posts are Markdown underneath, and every page is rendered on the server, so it reads without JavaScript and search engines see it all. Themes are a few HTML templates and a stylesheet; each workspace picks one. Connect Claude and it can draft and publish posts as you, answer ordinary comments in your voice and leave anything sensitive for you.",
-        "whatsNew": "Studio opens at once: it keeps its files on your device and draws your posts, comments and team from what it last saw, then updates only what changed, at the scroll you left. Your avatar now sits at the top right, the sidebar hides, ⌘K jumps to a place, a post or an action, and every dropdown is a proper menu. On a phone the editor's bar fits the screen, and the comment panel's quote is tinted like a highlight.",
+        "whatsNew": "Studio opens at once: it keeps its files on your device and draws your posts, comments and team from what it last saw, then updates only what changed, at the scroll you left. Your avatar now sits at the top right, the sidebar hides, ⌘K jumps to a place, a post or an action, and every dropdown is a proper menu. On a phone the editor's bar fits the screen, and the comment panel's quote is tinted like a highlight. Signed out, Studio keeps its top bar and avatar, with the theme and Sign in, and admins keep their Analytics link after a reload.",
         "featured": false,
         "related": [
           "deck",
@@ -1525,6 +1535,11 @@
       "prompt": "Build \"Margin\", a writing platform for teams, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 (with\n\"Use your app from ChatGPT or Claude\" and \"One page per document id\") and\n\"Make an app feel finished\" first. Make\nholm.json, public web/ files and api/main.js exporting default\n{ fetch(request, env) } plus named operations. Use env.holm for storage,\nsign-in, realtime and email, return standard Responses, and fall back to\nenv.holm.web.fetch(request). No third-party runtime CDN: vendor libraries and\nfonts with their licences. A locally built editor bundle is fine if its build\nscript is in the folder.\n\n- A minimal, elegant front page: what Margin is, two example workspaces, and\n  the way in. Anyone signs in, picks a name and handle, starts a workspace for\n  their team (/<workspace>), and invites people with single-use links. Writers'\n  posts live at /<workspace>/@<handle>/seo-slug; a workspace can post as\n  itself. One person can be in many workspaces, with a role in each (owner,\n  admin, writer). Old addresses keep redirecting.\n- Everyone can keep personas: other names to write and comment under. Readers\n  must not be able to tell personas are the same person; a workspace's owners\n  see which names their members use there.\n- Margin's admins (the node's) choose who can join (anyone; anyone to comment\n  with workspaces by invitation; invited only), make the front page Margin's\n  landing, one workspace or one writer, pick the examples, and suspend\n  workspaces. A workspace's owners make its home the latest posts, a curated\n  set of pinned posts, or one writer's page.\n- Reading pages are rendered on the server, readable with no JavaScript,\n  with feeds, a sitemap and social cards. They must feel instant: keep each\n  rendered page until something visible changes, answer revalidations with\n  a 304 before loading the rest of the app, keep Margin's own CSS and\n  scripts in the browser under versioned addresses, and prefetch links on\n  hover. Every footer has a small Holm mark (\"A Holm app\") and Send\n  feedback, from this repository's feedback app. Posts are Markdown underneath, with\n  callouts, embeds from a bare link, cards for other posts, and figures.\n- A post can have a photo or a drawn cover, chosen by the writer (none until\n  then): an isometric technical line\n  drawing (one projection, three line weights, flat colour, small labels) in\n  the workspace's style (paper, a flat tone, or blocks), with a subject the\n  writer picks, that reacts to the pointer. Save a PNG of it for link previews.\n- Comments like Medium: select a passage to comment on it (keep the quote\n  with its surrounding words so it re-anchors), or respond to the whole post;\n  one level of replies; anyone signed in comments anywhere, as any of their\n  names; each workspace shows comments at once, holds those from outside its\n  team, or holds all. Claps, up to 50 per person. Link previews for posts.\n- Themes are swappable: theme.json, Mustache templates, partials and assets,\n  with a validator that refuses scripts, outside URLs and raw HTML other than\n  Margin's own hooks. Ship two (a clean Apple-like one with chat-style comment\n  threads, and an editorial serif one with notes in the margin). Margin's\n  admins add themes; each workspace picks one.\n- A Notion-like editor: slash menu, a bar for formatting, block handles,\n  dropped-in photos (shrunk in the browser) and short videos, autosave.\n- Code and maths that read well: highlight fenced code by its language (name\n  it above the block, with a Copy button) and typeset LaTeX maths ($…$ and\n  $$ blocks) on the server, so pages need no JavaScript; in the editor,\n  formulae show typeset and open to edit. A price like \"$5 and $10\" stays\n  text.\n- Photos, SVG drawings and short videos from Claude too: a tool that takes a\n  drawing or a small photo, and a one-hour upload link the person opens on\n  a phone (or Claude sends files to with curl). Keep photos at 2048 px, make\n  smaller copies and a link-preview crop on first request, and give every\n  photo on a page a srcset. Refuse SVG that can run code or load anything.\n- Studio with a workspace switcher: posts, a comment inbox, team and invites,\n  workspace settings (a logo too, also when starting one), your names and\n  personas, Claude, and Margin's settings\n  for its admins. MCP tools for Claude that take a workspace: write and edit\n  posts, answer only ordinary comments (asking about anything sensitive),\n  comment under any of your names, manage personas, start and run workspaces\n  (settings, the team and its roles, invites, leaving), and work on themes.\n  Use auth \"user\" so anyone signed in can connect, with each tool checking\n  workspace roles itself as Studio does; keep saving a theme to the node's\n  admins. Connect via MCP… in the account menu with the MCP mark opens one\n  sheet with the connector address to click and copy, and tabs for Claude,\n  ChatGPT, Claude Code and what the tools do; pages that mention Claude open\n  it. A short /llms.txt for agents.\n- Sample content: two fictional teams with their own logos (made with\n  holm app identity), writers, posts and comments, loaded from Studio.\n- UI refined like Apple's apps: Inter, one accent, frosted bars, sheets on\n  phones, a round avatar account button even when signed out, light, dark\n  and auto. In Studio the avatar sits at the top right, the sidebar of\n  places hides, the footer carries A Holm app, Feedback and Source, every\n  dropdown is the app's own menu, and ⌘K finds places, posts and actions.\n  Studio opens at once: a service worker tied to the version keeps its\n  files (and leaves every reader page to the server), and the last answers\n  and account are kept in the browser, so a reload draws without waiting.\n  For this repository's store, use holm.json version,\n  holm.symbol.svg and listing/listing.json with sample screenshots.\n\nRun holm app validate --spec-v1 margin. With my approval, deploy with\nholm @<peer> app deploy margin --spec-v1 --host <host>. Never replace an\noccupied host without asking. Test as an admin, a workspace owner, an invited\nwriter, an outside reader and signed out, on mobile and desktop, in light and\ndark. Report gaps honestly.",
       "history": [
         {
+          "version": "0.8.0",
+          "date": "2026-11-05",
+          "whatsNew": "Studio opens at once: it keeps its files on your device and draws your posts, comments and team from what it last saw, then updates only what changed, at the scroll you left. Your avatar now sits at the top right, the sidebar hides, ⌘K jumps to a place, a post or an action, and every dropdown is a proper menu. On a phone the editor's bar fits the screen, and the comment panel's quote is tinted like a highlight."
+        },
+        {
           "version": "0.7.0",
           "date": "2026-11-05",
           "whatsNew": "Everyone signed in can now connect Claude, not just the server's admins: each tool allows only what you can do in Studio. Connect via MCP in the account menu shows the address to copy, with steps for Claude, ChatGPT and Claude Code. Links to copy are one tap, and the theme files Claude downloads include the built-in stylesheets again. The theme switch is three icons now."
@@ -1569,11 +1584,11 @@
     {
       "name": "overlap",
       "path": "overlap",
-      "version": "0.3.0",
-      "tag": "overlap/v0.3.0",
-      "h1": "h1:ZvbWKvklYRgE8GOuLuWlLTFMPjLcuP0q8nOb/U/TwZQ=",
-      "files": 34,
-      "size": 530127,
+      "version": "0.3.1",
+      "tag": "overlap/v0.3.1",
+      "h1": "h1:7iCHgnJG4ofXEzB5j6llQdiOwsQp4NnmYjKdCVc1gY4=",
+      "files": 36,
+      "size": 548254,
       "title": "overlap",
       "description": "Find the time that works for everyone. Pick some dates, share one link, and watch everyone's free time overlap, live.",
       "themeColor": "#0e8a78",
@@ -1583,7 +1598,7 @@
         "subtitle": "Find a time that works for everyone",
         "category": "Productivity",
         "description": "Pick a few dates and the hours you could meet, then share one link. Everyone paints the times they're free, with just a name and no account, and the grid deepens in colour where people overlap, live, on every open screen.\n\nThe best times rise to the top as answers come in, with who can make each one. Pick a time and everyone sees it settle at once, with a calendar file and a Google Calendar link.\n\nPainting plays a soft note for each slot, and the page answers with small motions: it is built to be pleasant to use on a phone and a big screen, in light and dark.",
-        "whatsNew": "overlap now feels like an app: the header and a small footer stay put while the page scrolls under them, pages open at once, and Your plans shows straight away from your last visit. The round avatar at the top right, signed out too, holds sound and the theme, and ⌘K jumps to your plans, a new plan or Connect via MCP.",
+        "whatsNew": "overlap now feels like an app: the header and a small footer stay put while the page scrolls under them, pages open at once, and Your plans shows straight away from your last visit. The round avatar at the top right, signed out too, holds sound and the theme, and ⌘K jumps to your plans, a new plan or Connect via MCP. The footer has a Feedback link: tell us what you think in a short form without leaving the app.",
         "featured": true,
         "related": [
           "kalendar",
@@ -1680,6 +1695,11 @@
       ],
       "prompt": "Build \"overlap\", a group scheduling app, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 first.\nMake holm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in and realtime, return standard Responses and fall back to\nenv.holm.web.fetch(request). No build step or third-party runtime CDN; vendor\nany font with its licence.\n\n- A signed-in organiser creates a plan: a name, an optional note, up to 14\n  dates picked on a calendar by pressing and dragging across days, a daily\n  window, 15/30/60-minute slots and a time zone.\n- Anyone with the link answers with just a name (no sign-up) and paints the\n  times they are free: press and drag a rectangle that fills or clears. Keep\n  an edit key in the browser and store only its SHA-256 hash; signed-in\n  people edit from anywhere. Undo, keyboard painting, and touch that paints\n  instead of scrolling.\n- Two views: \"My times\" over a faint heatmap of everyone, and \"Everyone\" as a\n  heatmap. Tooltips name who is free and give the viewer's local time.\n  Ranked best times with who is missing; the organiser picks one and every\n  open page shows it settled, with a calendar file and a Google Calendar link.\n- Broadcast every change on a realtime channel per plan; flash other people's\n  changes in their colour, show who has the page open, reconnect and catch up.\n- Exceptional, warm design: an elegant serif for headings, light/dark/system\n  themes, excellent on phones and desktop. Soft Web Audio sounds (a\n  pentatonic note per painted slot, a chord when a time settles) with a mute\n  switch, small spring motions and confetti, all respecting reduced motion.\n- It feels like an app: the window never scrolls, only the page's panel\n  does, under a frosted header and a small frosted footer (\"A Holm app\",\n  Source). A round avatar at the top right, signed out too, opens the\n  account menu, which holds sound and a three-icon theme switch; ⌘K has the\n  same places and actions. A versioned service worker keeps every page\n  file, never a plan, and the plan list draws at once from the last visit.\n- MCP tools as named operations with auth \"user\", each sent through the\n  app's own routes so the same checks apply and open pages update live:\n  list plans, see who is free when with the best times, start a plan, mark\n  your free times (joining if needed), and for the organiser settle or\n  reopen, rename, remove an answer and delete. Connect via MCP… in the\n  account menu opens a sheet with the connector address to click and copy,\n  and tabs for Claude, ChatGPT, Claude Code and what the tools do.\n- Give each plan page its own title and link preview, noindex. Never show the\n  organiser's email.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 overlap. With my approval, deploy with\nholm @<peer> app deploy overlap --spec-v1 --host overlap.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test an organiser and an anonymous person in two browsers, live\nupdates both ways, settling a time, and mobile/desktop in light/dark. Report\ngaps honestly. Inspect the target settings schema before setting sign-in\nbranding.",
       "history": [
+        {
+          "version": "0.3.0",
+          "date": "2026-11-05",
+          "whatsNew": "overlap now feels like an app: the header and a small footer stay put while the page scrolls under them, pages open at once, and Your plans shows straight away from your last visit. The round avatar at the top right, signed out too, holds sound and the theme, and ⌘K jumps to your plans, a new plan or Connect via MCP."
+        },
         {
           "version": "0.2.0",
           "date": "2026-11-05",
@@ -1999,11 +2019,11 @@
     {
       "name": "relay",
       "path": "relay",
-      "version": "0.4.0",
-      "tag": "relay/v0.4.0",
-      "h1": "h1:05M/TWCHDYoIwJI0vP90dxK+rvv5KD9sb3wcT+Qdv8g=",
+      "version": "0.4.1",
+      "tag": "relay/v0.4.1",
+      "h1": "h1:g5b8UnA9XW66psbIvmBSdW5fMeYlMo9OidiGBp8kMc8=",
       "files": 54,
-      "size": 806229,
+      "size": 807000,
       "title": "Relay",
       "description": "A private messenger for the people on your Holm node. Add friends by username, chat one to one or in groups, and share photos and files.",
       "themeColor": "#6a3fe0",
@@ -2013,7 +2033,7 @@
         "subtitle": "Private chat for the people on your node",
         "category": "Social",
         "description": "A messenger for the people who share your Holm node. Pick a username, add friends by theirs, and chat one to one or in groups. Messages, typing and unread counts arrive live, on your phone and your desktop at once.\n\nReply to a message by swiping it, forward it, copy it or delete it for everyone. Send photos, which shrink on your phone before they upload, and videos, audio or any other file up to 16 MB. Links unfold into previews that the server fetches, so the sites you share never see who's reading.\n\nRelay never says whether a username exists: an invite arrives quietly, and you only learn when someone accepts. Invite a friend who isn't here yet with a one-time email link, block anyone, and give contacts your own nicknames and photos. It installs like an app, with light and dark themes and your choice of colour.",
-        "whatsNew": "A round avatar at the top right now holds your account, Connect via MCP… and a three-icon theme switch, and ⌘K jumps to any chat or tab. Relay opens straight to your chats from the last visit, keeps each tab where you left it, and quoted replies lose their coloured bar for a soft tint.",
+        "whatsNew": "A round avatar at the top right now holds your account, Connect via MCP… and a three-icon theme switch, and ⌘K jumps to any chat or tab. Relay opens straight to your chats from the last visit, keeps each tab where you left it, and quoted replies lose their coloured bar for a soft tint. Admins see Analytics in the account menu right after signing in.",
         "featured": false,
         "related": [
           "zend",
@@ -2117,6 +2137,11 @@
       "prompt": "Build \"relay\", a private messenger for the members of my Holm node, using\nonly https://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\nthe common recipes first. Make holm.json, public web/ files and api/main.js\nexporting default { async fetch(request, env) }. Set web.spa true, use\nenv.holm for storage, sign-in, images, email, outbound HTTP and realtime,\nreturn standard Responses and fall back to env.holm.web.fetch(request). No\nbuild step or third-party runtime CDN; vendor fonts and icons with licences.\n\n- After sign-in, claim a username. Add people by username without revealing\n  whether it exists: they accept, decline or block, and the sender learns only\n  of an acceptance. Email a one-time join link to someone not here yet.\n- One-to-one chats and groups with an optional handle in the address. Text,\n  reply with a quote (menu or swipe), copy, forward and delete for everyone.\n  Photos shrink in the browser before upload; any other file up to the node's\n  form-file limit. Server-fetched link previews. Paginated history, search,\n  exact unread counts, typing, nicknames and photos for contacts.\n- Send live events to each member on their own channel, never per room. If\n  the guide offers no way to admit only that member to a private: channel,\n  name a plain channel with a random secret given only to that member, and\n  say so in the README.\n- MCP tools as named operations with auth \"user\", each checking the caller:\n  list chats with unread counts, catch up on unread messages and mark a chat\n  read, read a chat further back on request, send a text message, list\n  friends, and list, send (username, group or email) and answer invites\n  without revealing whether a username exists. Settings has Connect via\n  MCP with the MCP mark: a sheet with the connector address to click and\n  copy, and tabs for Claude, ChatGPT, Claude Code and what the tools do.\n- A phone-first app shell where only panels scroll, with no scroll bars:\n  Chats, Add, Friends, Settings tabs that stay alive between switches,\n  light/dark/auto themes and accent colours, sounds, in-app notifications,\n  an installable manifest. A round avatar button at the top right, signed\n  out too, opens a menu with who you are, Connect via MCP…, a three-icon\n  theme switch and Sign in or out; ⌘K goes to any tab or chat and does the\n  same. A service worker precaches every page file at the holm.json\n  version and opens cache-first, and a signed-in launch draws the chat list\n  at once from what the browser last saw. A footer with \"A Holm app\",\n  Feedback and Source. Follow the guide's \"feel finished\" and \"feel native\"\n  recipes, and draw one holm.symbol.svg for every icon.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 relay. With my approval, deploy with\nholm @<peer> app deploy relay --spec-v1 --host relay.<my-domain>. Never\nreplace an occupied host without asking, and ask before granting email or\noutbound HTTP. Validation does not run the app: test two and three members\nin separate browsers, invites, a group, live delivery both ways, uploads,\nand mobile/desktop in light/dark. Report gaps honestly. Inspect the target\nsettings schema before setting sign-in branding.",
       "history": [
         {
+          "version": "0.4.0",
+          "date": "2026-11-05",
+          "whatsNew": "A round avatar at the top right now holds your account, Connect via MCP… and a three-icon theme switch, and ⌘K jumps to any chat or tab. Relay opens straight to your chats from the last visit, keeps each tab where you left it, and quoted replies lose their coloured bar for a soft tint."
+        },
+        {
           "version": "0.3.0",
           "date": "2026-11-05",
           "whatsNew": "Connect Relay to Claude, ChatGPT or Claude Code: Settings → Connect via MCP shows how. Ask what you missed, have a chat summed up, send a message, or invite a friend and answer invites, without leaving the conversation."
@@ -2131,11 +2156,11 @@
     {
       "name": "roll",
       "path": "roll",
-      "version": "0.3.0",
-      "tag": "roll/v0.3.0",
-      "h1": "h1:ZhI9NNaRUk/mCb8A9osSiM6qhZwE0FdNUe1x3VXm4pk=",
+      "version": "0.3.1",
+      "tag": "roll/v0.3.1",
+      "h1": "h1:NoCeKh5bC5cWN7zKDk6szUViMvC/KZj496Ei3S7g7Ko=",
       "files": 63,
-      "size": 2189805,
+      "size": 2190587,
       "title": "Roll",
       "description": "Your photo library on your own server: every day on a timeline, memories from past years, and albums you share by link.",
       "themeColor": "#f0592a",
@@ -2145,7 +2170,7 @@
         "subtitle": "Your photo library, on your own server",
         "category": "Photos",
         "description": "Roll keeps your photos on a timeline of the days you took them, by the camera's own clock. Each month and day has a heading with its place, and the days flow along rows that fill the screen. A date rail jumps through the years, and a pinch makes the photos bigger or smaller.\n\nOn this day brings back photos from today's date in earlier years, as a short story that drifts from one photo to the next.\n\nDrop photos anywhere, choose them or paste them. Roll reads each one's date, camera, exposure and location in your browser, names the place without asking any service, skips photos it already has, and keeps the original. The viewer grows out of the photo you tap, swipes and zooms, and shows the details beside the photo.\n\nCollect photos into albums and share one by link: anyone with it sees the album, no account needed, without places, cameras or file names. Places, favourites, a Trash that waits 30 days, and search over places, cameras, months and more.\n\nIt feels like an app: frosted bars that stay put, a tab bar on your phone and a sidebar on a desk, light and dark, with photos on black.",
-        "whatsNew": "Press ⌘K (Ctrl+K) on a desk to jump to a place, an album or a city, upload, select photos or connect via MCP. Album and memory cards now lift a little under the pointer instead of zooming their photo, the top bar’s buttons are easier to tap on a phone, and with reduced motion on, loading animations stand still.",
+        "whatsNew": "Press ⌘K (Ctrl+K) on a desk to jump to a place, an album or a city, upload, select photos or connect via MCP. Album and memory cards now lift a little under the pointer instead of zooming their photo, the top bar’s buttons are easier to tap on a phone, and with reduced motion on, loading animations stand still. Admins see Analytics in the account menu right after signing in.",
         "featured": true,
         "related": [
           "shelf",
@@ -2262,6 +2287,11 @@
       "prompt": "Build \"Roll\", a photo library for your own server in the spirit of Immich or\nGoogle Photos, using only https://holmhq.com/llms-full.txt for Holm. Read its\nv1 sections 9–12, \"Keep uploads under the node's limits\", \"Shrink photos\nbefore upload\", \"Make an app feel finished\" and \"Make it feel native\" first.\nMake holm.json (web.spa true), public web/ files and api/main.js exporting\ndefault { fetch(request, env) }. No build step or third-party runtime CDN;\nvendor Inter and ThumbHash with their licences.\n\n- Sign in with the node's accounts. Each member's photos and albums are\n  theirs alone, in shared storage with an owner on every record. A quota per\n  member (QUOTA_MB in the app's environment); app admins have none.\n- Uploads: pick files, drop them anywhere or paste them. In the browser,\n  read EXIF (date with its time zone, camera, lens, exposure, GPS), a\n  SHA-256 fingerprint to skip photos already there, a 2048 px preview and a\n  thumbnail made on a canvas (no metadata), and a ThumbHash placeholder.\n  Name the place offline from GeoNames towns of 15,000 people or more\n  (bigger towns win within 25 km, else the region). Send the copies first so\n  the tile appears at once with a progress ring, then the original in its\n  own request; keep the copy if the original is too large. A tray shows\n  progress, what was skipped and why.\n- The library: photos by the date they were taken (the camera's own wall\n  clock), a heading per month and per day with the day's place, days flowing\n  into each other in rows justified to the width, rendered virtually so huge\n  libraries scroll smoothly, a date rail to jump through the years, ThumbHash\n  colours before thumbnails load, and zoom with ctrl+wheel or a pinch.\n- \"On this day\" cards for earlier years that play as a story with a slow\n  drift, bars, tap to move, hold to pause.\n- A viewer that grows out of the tile and back, swipes, zooms (wheel, pinch,\n  double tap; the original loads when you look closer), closes on a pull\n  down, and shows details (date, file, camera and exposure, place with a map\n  link, albums) beside the photo on a desk and in a sheet on a phone.\n- Select with a tick, shift-click ranges, select a whole day, long-press on a\n  phone: favourite, add to an album, download (several as one ZIP made in the\n  browser), move to the Trash with Undo. The Trash keeps photos 30 days.\n- Albums with covers; add from the library with a picker; share by link: a\n  public page with the album's title, who shared it and the photos (no\n  places, cameras or file names, never originals), its own link preview.\n- Places as cards, and search over places, cameras, months, years, albums\n  and words like portrait, night or favorite, with suggestion chips.\n- MCP tools as named operations with auth \"user\" in api/contract.json, each\n  acting only on the caller's own library through the routes' own\n  functions: a summary of the library; photos by date, place, album, words\n  or the Trash; a photo's details; this day in past years; albums. Then\n  favourite, trash and restore photos; make, change, share and delete\n  albums; and delete from the Trash only after the person says yes.\n  Connect via MCP… in the account menu opens a sheet with the connector\n  address to click and copy, and tabs for Claude, ChatGPT, Claude Code and\n  what the tools do. A page that comes back into view takes changes made\n  elsewhere, and ?photo=<id> opens a photo.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places on a desk, a tab\n  bar on a phone; a round avatar button with a three-icon theme switch and\n  storage use; Holm's credit only in the footer, on one line even in the\n  sidebar. A versioned service worker\n  precaches the app and keeps thumbnails. ⌘K on a desk goes to places,\n  albums and cities, uploads, selects and opens Connect via MCP….\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/ with screenshots of sample photos only.",
       "history": [
         {
+          "version": "0.3.0",
+          "date": "2026-11-05",
+          "whatsNew": "Press ⌘K (Ctrl+K) on a desk to jump to a place, an album or a city, upload, select photos or connect via MCP. Album and memory cards now lift a little under the pointer instead of zooming their photo, the top bar’s buttons are easier to tap on a phone, and with reduced motion on, loading animations stand still."
+        },
+        {
           "version": "0.2.0",
           "date": "2026-11-05",
           "whatsNew": "Connect Roll to Claude, ChatGPT or Claude Code over MCP: ask what's in your library, find photos by date, place, album or words, see this day in past years, and make, fill and share albums. Connect via MCP… in the account menu shows how. An album's share link copies with one click, and an open page picks up changes made elsewhere."
@@ -2296,11 +2326,11 @@
     {
       "name": "shelf",
       "path": "shelf",
-      "version": "0.8.4",
-      "tag": "shelf/v0.8.4",
-      "h1": "h1:pxIQ7eiIUVbKOU52QCGJFlaClukcXq2u5b3e5d3oIxc=",
+      "version": "0.8.5",
+      "tag": "shelf/v0.8.5",
+      "h1": "h1:HRe8vJbfiol5HTCPq9CPhKN6gfQPaMdg0hQ9nUK6/M4=",
       "files": 82,
-      "size": 3464447,
+      "size": 3465229,
       "title": "Shelf",
       "description": "Save anything to read later, on your own server: a calm reader, highlights, offline reading, and Claude can read your shelf too.",
       "themeColor": "#1d1d1f",
@@ -2310,7 +2340,7 @@
         "subtitle": "Read it later, on your own server",
         "category": "Productivity",
         "description": "Shelf keeps the articles you mean to read, as clean copies on your own server, and helps you remember them: highlights, a daily review, and answers from everything you’ve saved.\n\nPaste a link, click the Save to Shelf button in your browser, share from your phone, or ask Claude to save something it found. Shelf fetches the page on your server and keeps a clean copy: the article's words and pictures, without the ads and pop-ups, so it's still there when the site changes.\n\nThe reader is set in Newsreader, a typeface made for reading on screens, in the size and width you like, on white or a paper tone, in light or dark. Shelf keeps your place and takes you back to it on any device. Select words to highlight them or add a note; your highlights gather in one place and find their spot again if the article is fetched afresh. Share one by link, with a preview card set in the reader’s typefaces.\n\nA few highlights come back each day in a daily review, one at a time on paper: keep one in mind and it waits a while, favourite it and it returns more often, send it away for good, add a note or a tag, and keep a streak. Turn the ones you want to know by heart into flashcards. Bring in your Kindle's clippings and your Readwise highlights, or type in passages from a book on paper; each book gets its cover and its highlights in order. Take everything with you as Markdown for Obsidian or Notion, or as a CSV Readwise can read.\n\nFollow blogs, newsletters with a feed and YouTube channels: new posts gather in the Feed, apart from your reading list, and a swipe saves the ones worth reading. Videos play right in the reader. Bring your feeds from any reader as OPML.\n\nSelect a word to look it up, or a passage to have it explained or translated. Ask about an article and get its takeaways, questions to think about, or an answer that points to the passages it rests on; ask a question in search and your whole shelf answers, with its sources. A three-point summary is a tap away, or listen: your device reads the article aloud, a sentence at a time, and the page follows along. Search finds words inside the articles and your highlights, not only in titles, and filters like tag:, kind:book or minutes:<10 can be saved as views.\n\nDrop in an EPUB, a PDF or a Markdown file too: books keep their covers and chapters, and PDFs read in their own layout, highlights and all. Bring your links from Pocket, Instapaper, Readwise Reader or a bookmarks file. Connect Shelf to Claude and it can list, read and search your shelf, quote your highlights and save links for you.\n\nIt feels like an app: frosted bars that stay put, the article beside the list on a desk and sliding over it on a phone, swipes to archive and favourite, keys for everything on a desk, and articles that read offline.",
-        "whatsNew": "Each list keeps its place when you switch tabs and come back. On a phone the top bar’s buttons are easier to tap, and with reduced motion on, loading animations stand still instead of flickering. Small fixes to ⌘K, the account menu and Connect via MCP.",
+        "whatsNew": "Each list keeps its place when you switch tabs and come back. On a phone the top bar’s buttons are easier to tap, and with reduced motion on, loading animations stand still instead of flickering. Small fixes to ⌘K, the account menu and Connect via MCP. Admins see Analytics in the account menu right after signing in.",
         "featured": true,
         "related": [
           "margin",
@@ -2484,6 +2514,11 @@
       "prompt": "Build \"Shelf\", a read-later app for your own server in the spirit of Pocket\nor Instapaper, using only https://holmhq.com/llms-full.txt for Holm. Read its\nv1 sections 9–12, \"Use your app from ChatGPT or Claude\", \"Make an app feel\nfinished\" and \"Make it feel native\" first. Make holm.json (web.spa true),\npublic web/ files and api/main.js exporting default { fetch(request, env) }.\nNo build step or third-party runtime CDN; vendor Inter, Newsreader, Mozilla\nReadability and DOMPurify with their licences.\n\n- Sign in with the node's accounts. Each member's links, articles and\n  highlights are theirs alone, in collections named for them.\n- Save a link by pasting it anywhere, dropping it, a Save sheet, a bookmarklet\n  that opens a small /add window, a phone's share sheet (the manifest's\n  share_target) or an MCP tool. Tracking parameters come off; a link saved\n  twice comes back to the top.\n- Making it readable: the server fetches the page with env.holm.net.fetch (a\n  timeout, any public https host granted to the app), the browser runs\n  Readability and DOMPurify on it, keeps the title, site, author, excerpt and\n  lead picture, and sends back the cleaned article and its plain text.\n  Pictures are renamed by the hash of their address; the server keeps a copy\n  of each the first time it's shown, and a square thumbnail for the list.\n  Links saved elsewhere arrive \"pending\" and whichever page is open fetches\n  them, newest first; imported links wait until opened.\n- The list: a reading list with chips for quick reads, long reads, started,\n  saved by Claude and tags; favourites, archive, tags, highlights; rows with\n  title, excerpt, site, minutes left and a thin progress line; swipe to\n  archive or favourite on a phone, J/K/E/S keys on a desk.\n- The reader, beside the list on a desk and sliding over it on a phone: set\n  in Newsreader (or Inter, or Atkinson Hyperlegible), eight sizes, three\n  widths, three line spacings, justify, a paper tone; the\n  reading position kept on every device; highlights and notes anchored by\n  their place and quote; a three-point summary from env.holm.ai.chat; Listen\n  with the browser's voices, sentence by sentence, the sentence tinted with\n  the CSS Custom Highlight API.\n- Share a highlight by link: a public /q/<slug> page with the words, the\n  article's title and link and the sharer's first name (never notes), served\n  from fetch with its own og tags and a preview card drawn on a canvas in the\n  browser; turning it off ends the link.\n- Full-text search over articles and highlights with ds.search.\n- Import from Pocket, Instapaper and Readwise Reader CSV, bookmark HTML or\n  any list of links, and ZIP exports read with DecompressionStream.\n- A daily review of highlights, Readwise-style: a few a day, one at a time,\n  spaced out (keep, sooner, much later, never), favourites and per-source\n  frequency, notes and tags on highlights, a streak; review one book or tag\n  on demand. Holm has no schedules, so it waits in the app.\n- Kindle My Clippings.txt, Bookcision and Readwise CSV highlights become\n  books with Open Library covers and their highlights in book order; paper\n  books take typed-in highlights. Re-importing adds only what's new.\n- A Feed of what followed sites, newsletters with a feed and YouTube channels\n  post: paste a site and find its feed (link rel=alternate, then the usual\n  places), OPML in and out, Unseen and All, save a post to the reading list\n  with a swipe, videos in the reader from youtube-nocookie. The server\n  fetches feeds conditionally when an open page asks for the due ones; the\n  browser parses RSS, Atom and JSON Feed.\n- Books, PDFs and Markdown by upload or drop: EPUB read in the browser with\n  DecompressionStream into one article with a section per chapter (a\n  Contents list; highlights carry the chapter), pictures kept by the hash of\n  their bytes; PDFs kept in s3 and shown with vendored pdf.js (loaded on\n  first use) page by page with a text layer for page-anchored highlights,\n  their words read in the browser for search; a saved link to a PDF becomes\n  one too.\n- Ask: on a selection, Look up (Wikipedia REST and Wiktionary, no AI),\n  Explain and Translate, each able to become a highlight's note; beside an\n  article, a panel with the summary, takeaways, questions, saved prompts and\n  free questions answered with quoted passages to jump to; in search, a\n  question answered from the whole shelf with numbered sources; suggested\n  tags. ai.chat with JSON answers and daily caps.\n- A query language in search (tag:, in:, kind:, has:, minutes:, saved:,\n  from:, minus to negate) and saved views in the sidebar; sort menus; select\n  many for bulk archive, favourite, tag or delete; ⌘K; edit title and author;\n  Atkinson Hyperlegible, line spacing and justify in the reader.\n- Flashcards from highlights (hide words, or a question), spaced on their\n  own and joining the daily review; a public, always-current page of an\n  article's highlights (notes optional); MCP tools to save and change\n  highlights and to read today's review.\n- Export one ZIP made in the browser: Markdown per source with front matter\n  (Obsidian, Logseq, Notion), highlights.csv in Readwise's import layout,\n  library.csv, feeds.opml and a JSON copy.\n- MCP tools (auth \"user\", each checking the caller): list, read, search,\n  save (optionally with the article's text, readable at once), update,\n  highlights, save a highlight, change a highlight, today's review.\n- Connect via MCP… in the account menu and ⌘K, with the MCP mark: a sheet\n  with the app's icon joined to the mark by flowing dots and the connector\n  address (https://<host>/_holm/mcp). Below them are tabs for Claude,\n  ChatGPT, Claude Code and Tools (what the tools do), and the sheet keeps one\n  height. Menu labels stay short (Import…, Export…).\n- Anything to copy (addresses, commands, share links) is one line that\n  copies when clicked, with a copy icon, Copy on hover and Copied after.\n- Realtime: every change reaches the person's other open pages at once.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places on a desk, a tab\n  bar on a phone; ink-black controls, yellow only for your reading; a round\n  avatar button with a three-icon theme switch; Holm's credit only in the\n  footer. A versioned service worker precaches the app and keeps articles\n  and pictures for reading offline.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/ with screenshots of public-domain reading only.",
       "history": [
         {
+          "version": "0.8.4",
+          "date": "2026-11-05",
+          "whatsNew": "Each list keeps its place when you switch tabs and come back. On a phone the top bar’s buttons are easier to tap, and with reduced motion on, loading animations stand still instead of flickering. Small fixes to ⌘K, the account menu and Connect via MCP."
+        },
+        {
           "version": "0.8.3",
           "date": "2026-11-04",
           "whatsNew": "Connect via MCP is smaller. The connector address sits on top, with tabs below for Claude, ChatGPT, Claude Code and what Shelf’s tools do. The sheet keeps one size as you switch, and the dots between Shelf and the MCP mark keep flowing."
@@ -2553,11 +2588,11 @@
     {
       "name": "snake",
       "path": "snake",
-      "version": "0.1.2",
-      "tag": "snake/v0.1.2",
-      "h1": "h1:c+/vAQLv0eIAnI0nneV3C6YSSjvDkKew4QzNReq6csA=",
-      "files": 31,
-      "size": 398821,
+      "version": "0.1.3",
+      "tag": "snake/v0.1.3",
+      "h1": "h1:zqhMuD9H+AlpvdBi5PUWDA2GpKEwKpFaEuWA2iKRKtE=",
+      "files": 33,
+      "size": 416738,
       "title": "Snake",
       "description": "A calm snake game on a field that wraps at the edges. Plays offline with no account; sign in to put your best game, replayed by the server, on the leaderboard.",
       "themeColor": "#c4607a",
@@ -2567,7 +2602,7 @@
         "subtitle": "A calm snake game",
         "category": "Games",
         "description": "Guide the snake to the berries; each one makes it a cell longer and plays the next note of a slow tune. The field wraps at its edges, so only your own tail is in the way, and every sixth berry a bloom opens for a while, worth more.\n\nSwipe the way to go, or tap the turn buttons; on a computer, the arrow keys. The snake moves a whole cell at a time and speeds up only a little. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it move by move to check the score. Four colour sets in light and dark.",
-        "whatsNew": "Snake now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line.",
+        "whatsNew": "Snake now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line. The footer has a Feedback link: tell us what you think in a short form without leaving the app.",
         "featured": false,
         "related": [
           "strata",
@@ -2615,6 +2650,11 @@
       "prompt": "Build \"Snake\", a calm snake game for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage and\nsign-in, return standard Responses and fall back to env.holm.web.fetch(request).\nNo build step or third-party runtime CDN; vendor the icons with their licence.\n\n- A 15 × 25 field that wraps at its edges, so only the snake's own body is in\n  the way. Each berry adds a cell and points; every sixth berry a bloom\n  opens for a while, worth more. The pace rises every five berries and\n  levels off at ten cells a second.\n- Calm, not frantic: dusty rose on rose paper by day and a deep plum night,\n  a faint grid of dots, a snake drawn as one soft line that narrows to the\n  tail and moves a whole cell at a time, a breathing berry, and each berry\n  playing the next note of a slow pentatonic tune. Four colour sets, each\n  light and dark or following the device.\n- Swipe anywhere in the play area to turn (one drag can turn more than once),\n  turn-left and turn-right buttons, arrow keys or WASD on a computer. Pause\n  with a button; a hidden tab pauses, and a reload carries on the same game.\n- Rules in one file with no clock or Math.random: a game is a seed and its\n  turns stamped with frame numbers. Signed in, send each new best as\n  { seed, log, score }; the server replays it with the same rules file,\n  keeps the member's best in member KV and one leaderboard row per member in\n  a shared collection. Signed out, keep the best in localStorage and send it\n  after sign-in. Mind the runtime's per-request allocation budget: replay a\n  long game without allocating every frame. Write a script that plays bot\n  games and checks that they replay exactly.\n- Installable. A versioned service worker precaches every page file, all or\n  nothing, and answers cache-first, so the game opens at once and plays\n  offline; its version follows holm.json, file addresses stay files and\n  Holm's /_ paths pass through. The avatar and the last leaderboard draw\n  from this browser at once; the board redraws only if the answer changed.\n  No entrance replays on a fresh page; the footer line never breaks.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 snake. With my approval, deploy with\nholm @<peer> app deploy snake --spec-v1 --host snake.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test play by swipe, buttons and keys, pause and reload, signing in with\na best game on the device, a refused forged score, a long game's replay on\nthe node, going offline, and mobile/desktop in light/dark. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in\nbranding.",
       "history": [
         {
+          "version": "0.1.2",
+          "date": "2026-11-05",
+          "whatsNew": "Snake now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line."
+        },
+        {
           "version": "0.1.1",
           "date": "2026-10-26",
           "whatsNew": "The snake now moves a whole cell at a time instead of sliding between cells, just as Strata's pieces do."
@@ -2629,11 +2669,11 @@
     {
       "name": "sokoban",
       "path": "sokoban",
-      "version": "0.1.1",
-      "tag": "sokoban/v0.1.1",
-      "h1": "h1:4gV8XzWQUOvai/7MlTB2YICGCTxLBOusMV6jTU3nIQA=",
-      "files": 31,
-      "size": 335311,
+      "version": "0.1.2",
+      "tag": "sokoban/v0.1.2",
+      "h1": "h1:/musCg6AkB8n+lBzVKUbIyF7PzBZArU3hqaDReFldZk=",
+      "files": 33,
+      "size": 353230,
       "title": "Sokoban",
       "description": "A calm box-pushing puzzle in 19 levels. Plays without an account, offline too; sign in to put your checked solves on the leaderboard.",
       "themeColor": "#b197dc",
@@ -2643,7 +2683,7 @@
         "subtitle": "A calm box-pushing puzzle",
         "category": "Games",
         "description": "Push every box onto a ring. Boxes only move when you push them, and never two at once, so each of the nineteen levels is a small knot to untie, from a single push to a twenty-push long haul.\n\nSwipe to walk, tap a square to walk straight there, or tap a box beside you to push it; on a computer, the arrow keys. Undo takes back a whole walk at once, and even a restart can be undone. Solve a level in its par, the fewest pushes it can take, for the full thousand points.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your solved levels move to your account, where the server replays every solution move by move before it counts on the leaderboard. Five pastel colour sets, in light and dark.",
-        "whatsNew": "Sokoban now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line.",
+        "whatsNew": "Sokoban now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line. The footer has a Feedback link: tell us what you think in a short form without leaving the app.",
         "featured": false,
         "related": [
           "snake",
@@ -2691,6 +2731,11 @@
       "prompt": "Build \"Sokoban\", a calm box-pushing puzzle for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage and\nsign-in, return standard Responses and fall back to env.holm.web.fetch(request).\nNo build step or third-party runtime CDN; vendor the icons with their licence.\n\n- Nineteen levels in the classic notation, easy to hard, each with a par: the\n  fewest pushes that solve it. Write a script that solves every level to\n  prove its par. Credit any level taken from a freely shared set.\n- Draw the board on a canvas in soft pastel colours, with a slide for each\n  step. Swipe anywhere in the play area to walk, tap a square to walk there,\n  tap a box beside the player to push it; arrow keys on a computer. Undo\n  takes back a whole action, and a restart can be undone.\n- After a win, show the points and a focused \"Next level\" button, so Enter\n  goes on, and make a reload open the next level. Every level stays open.\n- Signed out, keep progress in localStorage; the game needs no server. Signed\n  in, send each solve as a LURD string. The server replays it with the same\n  rules file, keeps the member's bests in member KV, and keeps one leaderboard\n  row per member in a shared collection. Sign-in sends the device's solves.\n- Five colour sets, each light and dark or following the device, and a sound\n  switch in the account menu.\n- Installable. A versioned service worker precaches every page file, all or\n  nothing, and answers cache-first, so the game opens at once and plays\n  offline; its version follows holm.json, file addresses stay files and\n  Holm's /_ paths pass through. The avatar and the last leaderboard draw\n  from this browser at once; the board redraws only if the answer changed.\n  No entrance replays on a fresh page; the footer line never breaks.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 sokoban. With my approval, deploy with\nholm @<peer> app deploy sokoban --spec-v1 --host sokoban.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test the level flow, touch and keyboard, signing in with solves on the\ndevice, a refused bad solution, going offline, and mobile/desktop in\nlight/dark. Report gaps honestly. Inspect the target settings schema before\nsetting sign-in branding.",
       "history": [
         {
+          "version": "0.1.1",
+          "date": "2026-11-05",
+          "whatsNew": "Sokoban now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line."
+        },
+        {
           "version": "0.1.0",
           "date": "2026-10-25",
           "whatsNew": "Sokoban joins the store: rewritten without a build step, with tap-to-walk, undo that takes back a whole move, a reload that resumes on the next level, offline play, and a leaderboard that checks every solution."
@@ -2700,11 +2745,11 @@
     {
       "name": "strata",
       "path": "strata",
-      "version": "0.1.2",
-      "tag": "strata/v0.1.2",
-      "h1": "h1:unCy67yzwFZfZxYBcTEGDttu5IloGkV3weRUWiddWTc=",
-      "files": 31,
-      "size": 371240,
+      "version": "0.1.3",
+      "tag": "strata/v0.1.3",
+      "h1": "h1:6zUMVkXnr1ebTSWoTn7T1T11MIOC97YZYUYeBIM5RO4=",
+      "files": 33,
+      "size": 389158,
       "title": "Strata",
       "description": "A calm falling-block game in warm earth colours. Plays offline with no account; sign in to put your best game, replayed by the server, on the leaderboard.",
       "themeColor": "#c98b2b",
@@ -2714,7 +2759,7 @@
         "subtitle": "A calm falling-block game",
         "category": "Games",
         "description": "Fit the falling pieces into full rows. Each full row dissolves from the middle out, then the layers above drop into place. The pace starts slow and levels off, the sounds are soft, and nothing shakes.\n\nTap to turn, drag to move, flick down to drop and swipe up to hold; on a computer, the arrow keys and Space. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it piece by piece to check the score. Four colour sets in warm earth tones, in light and dark.",
-        "whatsNew": "Strata now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line.",
+        "whatsNew": "Strata now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line. The footer has a Feedback link: tell us what you think in a short form without leaving the app.",
         "featured": false,
         "related": [
           "snake",
@@ -2762,6 +2807,11 @@
       "prompt": "Build \"Strata\", a calm falling-block game for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage and\nsign-in, return standard Responses and fall back to env.holm.web.fetch(request).\nNo build step or third-party runtime CDN; vendor the icons with their licence.\n\n- A 10 × 20 field with the seven four-cell pieces dealt from shuffled bags of\n  seven, wall kicks, hold, a ghost, soft and hard drops, T-spins,\n  back-to-back and combo points. A gentle pace that levels off at level 15.\n- Calm, not frantic: warm earth colours (sandstone, ochre, clay, sage) on\n  paper by day and night sand after dark, faint sediment bands behind the\n  field, pieces that move a whole cell at a time, full rows that dissolve\n  before the stack drops into place, soft pentatonic sounds, no screen\n  shake, and a quiet word for each clear. Four colour sets, each light and dark or following the device.\n- Touch anywhere in the play area: tap to turn, drag to move, flick down to\n  drop, swipe up to hold. Keys on a computer. Pause with a button; a hidden\n  tab pauses, and a reload carries on the same game.\n- Rules in one file with no clock or Math.random: a game is a seed and its\n  inputs stamped with frame numbers. Signed in, send each new best as\n  { seed, log, score }; the server replays it with the same rules file,\n  keeps the member's best in member KV and one leaderboard row per member in\n  a shared collection. Signed out, keep the best in localStorage and send it\n  after sign-in. Mind the runtime's per-request allocation budget: replay a\n  long game without allocating every frame. Write a script that plays bot\n  games and checks that they replay exactly.\n- Installable. A versioned service worker precaches every page file, all or\n  nothing, and answers cache-first, so the game opens at once and plays\n  offline; its version follows holm.json, file addresses stay files and\n  Holm's /_ paths pass through. The avatar and the last leaderboard draw\n  from this browser at once; the board redraws only if the answer changed.\n  No entrance replays on a fresh page; the footer line never breaks.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 strata. With my approval, deploy with\nholm @<peer> app deploy strata --spec-v1 --host strata.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test play by touch and keys, pause and reload, signing in with a best\ngame on the device, a refused forged score, a long game's replay on the\nnode, going offline, and mobile/desktop in light/dark. Report gaps honestly.\nInspect the target settings schema before setting sign-in branding.",
       "history": [
         {
+          "version": "0.1.2",
+          "date": "2026-11-05",
+          "whatsNew": "Strata now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line."
+        },
+        {
           "version": "0.1.1",
           "date": "2026-10-26",
           "whatsNew": "Pieces now move a whole cell at a time instead of gliding between rows, and after a clear the stack drops straight into place. The leaderboard also no longer takes games that scored nothing."
@@ -2776,11 +2826,11 @@
     {
       "name": "until",
       "path": "until",
-      "version": "0.3.0",
-      "tag": "until/v0.3.0",
-      "h1": "h1:i8RmNB9sczhtZq8LC4vtp6EikTYuwbvdw+T7teLC9MA=",
-      "files": 32,
-      "size": 494445,
+      "version": "0.3.1",
+      "tag": "until/v0.3.1",
+      "h1": "h1:nwOBIx8OYccNA/5lZ8L93BVMUyRMDbWWvgFRT24TANo=",
+      "files": 34,
+      "size": 513129,
       "title": "Until",
       "description": "Count down the days to anything, and rate each one as it passes. Works on your phone without an account; sign in to keep it everywhere.",
       "themeColor": "#177a5e",
@@ -2790,7 +2840,7 @@
         "subtitle": "Count down the days, rate each one",
         "category": "Lifestyle",
         "description": "Give Until a start and an end, or a number of days, and it counts down to it: the days left in big, friendly numbers, with the trip, the deadline or the due date underneath.\n\nTap a tracker to rate any day so far from one to five stars, and see today's rating on its card. Trackers that are running come first, then the ones still to start, then the ones you've finished.\n\nIt works straight away on your phone, keeping trackers on the device. Sign in and they move to your account and follow you everywhere, and the installed app still opens offline with your last synced copy. Two colours, Green and Bloom, each in light and dark.",
-        "whatsNew": "Until opens at once with your trackers from the last visit, and a number counts down only when it has changed. Press ⌘K to open, add or edit a tracker, or switch colour and appearance.",
+        "whatsNew": "Until opens at once with your trackers from the last visit, and a number counts down only when it has changed. Press ⌘K to open, add or edit a tracker, or switch colour and appearance. The footer has a Feedback link: tell us what you think in a short form without leaving the app. Admins see Analytics in the account menu right after signing in.",
         "featured": false,
         "related": [
           "kalendar",
@@ -2876,6 +2926,11 @@
       "prompt": "Build \"Until\", a day-countdown app for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for member\nstorage and sign-in, return standard Responses and fall back to\nenv.holm.web.fetch(request). No build step or third-party runtime CDN; vendor\nthe font and icons with their licences.\n\n- A tracker has a title, an optional subtitle, a start date, and either a\n  number of days or an end date, plus a random icon you can re-roll. Cards show\n  the days left in big numbers (a dash before it starts, \"Today\" on the last\n  day, days since after), running ones first.\n- Tap a card to rate any day so far from one to five stars, stepping through\n  the days; show today's rating on the card.\n- Signed out, keep trackers in localStorage. Signed in, keep them in the\n  member's own document store and the colour choice in member KV; offer to\n  move the device's trackers over once, skipping duplicates. A browser-made\n  key on each new tracker makes a retried save find the first attempt.\n- Two colours, green and pink, each light and dark or following the device,\n  in the account menu, light, dark and auto as three icons. Installable, with a\n  service worker that precaches every page file at the holm.json version and\n  opens cache-first; draw the last kept trackers at once and redraw only on a\n  change, and count a number down only when it changed. Offline, show the\n  last synced copy read only. ⌘K opens, adds or edits a tracker and does what\n  the account menu does.\n- MCP tools as named operations in api/contract.json with auth \"user\", each\n  going through the app's own routes for the signed-in member: list trackers\n  with days left, read one with its ratings, add, change, rate a day (never a\n  future one; a per-day rating that keeps the others) and delete. Each takes\n  the person's date, since the server has no time zone. Connect via MCP… in\n  the account menu, signed in, opens a sheet with the connector address to\n  click and copy, and tabs for Claude, ChatGPT, Claude Code and what the tools\n  do. A signed-in page takes the account's trackers again when it comes back\n  into view.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 until. With my approval, deploy with\nholm @<peer> app deploy until --spec-v1 --host until.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test signed out and signed in, moving trackers over, going offline, and\nmobile/desktop in light/dark. Report gaps honestly. Inspect the target\nsettings schema before setting sign-in branding.",
       "history": [
         {
+          "version": "0.3.0",
+          "date": "2026-11-05",
+          "whatsNew": "Until opens at once with your trackers from the last visit, and a number counts down only when it has changed. Press ⌘K to open, add or edit a tracker, or switch colour and appearance."
+        },
+        {
           "version": "0.2.0",
           "date": "2026-11-05",
           "whatsNew": "Claude can count down with you: connect Until through MCP to see your trackers and the days left, add or change one, rate a day or delete one. Connect via MCP… in the account menu shows the address and the steps, and an open page picks up what Claude changed."
@@ -2890,11 +2945,11 @@
     {
       "name": "zend",
       "path": "zend",
-      "version": "0.4.0",
-      "tag": "zend/v0.4.0",
-      "h1": "h1:NT96s0VUDNZkYbA5MJXPZy3Xc5FtCN/Yb2qmpurtbKg=",
-      "files": 54,
-      "size": 643348,
+      "version": "0.4.1",
+      "tag": "zend/v0.4.1",
+      "h1": "h1:tQUXf/HR8F08Uf4E0HCW/GFc/qfjtIe/LYUPMyvv/7U=",
+      "files": 56,
+      "size": 662013,
       "title": "Zend",
       "description": "Text from your own Android phone, in a browser or from your scripts.",
       "themeColor": "#0a6ff0",
@@ -2904,7 +2959,7 @@
         "subtitle": "Text from your own phone, anywhere",
         "category": "Social",
         "description": "Send SMS through the Android phone in your pocket, from any browser or from your own scripts. Install the free SMS Gateway for Android app, paste the username and password it shows, and your texts go out on your own SIM and plan. People see your own number, and their replies come back here.\n\nEvery text shows its time and ticks: one when your phone sends it, two when it's delivered, and a clear note with Try Again when it doesn't get through. Name the people you text, send to up to ten at once, pick a SIM, send later, and fill in templates you use often. A ring counts how much of an SMS you've used as you type. Replies and receipts arrive live, with quiet sounds you can turn off.\n\nIt feels at home on a phone, with a tab bar, sheets that slide up and a swipe to go back, and on a computer, with your conversations beside the open one and keyboard shortcuts.\n\nA personal SIM stays personal: Zend asks before sending anything that reads like an offer or a one-time code, stays under India's limits for bulk texts, and honours every STOP. API keys can be held to a few numbers, so a key that leaks can't text anyone else. No phone handy? A demo phone pretends to send, deliver and reply.",
-        "whatsNew": "Zend now opens at once, straight from your device, with your conversation list drawn before the network answers. Press ⌘K to jump to a conversation, a tab or Connect via MCP, and / to search your chats.",
+        "whatsNew": "Zend now opens at once, straight from your device, with your conversation list drawn before the network answers. Press ⌘K to jump to a conversation, a tab or Connect via MCP, and / to search your chats. The footer has a Feedback link: tell us what you think in a short form without leaving the app. Admins see Analytics in the account menu right after signing in.",
         "featured": false,
         "related": [
           "relay",
@@ -3020,6 +3075,11 @@
       ],
       "prompt": "Build \"Zend\", an app for texting from your own Android phone, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make\nholm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in, outbound HTTP, secrets and realtime, return standard Responses and\nfall back to env.holm.web.fetch(request). No build step or third-party\nruntime CDN; vendor the font and icons with their licences.\n\n- After sign-in, each member connects their own phone running SMS Gateway\n  for Android (https://sms-gate.app, cloud mode): they paste its username,\n  password and, for live receipts, its webhook signing key. Check them\n  against SMSGate's public API through env.holm.net, never show them again,\n  and keep them encrypted under a VAULT_KEY runtime secret. Offer a demo\n  phone that pretends to send, deliver and reply, so anyone can try it.\n- Conversations per number, with names, unread replies, search, an SMS-part\n  counter (GSM-7 and Unicode), up to 10 numbers per text, SIM choice,\n  templates with blanks, and scheduled texts that can be cancelled. Show\n  each text's state as ticks: sent, then delivered. Register the phone's\n  webhooks and verify each one's HMAC signature, timestamp and envelope id.\n- Keep a personal SIM personal, as India's SMS rules (TRAI's TCCCPR 2018 and\n  its 2025 and 2026 amendments) require: a declaration when a phone is\n  connected; texts that read like OTPs or offers need confirming on the\n  page and are refused by the API; stop at TRAI's \"bulk\" counts of same or\n  similar texts; cap texts and different people per day; honour STOP\n  replies with an opt-out list. Templates use DLT's {#var#} blanks.\n- API keys for the member's own scripts: shown once, stored as a hash,\n  optionally held to a few numbers, with the same limits and an\n  Idempotency-Key for safe retries.\n- MCP tools as named operations in api/contract.json with auth \"user\", each\n  reaching only the caller's own data: conversations and unread replies,\n  reading one, marking it read, naming a number, the phone and today's\n  limits, templates, and drafts. Tools never send. A draft waits at the top\n  of Chats, live, until the person opens it, checks it and taps Send, or\n  discards it; drafts go after a day. Connect via MCP… in the account menu,\n  with the MCP mark, opens a sheet with the connector address to click and\n  copy, and tabs for Claude, ChatGPT, Claude Code and what the tools do.\n- An exquisite UI that feels like Apple's Messages or Telegram, on a phone\n  and on a desktop: a tab bar on phones, a rail with the conversation list\n  beside the open conversation on wide screens, frosted bars, large titles,\n  bubbles with tails and the time inside, sheets that slide up, a round\n  avatar account button even when signed out, whose menu closes when it's\n  tapped again and holds light/dark/auto as three icons (Holm branding stays\n  in the footer at the end of each tab), motion and quiet sounds. ⌘K opens\n  a command menu of tabs, conversations and actions, Connect via MCP…\n  among them. Installable, with a versioned service worker that keeps every\n  page file and opens the app from them; the conversation list draws at\n  once from the last launch's copy, which sign-out clears.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 zend. With my approval, deploy with\nholm @<peer> app deploy zend --spec-v1 --host zend.<my-domain>, then ask\nbefore allowing api.sms-gate.app for the app and setting VAULT_KEY. Never\nreplace an occupied host without asking. Validation does not run the app:\ntest the demo phone, every refusal, two members, API keys, and signed,\nunsigned, stale and repeated webhooks, on mobile and desktop in light and\ndark, and sign in and out as a real person would. Check that code shared by\nthe page and the server gives the same answers in both. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in\nbranding.",
       "history": [
+        {
+          "version": "0.4.0",
+          "date": "2026-11-05",
+          "whatsNew": "Zend now opens at once, straight from your device, with your conversation list drawn before the network answers. Press ⌘K to jump to a conversation, a tab or Connect via MCP, and / to search your chats."
+        },
         {
           "version": "0.3.0",
           "date": "2026-11-05",
