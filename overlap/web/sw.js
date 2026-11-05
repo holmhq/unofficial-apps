@@ -8,13 +8,14 @@
 // /p/<slug>) opens the same shell. An address that ends like a file (/icon-512.png) is that
 // file, even typed into the address bar.
 
-const VERSION = '0.3.0'
+const VERSION = '0.3.1'
 const CACHE = 'overlap-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/favicon.ico', '/apple-touch-icon.png', '/icon-192.png',
   '/fonts/instrument-serif.woff2', '/fonts/instrument-serif-italic.woff2', '/css/app.css',
   '/js/app.js', '/js/ui.js', '/js/time.js', '/js/sound.js', '/js/home.js', '/js/create.js', '/js/plan.js',
-  '/js/grid.js', '/js/live.js', '/js/mcp.js', '/js/palette.js'
+  '/js/grid.js', '/js/live.js', '/js/mcp.js', '/js/palette.js',
+  '/js/feedback.js', '/vendor/feedback/embed.js'
 ]
 // Kept the first time something asks for them, not installed with the app.
 const LAZY = ['/icon-512.png', '/icon-maskable-512.png', '/social_preview.png']

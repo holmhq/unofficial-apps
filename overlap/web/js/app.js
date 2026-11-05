@@ -1,6 +1,7 @@
 import { h, api, avatar, mcpMark, icon, store } from './ui.js'
 import { togglePalette } from './palette.js'
 import { mcpSheet } from './mcp.js'
+import './feedback.js'
 import { soundOn, setSound, tick } from './sound.js'
 import { homeView } from './home.js'
 import { createView } from './create.js'
