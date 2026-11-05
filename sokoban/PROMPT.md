@@ -30,8 +30,13 @@ No build step or third-party runtime CDN; vendor the icons with their licence.
   rules file, keeps the member's bests in member KV, and keeps one leaderboard
   row per member in a shared collection. Sign-in sends the device's solves.
 - Five colour sets, each light and dark or following the device, and a sound
-  switch in the account menu. Installable, with a network-first service
-  worker, so it plays offline.
+  switch in the account menu.
+- Installable. A versioned service worker precaches every page file, all or
+  nothing, and answers cache-first, so the game opens at once and plays
+  offline; its version follows holm.json, file addresses stay files and
+  Holm's /_ paths pass through. The avatar and the last leaderboard draw
+  from this browser at once; the board redraws only if the answer changed.
+  No entrance replays on a fresh page; the footer line never breaks.
 - For this repository's store, use holm.json version, holm.symbol.svg (one
   black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,
   category, description, whatsNew and sample screenshots. These are repo
@@ -59,3 +64,8 @@ coding agent:
 > - i dont remember but the game mechanics of proceed to next level, arrow buttons has some issue
 > - i think the default didnt proceed to next level or so?
 > - anyways look at it and see if you can improve while moving
+
+Version 0.1.1 came from a sweep of every app in the repository against its
+cookbook (COOKBOOK.md), after the owner was offered one:
+
+> Sure do cookbook sweep

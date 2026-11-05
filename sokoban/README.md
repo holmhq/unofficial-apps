@@ -40,6 +40,12 @@ public URLs.
 - **Looks:** five pastel colour sets, each in light and dark or following the
   device, and soft sounds that can be turned off, all in the account menu.
   The page never scrolls; the board sizes itself to the screen.
+- **Opens like an app:** a service worker keeps every page file of a
+  version, all or nothing, and answers from them, so the game opens at once
+  and plays offline; a deploy changes the version and the next launch takes
+  it. Your avatar and the last leaderboard you saw show at once, and the
+  board redraws only if the server's answer differs. The card that greets
+  a fresh page is simply there; cards animate only when the game changes.
 
 ## How it is built
 
@@ -50,7 +56,7 @@ holm.generated.json     record of the icons Holm generated from the symbol
 api/main.js             every route: who is signed in, leaderboard, progress
 api/rules.js            exact copy of web/src/rules.js, for the server
 web/index.html          the page shell, with the saved look applied before first paint
-web/sw.js               network-first offline cache of the page's files
+web/sw.js               app shell: every page file of a version, kept all or nothing
 web/src/rules.js        moves, solution check, scoring and the nineteen levels
 web/src/game.js         the play screen: move queue, animation, undo, cards
 web/src/controls.js     keyboard, swipe and tap
@@ -62,7 +68,7 @@ web/src/theme.js        the colour sets and light/dark
 web/src/audio.js        the sounds, made with Web Audio
 web/src/icons.js        the Lucide icons it uses, copied in
 web/vendor/lucide/      the Lucide licence
-tools/check.mjs         release check for the rules and levels (not deployed)
+tools/check.mjs         release check for the rules, levels and app shell (not deployed)
 listing/                store listing and screenshots (not deployed)
 ```
 

@@ -378,7 +378,9 @@ export function mountPlay(container, handlers) {
       if (!handlers.isSignedIn()) card.append(cta('Sign in to join it', 'login', () => handlers.signIn(), true))
       card.append(cta(nextLabel(), 'chevronRight', () => setLevel(nextIndex(index)), true))
     }
-    cards.appendChild(el('div', { class: 'overlay' }, card))
+    // The card that greets a fresh page is simply there: entrances play for
+    // changes, not on every load.
+    cards.appendChild(el('div', { class: 'overlay' + (info.still ? ' is-still' : '') }, card))
     cards.classList.add('on')
     // The card's first button takes the focus, so Enter and Space go on
     // from here rather than pressing whatever button was clicked last.
@@ -436,7 +438,7 @@ export function mountPlay(container, handlers) {
   if (!prefs.hintSeen) {
     status = 'start'
     syncStats()
-    showCard('start')
+    showCard('start', { still: true })
   }
 
   return {

@@ -28,12 +28,36 @@ function svg(name, size) {
 }
 
 // Holm adds globalThis.__HOLM_SURFACES__ to the page for people allowed to
-// see the app's analytics; its analytics entry is that page's address.
+// see the app's analytics; its analytics entry is that page's address. The
+// copy of the page the service worker keeps may predate who's signed in, so
+// a signed-in browser reads them from a fresh copy (the service worker lets
+// a no-store request through).
+let surfaces = globalThis.__HOLM_SURFACES__ || null
+export async function loadSurfaces() {
+  try {
+    const page = await (await fetch('/', { cache: 'no-store' })).text()
+    const m = /__HOLM_SURFACES__\s*=\s*(\{[^}]*\})/.exec(page)
+    surfaces = m ? JSON.parse(m[1]) : null
+  } catch (_e) {}
+}
 function analyticsURL() {
-  const surfaces = globalThis.__HOLM_SURFACES__
   const url = surfaces && surfaces.analytics
   return typeof url === 'string' && url ? url : null
 }
+
+// The last leaderboard this browser saw, so the drawer opens on it at once
+// and redraws only if the server's answer differs.
+const BOARD_KEY = 'sokoban:board'
+let lastBoard = null
+try { lastBoard = JSON.parse(localStorage.getItem(BOARD_KEY) || 'null') } catch (_e) {}
+function keepBoard(data) {
+  lastBoard = data
+  try {
+    if (data) localStorage.setItem(BOARD_KEY, JSON.stringify(data))
+    else localStorage.removeItem(BOARD_KEY)
+  } catch (_e) {}
+}
+export const forgetBoard = () => keepBoard(null)
 
 const THEMES = [
   { id: 'light', glyph: 'sun', label: 'Light' },
@@ -218,23 +242,32 @@ export function mountChrome(root, ctx) {
   function openLeaderboard() {
     closeMenu()
     if (boardSheet) return
-    boardBody = h('div', { class: 'sheet-body' }, h('div', { class: 'lb-empty' }, h('p', {}, 'Loading…')))
+    boardBody = h('div', { class: 'sheet-body' })
+    if (lastBoard) renderBoard(boardBody, lastBoard)
+    else boardBody.append(h('div', { class: 'lb-empty' }, h('p', {}, 'Loading…')))
     boardSheet = h('div', { class: 'sheet full', role: 'dialog', 'aria-label': 'Leaderboard' },
-      sheetBar('Leaderboard', h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Refresh', onclick: () => loadBoard() }, svg('rewind', 19))),
+      sheetBar('Leaderboard', h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Refresh', title: 'Refresh', onclick: () => loadBoard() }, svg('rewind', 19))),
       boardBody)
     pushSheet(boardSheet)
     loadBoard()
   }
   async function loadBoard() {
     const body = boardBody
+    const shown = body && body.dataset.board
     let data = null
     try { data = await ctx.loadBoard() } catch (_e) {}
     if (body !== boardBody || !boardSheet) return
+    if (data) keepBoard(data)
+    // A board already on screen stays when the answer is the same, or when
+    // there's no answer at all (offline).
+    if (shown && (!data || boardKey(data) === shown)) return
     renderBoard(body, data)
   }
   function renderBoard(body, data) {
     const me = ctx.me()
     body.replaceChildren()
+    if (data) body.dataset.board = boardKey(data)
+    else delete body.dataset.board
     if (!me) {
       body.append(h('div', { class: 'signin-card' },
         svg('trophy', 30),
@@ -257,6 +290,9 @@ export function mountChrome(root, ctx) {
       const sum = totals(prefs.progress)
       if (sum.levels) body.append(pin({ name: 'You, on this device', score: sum.score, levels: sum.levels, pushes: sum.pushes }, true))
     }
+  }
+  function boardKey(data) {
+    return (ctx.me() ? 'in:' : 'out:') + JSON.stringify(data)
   }
   function row(e) {
     return h('div', { class: 'lb-row' + (e.me ? ' me' : '') },

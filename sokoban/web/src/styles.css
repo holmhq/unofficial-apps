@@ -296,7 +296,7 @@ a { color: inherit; }
   font-size: 12px;
   color: var(--text-3);
 }
-.foot a { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; padding: 4px 0; }
+.foot a { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; padding: 4px 0; white-space: nowrap; flex: none; }
 
 /* ---- cards (start, solved) --------------------------------------------- */
 .cards { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
@@ -309,6 +309,7 @@ a { color: inherit; }
   justify-content: center;
   padding: 12px 4px;
   overflow-y: auto;
+  scrollbar-width: none;
   text-align: center;
   background: color-mix(in srgb, var(--bg) 62%, transparent);
   -webkit-backdrop-filter: blur(5px);
@@ -330,6 +331,7 @@ a { color: inherit; }
   gap: 11px;
   animation: pop-in 0.26s var(--ease-spring);
 }
+.overlay.is-still, .overlay.is-still .ov-card { animation: none; }
 .ov-mark { width: 56px; height: 56px; border-radius: 15px; margin-bottom: 2px; }
 .ov-kicker { font-size: 12px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-2); }
 .ov-title { font-size: 24px; font-weight: 750; letter-spacing: -0.02em; }
@@ -588,8 +590,7 @@ a { color: inherit; }
   overscroll-behavior: contain;
   touch-action: pan-y;
   padding: 8px 0;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: none;
 }
 .sheet-body.padded { padding: 14px 16px; }
 .sheet-note { font-size: 13px; color: var(--text-2); margin: 0 2px 12px; }
@@ -682,9 +683,11 @@ a { color: inherit; }
   opacity: 0;
   transition: opacity 0.22s var(--ease), transform 0.22s var(--ease-spring);
   pointer-events: none;
+  width: max-content;
   max-width: calc(100vw - 32px);
   text-align: center;
 }
+.overlay::-webkit-scrollbar, .sheet-body::-webkit-scrollbar { display: none; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ---- hover, only where a pointer can hover ----------------------------- */

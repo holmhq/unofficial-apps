@@ -4,7 +4,7 @@
 // browser and the game needs no network at all.
 
 import { init as initTheme } from './theme.js'
-import { mountChrome } from './ui.js'
+import { mountChrome, loadSurfaces, forgetBoard } from './ui.js'
 import { mountPlay } from './game.js'
 import { unlock as unlockAudio } from './audio.js'
 import { prefs } from './state.js'
@@ -25,7 +25,20 @@ const unlock = () => {
 window.addEventListener('pointerdown', unlock)
 window.addEventListener('keydown', unlock)
 
-const state = { me: null, loginURL: null, logoutURL: null, offline: false }
+// Who was signed in last time, so the avatar shows at once on the next
+// launch; the server's answer replaces it a moment later.
+const ME_KEY = 'sokoban:me'
+function keptMe() {
+  try { return JSON.parse(localStorage.getItem(ME_KEY) || 'null') } catch (_e) { return null }
+}
+function keepMe(me) {
+  try {
+    if (me) localStorage.setItem(ME_KEY, JSON.stringify({ name: me.name || '', picture: me.picture || null }))
+    else localStorage.removeItem(ME_KEY)
+  } catch (_e) {}
+}
+
+const state = { me: keptMe(), loginURL: null, logoutURL: null, offline: false }
 
 async function api(path, options = {}) {
   let response
@@ -50,6 +63,7 @@ const chrome = mountChrome(root, {
   signOut,
   loadBoard: () => api('/api/leaderboard')
 })
+chrome.refreshAccount()
 
 const game = mountPlay(document.getElementById('play'), {
   hudSlot: chrome.hudSlot,
@@ -78,7 +92,7 @@ async function send(solutions, { announce = false } = {}) {
     chrome.refreshBoard()
   } catch (e) {
     if (e.offline) setOffline(true)
-    else if (e.status === 401) { state.me = null; chrome.refreshAccount() }
+    else if (e.status === 401) { state.me = null; keepMe(null); chrome.refreshAccount() }
     else if (announce) chrome.toast('Could not save to the leaderboard; it will try again next time.')
   }
 }
@@ -96,10 +110,12 @@ async function start() {
     state.loginURL = me.loginURL
     state.logoutURL = me.logoutURL
     state.offline = false
+    keepMe(state.me)
   } catch (e) {
     state.offline = !!e.offline
   }
   chrome.refreshAccount()
+  if (state.me && !state.offline) loadSurfaces().then(() => chrome.refreshAccount())
   // Sends every solve on this device; the server keeps only improvements.
   if (state.me) send(prefs.solutions())
 }
@@ -116,6 +132,8 @@ async function signOut() {
     chrome.toast('Could not sign out while offline.')
     return
   }
+  keepMe(null)
+  forgetBoard()
   location.reload()
 }
 
