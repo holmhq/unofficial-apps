@@ -60,12 +60,20 @@ needs `--spec-v1`; the node runs no build. Only `web/` is served as files:
 
 Like a native app, the window never scrolls: a frosted bar on top, one panel
 that scrolls under it with no scroll bars, a tab bar at the bottom on a phone
-and a sidebar on a desk. Apple-like greys, one violet accent, Inter at sizes
-that mean something, light and dark. A round avatar button at the top right,
-signed out too, with Connect via MCP…, the theme, a sounds switch and
-notifications. Cards rise in and flash their kind's colour when they land; a
-live dot pulses while the link is up; four bars dance on the card that is
-playing; the theme changes in a circle from where you tapped.
+and a sidebar on a desk that hides with one click. Apple-like greys, one violet
+accent, Inter at sizes that mean something, light and dark. A round avatar
+button at the top right, signed out too, with Connect via MCP…, the theme, a
+sounds switch and notifications; ⌘K goes to a tab or opens the same things.
+Each tab keeps its place while you're on another. Cards rise in and flash
+their kind's colour when they land; a live dot pulses while the link is up;
+four bars dance on the card that is playing; the theme changes in a circle
+from where you tapped.
+
+It opens like an app too: a versioned service worker keeps every page file,
+all or nothing, and the page draws at once from what this browser kept of
+your account, the sounds and your latest notifications, then redraws only
+what the server's answer changed. A file's address, such as `/icon-512.png`,
+still opens the file, and Holm's own pages under `/_` pass straight through.
 
 ## How it's built
 
@@ -80,8 +88,12 @@ api/fal.js         fal.ai's queue: submit, status, result, copy
 api/catalog.js     the kinds, the sounds and the voices
 api/guide.md       what Claude reads first (guide_get)
 web/src/           the app: inbox.js (receiving and playing), audio.js (Web Audio and the
-                   sound worker), views/ (live, sounds, voice, connect, landing)
+                   sound worker), store.js (what the page draws first), views/ (live,
+                   sounds, voice, connect, landing)
+web/sw.js          the service worker: every page file at this version, cache-first
 web/vendor/earshot earshotjs, the sound bank as one ES module
+tools/check.mjs    release check (not deployed): sw.js lists every file at holm.json's
+                   version, files stay files, /_ passes through, tools check the caller
 ```
 
 Holm primitives it uses:

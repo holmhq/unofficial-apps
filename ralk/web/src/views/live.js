@@ -1,12 +1,15 @@
 // Live: whether this device is listening, and every notification as it lands.
-import { h, ic, fill, flip, menu, confirm, toast, haptic, ago, dayLabel, reduced } from '../ui.js'
+import { h, ic, fill, flip, menu, confirm, toast, haptic, ago, dayLabel } from '../ui.js'
 import { state, kindOf, soundName, KIND_ICON, go, failure } from '../shell.js'
 import { inbox, on, replay, test, clear, TESTS, catchUp } from '../inbox.js'
 import * as audio from '../audio.js'
 import * as notify from '../notify.js'
 
+// Long paths and names wrap at their slashes and dots, not in the middle of a word.
+const soft = (text) => String(text).split(/(?<=[/\\])(?=\S)|(?<=[._:])(?=\p{L})/u).flatMap((part, i) => (i ? [h('wbr'), part] : [part]))
+
 // $0.0007, $0.012, $1.20: as many places as the amount needs.
-const usd = (v) => '$' + (v < .01 ? v.toFixed(4).replace(/0+$/, '') : v < 1 ? v.toFixed(3).replace(/0+$/, '') : v.toFixed(2))
+const usd = (v) => '$' + (v < .01 ? v.toFixed(4).replace(/\.?0+$/, '') : v < 1 ? v.toFixed(3).replace(/\.?0+$/, '') : v.toFixed(2))
 
 export function liveTab() {
   const title = h('h1.large-title', 'Live')
@@ -64,8 +67,8 @@ export function liveTab() {
     const el = h('article.note' + (n.fresh ? '.fresh' : '') + (playing ? '.playing' : ''), { 'data-key': n.id, 'data-tone': kind.tone },
       h('span.kind-ic', ic(KIND_ICON[kind.icon] || 'info', 18, 2.2)),
       h('div.note-main',
-        h('div.note-head', h('b.note-title', n.title), h('span.note-time.num', { title: new Date(n.at).toLocaleString() }, ago(n.at))),
-        n.body ? h('p.note-body', n.body) : null,
+        h('div.note-head', h('b.note-title', soft(n.title)), h('span.note-time.num', { title: new Date(n.at).toLocaleString() }, ago(n.at))),
+        n.body ? h('p.note-body', soft(n.body)) : null,
         n.say ? h('p.note-say', ic('audioLines', 13, 2.2), h('span', n.say)) : null,
         h('div.note-meta',
           n.project ? h('span.chip.project', n.project) : null,
@@ -129,6 +132,5 @@ export function liveTab() {
 
   paintStatus()
   paintFeed()
-  if (!reduced()) status.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 360, easing: 'cubic-bezier(.2,.8,.2,1)' })
-  return { el, leave() { for (const f of off) f(); clearInterval(timer); document.removeEventListener('visibilitychange', visible) } }
+  return { el, fresh: paintStatus, leave() { for (const f of off) f(); clearInterval(timer); document.removeEventListener('visibilitychange', visible) } }
 }

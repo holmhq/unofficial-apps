@@ -6,7 +6,8 @@ import * as api from './api.js'
 import * as audio from './audio.js'
 import * as notify from './notify.js'
 import { subscribe } from './live.js'
-import { state, deviceLabel } from './shell.js'
+import { state, deviceLabel, who } from './shell.js'
+import * as store from './store.js'
 
 const TAB = Math.random().toString(36).slice(2, 10)
 const SESSION_START = Date.now()
@@ -24,7 +25,24 @@ export const inbox = {
   loaded: false,
 }
 
-const emit = (type, detail = null) => { for (const fn of listeners) { try { fn(type, detail) } catch {} } }
+// The latest notifications are kept in this browser too, so Live draws them at once on the
+// next visit and the server's list only changes what changed.
+const keyOf = () => 'notes:' + who(state.me)
+let saving = 0
+function save() {
+  clearTimeout(saving)
+  saving = setTimeout(() => store.keep(keyOf(), inbox.notes.slice(0, 80).map(({ fresh, ...n }) => n)), 400)
+}
+export function restore() {
+  const kept = state.me && state.me.signed_in ? store.peek(keyOf()) : null
+  inbox.notes = kept || []
+  inbox.loaded = !!kept
+}
+
+const emit = (type, detail = null) => {
+  if (type === 'list' || type === 'note') save()
+  for (const fn of listeners) { try { fn(type, detail) } catch {} }
+}
 export function on(fn) { listeners.add(fn); return () => listeners.delete(fn) }
 const find = (id) => inbox.notes.find((n) => n.id === id)
 const terminal = (n) => n.speech === 'none' || n.speech === 'ready' || n.speech === 'failed' || n.speech === 'fetching'
@@ -42,9 +60,10 @@ function merge(id, patch) {
 export async function reload() {
   const { notes } = await api.get('/api/notes?limit=80')
   const local = new Map(inbox.notes.map((n) => [n.id, n]))
+  const before = inbox.loaded ? JSON.stringify(inbox.notes) : null
   inbox.notes = notes.map((n) => Object.assign(local.get(n.id) || {}, n))
   inbox.loaded = true
-  emit('list')
+  if (JSON.stringify(inbox.notes) !== before) emit('list')
 }
 
 export function start() {

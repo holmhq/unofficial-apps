@@ -3,25 +3,58 @@
 import { h, ic, avatar, menu, segmented, toggle, haptic, toast, sheet, copyField } from './ui.js'
 import { mark, holmMark } from './icons.js'
 import * as api from './api.js'
+import * as store from './store.js'
 import * as theme from './theme.js'
 import * as audio from './audio.js'
 import * as notify from './notify.js'
 
 export const state = { me: null, catalog: null }
 
+// Who's signed in and the catalog, as this browser last saw them, so the first page draws
+// without waiting; loadMe() and loadCatalog() then ask the server.
+export function peekKept() {
+  state.me = store.peek('me') || null
+  state.catalog = store.peek('catalog') || null
+  return !!state.me
+}
+
+// Who it is, to tell whether the server's answer changed who's signed in.
+export const who = (me) => (me && me.signed_in ? me.email || me.name || 'you' : '')
+
 export async function loadMe() {
   const back = encodeURIComponent(location.pathname + location.search)
   try {
     state.me = await api.get('/api/me?return=' + back)
-  } catch {
-    state.me = { signed_in: false, login_url: '/auth/login', logout_url: null, voice_ready: false }
+    if (who(state.me) !== who(store.peek('me'))) store.forget()
+    store.keep('me', state.me)
+    if (state.me.admin) loadSurfaces()
+  } catch (error) {
+    // Offline: keep what we had. Signed out for sure: forget it.
+    if (!state.me || error.status) {
+      state.me = { signed_in: false, login_url: '/auth/login', logout_url: null, voice_ready: false }
+      store.forget()
+    }
   }
   return state.me
 }
 
+// Holm writes the addresses of its own pages for this app, analytics among them, into the
+// page for the people allowed to see them. The copy of the page the service worker keeps
+// may predate who's signed in, so an admin's browser reads them from a fresh copy (the
+// service worker lets a no-store request through).
+export let surfaces = globalThis.__HOLM_SURFACES__ || null
+async function loadSurfaces() {
+  try {
+    const page = await (await fetch('/', { cache: 'no-store' })).text()
+    const m = /__HOLM_SURFACES__\s*=\s*(\{[^}]*\})/.exec(page)
+    surfaces = m ? JSON.parse(m[1]) : null
+  } catch {}
+}
+
 export async function loadCatalog() {
-  if (state.catalog) return state.catalog
-  state.catalog = await api.get('/api/sounds')
+  const catalog = await api.get('/api/sounds')
+  state.catalog = catalog
+  store.keep('catalog', catalog)
   return state.catalog
 }
 
@@ -68,6 +101,7 @@ export function signIn() {
 }
 
 export async function signOut() {
+  store.forget()
   try { await fetch(state.me.logout_url, { method: 'POST', headers: { accept: 'application/json' } }) } catch {}
   location.href = '/'
 }
@@ -79,6 +113,7 @@ export function brand() {
     h('span.brand-mark', mark(16)), h('span.brand-name', 'Ralk'))
 }
 
+// `left` replaces the brand; on a desk the app passes the sidebar button before it.
 export function topBar({ left = null, title = null, right = [] } = {}) {
   return h('header.top.glass',
     h('div.top-l', left || brand()),
@@ -110,7 +145,6 @@ function accountMenu(anchor) {
     theme.setMode(value, { x: r.left + r.width / 2, y: r.top + r.height / 2 })
     audio.play('pro_hover_tick/soft')
   }, { label: 'Appearance', icons: true })
-  const surfaces = globalThis.__HOLM_SURFACES__
   const perm = notify.permission()
   const items = [
     m
@@ -164,8 +198,8 @@ export function mcpSheet(tab = 'claude') {
     cancel: null,
     done: 'Done',
     wide: true,
-    // Opened from the account menu, whose item is gone by now: focus goes back to the avatar.
-    onClose: () => { if (!document.activeElement || document.activeElement === document.body) { const b = document.querySelector('.avatar-btn'); if (b) b.focus({ preventScroll: true }) } },
+    // Opened from the account menu or ⌘K, which are gone by now: focus goes back to the avatar.
+    onClose: () => { const a = document.activeElement; if (!a || a === document.body || a.closest('.layer, .menu, .pal-layer')) { const b = document.querySelector('.avatar-btn'); if (b) b.focus({ preventScroll: true }) } },
     body: () => h('div.sheet-stack.mcp-sheet',
       h('div.mcp-hero', { 'aria-hidden': 'true' },
         h('img.mcp-app', { src: '/icon-192.png', alt: '', width: 60, height: 60 }),

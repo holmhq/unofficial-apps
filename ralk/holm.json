@@ -1,6 +1,6 @@
 {
   "name": "ralk",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "title": "Ralk",
   "shortName": "Ralk",
   "description": "Your agents, out loud. Claude tells this tab when a build finished, needs you, or broke: a chime, Olivia's voice, a notification.",

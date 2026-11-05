@@ -49,8 +49,13 @@ there.
   and holds light/dark/auto as three icons; Holm branding stays in the
   footer. Native-like: the window never scrolls,
   bars stay fixed, panels scroll with no scroll bars, a tab bar on phones and
-  a sidebar on desks, meaningful motion. Signed out, a landing page that plays
-  the sounds without an account.
+  a sidebar on desks that hides with one click, meaningful motion. Each tab
+  keeps its place while you're on another, and ⌘K goes to a tab, opens
+  Connect via MCP… or changes the theme. A versioned service worker keeps
+  every page file, and the page draws at once from what the browser kept of
+  the account, the sounds and the latest notifications, then from the server
+  only if that changed. Signed out, a landing page that plays the sounds
+  without an account.
 - For this repository's store, use holm.json version, holm.symbol.svg and
   listing/listing.json with sample screenshots. These are repo conventions,
   not a catalog format promised by the Holm guide.
@@ -116,3 +121,9 @@ Version 0.2.0 came from the owner's reply to an offer to give Kalendar, Deck,
 Margin and Ralk the Connect via MCP sheet, and tools to Zend, Roll and Until:
 
 > yes, do both batches
+
+Version 0.3.0 came from a sweep of every app in the repository against its
+cookbook (the sidebar that hides, ⌘K, the shell kept by a service worker,
+tabs that keep their place). Offered the sweep, the owner answered:
+
+> Sure do cookbook sweep

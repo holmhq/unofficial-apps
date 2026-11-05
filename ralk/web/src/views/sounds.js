@@ -53,7 +53,7 @@ export function soundsTab() {
 
   const off = on((type) => { if (type === 'prefs') paintKinds() })
   paintKinds()
-  return { el, leave: off }
+  return { el, leave: off, fresh: paintKinds }
 }
 
 function volumeCard() {

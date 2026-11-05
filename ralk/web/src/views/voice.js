@@ -8,7 +8,7 @@ import * as audio from '../audio.js'
 const SAMPLE = 'Hi, this is how I sound on Ralk. Your build finished, and everything passed.'
 
 // $0.0007, $0.012, $1.20: as many places as the amount needs.
-const usd = (v) => '$' + (v < .01 ? v.toFixed(4).replace(/0+$/, '') : v < 1 ? v.toFixed(3).replace(/0+$/, '') : v.toFixed(2))
+const usd = (v) => '$' + (v < .01 ? v.toFixed(4).replace(/\.?0+$/, '') : v < 1 ? v.toFixed(3).replace(/\.?0+$/, '') : v.toFixed(2))
 
 export function voiceTab() {
   const cat = state.catalog
@@ -99,7 +99,7 @@ export function voiceTab() {
   const off = on((type) => { if (type === 'prefs') paintVoice(); if (type === 'note') api.get('/api/me').then((me) => { state.me = me; paintUsage() }).catch(() => {}) })
   paintVoice()
   paintUsage()
-  return { el, leave: off }
+  return { el, leave: off, fresh: () => { paintVoice(); paintUsage() } }
 }
 
 // Plays a short sample of a voice; made once per voice on the node, then free.
