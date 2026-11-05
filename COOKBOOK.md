@@ -122,7 +122,10 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   MCP mark as its icon. ⌘K has it too. It opens one sheet, never a page,
   and other sheets that mention Claude link to it rather than repeat it. An
   app whose Connect page is its way in, like Ralk, keeps the page for what's
-  its own (Ralk's prompts to try) and opens the sheet for the steps.
+  its own (Ralk's prompts to try) and opens the sheet for the steps. A
+  Claude tab in a tab bar becomes a button that opens the sheet, and an old
+  connect page's address redirects to the app with the sheet open, as
+  Deck's `/w/<id>/claude` does, so old links still work.
   An app whose account lives in a Settings tab, like Relay, puts it there
   instead: a Connect section with one Connect via MCP row.
 - **The sheet shows the bare minimum.** It shows the app's icon joined to the
