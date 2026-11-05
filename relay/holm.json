@@ -1,6 +1,6 @@
 {
   "name": "relay",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "title": "Relay",
   "shortName": "Relay",
   "description": "A private messenger for the people on your Holm node. Add friends by username, chat one to one or in groups, and share photos and files.",

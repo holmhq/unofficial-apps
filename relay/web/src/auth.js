@@ -5,6 +5,20 @@ import { session, resetData, emit, kept, data } from './state.js';
 
 let overlay = null;
 
+// Holm writes the addresses of its own pages for this app, analytics among them, into the
+// page it serves to the people allowed to see them. The copy of the page the service worker
+// keeps may be from before sign-in, so an admin's browser reads them from a fresh copy (the
+// worker lets a no-store request through) and puts them where the page looks for them.
+let surfacesAsked = false;
+function freshSurfaces() {
+  if (surfacesAsked) return;
+  surfacesAsked = true;
+  fetch('/', { cache: 'no-store' }).then((r) => r.text()).then((page) => {
+    const m = /__HOLM_SURFACES__\s*=\s*(\{[^}]*\})/.exec(page);
+    globalThis.__HOLM_SURFACES__ = m ? JSON.parse(m[1]) : undefined;
+  }).catch(() => { surfacesAsked = false; });
+}
+
 // A signed-in launch draws at once from what this browser last saw; the server's answer
 // redraws the page only if it says something else (signed out, or someone else).
 export function loadSession() {
@@ -25,6 +39,7 @@ export function loadSession() {
       session.channel = res.channel || '';
       session.mcp = res.mcp || '';
       session.admin = !!res.admin;
+      if (session.admin) freshSurfaces();
       session.suggestedUsername = res.suggestedUsername || '';
       session.status = status;
       kept.set('me', status === 'ready' ? { member: session.member, profile: session.profile, channel: session.channel, mcp: session.mcp, admin: session.admin } : null);
