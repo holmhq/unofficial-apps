@@ -39,7 +39,10 @@ references.
   goes. Every page has it: when it lives in a sidebar, it moves to the end
   of the panel whenever the sidebar is hidden or there's a tab bar instead
   (Kalendar's tabs on a phone and Domains' pages with the sidebar hidden
-  had none).
+  had none). Feedback opens the app's own project on feedback.zyt.app in a
+  panel: a copy of its `embed.js` in `web/vendor/feedback/`, loaded on the
+  first click with `data-button="none"`, and the link's address is the
+  form's own page for a modified click or when the script can't load.
 - **Search-first apps put the search in the navbar.** The first search can
   start from a big field in a hero, which then moves up into the navbar while
   the rest of the hero fades away. A moving element must land exactly on
@@ -407,6 +410,13 @@ after the first deploy.
 These are things the v1 runtime does that have caught apps here. Check the
 current guide too, since some of them will change.
 
+- **Framing the feedback form takes two places.** A static page gets its
+  CSP from the node, so set `security.csp.frame_src` to
+  `https://feedback.zyt.app` on the app (Margin's Studio had none). A page
+  your `fetch` writes with its own Content-Security-Policy ignores that
+  setting, so list the origin in its `frame-src` too (Domains' form was a
+  spinner).
+
 - **Each request has a budget** of about 5 seconds and 50 MiB of counted
   allocations. Bench loops over user-sized input with a long input. Run
   multi-step setup, seeding or cleanup as resumable steps of about 2 seconds
@@ -479,7 +489,8 @@ couldn't check.
 - [ ] The frame doesn't jump between pages or while data loads.
 - [ ] Any sidebar holds places, not controls, and it hides.
 - [ ] The footer is on every page, with the sidebar hidden and on a phone,
-      stuck to the bottom, and Holm branding appears only there.
+      stuck to the bottom, and Holm branding appears only there. Its
+      Feedback opens the form on the live host, not a spinner.
 
 **Account button and menus**
 
