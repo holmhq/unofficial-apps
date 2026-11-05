@@ -4,6 +4,7 @@
 // browser and the game needs no network at all.
 
 import { init as initTheme } from './theme.js'
+import './feedback.js'
 import { mountChrome, loadSurfaces, forgetBoard } from './ui.js'
 import { mountPlay } from './game.js'
 import { unlock as unlockAudio } from './audio.js'

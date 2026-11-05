@@ -9,7 +9,7 @@
     "3dsvg"
   ],
   "description": "Push every box onto a ring. Boxes only move when you push them, and never two at once, so each of the nineteen levels is a small knot to untie, from a single push to a twenty-push long haul.\n\nSwipe to walk, tap a square to walk straight there, or tap a box beside you to push it; on a computer, the arrow keys. Undo takes back a whole walk at once, and even a restart can be undone. Solve a level in its par, the fewest pushes it can take, for the full thousand points.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your solved levels move to your account, where the server replays every solution move by move before it counts on the leaderboard. Five pastel colour sets, in light and dark.",
-  "whatsNew": "Sokoban now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line.",
+  "whatsNew": "Sokoban now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line. The footer has a Feedback link: tell us what you think in a short form without leaving the app.",
   "screenshots": [
     {
       "file": "board.webp",
