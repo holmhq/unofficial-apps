@@ -9,7 +9,7 @@
     "shelf"
   ],
   "description": "Paste text, code or files and share them behind a link that expires, opens only once, or can be revoked at any time.\n\nCode is highlighted as you type. Markdown renders like GitHub's, and images, video and audio play in place. Your name stays off the paste unless you choose to show it.\n\nAPI keys and a small command-line tool let scripts and agents file pastes for you.",
-  "whatsNew": "pastebin now feels like an app: the header and footer stay put while the page scrolls under them, pages open at once from the last visit, and ⌘K jumps to your pastes, API keys, Connect via MCP or the theme. A paste's link and a new API key copy with one click. Pastes are still never kept on the device.",
+  "whatsNew": "pastebin now feels like an app: the header and footer stay put while the page scrolls under them, pages open at once from the last visit, and ⌘K jumps to your pastes, API keys, Connect via MCP or the theme. A paste's link and a new API key copy with one click. Pastes are still never kept on the device. A shared link now shows its picture everywhere.",
   "screenshots": [
     {
       "file": "compose.webp",
