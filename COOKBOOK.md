@@ -238,9 +238,14 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   a dot on the button shows when filters differ from the defaults.
 - **Use words that can't be misread.** A domain you can register is
   "Available", never "free", which reads as "costs nothing". Format amounts
-  so nothing dangles: zero is "$0", not "$0.".
+  so nothing dangles: zero is "$0", not "$0.". Count forward for dates
+  ahead: a helper that counts back says "just now" for any future date, so
+  an invite says "expires in 6 days" with its own wording (Deck's said
+  "expires just now").
 - **Design every dropdown.** Don't leave a bare native `<select>` in a styled
-  app.
+  app. To design ones already in use, draw a menu button beside each and keep
+  the select in the page, hidden, so code that reads its `value` and listens
+  for `change` still works (Margin's `designSelect`).
 - **Hover is subtle.** Icons don't grow, links in the chrome don't underline,
   and cards lift a little at most.
 - **Grids line up.** Separators touch each other, cards in a row share their
@@ -300,11 +305,15 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   front page, open every page address from it, refresh it in the
   background, and redraw only when the API's answer differs (Catalog).
   Where each page is its own server document, as Margin's posts are, pass
-  navigations to the network and keep only the static files.
+  navigations to the network and keep only the static files. An app with
+  both answers only its own shell's addresses and files from the worker and
+  leaves every page the server writes untouched (Margin's Studio).
 - **A cached shell has no admin links.** Holm writes the admin surfaces
   (`__HOLM_SURFACES__`) into the page it serves, and the copy the worker
   kept may be from before sign-in. When someone is signed in, read them
-  from a `no-store` fetch of `/` (Kalendar's, Ralk's and the games').
+  from a `no-store` fetch of the shell's address (Kalendar's, Ralk's and the
+  games'). Check it whenever a worker starts keeping the shell: Deck and
+  Margin lost Analytics that way.
 - **Register the worker straight away.** In a module with top-level
   `await`, the `load` event has passed by the time the code runs, so a
   `load` listener never registers it.
@@ -479,7 +488,8 @@ couldn't check.
       outside. The same holds for every other menu button in the app, and
       for ⌘K, which opens a command menu of places and actions.
 - [ ] The menu has no Holm line or Source link. The theme switch is icons
-      only, and admin links show only for admins.
+      only, and admin links show only for admins, still there after a
+      reload from the worker.
 - [ ] Menu labels are one to three words. Signed in, the menu and ⌘K have
       Connect via MCP… with the MCP mark. Its sheet shows the server's
       address on one line at 390 px, has Claude, ChatGPT, Claude Code and
