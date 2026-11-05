@@ -47,6 +47,16 @@ vendor Inter and ThumbHash with their licences.
   places, cameras or file names, never originals), its own link preview.
 - Places as cards, and search over places, cameras, months, years, albums
   and words like portrait, night or favorite, with suggestion chips.
+- MCP tools as named operations with auth "user" in api/contract.json, each
+  acting only on the caller's own library through the routes' own
+  functions: a summary of the library; photos by date, place, album, words
+  or the Trash; a photo's details; this day in past years; albums. Then
+  favourite, trash and restore photos; make, change, share and delete
+  albums; and delete from the Trash only after the person says yes.
+  Connect via MCP… in the account menu opens a sheet with the connector
+  address to click and copy, and tabs for Claude, ChatGPT, Claude Code and
+  what the tools do. A page that comes back into view takes changes made
+  elsewhere, and ?photo=<id> opens a photo.
 - A native-feeling Apple-quality UI on phone and desktop, light and dark: a
   fixed shell where only panels scroll; a sidebar of places on a desk, a tab
   bar on a phone; a round avatar button with a three-icon theme switch and
@@ -76,3 +86,9 @@ app, and isn't done yet:
 
 > We need to connect our black blaze acocunt to this app, so that the large files wont bloat our DB
 > - also, holm app line in sidebar is multiline
+
+Version 0.2.0 added the MCP tools and Connect via MCP, once every app in the
+repository was to have them. Offered tools for Zend, Roll and Until, the
+owner answered:
+
+> yes, do both batches

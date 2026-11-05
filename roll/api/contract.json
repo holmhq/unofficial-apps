@@ -1,0 +1,553 @@
+{
+ "operations": {
+  "library.get": {
+   "handler": "libraryGet",
+   "auth": "user",
+   "risk": "read",
+   "summary": "See what’s in your library",
+   "description": "How many photos the person has, year by year, their favourites, the Trash, albums, the places and cameras that come up most, and the storage used. A good first call. Roll keeps each photo’s details (when it was taken by the camera’s own clock, where, which camera and lens, which albums) and you see those, not the picture itself.",
+   "input": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "photos.list": {
+   "handler": "photosList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "Find photos",
+   "description": "Photos newest first (or oldest first), narrowed by any of: dates taken, an album, a place, favourites, words, or the Trash. Words match as on Roll’s search page: file name, camera, lens, place, album titles, month, weekday, year, season, shape (landscape, portrait, square, panorama) and time of day (morning, evening, night); every word must match. Each photo has an open link that shows it in Roll. Pass next back as cursor for more. Roll keeps each photo’s details (when it was taken by the camera’s own clock, where, which camera and lens, which albums) and you see those, not the picture itself.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "from": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "First day taken, like 2024-06-01 (the camera’s own date)."
+     },
+     "to": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Last day taken, like 2024-06-30, included."
+     },
+     "album": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "The album’s id from albums_list, or its exact title."
+     },
+     "place": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Part of a place name, such as “Lisbon” or “Portugal”."
+     },
+     "query": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Words to search for, such as “beach summer 2023” or “iPhone evening”."
+     },
+     "favourites": {
+      "type": "boolean",
+      "description": "Only favourites."
+     },
+     "trash": {
+      "type": "boolean",
+      "description": "List the Trash instead of the library."
+     },
+     "order": {
+      "type": "string",
+      "enum": [
+       "newest",
+       "oldest"
+      ],
+      "description": "Newest first (default) or oldest first."
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "How many photos (default 30)."
+     },
+     "cursor": {
+      "type": "string",
+      "maxLength": 7000,
+      "description": "The next value from the last answer, to go on."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "photos.get": {
+   "handler": "photosGet",
+   "auth": "user",
+   "risk": "read",
+   "summary": "Look closer at photos",
+   "description": "Everything Roll knows about some photos: when, where (with coordinates when the camera kept them), camera, lens and exposure, size, whether the original is kept, albums, and when it was added. Roll keeps each photo’s details (when it was taken by the camera’s own clock, where, which camera and lens, which albums) and you see those, not the picture itself.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "photos": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 64
+      },
+      "minItems": 1,
+      "maxItems": 50,
+      "description": "Photo ids from photos_list."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "photos"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "memories.get": {
+   "handler": "memoriesGet",
+   "auth": "user",
+   "risk": "read",
+   "summary": "See this day in past years",
+   "description": "Photos taken around this date in earlier years, a set per year with the place that comes up most, as Roll’s “On this day” shows them. Pass the person’s own date, since the server doesn’t know their time zone. Roll keeps each photo’s details (when it was taken by the camera’s own clock, where, which camera and lens, which albums) and you see those, not the picture itself.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "The day to look back from, like 2026-11-05 (default: today in UTC)."
+     },
+     "per_year": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Photos to list from each year (default 12); count says how many there are."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "albums.list": {
+   "handler": "albumsList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "See your albums",
+   "description": "The person’s albums, newest first, with how many photos each holds, its share link when it’s shared, and a link that opens it. List an album’s photos with photos_list and album.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "query": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Part of a title, to find an album."
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200,
+      "description": "How many albums (default 100)."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "photos.update": {
+   "handler": "photosUpdate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Favourite, trash or restore photos",
+   "description": "Marks photos as favourites or not, or moves them to the Trash and back. One change per call. The Trash keeps photos for 30 days, so trashing can be undone with trash false until then. Any ids under left didn’t fit in the time: call again with them.",
+   "idempotency": "optional",
+   "input": {
+    "type": "object",
+    "properties": {
+     "photos": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 64
+      },
+      "minItems": 1,
+      "maxItems": 100,
+      "description": "Photo ids from photos_list, up to 100."
+     },
+     "favourite": {
+      "type": "boolean",
+      "description": "True to favourite, false to unfavourite."
+     },
+     "trash": {
+      "type": "boolean",
+      "description": "True to move to the Trash, false to restore."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "photos"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "albums.create": {
+   "handler": "albumsCreate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Make an album",
+   "description": "Makes an album, optionally with photos in it and shared by link. A shared album shows its photos to anyone with the link, without places, cameras or file names.",
+   "idempotency": "optional",
+   "input": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "The album’s title."
+     },
+     "photos": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 64
+      },
+      "minItems": 1,
+      "maxItems": 100,
+      "description": "Photo ids to put in it, up to 100."
+     },
+     "share": {
+      "type": "boolean",
+      "description": "True to turn its link on at once."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "title"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "albums.update": {
+   "handler": "albumsUpdate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Change an album",
+   "description": "Renames an album, adds or removes photos (they stay in the library), picks its cover, or turns its share link on or off; the answer has the link. Turning the link off stops it at once; turning it on again makes a new link. A shared album shows its photos to anyone with the link, without places, cameras or file names.",
+   "idempotency": "optional",
+   "input": {
+    "type": "object",
+    "properties": {
+     "album": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "The album’s id from albums_list, or its exact title."
+     },
+     "title": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "A new title."
+     },
+     "add": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 64
+      },
+      "minItems": 1,
+      "maxItems": 100,
+      "description": "Photo ids to add, up to 100."
+     },
+     "remove": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 64
+      },
+      "minItems": 1,
+      "maxItems": 100,
+      "description": "Photo ids to take out, up to 100."
+     },
+     "cover": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "maxLength": 64,
+      "description": "The id of a photo in the album to use as its cover, or null for the newest."
+     },
+     "share": {
+      "type": "boolean",
+      "description": "True to turn the share link on, false to turn it off."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "album"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "albums.delete": {
+   "handler": "albumsDelete",
+   "auth": "user",
+   "risk": "destructive",
+   "summary": "Delete an album",
+   "description": "Deletes an album and stops its share link. Its photos stay in the library.",
+   "idempotency": "optional",
+   "input": {
+    "type": "object",
+    "properties": {
+     "album": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "The album’s id from albums_list, or its exact title."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "album"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "photos.delete": {
+   "handler": "photosDelete",
+   "auth": "user",
+   "risk": "destructive",
+   "summary": "Delete photos for good",
+   "description": "Deletes photos that are already in the Trash, or empties the Trash, removing them and their originals from the server for good. Without confirm it only says what would go: show the person, and call again with confirm true only after they say yes. To delete photos from the library, move them to the Trash first with photos_update.",
+   "idempotency": "optional",
+   "input": {
+    "type": "object",
+    "properties": {
+     "photos": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 64
+      },
+      "minItems": 1,
+      "maxItems": 100,
+      "description": "Ids of photos in the Trash, up to 100."
+     },
+     "empty_trash": {
+      "type": "boolean",
+      "description": "True to empty the whole Trash instead."
+     },
+     "confirm": {
+      "type": "boolean",
+      "description": "True once the person has said yes."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  }
+ }
+}

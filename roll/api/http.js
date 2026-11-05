@@ -5,10 +5,11 @@
 // preview, so the server never decodes an image.
 //
 // Each member has a library version in KV (v:<member>), bumped by every change, so a page
-// that already holds the current library gets a one-line answer.
+// that already holds the current library gets a one-line answer. The MCP tools in ops.js
+// change photos and albums through the functions exported here, so they bump it too.
 
 const DAY = 86400000
-const TRASH_DAYS = 30
+export const TRASH_DAYS = 30
 const MAX_ORIGINAL = 30 * 1024 * 1024
 const MAX_PREVIEW = 4 * 1024 * 1024
 const MAX_THUMB = 600 * 1024
@@ -37,7 +38,7 @@ async function route(request, env, url) {
 
   const member = env.holm.auth.getMember()
   if (!member) throw problem(401, 'signed_out', 'Sign in to see your photos.')
-  const ctx = { env, member, owner: member.id, ds: env.holm.app.ds, kv: env.holm.app.kv, s3: env.holm.app.s3 }
+  const ctx = context(env, member)
 
   if (path === '/api/library' && method === 'GET') return json(library(ctx, url.searchParams.get('v')), { 'cache-control': 'no-store' })
   if (path === '/api/photos' && method === 'POST') return json(await upload(ctx, request))
@@ -56,6 +57,10 @@ async function route(request, env, url) {
 
 /* ---- Helpers ------------------------------------------------------------------ */
 
+export function context(env, member) {
+  return { env, member, owner: member.id, ds: env.holm.app.ds, kv: env.holm.app.kv, s3: env.holm.app.s3 }
+}
+
 function json(data, headers = {}) {
   return new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json; charset=utf-8', ...headers } })
 }
@@ -64,7 +69,7 @@ function fail(status, code, message) {
   return new Response(JSON.stringify({ error: { code, message } }), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } })
 }
 
-function problem(status, code, message) {
+export function problem(status, code, message) {
   const error = new Error(message)
   error.status = status
   error.code = code
@@ -120,6 +125,9 @@ function idsOf(list) {
 
 function me(env, url) {
   const { auth } = env.holm
+  // Tools have no request to read the address from, so their links use the last one seen.
+  const kv = env.holm.app.kv
+  if (kv.get('site:origin') !== url.origin) kv.set('site:origin', url.origin)
   const back = (url.searchParams.get('return') || '/').replace(/[^\w\-./?=&%]/g, '')
   const member = auth.getMember()
   if (!member) return json({ signed_in: false, login_url: auth.getLoginURL(back.startsWith('/') ? back : '/') }, { 'cache-control': 'no-store' })
@@ -130,7 +138,8 @@ function me(env, url) {
     email: member.email || '',
     picture: member.picture || null,
     admin: auth.isAppAdmin(),
-    logout_url: auth.getLogoutURL()
+    logout_url: auth.getLogoutURL(),
+    mcp: url.origin + '/_holm/mcp'
   }, { 'cache-control': 'no-store' })
 }
 
@@ -153,7 +162,10 @@ function library(ctx, known) {
   }
   ctx.kv.set('used:' + ctx.owner, used)
   const albums = ctx.ds.find('albums', { owner: ctx.owner }, { limit: 1000, order: 'desc' }).map(view)
-  return { v, photos, albums, used, quota: quota(ctx) }
+  const limit = quota(ctx)
+  // The tools can't read the app's settings, so they take the quota from here.
+  if (String(ctx.kv.get('quota:' + ctx.owner)) !== String(limit)) ctx.kv.set('quota:' + ctx.owner, limit)
+  return { v, photos, albums, used, quota: limit }
 }
 
 function sweepTrash(ctx) {
@@ -276,18 +288,17 @@ async function putOriginal(ctx, id, request) {
 /* ---- Changing photos --------------------------------------------------------------- */
 
 // One change to many photos: favourite or not, to the Trash and back, into or out of an
-// album. Stops before the request's time runs out and says how many it did; the page sends
-// the rest again.
-function batch(ctx, input) {
+// album. Stops before the request's time runs out (or at `until`, for a tool that makes
+// more than one change) and says how many it did; the page sends the rest again.
+export function batch(ctx, input, until = Date.now() + BUDGET_MS) {
   const ids = idsOf(input.ids)
   const op = String(input.op || '')
   let album = null
   if (op === 'add' || op === 'remove') album = mine(ctx, 'albums', String(input.album || ''))
-  const start = Date.now()
   let done = 0
   const now = Date.now()
   for (const id of ids) {
-    if (Date.now() - start > BUDGET_MS) break
+    if (Date.now() > until) break
     const doc = ctx.ds.findOne('photos', id)
     done++
     if (!doc || doc.owner !== ctx.owner) continue
@@ -309,7 +320,7 @@ function batch(ctx, input) {
 }
 
 // Deletes photos for good: their files and their record.
-function destroy(ctx, list) {
+export function destroy(ctx, list) {
   const ids = idsOf(list)
   const start = Date.now()
   let done = 0
@@ -324,7 +335,7 @@ function destroy(ctx, list) {
   return { done, v: bump(ctx) }
 }
 
-function emptyTrash(ctx) {
+export function emptyTrash(ctx) {
   const start = Date.now()
   let removed = 0
   let bytes = 0
@@ -340,7 +351,7 @@ function emptyTrash(ctx) {
 
 /* ---- Albums ------------------------------------------------------------------------- */
 
-function createAlbum(ctx, input) {
+export function createAlbum(ctx, input) {
   const title = text(input.title, 80) || 'Untitled album'
   const count = ctx.ds.count('albums', { owner: ctx.owner })
   if (count >= 1000) throw problem(409, 'too_many', 'You have 1,000 albums, the most Roll keeps.')
@@ -349,7 +360,7 @@ function createAlbum(ctx, input) {
   return { album: view(ctx.ds.findOne('albums', id)) }
 }
 
-function updateAlbum(ctx, id, input) {
+export function updateAlbum(ctx, id, input) {
   mine(ctx, 'albums', id)
   const set = {}
   if (input.title != null) set.title = text(input.title, 80) || 'Untitled album'
@@ -367,7 +378,7 @@ function updateAlbum(ctx, id, input) {
 }
 
 // Takes the album off its photos a batch at a time, then deletes it. The photos stay.
-function deleteAlbum(ctx, id) {
+export function deleteAlbum(ctx, id) {
   mine(ctx, 'albums', id)
   const start = Date.now()
   while (Date.now() - start < BUDGET_MS) {
@@ -384,7 +395,7 @@ function deleteAlbum(ctx, id) {
   return { left: 1, v: bump(ctx) }
 }
 
-function shareAlbum(ctx, id, input) {
+export function shareAlbum(ctx, id, input) {
   const album = mine(ctx, 'albums', id)
   const set = input.on
     ? { share: album.share || randomSlug(), sharedAt: album.share ? album.sharedAt : Date.now(), by: text(ctx.member.name, 80) || null }

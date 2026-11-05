@@ -320,6 +320,41 @@ export async function copyText(text, what = 'Copied') {
   }
 }
 
+// Something to copy (an address, a command, a link): the whole field is one button. A click
+// turns the icon into a tick and says Copied for a moment; if the clipboard refuses, the
+// value is selected to copy by hand. A value too long for the line scrolls under a fade.
+export function copyField(value) {
+  const text = h('code.copy-value', value)
+  const word = h('span.copy-word', { 'aria-live': 'polite' }, 'Copy')
+  let timer
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(value) } catch {
+      getSelection().selectAllChildren(text)
+      toast('Couldn’t copy. It’s selected, so copy it by hand.', { kind: 'bad' })
+      return
+    }
+    haptic()
+    el.classList.add('is-copied')
+    word.textContent = 'Copied'
+    clearTimeout(timer)
+    timer = setTimeout(() => { el.classList.remove('is-copied'); word.textContent = 'Copy' }, 1600)
+  }
+  const cue = h('span.copy-cue', word, ic('copy', 16, 2), ic('check', 16, 2.4))
+  cue.children[1].classList.add('cf-copy')
+  cue.children[2].classList.add('cf-tick')
+  const el = h('div.copy-field', {
+    role: 'button',
+    tabindex: '0',
+    'aria-label': 'Copy ' + value,
+    onclick: copy,
+    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy() } }
+  }, text, cue)
+  const fade = () => el.classList.toggle('is-long', text.scrollLeft + text.clientWidth < text.scrollWidth - 1)
+  text.addEventListener('scroll', fade, { passive: true })
+  new ResizeObserver(fade).observe(text)
+  return el
+}
+
 // Scroll the nearest panel so `el` shows, without moving the fixed shell.
 export function reveal(el, panel = el && el.closest('.panel, .sheet-body')) {
   if (!el || !panel) return

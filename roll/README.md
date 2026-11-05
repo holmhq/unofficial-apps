@@ -16,7 +16,9 @@ Roll follows [Holm App Spec v1](https://holmhq.com/llms-full.txt), sections
 
 - **`holm.json`:** identity and web settings, with `web.spa` on.
 - **`web/`:** the public files.
-- **`api/main.js`:** exports `default { fetch(request, env) }`.
+- **`api/main.js`:** exports `default { fetch(request, env) }`, and the
+  named operations behind the MCP tools.
+- **`api/contract.json`:** describes those operations.
 
 Every deploy needs `--spec-v1`, and the node runs no build. Only `web/` is
 served as files: `api/` and `holm.json` are not public URLs.
@@ -56,6 +58,13 @@ served as files: `api/` and `holm.json` are not public URLs.
 - **Places** as cards, named on your device (see below), and **search** over
   places, cameras, months, years, albums and words like *portrait*,
   *panorama*, *night* or *favorite*, with suggestions to tap.
+- **Claude can use it too.** Connect Roll to Claude, ChatGPT or Claude Code
+  over MCP and ask about your library: what's there year by year, photos by
+  date, place, album or words, and this day in past years. It can make and
+  share albums, favourite photos, move them to the Trash and back, and,
+  once you've said yes, delete what's in the Trash. Claude sees each photo's
+  details, not the picture. **Connect via MCP…** in the account menu shows
+  the address and how to add it.
 
 ### How it feels
 
@@ -65,7 +74,8 @@ selection bar, and sheets that rise. Tiles show the photo's colours from
 its ThumbHash before the thumbnail arrives, and fade in without jumping.
 Light and dark, with photos on black in the dark, and less motion when the
 device asks for it. The round avatar button holds who you are, your storage,
-a three-icon theme switch and Sign out; the Holm credit sits in the footer.
+Connect via MCP…, a three-icon theme switch and Sign out; the Holm credit
+sits in the footer.
 
 ## How it's built
 
@@ -115,6 +125,27 @@ a three-icon theme switch and Sign out; the Holm credit sits in the footer.
   `web/src/shell.js` at your own project, or set it to `''` to drop the link.
 - **The Trash** empties itself: photos left there more than 30 days are
   deleted a few at a time whenever the library loads.
+- **MCP tools.** `api/contract.json` declares ten named operations with
+  `auth: "user"`, which Holm serves at `/_holm/mcp`:
+  - **Read:** `library.get`, `photos.list`, `photos.get`, `memories.get`
+    and `albums.list`.
+  - **Write:** `photos.update`, `albums.create` and `albums.update`.
+  - **Destructive:** `albums.delete` and `photos.delete`.
+
+  Their code is in `api/ops.js`, loaded with `import()` from one-line
+  wrappers in `main.js`. They change the library through the same functions
+  as the routes (exported from `http.js`), so the owner checks and the
+  library version stay in one place. `photos.list` searches the way the
+  page does, and pages through photos by the time they were taken.
+  `photos.delete` works only on the Trash, and without `confirm: true` it
+  only says what would go. Operations can't read the app's settings
+  (`env.holm.env`), so `/api/library` records each member's quota in KV for
+  `library.get`. Tools have no request to take the address from, so their
+  links use the one `/api/me` last saw.
+- **Changes from elsewhere.** When the page comes back into view with nothing
+  of its own on the way, it asks for the library again, so changes made by
+  Claude or on another device appear. `?photo=<id>` on any page opens that
+  photo in the viewer; the tools' links use it.
 - **Offline-ready.** A versioned service worker (`web/sw.js`) precaches every
   file, all or nothing, and keeps thumbnails in a cache of their own, which
   signing out clears. `node roll/tools/check.mjs` checks its file list and
@@ -174,6 +205,9 @@ holm @<peer> settings set settings.apps.<app-id>.theme.accent '#f0592a'
 - **The library loads in one answer.** That suits libraries of thousands of
   photos; tens of thousands may run into the node's per-request memory
   budget.
+- **The MCP tools can't add photos.** The browser makes each photo's
+  thumbnail and preview, and a tool's input is capped at about 50 KB.
+  Claude sees each photo's details, not the picture itself.
 - iPhone Safari and the signed-in flows on the live node are not checked yet.
 
 ## Licences

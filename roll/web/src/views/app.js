@@ -9,13 +9,13 @@
 import { h, ic, haptic, toast, menu, confirm, reduced, closeMenus, fill } from '../ui.js'
 import { mark, heartFill } from '../icons.js'
 import { lib, on, timeline, favorites, trash, inAlbum, atPlace, albums, places, memories, search, suggestions, emptyTrash, updateAlbum, deleteAlbum, change, photoURL } from '../store.js'
-import { go, link, accountButton, credit, usage, favorite, toTrash, restore, deleteForGood, albumPicker, download, askName, shareSheet, removeFromAlbum, failure, plural } from '../shell.js'
+import { go, link, accountButton, credit, usage, favorite, toTrash, restore, deleteForGood, albumPicker, download, askName, shareSheet, removeFromAlbum, failure, plural, viewerActions } from '../shell.js'
 import { photosPage, emptyState } from './photos.js'
 import { memoryStrip, playMemory } from '../memories.js'
 import { pickFiles, acceptDrops } from '../upload.js'
 import { placeholder, createGrid, Selection } from '../grid.js'
 import { range, count, bytes } from '../time.js'
-import { closeViewer, viewerOpen, refreshViewer } from '../viewer.js'
+import { closeViewer, viewerOpen, refreshViewer, openViewer } from '../viewer.js'
 
 const PLACES = [
   { path: '/', label: 'Library', icon: 'images' },
@@ -447,6 +447,7 @@ export function createApp() {
     collapse = { panel: page.panel, fn }
     fn()
     document.title = r.key === '/' ? 'Roll' : `${page.title || 'Roll'} · Roll`
+    openLinked()
   }
 
   function syncSelect() {
@@ -459,6 +460,19 @@ export function createApp() {
     sideUsage.replaceChildren(lib.ready ? usage() : '')
   }
 
+  // ?photo=<id>, as Claude's links have it: that photo in the viewer, once the library has it.
+  function openLinked() {
+    const id = new URLSearchParams(location.search).get('photo')
+    if (!id || viewerOpen()) return
+    const p = lib.photos.get(id)
+    if (!p) return
+    const url = new URL(location.href)
+    url.searchParams.delete('photo')
+    history.replaceState({}, '', url.pathname + url.search)
+    const list = p.trashed ? trash() : active && active.list && active.list.includes(p) ? active.list : timeline()
+    openViewer({ list, index: list.indexOf(p), actions: viewerActions(), context: p.trashed ? 'trash' : 'library' })
+  }
+
   on(() => {
     for (const page of pages.values()) page.draw()
     drawSide()
@@ -466,6 +480,7 @@ export function createApp() {
     refreshViewer()
     syncSelect()
     if (active) smallTitle.textContent = active.title || ''
+    openLinked()
   })
 
   acceptDrops(() => currentAlbum(), () => !document.querySelector('.layer, .picker'))

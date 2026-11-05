@@ -2,7 +2,8 @@
 //
 //   /s/<link>   a shared album, for anyone with the link
 //   signed out  what Roll is, and Sign in
-//   signed in   the library and everything around it (views/app.js)
+//   signed in   the library and everything around it (views/app.js); ?photo=<id> on any
+//               of its addresses opens that photo, for links from Claude
 //
 // Someone who was signed in here last time sees their library at once, drawn from this
 // browser's copy, while the server is asked whether anything changed.
@@ -10,7 +11,7 @@
 import { fill } from './ui.js'
 import * as theme from './theme.js'
 import { state, loadMe, cachedMe, setRenderer } from './shell.js'
-import { lib, load, forget } from './store.js'
+import { lib, load, forget, lookAgain } from './store.js'
 
 const root = document.getElementById('root')
 const early = globalThis.__roll || {}
@@ -60,6 +61,10 @@ if (kept && kept.signed_in && !shared) {
   if (state.me.signed_in && !shared) load().catch(() => {})
   await render()
 }
+
+// Changes made elsewhere (another device, or Claude) show when the page comes back.
+addEventListener('focus', lookAgain)
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') lookAgain() })
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('/sw.js').catch(() => {})

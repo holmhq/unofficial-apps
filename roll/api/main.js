@@ -1,6 +1,8 @@
 // Roll's server. Holm loads this module on every request, so it stays small: photo files
 // (/t thumbnails, /p previews, /o originals) are answered here, everything else under /api/
 // and the shared-album pages (/s/…) load http.js, and the rest is the app's own static files.
+// The named operations at the end are the tools Claude uses through Holm's MCP endpoint
+// (/_holm/mcp); contract.json describes them, and their code is in ops.js.
 
 const FILE = /^\/(t|p|o)\/([A-Za-z0-9_-]{1,64})$/
 
@@ -51,3 +53,15 @@ function photoFile(kind, id, url, request, env) {
 function missing() {
   return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } })
 }
+
+const ops = () => import('./ops.js')
+export async function libraryGet(input, env, ctx) { return (await ops()).libraryGet(input, env, ctx) }
+export async function photosList(input, env, ctx) { return (await ops()).photosList(input, env, ctx) }
+export async function photosGet(input, env, ctx) { return (await ops()).photosGet(input, env, ctx) }
+export async function memoriesGet(input, env, ctx) { return (await ops()).memoriesGet(input, env, ctx) }
+export async function albumsList(input, env, ctx) { return (await ops()).albumsList(input, env, ctx) }
+export async function photosUpdate(input, env, ctx) { return (await ops()).photosUpdate(input, env, ctx) }
+export async function albumsCreate(input, env, ctx) { return (await ops()).albumsCreate(input, env, ctx) }
+export async function albumsUpdate(input, env, ctx) { return (await ops()).albumsUpdate(input, env, ctx) }
+export async function albumsDelete(input, env, ctx) { return (await ops()).albumsDelete(input, env, ctx) }
+export async function photosDelete(input, env, ctx) { return (await ops()).photosDelete(input, env, ctx) }

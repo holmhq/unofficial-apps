@@ -2,7 +2,7 @@
 // menu, the footer credit, and the things you can do to photos (from the viewer or a
 // selection): favourite, add to an album, download, move to the Trash and back.
 
-import { h, ic, avatar, menu, segmented, haptic, toast, sheet, confirm, copyText, closeMenus, fill } from './ui.js'
+import { h, ic, avatar, menu, segmented, haptic, toast, sheet, confirm, copyField, closeMenus, fill } from './ui.js'
 import { holmMark, heartFill } from './icons.js'
 import * as api from './api.js'
 import * as theme from './theme.js'
@@ -96,13 +96,70 @@ function accountMenu(anchor) {
       : h('div.me', h('span.avatar.ghost', ic('user', 22, 2)), h('div.grow', h('b', 'Not signed in'), h('small', 'Sign in to keep your photos here'))),
     m ? usage() : null,
     'sep',
-    h('div.menu-theme', themes),
-    surfaces && surfaces.analytics && me.admin ? 'sep' : null,
     surfaces && surfaces.analytics && me.admin ? { label: 'Analytics', icon: 'chartColumn', href: surfaces.analytics } : null,
+    m ? { label: 'Connect via MCP…', icon: 'mcp', onclick: () => mcpSheet() } : null,
+    m || (surfaces && surfaces.analytics && me.admin) ? 'sep' : null,
+    h('div.menu-theme', themes),
     'sep',
     m ? { label: 'Sign out', icon: 'logOut', onclick: signOut } : { label: 'Sign in', icon: 'user', onclick: signIn }
   ]
   menu(anchor, items, { align: 'end' })
+}
+
+/* ---- Connect via MCP --------------------------------------------------------------- */
+
+// How to add Roll to Claude, ChatGPT or Claude Code, and what its tools do. The address
+// comes from /api/me, so each host shows its own.
+export function mcpSheet() {
+  const mcp = (state.me && state.me.mcp) || location.origin + '/_holm/mcp'
+  const command = 'claude mcp add --transport http roll ' + mcp
+  const row = (lead, title, text) => h('div.row.is-static', lead, h('div.grow', h('b', title), h('small', text)))
+  const step = (n, title, text) => row(h('span.row-ic.is-num', String(n)), title, text)
+  const can = (icon, title, text) => row(h('span.row-ic', ic(icon, 17, 2)), title, text)
+  // Every pane sits in the same grid cell, so the sheet is as tall as the tallest and never jumps.
+  const panes = {
+    claude: h('div.group',
+      step(1, 'Open Settings, then Connectors', 'On claude.ai or in the Claude app.'),
+      step(2, 'Add a custom connector', 'Name it Roll and paste the address.'),
+      step(3, 'Connect and sign in', 'Allow access once. Claude sees only your library.')),
+    chatgpt: h('div.group',
+      step(1, 'Turn on Developer mode', 'In Settings, under Apps, then Advanced. On the web, on paid plans.'),
+      step(2, 'Create a connector', 'Name it Roll, paste the address and choose OAuth.'),
+      step(3, 'Connect and sign in', 'Then pick Roll from + in a chat.')),
+    code: h('div.mcp-code',
+      copyField(command),
+      h('p.sheet-note', 'Run it in a terminal, then type ', h('code', '/mcp'), ' in Claude Code and sign in.')),
+    tools: h('div.group',
+      can('images', 'Find photos', 'By date, place, album or words.'),
+      can('sparkles', 'On this day', 'Photos from this date in past years.'),
+      can('bookImage', 'Albums', 'Make them, fill them, share by link.'),
+      can('heart', 'Tidy up', 'Favourite, trash and restore photos.'))
+  }
+  const show = (v) => Object.entries(panes).forEach(([k, el]) => { el.classList.toggle('is-on', k === v); el.inert = k !== v })
+  show('claude')
+  // The menu item that opened it is gone, so closing goes back to the account button.
+  const back = () => { const b = [...document.querySelectorAll('.avatar-btn')].find((x) => x.offsetParent); if (b) b.focus({ preventScroll: true }) }
+  return sheet({
+    title: 'Connect via MCP',
+    cancel: null,
+    done: 'Done',
+    wide: true,
+    onClose: back,
+    body: () => h('div.sheet-stack.mcp-sheet',
+      h('div.mcp-hero', { 'aria-hidden': 'true' },
+        h('img.mcp-app', { src: '/icon-192.png', alt: '', width: 60, height: 60 }),
+        h('span.mcp-link', h('i'), h('i'), h('i'), h('i'), h('i')),
+        h('span.mcp-tile', ic('mcp', 32))),
+      h('div.sheet-label', 'Connector address'),
+      copyField(mcp),
+      segmented([
+        { value: 'claude', label: 'Claude' },
+        { value: 'chatgpt', label: 'ChatGPT' },
+        { value: 'code', label: 'Claude Code' },
+        { value: 'tools', label: 'Tools' }
+      ], 'claude', show, { label: 'Where to connect' }),
+      h('div.mcp-panes', ...Object.values(panes)))
+  })
 }
 
 export function usage() {
@@ -328,10 +385,8 @@ export function shareSheet(albumId) {
         })
         fill(body,
           h('div.group', h('label.row', h('span.row-ic', { 'data-tone': on ? 'accent' : 'grey' }, ic('link', 17, 2)), h('div.grow', h('b', 'Anyone with the link'), h('small', on ? 'can see these photos, without places, cameras or file names' : 'Off: only you can see this album')), sw)),
-          on ? h('div.share-link', h('input.field.is-mono', { type: 'text', value: url(), readonly: true, 'aria-label': 'Link', onfocus: (e) => e.target.select() }),
-            h('div.share-actions',
-              h('button.btn.primary', { type: 'button', onclick: () => copyText(url(), 'Link copied') }, ic('copy', 17, 2), 'Copy link'),
-              h('a.btn', { href: url(), target: '_blank', rel: 'noopener' }, ic('externalLink', 17, 2), 'Open'))) : null)
+          on ? copyField(url()) : null,
+          on ? h('a.btn.share-open', { href: url(), target: '_blank', rel: 'noopener' }, ic('externalLink', 17, 2), 'Open') : null)
       }
       draw()
       return body

@@ -9,7 +9,7 @@
     "until"
   ],
   "description": "Roll keeps your photos on a timeline of the days you took them, by the camera's own clock. Each month and day has a heading with its place, and the days flow along rows that fill the screen. A date rail jumps through the years, and a pinch makes the photos bigger or smaller.\n\nOn this day brings back photos from today's date in earlier years, as a short story that drifts from one photo to the next.\n\nDrop photos anywhere, choose them or paste them. Roll reads each one's date, camera, exposure and location in your browser, names the place without asking any service, skips photos it already has, and keeps the original. The viewer grows out of the photo you tap, swipes and zooms, and shows the details beside the photo.\n\nCollect photos into albums and share one by link: anyone with it sees the album, no account needed, without places, cameras or file names. Places, favourites, a Trash that waits 30 days, and search over places, cameras, months and more.\n\nIt feels like an app: frosted bars that stay put, a tab bar on your phone and a sidebar on a desk, light and dark, with photos on black.",
-  "whatsNew": "A slightly wider sidebar, so its footer line no longer breaks in two. The prompt now records that request.",
+  "whatsNew": "Connect Roll to Claude, ChatGPT or Claude Code over MCP: ask what's in your library, find photos by date, place, album or words, see this day in past years, and make, fill and share albums. Connect via MCP… in the account menu shows how. An album's share link copies with one click, and an open page picks up changes made elsewhere.",
   "screenshots": [
     {
       "file": "library.webp",

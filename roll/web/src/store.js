@@ -1,7 +1,8 @@
 // The member's library in this tab: every photo and album, kept in IndexedDB so the next
 // visit draws at once, then brought up to date from the server, which answers in one line
 // when nothing changed. Changes show at once and go to the server in the background; if the
-// server says no, they're undone.
+// server says no, they're undone. Claude can change the library too (the MCP tools), so the
+// page asks again whenever it comes back into view with nothing of its own on the way.
 
 import * as api from './api.js'
 import { dayKey, todayWall, yearOf, monthName, weekdayName } from './time.js'
@@ -18,6 +19,7 @@ export const lib = {
 }
 
 let revision = 0
+let sending = 0 // changes on their way to the server
 const listeners = new Set()
 export function on(fn) { listeners.add(fn); return () => listeners.delete(fn) }
 function emit(what = 'library') { revision++; memo.clear(); for (const fn of [...listeners]) fn(what) }
@@ -202,6 +204,22 @@ export function refresh(prefetched) {
   })()
   return refreshing
 }
+// Back in view: the library again, unless this page still has changes or uploads on the way,
+// which a fresh copy from the server would draw over.
+let lastLook = 0
+export function lookAgain() {
+  if (!lib.ready || !lib.me || !lib.me.signed_in || sending || Date.now() - lastLook < 2000) return
+  for (const p of lib.photos.values()) if (p.pending) return
+  lastLook = Date.now()
+  refresh().catch(() => {})
+}
+
+// Counts a change while it's on its way, for lookAgain.
+async function sent(run) {
+  sending++
+  try { return await run() } finally { sending-- }
+}
+
 async function refreshFull() {
   const data = await api.get('/api/library')
   apply(data)
@@ -219,7 +237,8 @@ function settle(v) {
 }
 
 // A change to many photos, shown at once and sent in batches.
-export async function change(ids, op, album = null) {
+export function change(ids, op, album = null) { return sent(() => changeNow(ids, op, album)) }
+async function changeNow(ids, op, album) {
   ids = ids.filter((id) => lib.photos.has(id))
   if (!ids.length) return
   const before = ids.map((id) => [id, lib.photos.get(id)])
@@ -251,7 +270,8 @@ export async function change(ids, op, album = null) {
   }
 }
 
-export async function destroy(ids) {
+export function destroy(ids) { return sent(() => destroyNow(ids)) }
+async function destroyNow(ids) {
   const before = ids.map((id) => [id, lib.photos.get(id)]).filter(([, p]) => p)
   for (const [id] of before) lib.photos.delete(id)
   emit()
@@ -275,7 +295,8 @@ export async function emptyTrash() {
   return destroy(ids)
 }
 
-export async function createAlbum(title, ids = []) {
+export function createAlbum(title, ids = []) { return sent(() => createAlbumNow(title, ids)) }
+async function createAlbumNow(title, ids) {
   const { album } = await api.post('/api/albums', { title })
   lib.albums.set(album.id, album)
   emit()
@@ -284,7 +305,8 @@ export async function createAlbum(title, ids = []) {
   return album
 }
 
-export async function updateAlbum(id, set) {
+export function updateAlbum(id, set) { return sent(() => updateAlbumNow(id, set)) }
+async function updateAlbumNow(id, set) {
   const before = lib.albums.get(id)
   lib.albums.set(id, { ...before, ...set })
   emit()
@@ -299,7 +321,8 @@ export async function updateAlbum(id, set) {
   }
 }
 
-export async function deleteAlbum(id) {
+export function deleteAlbum(id) { return sent(() => deleteAlbumNow(id)) }
+async function deleteAlbumNow(id) {
   const before = lib.albums.get(id)
   const touched = []
   lib.albums.delete(id)
@@ -319,7 +342,8 @@ export async function deleteAlbum(id) {
   }
 }
 
-export async function shareAlbum(id, on) {
+export function shareAlbum(id, on) { return sent(() => shareAlbumNow(id, on)) }
+async function shareAlbumNow(id, on) {
   const r = await api.post('/api/albums/' + id + '/share', { on })
   lib.albums.set(id, r.album)
   settle(r.v)

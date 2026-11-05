@@ -34,6 +34,7 @@
   --accent-soft-2: rgba(240, 89, 42, .18);
   --on-accent: #ffffff;
   --green: #28a745;
+  --green-text: #1d7a33;
   --red: #e0352b;
   --red-text: #d0261c;
   --red-soft: rgba(224, 53, 43, .09);
@@ -82,6 +83,7 @@
   --accent-soft: rgba(255, 122, 77, .16);
   --accent-soft-2: rgba(255, 122, 77, .26);
   --green: #30d158;
+  --green-text: #30d158;
   --red: #ff453a;
   --red-text: #ff6961;
   --red-soft: rgba(255, 69, 58, .14);
@@ -679,6 +681,7 @@ html.is-viewing .tray { opacity: 0; pointer-events: none; }
   .grabber { display: none; }
   .sheet-head { min-height: 56px; }
   .sheet-body { padding-bottom: 22px; }
+  .sheet.wide { width: min(620px, 100%); }
 }
 .confirm-head { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 8px 0; text-align: center; }
 .confirm-head b { font-size: 19px; letter-spacing: -.018em; text-wrap: balance; }
@@ -743,3 +746,50 @@ html.is-viewing .tray { opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---- Copy fields and Connect via MCP ---------------------------------------------------------- */
+
+.sheet-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.sheet-label { font-size: 13px; font-weight: var(--w-strong); color: var(--ink-2); margin: 4px 4px -6px; }
+.sheet-note { margin: 0 4px; color: var(--ink-2); font-size: 13.5px; line-height: 1.5; }
+.sheet-note code { padding: .1em .35em; border-radius: 5px; background: var(--fill); color: var(--ink); font: 12.5px var(--mono); }
+.copy-field { --cf-base: var(--surface); --cf-bg: var(--cf-base); display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px; border-radius: 12px; background: var(--cf-bg); box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s, box-shadow .15s; }
+[data-theme='dark'] .copy-field { --cf-base: var(--raised); }
+.copy-field:active { --cf-bg: color-mix(in srgb, var(--cf-base), var(--ink) 8%); }
+.copy-field:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--line-2), 0 0 0 3px var(--accent-soft-2); }
+@media (hover: hover) { .copy-field:hover { --cf-bg: color-mix(in srgb, var(--cf-base), var(--ink) 4%); box-shadow: inset 0 0 0 1px var(--fill-3); } }
+.copy-value { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; white-space: nowrap; font: 12.5px/46px var(--mono); letter-spacing: 0; }
+.copy-value::-webkit-scrollbar { display: none; }
+.copy-field.is-long .copy-value { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.copy-cue { position: relative; flex: none; display: grid; color: var(--ink-3); transition: color .15s; }
+.copy-cue svg { grid-area: 1 / 1; transition: opacity .15s, transform .25s var(--spring); }
+.copy-cue .cf-tick { opacity: 0; transform: scale(.5); color: var(--green); }
+.copy-word { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); padding: 3px 7px 3px 26px; background: linear-gradient(to right, transparent, var(--cf-bg) 20px); color: var(--ink-2); font: var(--w-strong) 13px/1.2 var(--font); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; }
+@media (hover: hover) { .copy-field:hover .copy-cue { color: var(--ink); } .copy-field:hover .copy-word { opacity: 1; } }
+.copy-field.is-copied .copy-word { opacity: 1; color: var(--green-text); }
+.copy-field.is-copied .copy-cue .cf-copy { opacity: 0; transform: scale(.5); }
+.copy-field.is-copied .copy-cue .cf-tick { opacity: 1; transform: none; }
+.share-open { align-self: flex-start; }
+
+.mcp-hero { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 4px 0 2px; }
+.mcp-app { width: 60px; height: 60px; border-radius: 14px; box-shadow: var(--shadow-1); }
+.mcp-tile { width: 60px; height: 60px; border-radius: 14px; display: grid; place-items: center; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+[data-theme='dark'] .mcp-tile { background: var(--raised); }
+.mcp-link { display: flex; gap: 6px; }
+.mcp-link i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); opacity: .45; animation: mcp-flow 2.4s var(--ease) infinite; }
+.mcp-link i:nth-child(2) { animation-delay: .12s; }
+.mcp-link i:nth-child(3) { animation-delay: .24s; }
+.mcp-link i:nth-child(4) { animation-delay: .36s; }
+.mcp-link i:nth-child(5) { animation-delay: .48s; }
+@keyframes mcp-flow { 0%, 36%, 100% { opacity: .45; transform: none; } 14% { opacity: 1; transform: scale(1.3); background: var(--accent); } }
+@media (prefers-reduced-motion: reduce) { .mcp-link i { animation: none; opacity: .7; } }
+.mcp-sheet .seg button { padding: 0 6px; }
+.mcp-panes { display: grid; grid-template-columns: minmax(0, 1fr); }
+.mcp-panes > * { grid-area: 1 / 1; align-self: start; }
+.mcp-panes > :not(.is-on) { visibility: hidden; }
+.mcp-panes > .is-on { animation: mcp-pane .22s var(--ease); }
+@keyframes mcp-pane { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .mcp-panes > .is-on { animation-name: none; } }
+.mcp-panes .row { min-height: 54px; }
+.row-ic.is-num { font: var(--w-strong) 14px/1 var(--font); font-variant-numeric: tabular-nums; }
+.mcp-code { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
