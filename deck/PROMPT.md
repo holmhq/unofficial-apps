@@ -51,9 +51,17 @@ third-party runtime CDN; vendor Inter with its licence.
   visible, active time; skip the workspace's own people; store no IP, browser
   string or name, just a random id from the reader's browser.
 - Apple-quality UI on phone and desktop, light and dark, with a round avatar
-  button top right (signed out too). Native-like: the window never scrolls,
-  bars stay fixed, panels scroll with no scroll bars, and the Holm credit with
-  Send feedback (the owner's feedback.zyt.app form) sits at the foot.
+  button top right (signed out too: a menu with the theme and Sign in).
+  Native-like: the window never scrolls, bars stay fixed, panels scroll with
+  no scroll bars, and the Holm credit with Feedback (the owner's
+  feedback.zyt.app form) and Source sits at the foot. Fields are 16 px on
+  phones; every dropdown is the app's own menu.
+- No flicker: a service worker tied to the version precaches the app's
+  files and serves them first, leaving shared, presenting and upload pages
+  and Holm's own paths to the network; pages draw at once from the last
+  answer kept in the browser and redraw only what changed; a workspace's
+  tabs stay alive with their scroll. ⌘K finds places, decks and actions,
+  Connect via MCP… among them.
 - For this repository's store, use holm.json version, holm.symbol.svg and
   listing/listing.json with sample screenshots. These are repo conventions,
   not a catalog format promised by the Holm guide.
@@ -102,3 +110,10 @@ its Connect Claude page, four more tools and click-to-copy fields. The owner,
 asked whether Kalendar, Deck, Margin and Ralk should get the sheet, answered:
 
 > yes, do both batches
+
+**Iteration 3** came from a sweep of every app in the repository against its
+cookbook: a service worker and cache-first pages, tabs that keep their
+place, ⌘K, a signed-out account menu, Source in the footer, 16 px fields on
+phones and a designed dropdown in the studio. The owner's word was:
+
+> Sure do cookbook sweep

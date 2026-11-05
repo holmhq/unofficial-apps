@@ -1,9 +1,9 @@
 // Deck's web app: the landing page, a workspace's decks, library and team, Connect via MCP,
 // invites and the first workspace. The studio (studio.js) loads when a deck opens.
-import { api, esc, $, $$, html, toast, ago, kb, icons, MARK, MCP_MARK, sheet, menu, copy, copyField, confirmSheet, currentTheme, setTheme, applyTheme, uploadTo, pickFiles, avatar, wsLogo } from './lib.js?v=0.3.0';
-import { thumb } from '/deck/render.js?v=0.3.0';
-import { LAYOUTS } from './schema.js?v=0.3.0';
-import { subscribe } from './live.js?v=0.3.0';
+import { api, keeper, forgetCached, esc, $, $$, html, toast, ago, kb, icons, MARK, MCP_MARK, sheet, menu, copy, copyField, confirmSheet, currentTheme, setTheme, applyTheme, uploadTo, pickFiles, avatar, wsLogo } from './lib.js?v=0.4.0';
+import { thumb } from '/deck/render.js?v=0.4.0';
+import { LAYOUTS } from './schema.js?v=0.4.0';
+import { subscribe } from './live.js?v=0.4.0';
 
 const root = document.getElementById('app');
 let me = null;
@@ -24,24 +24,55 @@ document.addEventListener('click', (e) => {
   go(a.getAttribute('href'));
 });
 
+// Who's here, kept between visits so a signed-in page draws at once; the next answer from the
+// server replaces it, and the page redraws only if something that shows has changed.
+const ME = 'deck.me';
+const shown = (m) => JSON.stringify([m.signed_in, m.name, m.email, m.picture, m.admin, m.mcp, m.workspaces]);
+function keptMe() {
+  try { const m = JSON.parse(localStorage.getItem(ME) || 'null'); return m && m.signed_in ? m : null; } catch { return null; }
+}
 async function loadMe() {
   me = await api(`/api/me?return=${encodeURIComponent(location.pathname + location.search)}`);
+  try { if (me.signed_in) localStorage.setItem(ME, JSON.stringify(me)); else forgetCached(); } catch { /* private mode */ }
+  if (me.admin) loadSurfaces('/');
   return me;
 }
+
+// Holm writes the addresses of its own pages for this app, analytics among them, into the
+// page it serves to the people allowed to see them. The copy the service worker keeps may
+// predate sign-in, so an admin's browser reads them from a fresh copy (the worker lets a
+// no-store request through).
+let surfaces = globalThis.__HOLM_SURFACES__ || null;
+let surfacesAsked = false;
+function loadSurfaces(path) {
+  if (surfacesAsked) return;
+  surfacesAsked = true;
+  fetch(path, { cache: 'no-store' }).then((r) => r.text()).then((page) => {
+    const m = /__HOLM_SURFACES__\s*=\s*(\{[^}]*\})/.exec(page);
+    surfaces = m ? JSON.parse(m[1]) : null;
+  }).catch(() => { surfacesAsked = false; });
+}
 export const whoami = () => me;
+
+// A workspace's tabs stay alive while you move between them: each keeps its page and its
+// scroll, and only the part that changed is drawn again.
+let place = null;
 
 function cleanup() {
   for (const f of teardown) { try { f(); } catch { /* already gone */ } }
   teardown = [];
+  place = null;
   document.body.classList.remove('in-studio');
   $('.menu')?._close?.();
+  palette?.close();
 }
 export function onLeave(f) { teardown.push(f); }
 
 async function route() {
-  cleanup();
   const path = location.pathname.replace(/\/+$/, '') || '/';
-  let m;
+  let m = /^\/w\/([a-z0-9]{10})(?:\/(library|team))?$/.exec(path);
+  if (m && place && place.ws.id === m[1] && root.contains(place.panel)) { $('.menu')?._close?.(); palette?.close(); return showTab(m[2] || 'decks'); }
+  cleanup();
   if (path === '/') {
     if (!me.signed_in) return landing();
     const ws = lastWorkspace();
@@ -58,7 +89,7 @@ async function route() {
     if (!me.signed_in) return signIn();
     document.title = 'Deck';
     root.innerHTML = '<div class="boot"><div class="spinner"></div></div>';
-    const studio = await import('./studio.js?v=0.3.0');
+    const studio = await import('./studio.js?v=0.4.0');
     return studio.open(root, m[1], { me, go, onLeave, accountButton, rememberWorkspace });
   }
   if ((m = /^\/join\/([a-z0-9]{10,40})$/.exec(path))) return joinPage(m[1]);
@@ -77,16 +108,25 @@ function signIn() { location.href = me.login_url; }
 
 // ---------- shared chrome ----------
 
+// The theme switch: three icons, never the words, so the menu stays narrow.
+function themeChoices() {
+  const theme = currentTheme();
+  return { label: 'Appearance', choices: [['light', 'Light', icons.sun], ['dark', 'Dark', icons.moon], ['system', 'Match device', icons.monitor]].map(([t, label, icon]) => ({ label, icon, checked: theme === t, run: () => setTheme(t) })) };
+}
+
+// The round avatar at the top right, signed out too: then it opens a menu with the theme
+// and Sign in.
 export function accountButton() {
   const b = html(`<button type="button" class="avatar-btn" aria-label="${me.signed_in ? 'Account' : 'Sign in'}" aria-haspopup="menu">${avatar(me.signed_in ? me : null, 32)}</button>`);
   b.addEventListener('click', () => {
-    if (!me.signed_in) return signIn();
-    const theme = currentTheme();
-    const analytics = globalThis.__HOLM_SURFACES__ && globalThis.__HOLM_SURFACES__.analytics;
+    if (!me.signed_in) {
+      const head = html(`<div class="menu-head"><span class="avatar avatar-empty" style="width:34px;height:34px" aria-hidden="true">${icons.user}</span><span style="min-width:0"><b>Not signed in</b><small>Sign in to make decks</small></span></div>`);
+      menu(b, [themeChoices(), '-', { label: 'Sign in', icon: icons.user, run: signIn }], { header: head });
+      return;
+    }
+    const analytics = surfaces && typeof surfaces.analytics === 'string' ? surfaces.analytics : null;
     const head = html(`<div class="menu-head">${avatar(me, 34)}<span style="min-width:0"><b>${esc(me.name || 'You')}</b><small>${esc(me.email || '')}</small></span></div>`);
-    const items = [];
-    // The theme switch: three icons, never the words, so the menu stays narrow.
-    items.push({ label: 'Appearance', choices: [['light', 'Light', icons.sun], ['dark', 'Dark', icons.moon], ['system', 'Match device', icons.monitor]].map(([t, label, icon]) => ({ label, icon, checked: theme === t, run: () => setTheme(t) })) });
+    const items = [themeChoices()];
     items.push('-', { label: 'Connect via MCP…', icon: MCP_MARK, run: () => mcpSheet(b) });
     if (me.admin && analytics) items.push('-', { label: 'Analytics', icon: icons.chart, href: analytics, blank: true });
     items.push('-', { label: 'Sign out', icon: icons.out, run: signOut });
@@ -98,15 +138,17 @@ export function accountButton() {
 async function signOut() {
   await fetch(me.logout_url, { method: 'POST', headers: { accept: 'application/json' } }).catch(() => {});
   try { localStorage.removeItem('deck.ws'); } catch { /* private mode */ }
+  forgetCached();
   location.href = '/';
 }
 
 function credit() {
-  const el = html(`<footer class="credit"><a href="https://holmhq.com" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" width="12" height="12" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0ZM6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>A Holm app</a><span class="dot"></span><button type="button" data-feedback>Send feedback</button></footer>`);
+  const el = html(`<footer class="credit"><a href="https://holmhq.com" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" width="12" height="12" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0ZM6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>A Holm app</a><span class="dot" data-feedback-dot></span><button type="button" data-feedback>Feedback</button><span class="dot"></span><a href="${SOURCE}" target="_blank" rel="noopener">Source</a></footer>`);
   if (FEEDBACK_PROJECT) $('[data-feedback]', el).addEventListener('click', feedback);
-  else { $('[data-feedback]', el).remove(); $('.dot', el).remove(); }
+  else { $('[data-feedback]', el).remove(); $('[data-feedback-dot]', el).remove(); }
   return el;
 }
+const SOURCE = 'https://github.com/holmhq/unofficial-apps/tree/main/deck';
 
 // Send feedback opens Deck's form on feedback.zyt.app. Its script (a copy kept in
 // /vendor/feedback/) loads only when someone asks for it.
@@ -229,21 +271,54 @@ async function workspacePage(wid, tab) {
   }
   const ws = me.workspaces.find((w) => w.id === wid);
   rememberWorkspace(wid);
-  const page = html('<main class="page"></main>');
-  mount(topBar({ ws, tab }), page, tabBar(ws, tab));
-  const views = { decks: decksView, library: libraryView, team: teamView };
-  views[tab](page, ws);
+  const stack = html('<div class="tab-pages"></div>');
+  const bar = topBar({ ws, tab });
+  const tabs = tabBar(ws, tab);
+  const panel = mount(bar, stack, tabs);
+  place = { ws, bar, tabs, panel, stack, pages: {}, tab: null };
+  showTab(tab);
 }
 
-async function decksView(page, ws) {
+// Show one of the workspace's tabs. The first visit draws it; later visits show it again as
+// it was, at its scroll, without asking the server again unless it's been a minute.
+const VIEWS = { decks: decksView, library: libraryView, team: teamView };
+function showTab(tab) {
+  const p = place;
+  if (p.tab === tab) return;
+  if (p.tab) { const was = p.pages[p.tab]; was.scroll = p.panel.scrollTop; was.el.hidden = true; }
+  p.tab = tab;
+  for (const el of $$('[data-tab]', p.bar).concat($$('[data-tab]', p.tabs))) el.classList.toggle('on', el.dataset.tab === tab);
+  let entry = p.pages[tab];
+  if (!entry) {
+    const el = html('<main class="page"></main>');
+    p.stack.append(el);
+    entry = p.pages[tab] = { el, scroll: 0, refresh: null, title: '', at: Date.now() };
+    entry.refresh = VIEWS[tab](el, p.ws);
+    entry.title = document.title;
+  } else {
+    entry.el.hidden = false;
+    document.title = entry.title;
+    // Decks follow realtime; a tab left for a while checks once, quietly, when it comes back.
+    if (Date.now() - entry.at > 60000) { entry.at = Date.now(); entry.refresh?.(); }
+  }
+  p.panel.scrollTop = entry.scroll;
+  p.bar.classList.toggle('lined', entry.scroll > 4);
+}
+
+// After a change to the workspace itself (its name or logo), draw it from scratch.
+function redraw(wid, tab) { cleanup(); workspacePage(wid, tab); }
+
+function decksView(page, ws) {
   document.title = `Decks — ${ws.name}`;
-  page.innerHTML = `<div class="page-head"><div><h1>Decks</h1><p class="count">&nbsp;</p></div><div class="actions"><button type="button" class="btn primary" data-new>${icons.plus}New deck</button></div></div><div data-list></div>`;
+  page.innerHTML = `<div class="page-head"><div><h1>Decks</h1></div><div class="actions"><button type="button" class="btn primary" data-new>${icons.plus}New deck</button></div></div><div data-list></div>`;
   $('[data-new]', page).addEventListener('click', () => newDeck(ws));
   let channel = null;
+  let painted = false;
   const paint = (data) => {
+    painted = true;
+    listen(data);
     const box = $('[data-list]', page);
     const decks = data.decks;
-    $('.count', page).textContent = decks.length ? `${decks.length} deck${decks.length === 1 ? '' : 's'} in ${ws.name}` : ws.name;
     if (!decks.length) {
       box.replaceChildren(html(`<div class="empty"><div class="art">${markTile(54)}</div><h2>No decks yet</h2><p>Start one here, or connect Claude and ask it for a deck about anything you’re working on.</p><div class="row-actions"><button class="btn primary" data-new>${icons.plus}New deck</button><button class="btn" data-sample>Add the sample deck</button><button class="btn" data-mcp>${icons.claude}Connect Claude</button></div></div>`));
       $('.empty [data-new]', page).addEventListener('click', () => newDeck(ws));
@@ -255,24 +330,23 @@ async function decksView(page, ws) {
     grid.replaceChildren(...decks.map((d) => deckCard(d, ws)));
     box.replaceChildren(grid);
   };
-  const load = async () => {
-    try {
-      const data = await api(`/api/w/${ws.id}`);
-      if (!channel && data.workspace.channel) {
-        channel = data.workspace.channel;
-        let timer = 0;
-        onLeave(subscribe(channel, (m) => {
-          if (m.type === 'decks' || (m.type === 'ready' && m.again)) { clearTimeout(timer); timer = setTimeout(load, 300); }
-        }));
-      }
-      paint(data);
-    } catch (error) {
-      if (error.status === 404) { await loadMe(); return go('/', true); }
-      $('[data-list]', page).innerHTML = `<p class="muted">${esc(error.message)}</p>`;
-    }
-  };
+  // Claude's saves and teammates' changes arrive over realtime, so the list stays current.
+  function listen(data) {
+    if (channel || !data.workspace.channel) return;
+    channel = data.workspace.channel;
+    let timer = 0;
+    onLeave(subscribe(channel, (m) => {
+      if (m.type === 'decks' || (m.type === 'ready' && m.again)) { clearTimeout(timer); timer = setTimeout(load, 300); }
+    }));
+  }
+  const fetchDecks = keeper(`/api/w/${ws.id}`, paint);
+  const load = () => fetchDecks().catch(async (error) => {
+    if (error.status === 404) { await loadMe(); return go('/', true); }
+    if (!painted) $('[data-list]', page).innerHTML = `<p class="muted">${esc(error.message)}</p>`;
+  });
   $('[data-list]', page).innerHTML = `<div class="decks">${Array.from({ length: 4 }, () => '<div><div class="frame" style="border-radius:10px;background:var(--panel);box-shadow:var(--sheet)"></div><p style="height:14px;width:60%;margin-top:12px;border-radius:4px;background:var(--hover)"></p></div>').join('')}</div>`;
-  await load();
+  load();
+  return load;
 }
 
 function deckCard(d, ws) {
@@ -306,18 +380,21 @@ async function newDeck(ws, from) {
   } catch (error) { toast(error.message); }
 }
 
-async function libraryView(page, ws) {
+function libraryView(page, ws) {
   document.title = `Library — ${ws.name}`;
   page.innerHTML = `<div class="page-head"><div><h1>Library</h1><p>Screenshots, photos and drawings for ${esc(ws.name)}’s decks. Drop files anywhere on this page.</p></div><div class="actions"><button type="button" class="btn" data-link>${icons.phone}<span>From your phone</span></button><button type="button" class="btn primary" data-upload>${icons.upload}Upload</button></div></div><div class="uploading" hidden><div class="spinner"></div><span></span></div><div class="media-grid"></div>`;
   const grid = $('.media-grid', page);
-  const load = async () => {
-    const { media } = await api(`/api/w/${ws.id}/media`);
+  let painted = false;
+  const paint = ({ media }) => {
+    painted = true;
     if (!media.length) {
       grid.replaceChildren(html(`<div class="empty" style="grid-column:1/-1"><div class="art" style="color:var(--text-3)">${icons.image.replace('class="ic"', 'class="ic" style="width:48px;height:48px;stroke-width:1.2"')}</div><h2>Nothing in the library yet</h2><p>Add screenshots of your product, photos or drawings. Claude can add them too, and every deck in ${esc(ws.name)} can use them.</p></div>`));
       return;
     }
     grid.replaceChildren(...media.map((m) => mediaCard(m, ws, load)));
   };
+  const fetchMedia = keeper(`/api/w/${ws.id}/media`, paint);
+  const load = () => fetchMedia().catch((error) => { if (!painted) grid.innerHTML = `<p class="muted">${esc(error.message)}</p>`; });
   const send = async (files) => {
     if (!files.length) return;
     const status = $('.uploading', page);
@@ -333,8 +410,9 @@ async function libraryView(page, ws) {
   };
   $('[data-upload]', page).addEventListener('click', async () => send(await pickFiles('image/*,.svg,.heic')));
   $('[data-link]', page).addEventListener('click', () => phoneLink(ws));
-  dropZone(send);
-  await load().catch((error) => { grid.innerHTML = `<p class="muted">${esc(error.message)}</p>`; });
+  dropZone(send, () => !page.hidden);
+  load();
+  return load;
 }
 
 // A workspace's logo: any picture already in its library, or a new one (which joins it).
@@ -347,7 +425,7 @@ async function logoSheet(ws, current) {
     s.close();
     await loadMe();
     toast('Logo updated');
-    workspacePage(ws.id, 'team');
+    redraw(ws.id, 'team');
   };
   $('[data-upload]', box).addEventListener('click', async () => {
     const [file] = await pickFiles('image/*,.svg', false);
@@ -382,13 +460,14 @@ function mediaCard(m, ws, reload) {
   return card;
 }
 
-export function dropZone(send) {
+// Files dropped anywhere go to the library, while active() says the library is showing.
+export function dropZone(send, active = () => true) {
   let depth = 0;
   let hint = null;
-  const enter = (e) => { if (![...(e.dataTransfer?.types || [])].includes('Files')) return; e.preventDefault(); depth++; if (!hint) { hint = html('<div class="drop-hint">Drop to add to the library</div>'); document.body.append(hint); } };
-  const over = (e) => { if ([...(e.dataTransfer?.types || [])].includes('Files')) e.preventDefault(); };
+  const enter = (e) => { if (!active() || ![...(e.dataTransfer?.types || [])].includes('Files')) return; e.preventDefault(); depth++; if (!hint) { hint = html('<div class="drop-hint">Drop to add to the library</div>'); document.body.append(hint); } };
+  const over = (e) => { if (active() && [...(e.dataTransfer?.types || [])].includes('Files')) e.preventDefault(); };
   const leave = () => { depth = Math.max(0, depth - 1); if (!depth) { hint?.remove(); hint = null; } };
-  const drop = (e) => { if (!e.dataTransfer?.files?.length) return; e.preventDefault(); depth = 0; hint?.remove(); hint = null; send([...e.dataTransfer.files]); };
+  const drop = (e) => { if (!active() || !e.dataTransfer?.files?.length) return; e.preventDefault(); depth = 0; hint?.remove(); hint = null; send([...e.dataTransfer.files]); };
   document.addEventListener('dragenter', enter);
   document.addEventListener('dragover', over);
   document.addEventListener('dragleave', leave);
@@ -405,16 +484,22 @@ export async function phoneLink(ws) {
   } catch (error) { toast(error.message); }
 }
 
-async function teamView(page, ws) {
+function teamView(page, ws) {
   document.title = `Team — ${ws.name}`;
-  page.innerHTML = '<div class="page-head"><div><h1>Team</h1><p>&nbsp;</p></div><div class="actions"></div></div><div data-body><div class="spinner"></div></div>';
-  let data;
-  try { data = await api(`/api/w/${ws.id}/team`); } catch (error) { $('[data-body]', page).innerHTML = `<p class="muted">${esc(error.message)}</p>`; return; }
+  page.innerHTML = '<div class="page-head"><div><h1>Team</h1></div><div class="actions"></div></div><div data-body><div class="spinner"></div></div>';
+  let painted = false;
+  const fetchTeam = keeper(`/api/w/${ws.id}/team`, (data) => { painted = true; paintTeam(page, ws, data, load); });
+  const load = () => fetchTeam().catch((error) => { if (!painted) $('[data-body]', page).innerHTML = `<p class="muted">${esc(error.message)}</p>`; });
+  load();
+  return load;
+}
+
+function paintTeam(page, ws, data, load) {
   const manage = data.workspace.can_manage;
-  $('.page-head p', page).textContent = `${data.members.length} ${data.members.length === 1 ? 'person makes' : 'people make'} decks in ${ws.name}.`;
+  $('.actions', page).replaceChildren();
   if (manage) {
     const b = html(`<button type="button" class="btn primary">${icons.plus}Invite people</button>`);
-    b.addEventListener('click', () => inviteSheet(ws, () => teamView(page, ws)));
+    b.addEventListener('click', () => inviteSheet(ws, load));
     $('.actions', page).append(b);
   }
   const body = $('[data-body]', page);
@@ -424,11 +509,11 @@ async function teamView(page, ws) {
     const settings = html(`<div><div class="section-title" style="margin-top:0">Workspace</div><div class="group"><div class="row ws-row">${wsLogo(data.workspace, 40)}<div class="row-main"><input class="input" data-name value="${esc(data.workspace.name)}" maxlength="60" aria-label="Workspace name" style="max-width:360px"></div><div class="row-actions"><button class="btn" data-logo>${data.workspace.logo ? 'Change logo' : 'Add a logo'}</button>${data.workspace.logo ? '<button class="btn" data-logo-remove>Remove</button>' : ''}</div></div></div></div>`);
     const nameInput = $('[data-name]', settings);
     nameInput.addEventListener('change', async () => {
-      try { await api(`/api/w/${ws.id}`, { method: 'PATCH', body: { name: nameInput.value } }); await loadMe(); toast('Renamed'); workspacePage(ws.id, 'team'); } catch (error) { toast(error.message); }
+      try { await api(`/api/w/${ws.id}`, { method: 'PATCH', body: { name: nameInput.value } }); await loadMe(); toast('Renamed'); redraw(ws.id, 'team'); } catch (error) { toast(error.message); }
     });
     $('[data-logo]', settings).addEventListener('click', () => logoSheet(ws, data.workspace.logo));
     $('[data-logo-remove]', settings)?.addEventListener('click', async () => {
-      try { await api(`/api/w/${ws.id}`, { method: 'PATCH', body: { logo: null } }); await loadMe(); workspacePage(ws.id, 'team'); } catch (error) { toast(error.message); }
+      try { await api(`/api/w/${ws.id}`, { method: 'PATCH', body: { logo: null } }); await loadMe(); redraw(ws.id, 'team'); } catch (error) { toast(error.message); }
     });
     body.append(settings);
   }
@@ -447,13 +532,13 @@ async function teamView(page, ws) {
   }
   async function setRole(m, role) {
     if (role === 'remove' && !(await confirmSheet(`Remove ${m.name}?`, `They lose access to ${ws.name}'s decks and library.`, 'Remove', { danger: true }))) return;
-    try { await api(`/api/w/${ws.id}/team/${m.account}`, { method: 'PATCH', body: { role } }); toast(role === 'remove' ? 'Removed' : 'Role changed'); teamView(page, ws); } catch (error) { toast(error.message); }
+    try { await api(`/api/w/${ws.id}/team/${m.account}`, { method: 'PATCH', body: { role } }); toast(role === 'remove' ? 'Removed' : 'Role changed'); load(); } catch (error) { toast(error.message); }
   }
   body.append(people);
   if (manage && data.invites.length) {
     const inv = html('<div><div class="section-title">Open invites</div><div class="group"></div></div>');
     for (const i of data.invites) {
-      const row = html(`<div class="row"><span class="avatar avatar-empty" style="width:36px;height:36px">${icons.mail}</span><div class="row-main"><span class="row-title">${esc(i.email || 'Anyone with the link')}</span><span class="row-sub">${ROLE[i.role]} · from ${esc(i.invited_by || 'the team')} · expires ${esc(ago(i.expires_at).replace(' ago', ''))}</span></div><div class="row-actions"><button class="btn" data-revoke>Revoke</button></div></div>`);
+      const row = html(`<div class="row"><span class="avatar avatar-empty" style="width:36px;height:36px">${icons.mail}</span><div class="row-main"><span class="row-title">${esc(i.email || 'Anyone with the link')}</span><span class="row-sub wraps">${ROLE[i.role]} · from ${esc(i.invited_by || 'the team')} · ${esc(expiresIn(i.expires_at))}</span></div><div class="row-actions"><button class="btn" data-revoke>Revoke</button></div></div>`);
       $('[data-revoke]', row).addEventListener('click', async () => { try { await api(`/api/w/${ws.id}/invites/${i.id}`, { method: 'DELETE' }); row.remove(); toast('Invite revoked'); } catch (error) { toast(error.message); } });
       $('.group', inv).append(row);
     }
@@ -465,6 +550,13 @@ async function teamView(page, ws) {
     try { await api(`/api/w/${ws.id}/leave`, { method: 'POST', body: {} }); await loadMe(); toast(`You left ${ws.name}`); go('/', true); } catch (error) { toast(error.message); }
   });
   body.append(leave);
+}
+
+// When an invite stops working, counted forward (ago() only counts back).
+function expiresIn(iso) {
+  const days = Math.ceil((Date.parse(iso) - Date.now()) / 86400000);
+  if (!(days > 0)) return 'expires today';
+  return days === 1 ? 'expires tomorrow' : `expires in ${days} days`;
 }
 
 function inviteSheet(ws, done) {
@@ -586,12 +678,128 @@ async function joinPage(code) {
   });
 }
 
+// ---------- ⌘K ----------
+
+// A place, a deck or something to do, by typing a few letters of it. ⌘K again, Escape or a
+// click outside closes it.
+let palette = null;
+function openPalette() {
+  if (palette) { palette.close(); return; }
+  if (!me || !me.signed_in) return;
+  const ws = (place && place.ws) || lastWorkspace();
+  const opener = document.activeElement;
+  const input = html('<input class="pal-field" type="text" placeholder="Go to, find or do…" aria-label="Go to, find or do" autocomplete="off" spellcheck="false">');
+  const list = html('<div class="pal-list" role="listbox" aria-label="Results"></div>');
+  const box = html(`<div class="pal" role="dialog" aria-modal="true" aria-label="Command menu"><div class="pal-top">${icons.search}</div></div>`);
+  $('.pal-top', box).append(input, html('<kbd>esc</kbd>'));
+  box.append(list);
+  const layer = html('<div class="pal-layer"></div>');
+  layer.append(box);
+  layer.addEventListener('pointerdown', (e) => { if (e.target === layer) close(); });
+  document.body.append(layer);
+  input.focus();
+  let decks = [];
+  try { decks = ws ? (JSON.parse(localStorage.getItem(`deck.cache:/api/w/${ws.id}`) || 'null')?.decks || []) : []; } catch { /* none kept */ }
+  const commands = () => [
+    ...(ws ? [
+      { label: 'Decks', icon: icons.decks, hint: ws.name, run: () => go(`/w/${ws.id}`) },
+      { label: 'Library', icon: icons.image, hint: ws.name, run: () => go(`/w/${ws.id}/library`) },
+      { label: 'Team', icon: icons.team, hint: ws.name, run: () => go(`/w/${ws.id}/team`) },
+    ] : []),
+    ...decks.map((d) => ({ label: d.title, icon: icons.decks, hint: 'Deck', deck: true, run: () => go(`/d/${d.id}`) })),
+    ...(ws ? [{ label: 'New deck', icon: icons.plus, run: () => newDeck(ws) }] : []),
+    { label: 'Connect via MCP…', icon: MCP_MARK, run: () => mcpSheet() },
+    ...me.workspaces.filter((w) => !ws || w.id !== ws.id).map((w) => ({ label: w.name, icon: wsLogo(w, 18), hint: 'Workspace', run: () => go(`/w/${w.id}`) })),
+    { label: 'New workspace', icon: icons.plus, run: () => go('/new') },
+  ];
+  const score = (text, q) => {
+    const t = String(text).toLowerCase();
+    if (t.startsWith(q)) return 3;
+    if (t.includes(' ' + q)) return 2;
+    if (t.includes(q)) return 1;
+    let i = 0;
+    for (const ch of t) if (ch === q[i]) i++;
+    return i === q.length ? 0.5 : 0;
+  };
+  let at = 0;
+  let shown = [];
+  function draw() {
+    const q = input.value.trim().toLowerCase();
+    const all = commands();
+    // With nothing typed: places, the six latest decks, then the rest.
+    let decksLeft = 6;
+    shown = q ? all.map((c) => ({ ...c, s: score(c.label, q) })).filter((c) => c.s > 0).sort((a, b) => b.s - a.s).slice(0, 12)
+      : all.filter((c) => !c.deck || decksLeft-- > 0);
+    at = Math.min(at, Math.max(0, shown.length - 1));
+    list.replaceChildren(...(shown.length ? shown.map((c, n) => {
+      const b = html(`<button type="button" class="pal-item${n === at ? ' is-on' : ''}" role="option" aria-selected="${n === at}"><span class="pal-ic">${c.icon}</span><span class="pal-label"></span>${c.hint ? '<small></small>' : ''}</button>`);
+      $('.pal-label', b).textContent = c.label;
+      if (c.hint) $('small', b).textContent = c.hint;
+      b.addEventListener('pointermove', () => { if (at !== n) { at = n; mark(); } });
+      b.addEventListener('click', () => pick(c));
+      return b;
+    }) : [html('<div class="pal-none">Nothing matches</div>')]));
+  }
+  const mark = () => [...list.children].forEach((el, n) => { el.classList.toggle('is-on', n === at); el.setAttribute('aria-selected', String(n === at)); });
+  // Keep the chosen row in view by scrolling the list itself, never the page.
+  const reveal = () => {
+    const el = list.children[at];
+    if (!el) return;
+    if (el.offsetTop < list.scrollTop) list.scrollTop = el.offsetTop - 6;
+    else if (el.offsetTop + el.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = el.offsetTop + el.offsetHeight - list.clientHeight + 6;
+  };
+  function pick(c) { close(); setTimeout(() => c.run(), 0); }
+  function close() {
+    if (palette !== api_) return;
+    palette = null;
+    document.removeEventListener('keydown', onKey, true);
+    layer.classList.add('out');
+    setTimeout(() => layer.remove(), 160);
+    if (opener && opener.isConnected && opener !== document.body) opener.focus({ preventScroll: true });
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); at = Math.min(shown.length - 1, at + 1); mark(); reveal(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); at = Math.max(0, at - 1); mark(); reveal(); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (shown[at]) pick(shown[at]); }
+  }
+  document.addEventListener('keydown', onKey, true);
+  input.addEventListener('input', () => { at = 0; draw(); list.scrollTop = 0; });
+  draw();
+  const api_ = { close };
+  palette = api_;
+}
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K')) {
+    if (!palette && ($('.sheet-box') || $('.menu'))) return;
+    e.preventDefault();
+    openPalette();
+  }
+});
+
 // ---------- start ----------
 
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname.endsWith('localhost'))) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 applyTheme();
-try {
-  await loadMe();
+const keptAccount = keptMe();
+if (keptAccount) {
+  // Draw at once from the account kept here, then take the server's answer.
+  me = keptAccount;
   route();
-} catch (error) {
-  root.innerHTML = `<div class="card-page"><div class="solo"><h1>Deck can’t load</h1><p>${esc(error.message)}</p><form><button class="btn primary" type="button" onclick="location.reload()">Try again</button></form></div></div>`;
+  loadMe().then((fresh) => {
+    if (shown(fresh) === shown(keptAccount)) return;
+    if (location.pathname.startsWith('/d/') && fresh.signed_in) return;
+    cleanup();
+    route();
+  }).catch(() => {});
+} else {
+  try {
+    await loadMe();
+    route();
+  } catch (error) {
+    root.innerHTML = `<div class="card-page"><div class="solo"><h1>Deck can’t load</h1><p>${esc(error.message)}</p><form><button class="btn primary" type="button" onclick="location.reload()">Try again</button></form></div></div>`;
+  }
 }

@@ -75,7 +75,11 @@ needs `--spec-v1`; the node runs no build. Only `web/` is served as files:
 
 Like a native app, the window never scrolls: the bars stay put and frosted,
 one panel scrolls under them with no scroll bars, and on a phone a tab bar sits
-at the bottom with the Holm credit and Send feedback just above it. A calm grey
+at the bottom with the Holm credit, Feedback and Source just above it. It opens
+at once: a service worker keeps every file of the version you have, pages draw
+from the last answer kept in your browser and redraw only what changed, and a
+workspace's Decks, Library and Team keep their place as you move between them.
+⌘K (Ctrl K) jumps to a place, a deck or an action. A calm grey
 canvas with raised white sheets, Inter set at real sizes inside
 each slide (everything is measured in container units, so a slide looks the
 same full screen, in the studio and as a thumbnail), frosted bars, sheets that
@@ -99,7 +103,11 @@ api/guide.md       the format and workflow Claude reads (guide_get)
 api/sample.json    the sample deck
 web/deck/          the slide renderer and its styles, shared by every view
 web/src/           the app (app.js, studio.js, schema.js), viewer (view.js), upload page
+web/sw.js          the service worker: precaches the app, leaves server-written pages alone
+tools/check.mjs    release check: the worker lists every file at holm.json's version
 ```
+
+Run `node tools/check.mjs` before a release; it isn't deployed.
 
 Holm primitives it uses:
 
@@ -139,7 +147,7 @@ holm @<peer> settings set settings.apps.<app-id>.brand.social_preview_url /socia
 holm @<peer> settings set settings.apps.<app-id>.theme.accent '#2f5bd8'
 ```
 
-**Feedback:** Send feedback opens a form from the owner's
+**Feedback:** Feedback in the footer opens a form from the owner's
 [feedback](../feedback/) app through a local copy of its `embed.js`
 (`web/vendor/feedback/`). Set `FEEDBACK_PROJECT` in `web/src/app.js` to your
 own project, or leave it empty to hide the link. The site must be allowed to
@@ -180,6 +188,8 @@ workspace, presenting from the studio and the sample deck are not counted.
 - **Limits:** 60 slides and 200 KB per deck, 300 revisions per deck, 200 decks
   per workspace, 500 pictures (12 MB each) per library, 5 owned workspaces per
   person.
+- **The library and Team** check the server again only when you come back
+  to them after a minute; Decks follow realtime.
 - **Stats** count slides by position, so a reordered deck mixes old and new
   answers. They read the latest 2,000 opens of a deck, and stop counting past
   600 opens an hour. An embed counts time only while someone interacts with it,

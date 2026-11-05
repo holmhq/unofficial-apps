@@ -137,6 +137,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .row-main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .row-title { font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-sub { font-size: 12.5px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-sub.wraps { white-space: normal; }
 .row-actions { display: flex; align-items: center; gap: 6px; flex: none; }
 .group-note { margin: 8px 4px 0; font-size: 12.5px; color: var(--text-3); }
 
@@ -170,6 +171,9 @@ button, input, textarea, select { font: inherit; color: inherit; }
   transition: border-color var(--fast), box-shadow var(--fast);
 }
 [data-theme='dark'] .input, [data-theme='dark'] .textarea, [data-theme='dark'] .select { background: var(--sunken); }
+.select.pick { display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; }
+.select.pick .pick-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.select.pick .ic { width: 15px; height: 15px; color: var(--text-3); }
 .input:focus, .textarea:focus, .select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus); }
 .textarea { resize: vertical; min-height: 64px; }
 .input.mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12.5px; }
@@ -258,9 +262,34 @@ button, input, textarea, select { font: inherit; color: inherit; }
 /* ---------- footer credit ---------- */
 
 .credit { display: flex; justify-content: center; align-items: center; gap: 14px; padding: 26px 16px calc(30px + env(safe-area-inset-bottom)); font-size: 12.5px; color: var(--text-3); }
-.credit a, .credit button { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 0; color: inherit; font-size: inherit; text-decoration: none; cursor: pointer; }
+.credit a, .credit button { display: inline-flex; flex: none; white-space: nowrap; align-items: center; gap: 6px; border: 0; background: none; padding: 0; color: inherit; font-size: inherit; text-decoration: none; cursor: pointer; }
 .credit a:hover, .credit button:hover { color: var(--text-2); }
-.credit .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--line-2); }
+.credit .dot { flex: none; width: 3px; height: 3px; border-radius: 50%; background: var(--line-2); }
+
+/* A workspace's tabs: each keeps its page while another shows. */
+.tab-pages > .page[hidden] { display: none; }
+
+/* ---------- ⌘K ---------- */
+
+.pal-layer { position: fixed; inset: 0; z-index: 90; display: flex; justify-content: center; align-items: flex-start; padding: min(14vh, 120px) 16px 16px; background: var(--scrim); animation: fade-in 160ms var(--ease) both; }
+.pal-layer.out { animation: fade-out 150ms var(--ease) both; }
+.pal { width: min(560px, 100%); max-height: min(460px, 70svh); display: flex; flex-direction: column; border-radius: 14px; background: var(--panel); box-shadow: var(--pop); overflow: hidden; animation: pal-in 220ms var(--ease-out) both; }
+[data-theme='dark'] .pal { background: var(--panel-2); }
+@keyframes pal-in { from { opacity: 0; transform: translateY(-6px) scale(0.985); } }
+.pal-top { display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 52px; border-bottom: 1px solid var(--line); color: var(--text-3); }
+.pal-field { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; font-size: 16px; color: var(--text); }
+.pal-field::placeholder { color: var(--text-3); }
+.pal-top kbd { flex: none; padding: 2px 6px; border-radius: 5px; background: var(--hover); font: 600 11px/1.4 var(--font); color: var(--text-3); }
+.pal-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px; }
+.pal-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 6px 10px; border: 0; border-radius: 8px; background: transparent; text-align: left; font-size: 14px; color: var(--text); cursor: pointer; }
+.pal-item.is-on { background: var(--hover); }
+.pal-ic { flex: none; display: grid; place-items: center; width: 22px; color: var(--text-2); }
+.pal-ic .ic { width: 17px; height: 17px; }
+.pal-ic .ws-logo { width: 18px !important; height: 18px !important; font-size: 9px !important; border-radius: 5px; }
+.pal-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pal-item small { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text-3); }
+.pal-none { padding: 18px 10px; text-align: center; font-size: 13.5px; color: var(--text-3); }
+@media (max-width: 640px) { .pal-layer { padding-top: calc(10px + env(safe-area-inset-top)); } .pal-top kbd { display: none; } }
 
 /* ---------- phones: a tab bar at the bottom ---------- */
 
@@ -495,7 +524,7 @@ body.in-studio { overflow: hidden; height: 100svh; }
 .layout-pick > span > small { display: block; font-size: 12px; color: var(--text-3); }
 .layout-pick .ic { margin-left: auto; color: var(--text-3); width: 16px; height: 16px; }
 .insp-body .field { margin-bottom: 12px; }
-.insp-body .input, .insp-body .textarea { font-size: 13.5px; min-height: 32px; padding: 6px 9px; }
+.insp-body .input, .insp-body .textarea, .insp-body .select.pick { font-size: 13.5px; min-height: 32px; padding: 6px 9px; }
 .insp-body .textarea { min-height: 56px; }
 .list-field { margin: 4px 0 16px; }
 .list-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -510,8 +539,8 @@ body.in-studio { overflow: hidden; height: 100svh; }
 .nums .field { margin-bottom: 8px; }
 .nums .field > span { font-size: 11px; }
 .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
-.swatch { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 0; cursor: pointer; background: var(--sw); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.15); transition: transform var(--fast) var(--spring); }
-.swatch:hover { transform: scale(1.08); }
+.swatch { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 0; cursor: pointer; background: var(--sw); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.15); transition: box-shadow var(--fast); }
+@media (hover: hover) { .swatch:not(.on):hover { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12), 0 0 0 2px var(--panel), 0 0 0 3.5px var(--line-2); } }
 .swatch.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--sw); }
 .swatch.none { background: var(--panel); box-shadow: inset 0 0 0 1.5px var(--line-2); position: relative; }
 .swatch.none::after { content: ''; position: absolute; left: 4px; right: 4px; top: 50%; height: 1.5px; background: var(--line-2); transform: rotate(-45deg); }
@@ -647,4 +676,10 @@ body.in-studio { overflow: hidden; height: 100svh; }
   .insp-close, .insp-toggle { display: none !important; }
   .canvas [contenteditable] { -webkit-user-modify: read-write-plaintext-only; }
   .banner { position: fixed; top: 60px; width: calc(100vw - 24px); }
+}
+
+/* On phones and touch screens fields take 16px, so iOS doesn't zoom into them. Last, so it
+   outranks every field's own size above. */
+@media (max-width: 760px), (pointer: coarse) {
+  .input, .textarea, .select, .input.mono, .insp-body .input, .insp-body .textarea, .notes-edit .textarea, .st-title { font-size: 16px; }
 }

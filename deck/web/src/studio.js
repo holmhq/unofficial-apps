@@ -3,10 +3,10 @@
 // including lists, links, colours and pictures. Edits save a moment after typing stops.
 // Saves from Claude (or a teammate) arrive over realtime and reload the deck in place on
 // the same slide; if you were mid-edit, a banner asks which version to keep.
-import { api, esc, $, $$, html, toast, ago, icons, sheet, menu, copyField, confirmSheet, uploadTo, pickFiles, chime, kb } from './lib.js?v=0.3.0';
-import { renderSlide, thumb, slideTitle } from '/deck/render.js?v=0.3.0';
-import { LAYOUTS, TEMPLATES, switchLayout, ACCENT_NAMES, CARD_COLORS } from './schema.js?v=0.3.0';
-import { subscribe } from './live.js?v=0.3.0';
+import { api, esc, $, $$, html, toast, ago, icons, sheet, menu, copyField, confirmSheet, uploadTo, pickFiles, chime, kb } from './lib.js?v=0.4.0';
+import { renderSlide, thumb, slideTitle } from '/deck/render.js?v=0.4.0';
+import { LAYOUTS, TEMPLATES, switchLayout, ACCENT_NAMES, CARD_COLORS } from './schema.js?v=0.4.0';
+import { subscribe } from './live.js?v=0.4.0';
 
 const CLIENT = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -499,10 +499,17 @@ function fieldEl(f, obj, path) {
     return el;
   }
   if (f.type === 'select') {
-    const el = html(`<label class="field">${label(f.label)}<select class="select">${f.options.map(([v, t]) => `<option value="${esc(v)}">${esc(t)}</option>`).join('')}</select></label>`);
-    const input = $('select', el);
-    input.value = value || '';
-    input.addEventListener('change', () => { setPath(slide(), path, input.value || null); changed(); canvasSoon(); });
+    // A designed dropdown: the choice in a field, and a menu of choices with a tick.
+    const el = html(`<div class="field">${label(f.label)}<button type="button" class="select pick" aria-haspopup="menu"><span class="pick-label"></span>${icons.updown}</button></div>`);
+    const button = $('button', el);
+    let current = value || '';
+    const show = () => { $('.pick-label', button).textContent = (f.options.find(([v]) => v === current) || f.options[0])[1]; };
+    button.setAttribute('aria-label', f.label);
+    button.addEventListener('click', () => menu(button, f.options.map(([v, t]) => ({
+      label: t, checked: v === current,
+      run: () => { current = v; show(); setPath(slide(), path, v || null); changed(); canvasSoon(); },
+    }))));
+    show();
     return el;
   }
   if (f.type === 'link') {

@@ -18,6 +18,32 @@ export async function api(path, options = {}) {
   return data;
 }
 
+// Pages draw at once from the last answer kept in this browser, then ask the server and draw
+// again only if its answer changed. keeper(path, paint) returns load(), which a page calls
+// on open and again whenever it wants to check; a failed check leaves what is showing.
+const KEEP = 'deck.cache:';
+export function keeper(path, paint) {
+  let last = null;
+  return async function load() {
+    if (last === null) {
+      let kept = null;
+      try { kept = localStorage.getItem(KEEP + path); } catch { /* private mode */ }
+      if (kept) { try { paint(JSON.parse(kept)); last = kept; } catch { /* a bad copy: ask */ } }
+    }
+    let data;
+    try { data = await api(path); } catch (error) { if (last !== null) return; throw error; }
+    const text = JSON.stringify(data);
+    if (text === last) return;
+    last = text;
+    try { localStorage.setItem(KEEP + path, text); } catch { /* full or private */ }
+    paint(data);
+  };
+}
+// Signing out leaves nothing of the account in this browser.
+export function forgetCached() {
+  try { for (const key of Object.keys(localStorage)) if (key.startsWith(KEEP) || key === 'deck.me') localStorage.removeItem(key); } catch { /* private mode */ }
+}
+
 let toastTimer = 0;
 // A short note at the bottom. action: { label, run } adds a button.
 export function toast(text, action, ms = 2800) {
@@ -51,6 +77,7 @@ export const kb = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${M
 const P = (d) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
 export const icons = {
   plus: P('<path d="M5 12h14m-7-7v14"/>'),
+  search: P('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'),
   back: P('<path d="m15 18-6-6 6-6"/>'),
   chev: P('<path d="m9 18 6-6-6-6"/>'),
   down: P('<path d="m6 9 6 6 6-6"/>'),
