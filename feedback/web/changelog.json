@@ -1,6 +1,14 @@
 {
   "releases": [
     {
+      "version": "0.19.2",
+      "date": "2026-11-05",
+      "title": "Room for more projects",
+      "changes": [
+        "You can now have up to 30 projects, up from 20."
+      ]
+    },
+    {
       "version": "0.19.1",
       "date": "2026-11-05",
       "title": "Link previews",

@@ -31,7 +31,8 @@ export const ICONS = ['flame', 'rocket', 'globe', 'store', 'utensils', 'coffee',
   'gem', 'trophy', 'compass', 'feather', 'wrench', 'shield', 'bike', 'stethoscope']
 export const iconOf = doc => doc.icon === 'letter' || ICONS.includes(doc.icon) ? doc.icon
   : ICONS[doc.id.split('').reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) % 9973, 7) % ICONS.length]
-const MAX_PROJECTS = 20
+// Listing projects reads each one's waiting counts, so the list stays quick on a slow store.
+const MAX_PROJECTS = 30
 // A custom address: 3 to 40 lowercase letters, digits and inner hyphens.
 const SLUG = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/
 // First path segments the app itself uses (src/app.js keeps the same list).

@@ -514,7 +514,9 @@ and dark, and browser CSP errors. Local validation is not runtime proof.
 - "Allowed sites" checks the page address the form sends, so it stops casual
   misuse, not a determined sender. Spam is held back by a hidden trap field,
   caps of 120 items and 60 comments per project per hour, and 200 MB of files
-  per project per day.
+  per project per day. Each person can have up to 30 projects; listing them
+  reads every project's waiting counts, so a much higher cap would make the
+  list slow on a node with slow storage.
 - Stats count events: two opens by one person count twice, and the owner's
   own visits count too. Counters are kept for about a year.
 - Custom addresses are first come, first served across the whole app, and a
