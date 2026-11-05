@@ -1177,11 +1177,11 @@
     {
       "name": "margin",
       "path": "margin",
-      "version": "0.6.1",
-      "tag": "margin/v0.6.1",
-      "h1": "h1:Us7f6liLob2x7wn8HnVyyXpK8RgjdPMdQpzAcnpheYE=",
-      "files": 145,
-      "size": 4095829,
+      "version": "0.7.0",
+      "tag": "margin/v0.7.0",
+      "h1": "h1:M0DCOKa+BRZSMTiw3qL3xHLYDpcJHKFqMJC1Cf3nXBc=",
+      "files": 151,
+      "size": 4154355,
       "title": "Margin",
       "description": "A writing platform for teams: workspaces, personas, quote comments, drawn covers, swappable themes and Claude as a co-writer.",
       "themeColor": "#1a7f64",
@@ -1191,7 +1191,7 @@
         "subtitle": "A place for your team to write, with Claude on it",
         "category": "Productivity",
         "description": "A writing platform for teams, at your own address. Readers comment in the margin beside any passage, and Claude can draft and publish posts and answer comments as you.\n\nSign in, pick your name, and start a workspace for your team at its own address, such as /lumen. Invite the people who write with a single-use link. Each writer has a page there, like /lumen/@maya, and can keep personas: other names to write and comment under, which readers can't link back to them. One person can be in many workspaces.\n\nAny post can have a drawn cover instead of a photo: an isometric line drawing in the workspace's style, on paper, in a flat colour or in bold blocks, that moves under your pointer. Point at a day and it lifts out of the calendar; move across a battery and the sun crosses the sky while it charges.\n\nReaders comment the way they would in a book's margin: select any passage, add a note, and it stays highlighted for everyone, with the conversation beside it. Or respond to the whole post. Anyone signed in comments on any workspace, under the name they pick, and each workspace decides whether comments from outside its team wait for approval. Claps go up to fifty a person.\n\nThe editor is block-based like Notion, posts are Markdown underneath, and every page is rendered on the server, so it reads without JavaScript and search engines see it all. Themes are a few HTML templates and a stylesheet; each workspace picks one. Connect Claude and it can draft and publish posts as you, answer ordinary comments in your voice and leave anything sensitive for you.",
-        "whatsNew": "A pass over the details: headings wrap evenly, footer links are easier to tap, invites say how long they have left, comment times show the day, Claude's connector address is readable on a phone, post previews skip raw formulae, and the sample teams wear their own colours.",
+        "whatsNew": "Everyone signed in can now connect Claude, not just the server's admins: each tool allows only what you can do in Studio. Connect via MCP in the account menu shows the address to copy, with steps for Claude, ChatGPT and Claude Code. Links to copy are one tap, and the theme files Claude downloads include the built-in stylesheets again. The theme switch is three icons now.",
         "featured": false,
         "related": [
           "deck",
@@ -1267,171 +1267,171 @@
       "mcp": [
         {
           "name": "me.get",
-          "summary": "Start here: who you are on Margin, your names, and your workspaces",
+          "summary": "See who you are, your names and workspaces",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "identities.list",
           "summary": "Your names: your main name and personas",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "workspaces.create",
           "summary": "Start a new workspace for a team",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "posts.list",
           "summary": "List posts you can edit: drafts and published",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "posts.get",
           "summary": "Read one post with its full Markdown",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "posts.create",
           "summary": "Write a new post (draft by default) in Markdown",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "posts.update",
           "summary": "Edit, publish or unpublish a post",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "posts.delete",
           "summary": "Delete a post with its comments and claps",
           "risk": "destructive",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "comments.inbox",
-          "summary": "Comments on your posts that need you: waiting for approval, or not answered",
+          "summary": "See comments that need you",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "comments.list",
           "summary": "Read every comment on a post, with quotes and replies",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "comments.reply",
-          "summary": "Reply to a comment, as the post's blog by default",
+          "summary": "Reply to a comment",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "comments.create",
-          "summary": "Comment on a post, optionally on a quoted passage or as a persona",
+          "summary": "Comment on a post",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "comments.moderate",
           "summary": "Approve, reject or delete a comment",
           "risk": "destructive",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "personas.create",
           "summary": "Create a persona: a shared identity people can post and comment as",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "personas.update",
           "summary": "Change one of your names (name, bio, picture)",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "personas.delete",
           "summary": "Remove one of your personas",
           "risk": "destructive",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "media.list",
           "summary": "List your photos, drawings and videos to use in posts",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "media.upload",
           "summary": "Add a drawing (SVG) or a small photo to your library",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "media.link",
           "summary": "Get a link that adds photos and videos to your library",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "workspace.get",
           "summary": "See a workspace's settings (owners and admins)",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "workspace.update",
           "summary": "Change a workspace's settings (owners and admins)",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "workspace.leave",
           "summary": "Leave a workspace",
           "risk": "destructive",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "team.list",
           "summary": "List a workspace's team and open invites (owners and admins)",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "team.update",
           "summary": "Change someone's role, or remove them (owners and admins)",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "themes.list",
           "summary": "List themes and which one is live",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "themes.reference",
           "summary": "How themes work: files, template data, hooks and rules",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "themes.get",
           "summary": "Download every file of a theme to study or change",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "themes.validate",
           "summary": "Check a theme without saving it",
           "risk": "read",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "themes.save",
@@ -1443,23 +1443,28 @@
           "name": "themes.activate",
           "summary": "Make a theme live, and optionally change its settings",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "invites.create",
           "summary": "Invite someone to write on this blog",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         },
         {
           "name": "invites.revoke",
           "summary": "Cancel an invite link (owners and admins)",
           "risk": "write",
-          "auth": "member"
+          "auth": "user"
         }
       ],
-      "prompt": "Build \"Margin\", a writing platform for teams, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 (with\n\"Use your app from ChatGPT or Claude\" and \"One page per document id\") and\n\"Make an app feel finished\" first. Make\nholm.json, public web/ files and api/main.js exporting default\n{ fetch(request, env) } plus named operations. Use env.holm for storage,\nsign-in, realtime and email, return standard Responses, and fall back to\nenv.holm.web.fetch(request). No third-party runtime CDN: vendor libraries and\nfonts with their licences. A locally built editor bundle is fine if its build\nscript is in the folder.\n\n- A minimal, elegant front page: what Margin is, two example workspaces, and\n  the way in. Anyone signs in, picks a name and handle, starts a workspace for\n  their team (/<workspace>), and invites people with single-use links. Writers'\n  posts live at /<workspace>/@<handle>/seo-slug; a workspace can post as\n  itself. One person can be in many workspaces, with a role in each (owner,\n  admin, writer). Old addresses keep redirecting.\n- Everyone can keep personas: other names to write and comment under. Readers\n  must not be able to tell personas are the same person; a workspace's owners\n  see which names their members use there.\n- Margin's admins (the node's) choose who can join (anyone; anyone to comment\n  with workspaces by invitation; invited only), make the front page Margin's\n  landing, one workspace or one writer, pick the examples, and suspend\n  workspaces. A workspace's owners make its home the latest posts, a curated\n  set of pinned posts, or one writer's page.\n- Reading pages are rendered on the server, readable with no JavaScript,\n  with feeds, a sitemap and social cards. They must feel instant: keep each\n  rendered page until something visible changes, answer revalidations with\n  a 304 before loading the rest of the app, keep Margin's own CSS and\n  scripts in the browser under versioned addresses, and prefetch links on\n  hover. Every footer has a small Holm mark (\"A Holm app\") and Send\n  feedback, from this repository's feedback app. Posts are Markdown underneath, with\n  callouts, embeds from a bare link, cards for other posts, and figures.\n- A post can have a photo or a drawn cover, chosen by the writer (none until\n  then): an isometric technical line\n  drawing (one projection, three line weights, flat colour, small labels) in\n  the workspace's style (paper, a flat tone, or blocks), with a subject the\n  writer picks, that reacts to the pointer. Save a PNG of it for link previews.\n- Comments like Medium: select a passage to comment on it (keep the quote\n  with its surrounding words so it re-anchors), or respond to the whole post;\n  one level of replies; anyone signed in comments anywhere, as any of their\n  names; each workspace shows comments at once, holds those from outside its\n  team, or holds all. Claps, up to 50 per person. Link previews for posts.\n- Themes are swappable: theme.json, Mustache templates, partials and assets,\n  with a validator that refuses scripts, outside URLs and raw HTML other than\n  Margin's own hooks. Ship two (a clean Apple-like one with chat-style comment\n  threads, and an editorial serif one with notes in the margin). Margin's\n  admins add themes; each workspace picks one.\n- A Notion-like editor: slash menu, a bar for formatting, block handles,\n  dropped-in photos (shrunk in the browser) and short videos, autosave.\n- Code and maths that read well: highlight fenced code by its language (name\n  it above the block, with a Copy button) and typeset LaTeX maths ($…$ and\n  $$ blocks) on the server, so pages need no JavaScript; in the editor,\n  formulae show typeset and open to edit. A price like \"$5 and $10\" stays\n  text.\n- Photos, SVG drawings and short videos from Claude too: a tool that takes a\n  drawing or a small photo, and a one-hour upload link the person opens on\n  a phone (or Claude sends files to with curl). Keep photos at 2048 px, make\n  smaller copies and a link-preview crop on first request, and give every\n  photo on a page a srcset. Refuse SVG that can run code or load anything.\n- Studio with a workspace switcher: posts, a comment inbox, team and invites,\n  workspace settings (a logo too, also when starting one), your names and\n  personas, Claude, and Margin's settings\n  for its admins. MCP tools for Claude that take a workspace: write and edit\n  posts, answer only ordinary comments (asking about anything sensitive),\n  comment under any of your names, manage personas, start and run workspaces\n  (settings, the team and its roles, invites, leaving), and work on themes. A short /llms.txt for agents.\n- Sample content: two fictional teams with their own logos (made with\n  holm app identity), writers, posts and comments, loaded from Studio.\n- UI refined like Apple's apps: Inter, one accent, frosted bars, sheets on\n  phones, a round avatar account button even when signed out, light, dark\n  and auto. For this repository's store, use holm.json version,\n  holm.symbol.svg and listing/listing.json with sample screenshots.\n\nRun holm app validate --spec-v1 margin. With my approval, deploy with\nholm @<peer> app deploy margin --spec-v1 --host <host>. Never replace an\noccupied host without asking. Test as an admin, a workspace owner, an invited\nwriter, an outside reader and signed out, on mobile and desktop, in light and\ndark. Report gaps honestly.",
+      "prompt": "Build \"Margin\", a writing platform for teams, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 (with\n\"Use your app from ChatGPT or Claude\" and \"One page per document id\") and\n\"Make an app feel finished\" first. Make\nholm.json, public web/ files and api/main.js exporting default\n{ fetch(request, env) } plus named operations. Use env.holm for storage,\nsign-in, realtime and email, return standard Responses, and fall back to\nenv.holm.web.fetch(request). No third-party runtime CDN: vendor libraries and\nfonts with their licences. A locally built editor bundle is fine if its build\nscript is in the folder.\n\n- A minimal, elegant front page: what Margin is, two example workspaces, and\n  the way in. Anyone signs in, picks a name and handle, starts a workspace for\n  their team (/<workspace>), and invites people with single-use links. Writers'\n  posts live at /<workspace>/@<handle>/seo-slug; a workspace can post as\n  itself. One person can be in many workspaces, with a role in each (owner,\n  admin, writer). Old addresses keep redirecting.\n- Everyone can keep personas: other names to write and comment under. Readers\n  must not be able to tell personas are the same person; a workspace's owners\n  see which names their members use there.\n- Margin's admins (the node's) choose who can join (anyone; anyone to comment\n  with workspaces by invitation; invited only), make the front page Margin's\n  landing, one workspace or one writer, pick the examples, and suspend\n  workspaces. A workspace's owners make its home the latest posts, a curated\n  set of pinned posts, or one writer's page.\n- Reading pages are rendered on the server, readable with no JavaScript,\n  with feeds, a sitemap and social cards. They must feel instant: keep each\n  rendered page until something visible changes, answer revalidations with\n  a 304 before loading the rest of the app, keep Margin's own CSS and\n  scripts in the browser under versioned addresses, and prefetch links on\n  hover. Every footer has a small Holm mark (\"A Holm app\") and Send\n  feedback, from this repository's feedback app. Posts are Markdown underneath, with\n  callouts, embeds from a bare link, cards for other posts, and figures.\n- A post can have a photo or a drawn cover, chosen by the writer (none until\n  then): an isometric technical line\n  drawing (one projection, three line weights, flat colour, small labels) in\n  the workspace's style (paper, a flat tone, or blocks), with a subject the\n  writer picks, that reacts to the pointer. Save a PNG of it for link previews.\n- Comments like Medium: select a passage to comment on it (keep the quote\n  with its surrounding words so it re-anchors), or respond to the whole post;\n  one level of replies; anyone signed in comments anywhere, as any of their\n  names; each workspace shows comments at once, holds those from outside its\n  team, or holds all. Claps, up to 50 per person. Link previews for posts.\n- Themes are swappable: theme.json, Mustache templates, partials and assets,\n  with a validator that refuses scripts, outside URLs and raw HTML other than\n  Margin's own hooks. Ship two (a clean Apple-like one with chat-style comment\n  threads, and an editorial serif one with notes in the margin). Margin's\n  admins add themes; each workspace picks one.\n- A Notion-like editor: slash menu, a bar for formatting, block handles,\n  dropped-in photos (shrunk in the browser) and short videos, autosave.\n- Code and maths that read well: highlight fenced code by its language (name\n  it above the block, with a Copy button) and typeset LaTeX maths ($…$ and\n  $$ blocks) on the server, so pages need no JavaScript; in the editor,\n  formulae show typeset and open to edit. A price like \"$5 and $10\" stays\n  text.\n- Photos, SVG drawings and short videos from Claude too: a tool that takes a\n  drawing or a small photo, and a one-hour upload link the person opens on\n  a phone (or Claude sends files to with curl). Keep photos at 2048 px, make\n  smaller copies and a link-preview crop on first request, and give every\n  photo on a page a srcset. Refuse SVG that can run code or load anything.\n- Studio with a workspace switcher: posts, a comment inbox, team and invites,\n  workspace settings (a logo too, also when starting one), your names and\n  personas, Claude, and Margin's settings\n  for its admins. MCP tools for Claude that take a workspace: write and edit\n  posts, answer only ordinary comments (asking about anything sensitive),\n  comment under any of your names, manage personas, start and run workspaces\n  (settings, the team and its roles, invites, leaving), and work on themes.\n  Use auth \"user\" so anyone signed in can connect, with each tool checking\n  workspace roles itself as Studio does; keep saving a theme to the node's\n  admins. Connect via MCP… in the account menu with the MCP mark opens one\n  sheet with the connector address to click and copy, and tabs for Claude,\n  ChatGPT, Claude Code and what the tools do; pages that mention Claude open\n  it. A short /llms.txt for agents.\n- Sample content: two fictional teams with their own logos (made with\n  holm app identity), writers, posts and comments, loaded from Studio.\n- UI refined like Apple's apps: Inter, one accent, frosted bars, sheets on\n  phones, a round avatar account button even when signed out, light, dark\n  and auto. For this repository's store, use holm.json version,\n  holm.symbol.svg and listing/listing.json with sample screenshots.\n\nRun holm app validate --spec-v1 margin. With my approval, deploy with\nholm @<peer> app deploy margin --spec-v1 --host <host>. Never replace an\noccupied host without asking. Test as an admin, a workspace owner, an invited\nwriter, an outside reader and signed out, on mobile and desktop, in light and\ndark. Report gaps honestly.",
       "history": [
+        {
+          "version": "0.6.1",
+          "date": "2026-10-28",
+          "whatsNew": "A pass over the details: headings wrap evenly, footer links are easier to tap, invites say how long they have left, comment times show the day, Claude's connector address is readable on a phone, post previews skip raw formulae, and the sample teams wear their own colours."
+        },
         {
           "version": "0.6.0",
           "date": "2026-10-28",
@@ -2032,11 +2037,11 @@
     {
       "name": "roll",
       "path": "roll",
-      "version": "0.1.4",
-      "tag": "roll/v0.1.4",
-      "h1": "h1:ON1oiFfSKE92bEZmSAgKJnG6dkcs/bvtH8Wye9L9/MY=",
-      "files": 61,
-      "size": 2128053,
+      "version": "0.2.0",
+      "tag": "roll/v0.2.0",
+      "h1": "h1:8Ei3yW/Y7r48mfC5T7aNGMBZfSONd/pCJHPQFOgDO7k=",
+      "files": 63,
+      "size": 2182060,
       "title": "Roll",
       "description": "Your photo library on your own server: every day on a timeline, memories from past years, and albums you share by link.",
       "themeColor": "#f0592a",
@@ -2046,7 +2051,7 @@
         "subtitle": "Your photo library, on your own server",
         "category": "Photos",
         "description": "Roll keeps your photos on a timeline of the days you took them, by the camera's own clock. Each month and day has a heading with its place, and the days flow along rows that fill the screen. A date rail jumps through the years, and a pinch makes the photos bigger or smaller.\n\nOn this day brings back photos from today's date in earlier years, as a short story that drifts from one photo to the next.\n\nDrop photos anywhere, choose them or paste them. Roll reads each one's date, camera, exposure and location in your browser, names the place without asking any service, skips photos it already has, and keeps the original. The viewer grows out of the photo you tap, swipes and zooms, and shows the details beside the photo.\n\nCollect photos into albums and share one by link: anyone with it sees the album, no account needed, without places, cameras or file names. Places, favourites, a Trash that waits 30 days, and search over places, cameras, months and more.\n\nIt feels like an app: frosted bars that stay put, a tab bar on your phone and a sidebar on a desk, light and dark, with photos on black.",
-        "whatsNew": "A slightly wider sidebar, so its footer line no longer breaks in two. The prompt now records that request.",
+        "whatsNew": "Connect Roll to Claude, ChatGPT or Claude Code over MCP: ask what's in your library, find photos by date, place, album or words, see this day in past years, and make, fill and share albums. Connect via MCP… in the account menu shows how. An album's share link copies with one click, and an open page picks up changes made elsewhere.",
         "featured": true,
         "related": [
           "shelf",
@@ -2098,8 +2103,75 @@
           "hash": "07abca25ceb7"
         }
       },
-      "prompt": "Build \"Roll\", a photo library for your own server in the spirit of Immich or\nGoogle Photos, using only https://holmhq.com/llms-full.txt for Holm. Read its\nv1 sections 9–12, \"Keep uploads under the node's limits\", \"Shrink photos\nbefore upload\", \"Make an app feel finished\" and \"Make it feel native\" first.\nMake holm.json (web.spa true), public web/ files and api/main.js exporting\ndefault { fetch(request, env) }. No build step or third-party runtime CDN;\nvendor Inter and ThumbHash with their licences.\n\n- Sign in with the node's accounts. Each member's photos and albums are\n  theirs alone, in shared storage with an owner on every record. A quota per\n  member (QUOTA_MB in the app's environment); app admins have none.\n- Uploads: pick files, drop them anywhere or paste them. In the browser,\n  read EXIF (date with its time zone, camera, lens, exposure, GPS), a\n  SHA-256 fingerprint to skip photos already there, a 2048 px preview and a\n  thumbnail made on a canvas (no metadata), and a ThumbHash placeholder.\n  Name the place offline from GeoNames towns of 15,000 people or more\n  (bigger towns win within 25 km, else the region). Send the copies first so\n  the tile appears at once with a progress ring, then the original in its\n  own request; keep the copy if the original is too large. A tray shows\n  progress, what was skipped and why.\n- The library: photos by the date they were taken (the camera's own wall\n  clock), a heading per month and per day with the day's place, days flowing\n  into each other in rows justified to the width, rendered virtually so huge\n  libraries scroll smoothly, a date rail to jump through the years, ThumbHash\n  colours before thumbnails load, and zoom with ctrl+wheel or a pinch.\n- \"On this day\" cards for earlier years that play as a story with a slow\n  drift, bars, tap to move, hold to pause.\n- A viewer that grows out of the tile and back, swipes, zooms (wheel, pinch,\n  double tap; the original loads when you look closer), closes on a pull\n  down, and shows details (date, file, camera and exposure, place with a map\n  link, albums) beside the photo on a desk and in a sheet on a phone.\n- Select with a tick, shift-click ranges, select a whole day, long-press on a\n  phone: favourite, add to an album, download (several as one ZIP made in the\n  browser), move to the Trash with Undo. The Trash keeps photos 30 days.\n- Albums with covers; add from the library with a picker; share by link: a\n  public page with the album's title, who shared it and the photos (no\n  places, cameras or file names, never originals), its own link preview.\n- Places as cards, and search over places, cameras, months, years, albums\n  and words like portrait, night or favorite, with suggestion chips.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places on a desk, a tab\n  bar on a phone; a round avatar button with a three-icon theme switch and\n  storage use; Holm's credit only in the footer, on one line even in the\n  sidebar. A versioned service worker\n  precaches the app and keeps thumbnails.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/ with screenshots of sample photos only.",
+      "mcp": [
+        {
+          "name": "library.get",
+          "summary": "See what’s in your library",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "photos.list",
+          "summary": "Find photos",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "photos.get",
+          "summary": "Look closer at photos",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "memories.get",
+          "summary": "See this day in past years",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "albums.list",
+          "summary": "See your albums",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "photos.update",
+          "summary": "Favourite, trash or restore photos",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "albums.create",
+          "summary": "Make an album",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "albums.update",
+          "summary": "Change an album",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "albums.delete",
+          "summary": "Delete an album",
+          "risk": "destructive",
+          "auth": "user"
+        },
+        {
+          "name": "photos.delete",
+          "summary": "Delete photos for good",
+          "risk": "destructive",
+          "auth": "user"
+        }
+      ],
+      "prompt": "Build \"Roll\", a photo library for your own server in the spirit of Immich or\nGoogle Photos, using only https://holmhq.com/llms-full.txt for Holm. Read its\nv1 sections 9–12, \"Keep uploads under the node's limits\", \"Shrink photos\nbefore upload\", \"Make an app feel finished\" and \"Make it feel native\" first.\nMake holm.json (web.spa true), public web/ files and api/main.js exporting\ndefault { fetch(request, env) }. No build step or third-party runtime CDN;\nvendor Inter and ThumbHash with their licences.\n\n- Sign in with the node's accounts. Each member's photos and albums are\n  theirs alone, in shared storage with an owner on every record. A quota per\n  member (QUOTA_MB in the app's environment); app admins have none.\n- Uploads: pick files, drop them anywhere or paste them. In the browser,\n  read EXIF (date with its time zone, camera, lens, exposure, GPS), a\n  SHA-256 fingerprint to skip photos already there, a 2048 px preview and a\n  thumbnail made on a canvas (no metadata), and a ThumbHash placeholder.\n  Name the place offline from GeoNames towns of 15,000 people or more\n  (bigger towns win within 25 km, else the region). Send the copies first so\n  the tile appears at once with a progress ring, then the original in its\n  own request; keep the copy if the original is too large. A tray shows\n  progress, what was skipped and why.\n- The library: photos by the date they were taken (the camera's own wall\n  clock), a heading per month and per day with the day's place, days flowing\n  into each other in rows justified to the width, rendered virtually so huge\n  libraries scroll smoothly, a date rail to jump through the years, ThumbHash\n  colours before thumbnails load, and zoom with ctrl+wheel or a pinch.\n- \"On this day\" cards for earlier years that play as a story with a slow\n  drift, bars, tap to move, hold to pause.\n- A viewer that grows out of the tile and back, swipes, zooms (wheel, pinch,\n  double tap; the original loads when you look closer), closes on a pull\n  down, and shows details (date, file, camera and exposure, place with a map\n  link, albums) beside the photo on a desk and in a sheet on a phone.\n- Select with a tick, shift-click ranges, select a whole day, long-press on a\n  phone: favourite, add to an album, download (several as one ZIP made in the\n  browser), move to the Trash with Undo. The Trash keeps photos 30 days.\n- Albums with covers; add from the library with a picker; share by link: a\n  public page with the album's title, who shared it and the photos (no\n  places, cameras or file names, never originals), its own link preview.\n- Places as cards, and search over places, cameras, months, years, albums\n  and words like portrait, night or favorite, with suggestion chips.\n- MCP tools as named operations with auth \"user\" in api/contract.json, each\n  acting only on the caller's own library through the routes' own\n  functions: a summary of the library; photos by date, place, album, words\n  or the Trash; a photo's details; this day in past years; albums. Then\n  favourite, trash and restore photos; make, change, share and delete\n  albums; and delete from the Trash only after the person says yes.\n  Connect via MCP… in the account menu opens a sheet with the connector\n  address to click and copy, and tabs for Claude, ChatGPT, Claude Code and\n  what the tools do. A page that comes back into view takes changes made\n  elsewhere, and ?photo=<id> opens a photo.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places on a desk, a tab\n  bar on a phone; a round avatar button with a three-icon theme switch and\n  storage use; Holm's credit only in the footer, on one line even in the\n  sidebar. A versioned service worker\n  precaches the app and keeps thumbnails.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/ with screenshots of sample photos only.",
       "history": [
+        {
+          "version": "0.1.4",
+          "date": "2026-11-02",
+          "whatsNew": "A slightly wider sidebar, so its footer line no longer breaks in two. The prompt now records that request."
+        },
         {
           "version": "0.1.3",
           "date": "2026-11-01",
@@ -2693,11 +2765,11 @@
     {
       "name": "zend",
       "path": "zend",
-      "version": "0.2.1",
-      "tag": "zend/v0.2.1",
-      "h1": "h1:8KRBRE+WAerhyBwtNoU1hkCXsjIUljSEyZ4VpuQDB58=",
-      "files": 48,
-      "size": 579335,
+      "version": "0.3.0",
+      "tag": "zend/v0.3.0",
+      "h1": "h1:pIbKzprA3LWyLMXSzz0+ItV7V+7TUlSBHkr7BUBWEaw=",
+      "files": 53,
+      "size": 630173,
       "title": "Zend",
       "description": "Text from your own Android phone, in a browser or from your scripts.",
       "themeColor": "#0a6ff0",
@@ -2707,7 +2779,7 @@
         "subtitle": "Text from your own phone, anywhere",
         "category": "Social",
         "description": "Send SMS through the Android phone in your pocket, from any browser or from your own scripts. Install the free SMS Gateway for Android app, paste the username and password it shows, and your texts go out on your own SIM and plan. People see your own number, and their replies come back here.\n\nEvery text shows its time and ticks: one when your phone sends it, two when it's delivered, and a clear note with Try Again when it doesn't get through. Name the people you text, send to up to ten at once, pick a SIM, send later, and fill in templates you use often. A ring counts how much of an SMS you've used as you type. Replies and receipts arrive live, with quiet sounds you can turn off.\n\nIt feels at home on a phone, with a tab bar, sheets that slide up and a swipe to go back, and on a computer, with your conversations beside the open one and keyboard shortcuts.\n\nA personal SIM stays personal: Zend asks before sending anything that reads like an offer or a one-time code, stays under India's limits for bulk texts, and honours every STOP. API keys can be held to a few numbers, so a key that leaks can't text anyone else. No phone handy? A demo phone pretends to send, deliver and reply.",
-        "whatsNew": "The account menu closes when you tap the avatar again, its theme switch is three icons, and the Holm credit stays on the welcome page.",
+        "whatsNew": "Connect Zend to Claude or ChatGPT from the account menu. Claude can catch up on your replies, read conversations and draft texts; a draft waits at the top of Chats until you check it and tap Send.",
         "featured": false,
         "related": [
           "relay",
@@ -2759,8 +2831,75 @@
           "hash": "7192c2445c6b"
         }
       },
-      "prompt": "Build \"Zend\", an app for texting from your own Android phone, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make\nholm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in, outbound HTTP, secrets and realtime, return standard Responses and\nfall back to env.holm.web.fetch(request). No build step or third-party\nruntime CDN; vendor the font and icons with their licences.\n\n- After sign-in, each member connects their own phone running SMS Gateway\n  for Android (https://sms-gate.app, cloud mode): they paste its username,\n  password and, for live receipts, its webhook signing key. Check them\n  against SMSGate's public API through env.holm.net, never show them again,\n  and keep them encrypted under a VAULT_KEY runtime secret. Offer a demo\n  phone that pretends to send, deliver and reply, so anyone can try it.\n- Conversations per number, with names, unread replies, search, an SMS-part\n  counter (GSM-7 and Unicode), up to 10 numbers per text, SIM choice,\n  templates with blanks, and scheduled texts that can be cancelled. Show\n  each text's state as ticks: sent, then delivered. Register the phone's\n  webhooks and verify each one's HMAC signature, timestamp and envelope id.\n- Keep a personal SIM personal, as India's SMS rules (TRAI's TCCCPR 2018 and\n  its 2025 and 2026 amendments) require: a declaration when a phone is\n  connected; texts that read like OTPs or offers need confirming on the\n  page and are refused by the API; stop at TRAI's \"bulk\" counts of same or\n  similar texts; cap texts and different people per day; honour STOP\n  replies with an opt-out list. Templates use DLT's {#var#} blanks.\n- API keys for the member's own scripts: shown once, stored as a hash,\n  optionally held to a few numbers, with the same limits and an\n  Idempotency-Key for safe retries.\n- An exquisite UI that feels like Apple's Messages or Telegram, on a phone\n  and on a desktop: a tab bar on phones, a rail with the conversation list\n  beside the open conversation on wide screens, frosted bars, large titles,\n  bubbles with tails and the time inside, sheets that slide up, a round\n  avatar account button even when signed out, whose menu closes when it's\n  tapped again and holds light/dark/auto as three icons (Holm branding stays\n  in the footer), motion and quiet sounds. Installable, with a network-first service worker.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 zend. With my approval, deploy with\nholm @<peer> app deploy zend --spec-v1 --host zend.<my-domain>, then ask\nbefore allowing api.sms-gate.app for the app and setting VAULT_KEY. Never\nreplace an occupied host without asking. Validation does not run the app:\ntest the demo phone, every refusal, two members, API keys, and signed,\nunsigned, stale and repeated webhooks, on mobile and desktop in light and\ndark, and sign in and out as a real person would. Check that code shared by\nthe page and the server gives the same answers in both. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in\nbranding.",
+      "mcp": [
+        {
+          "name": "chats.list",
+          "summary": "See your conversations",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "messages.unread",
+          "summary": "Catch up on replies",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "messages.list",
+          "summary": "Read a conversation",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "chats.read",
+          "summary": "Mark as read",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "chats.rename",
+          "summary": "Name a conversation",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "phone.get",
+          "summary": "See your phone",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "templates.list",
+          "summary": "See your templates",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "drafts.create",
+          "summary": "Draft a text",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "drafts.list",
+          "summary": "See waiting drafts",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "drafts.discard",
+          "summary": "Discard a draft",
+          "risk": "write",
+          "auth": "user"
+        }
+      ],
+      "prompt": "Build \"Zend\", an app for texting from your own Android phone, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make\nholm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in, outbound HTTP, secrets and realtime, return standard Responses and\nfall back to env.holm.web.fetch(request). No build step or third-party\nruntime CDN; vendor the font and icons with their licences.\n\n- After sign-in, each member connects their own phone running SMS Gateway\n  for Android (https://sms-gate.app, cloud mode): they paste its username,\n  password and, for live receipts, its webhook signing key. Check them\n  against SMSGate's public API through env.holm.net, never show them again,\n  and keep them encrypted under a VAULT_KEY runtime secret. Offer a demo\n  phone that pretends to send, deliver and reply, so anyone can try it.\n- Conversations per number, with names, unread replies, search, an SMS-part\n  counter (GSM-7 and Unicode), up to 10 numbers per text, SIM choice,\n  templates with blanks, and scheduled texts that can be cancelled. Show\n  each text's state as ticks: sent, then delivered. Register the phone's\n  webhooks and verify each one's HMAC signature, timestamp and envelope id.\n- Keep a personal SIM personal, as India's SMS rules (TRAI's TCCCPR 2018 and\n  its 2025 and 2026 amendments) require: a declaration when a phone is\n  connected; texts that read like OTPs or offers need confirming on the\n  page and are refused by the API; stop at TRAI's \"bulk\" counts of same or\n  similar texts; cap texts and different people per day; honour STOP\n  replies with an opt-out list. Templates use DLT's {#var#} blanks.\n- API keys for the member's own scripts: shown once, stored as a hash,\n  optionally held to a few numbers, with the same limits and an\n  Idempotency-Key for safe retries.\n- MCP tools as named operations in api/contract.json with auth \"user\", each\n  reaching only the caller's own data: conversations and unread replies,\n  reading one, marking it read, naming a number, the phone and today's\n  limits, templates, and drafts. Tools never send. A draft waits at the top\n  of Chats, live, until the person opens it, checks it and taps Send, or\n  discards it; drafts go after a day. Connect via MCP… in the account menu,\n  with the MCP mark, opens a sheet with the connector address to click and\n  copy, and tabs for Claude, ChatGPT, Claude Code and what the tools do.\n- An exquisite UI that feels like Apple's Messages or Telegram, on a phone\n  and on a desktop: a tab bar on phones, a rail with the conversation list\n  beside the open conversation on wide screens, frosted bars, large titles,\n  bubbles with tails and the time inside, sheets that slide up, a round\n  avatar account button even when signed out, whose menu closes when it's\n  tapped again and holds light/dark/auto as three icons (Holm branding stays\n  in the footer), motion and quiet sounds. Installable, with a network-first service worker.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 zend. With my approval, deploy with\nholm @<peer> app deploy zend --spec-v1 --host zend.<my-domain>, then ask\nbefore allowing api.sms-gate.app for the app and setting VAULT_KEY. Never\nreplace an occupied host without asking. Validation does not run the app:\ntest the demo phone, every refusal, two members, API keys, and signed,\nunsigned, stale and repeated webhooks, on mobile and desktop in light and\ndark, and sign in and out as a real person would. Check that code shared by\nthe page and the server gives the same answers in both. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in\nbranding.",
       "history": [
+        {
+          "version": "0.2.1",
+          "date": "2026-11-01",
+          "whatsNew": "The account menu closes when you tap the avatar again, its theme switch is three icons, and the Holm credit stays on the welcome page."
+        },
         {
           "version": "0.2.0",
           "date": "2026-10-26",
