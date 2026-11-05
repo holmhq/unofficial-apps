@@ -1,5 +1,7 @@
 // Holm App Spec v1 entry for server code written in Holm's original app format, which is kept
 // unchanged in ./_legacy_main.js. API paths go to that handler; everything else is web/.
+// The named operations at the end are the tools Claude uses through Holm's MCP endpoint
+// (/_holm/mcp); contract.json describes them, and their code is in ops.js.
 import { bind, takeResponded } from "./_holm.js";
 import handler from "./_legacy_main.js";
 
@@ -13,6 +15,8 @@ export default {
       return env.holm.web.fetch(request);
     }
     bind(env.holm);
+    // Tools have no request to read the address from, so their links use the last one seen.
+    if (url.pathname === "/api/me" && env.holm.app.kv.get("site:origin") !== url.origin) env.holm.app.kv.set("site:origin", url.origin);
     const req = await originalRequest(request, url);
     if (req instanceof Response) return req;
     const result = await handler(req);
@@ -93,3 +97,14 @@ function base64OrText(s) {
     return s;
   }
 }
+
+const ops = () => import("./ops.js");
+export async function chatsList(input, env, ctx) { return (await ops()).chatsList(input, env, ctx); }
+export async function messagesList(input, env, ctx) { return (await ops()).messagesList(input, env, ctx); }
+export async function messagesSend(input, env, ctx) { return (await ops()).messagesSend(input, env, ctx); }
+export async function messagesUnread(input, env, ctx) { return (await ops()).messagesUnread(input, env, ctx); }
+export async function chatsRead(input, env, ctx) { return (await ops()).chatsRead(input, env, ctx); }
+export async function friendsList(input, env, ctx) { return (await ops()).friendsList(input, env, ctx); }
+export async function invitesList(input, env, ctx) { return (await ops()).invitesList(input, env, ctx); }
+export async function invitesSend(input, env, ctx) { return (await ops()).invitesSend(input, env, ctx); }
+export async function invitesAnswer(input, env, ctx) { return (await ops()).invitesAnswer(input, env, ctx); }

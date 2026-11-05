@@ -6,6 +6,7 @@ import { prefs, setPref, session } from '../state.js';
 import { apply as applyTheme, ACCENTS, THEMES } from '../theme.js';
 import { signOut } from '../auth.js';
 import { api } from '../api.js';
+import { openMcpSheet } from '../mcp.js';
 
 function setting(icon, title, sub, control, wide) {
   return el('div', { class: 'setting' },
@@ -100,6 +101,14 @@ export function mount(container) {
       )
     )
   ));
+
+  // ── connect: Relay's tools for Claude and other apps that take MCP connectors ──
+  view.appendChild(el('div', { class: 'sec-label', text: 'Connect' }));
+  view.appendChild(el('div', { class: 'card' },
+    el('button', { class: 'setting', type: 'button', style: { width: '100%', textAlign: 'left' }, onclick: () => openMcpSheet() },
+      el('div', { class: 'si' }, iconEl('mcp', { size: '18px' })),
+      el('div', { class: 'st' }, el('b', { text: 'Connect via MCP' }), el('small', { text: 'Let Claude or ChatGPT read your chats and send messages' })),
+      iconEl('chevron-right', { size: '18px' }))));
 
   // ── about: analytics for those Holm lets see it, feedback, and the footer ──
   const surfaces = globalThis.__HOLM_SURFACES__;

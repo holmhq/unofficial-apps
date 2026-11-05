@@ -108,6 +108,35 @@ export async function saveFile(url, filename) {
   }
 }
 
+// Anything to copy is one click-to-copy field: the value on one line in mono, a copy icon at its
+// end, Copy fading in on hover, and a tick with Copied for 1.6 s after a click. No toast.
+export function copyField(value) {
+  const text = el('code', { class: 'copy-value mono', text: value });
+  const word = el('span', { class: 'copy-word', 'aria-live': 'polite', text: 'Copy' });
+  let timer;
+  async function copy() {
+    try { await navigator.clipboard.writeText(value); } catch (_e) {
+      getSelection().selectAllChildren(text);
+      toast('Couldn’t copy. It’s selected, so copy it by hand.', 'alert-triangle');
+      return;
+    }
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (_e) {}
+    field.classList.add('is-copied');
+    word.textContent = 'Copied';
+    clearTimeout(timer);
+    timer = setTimeout(() => { field.classList.remove('is-copied'); word.textContent = 'Copy'; }, 1600);
+  }
+  const field = el('div', {
+    class: 'copy-field', role: 'button', tabindex: '0', 'aria-label': 'Copy ' + value,
+    onclick: copy,
+    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy(); } }
+  }, text, el('span', { class: 'copy-cue' }, word, _iconEl('copy', { size: '16px', cls: 'cf-copy' }), _iconEl('check', { size: '16px', cls: 'cf-tick' })));
+  const fade = () => field.classList.toggle('is-long', text.scrollLeft + text.clientWidth < text.scrollWidth - 1);
+  text.addEventListener('scroll', fade, { passive: true });
+  new ResizeObserver(fade).observe(text);
+  return field;
+}
+
 // Shared bottom sheet (contact details, etc.). One active at a time;
 // tapping the scrim dismisses. Mirrors the chat-thread sheet styling.
 let activeSheet = null;

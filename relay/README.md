@@ -50,6 +50,24 @@ routes in `fetch(request, env)` directly, as the prompt asks.
   background, and the unread count on the installed app's icon.
 - **Make it yours:** profile name and photo, light, dark or auto theme, six
   accent colours, and quiet send and receive sounds.
+- **Claude and other AI apps:** nine MCP tools, open to anyone signed in and
+  limited to their own chats and invites:
+  - `chats_list`: your chats, newest first, with unread counts; only unread,
+    or only friends or groups.
+  - `messages_unread`: what you missed, chat by chat; `chats_read` marks a
+    chat read on all your devices.
+  - `messages_list`: a chat's latest messages, and older ones with `before`.
+  - `messages_send`: text, optionally as a reply.
+  - `friends_list`: your friends, with the nicknames you gave them.
+  - `invites_list`, `invites_send` and `invites_answer`: invites waiting for
+    you and ones you sent; invite by username (to be friends, or into a
+    group) or by email; accept, decline or block. They keep Relay's privacy:
+    an invite's answer never says whether a username exists.
+
+  A chat can be named by its id, a friend's `@username` or a group's handle. Settings → Connect via MCP
+  opens a sheet with the connector address (`https://<host>/_holm/mcp`) to
+  click and copy, and tabs for Claude, ChatGPT, Claude Code and what the
+  tools do.
 - **Installable:** a web manifest, and a service worker that keeps the app
   shell for offline starts. It never caches `/api/` answers.
 - Settings has Send feedback, an Analytics link for the app's admins, and an
@@ -58,10 +76,14 @@ routes in `fetch(request, env)` directly, as the prompt asks.
 ## How it is built
 
 ```text
-holm.json               identity, web.spa, store listing exclusion
+holm.json               identity, web.spa, no generated web surface, store
+                        listing exclusion
 holm.symbol.svg         app icon: two speech bubbles, one typing
 holm.generated.json     record of the icons generated from the symbol
-api/main.js             v1 entry: /api/ to the older handler, the rest to web/
+api/main.js             v1 entry: /api/ to the older handler, the rest to web/;
+                        and the MCP tools' handlers, which load ops.js
+api/contract.json       the MCP tools: named operations, their input and errors
+api/ops.js              the tools, run through the same handlers as /api/
 api/_holm.js            binds env.holm per request for the older code
 api/_legacy_main.js     the API router
 api/lib.js              storage keys, auth gates, the per-member channel
@@ -77,6 +99,7 @@ web/sw.js               service worker: app shell, notification taps
 web/src/main.js         start-up, shell, router, realtime and notifications
 web/src/pages/          chats, chat, add, friends, settings, onboarding
 web/src/realtime.js     the /_ws client: reconnects and resubscribes
+web/src/mcp.js          the Connect via MCP sheet
 web/src/styles.css      the whole look: tokens, light/dark, accents, layout
 web/src/icons.js        Lucide icons, baked in
 web/assets/             Inter, vendored, with its licence
@@ -101,6 +124,11 @@ The Holm primitives it uses, all described in
 - **Outbound HTTP, `env.holm.net.fetch`:** link previews, with literal
   private and metadata addresses refused.
 - **Email, `env.holm.email.send`:** email invites.
+- **Named operations and MCP:** `api/contract.json` declares nine operations
+  with `auth: "user"`, which Holm serves as tools at `/_holm/mcp` with OAuth
+  sign-in. Each runs the app's own `/api/` handler for the signed-in person,
+  so membership checks live in one place. A message sent this way goes out
+  live to everyone in the chat, as one typed in Relay would.
 - **Identity:** `holm app identity generate relay` draws every icon, the web
   manifest and the social card from `holm.symbol.svg` on the `themeColor`.
 
@@ -150,6 +178,10 @@ links or an OAuth provider). With the app id printed by the deploy:
 - Messages are stored as plain text in the app's storage, so the node's
   operator can read them. There is no end-to-end encryption.
 - No message editing, reactions, read receipts or voice recording.
+- The MCP tools send text only: photos and files go from Relay itself.
+  Reading through them doesn't mark anything read until `chats_read`. Their
+  links, and email invites' join links, use the address Relay was last
+  opened at.
 - A file is at most 16 MB, the most a node parses as one form file.
 - Desktop shows the phone layout in a centred column.
 

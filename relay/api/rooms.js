@@ -148,7 +148,7 @@ function roomUnreadKey(roomId, memberId) {
   return 'relay:roomUnread:' + roomId + ':' + memberId
 }
 
-function roomReadAtKey(roomId, memberId) {
+export function roomReadAtKey(roomId, memberId) {
   return 'relay:roomReadAt:' + roomId + ':' + memberId
 }
 

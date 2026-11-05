@@ -12,6 +12,7 @@ export function loadSession() {
       session.member = res.member || null;
       session.profile = res.profile || null;
       session.channel = res.channel || '';
+      session.mcp = res.mcp || '';
       if (!res.loggedIn) session.status = 'signed-out';
       else if (!res.profile) session.status = 'needs-onboarding';
       else session.status = 'ready';

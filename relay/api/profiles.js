@@ -11,7 +11,7 @@ import { resolvePendingUserInvites } from './invites.js'
 
 var PROFILE_PHOTO_BYTES = 5 * 1024 * 1024, PROFILE_PHOTO_SIZE = 256
 
-export function handleMe() {
+export function handleMe(request) {
   var member = holm.auth.getMember()
   var profile = member && member.id ? getProfile(member.id) : null
   return ok({
@@ -21,7 +21,8 @@ export function handleMe() {
     profile: profile,
     needsOnboarding: !!member && !profile,
     suggestedUsername: member ? suggestedUsername(member) : '',
-    channel: member && member.id ? channelForUser(member.id) : ''
+    channel: member && member.id ? channelForUser(member.id) : '',
+    mcp: request && request.origin ? request.origin + '/_holm/mcp' : ''
   })
 }
 

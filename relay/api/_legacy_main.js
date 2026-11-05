@@ -30,7 +30,7 @@ export default async function handler(request) {
     return { body: { ok: true, app: 'relay', version: holm.version, ts: now() } }
   }
 
-  if (method === 'GET' && path === '/api/me') return handleMe()
+  if (method === 'GET' && path === '/api/me') return handleMe(request)
   if (method === 'POST' && path === '/api/profile') return handleCreateProfile(request)
   if (method === 'PATCH' && path === '/api/profile') return handleUpdateProfile(request)
   if (method === 'POST' && path === '/api/profile/photo') return handleSetProfilePhoto(request)

@@ -670,3 +670,55 @@ body.auth-open { overflow: hidden; }
 .authmodal__close:hover { background: var(--surface-2); color: var(--text); }
 .authmodal__frame { width: 100%; height: 100%; border: 0; display: block; }
 @keyframes pop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: none; } }
+
+/* ── Connect via MCP ─────────────────────────────────────────────────────── */
+.copy-field { --cf-base: var(--surface); --cf-bg: var(--cf-base); display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px; border-radius: 12px; background: var(--cf-bg); box-shadow: inset 0 0 0 1px var(--border); color: var(--text); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s, box-shadow .15s; }
+.copy-field:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 4px var(--accent-soft); }
+.copy-field:active { --cf-bg: color-mix(in srgb, var(--cf-base), var(--text) 8%); }
+@media (hover: hover) { .copy-field:hover { --cf-bg: color-mix(in srgb, var(--cf-base), var(--text) 4%); } }
+.copy-value { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; white-space: nowrap; font-size: 12.5px; line-height: 46px; }
+.copy-value::-webkit-scrollbar { display: none; }
+.copy-field.is-long .copy-value { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.copy-cue { position: relative; flex: none; display: grid; color: var(--faint); transition: color .15s; }
+.copy-cue .ico { grid-area: 1 / 1; transition: opacity .15s, transform .25s var(--spring); }
+.copy-cue .cf-tick { opacity: 0; transform: scale(.5); color: #16a34a; }
+.copy-word { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); padding: 3px 7px 3px 26px; background: linear-gradient(to right, transparent, var(--cf-bg) 20px); color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; }
+@media (hover: hover) { .copy-field:hover .copy-cue { color: var(--text); } .copy-field:hover .copy-word { opacity: 1; } }
+.copy-field.is-copied .copy-word { opacity: 1; color: #15803d; }
+.copy-field.is-copied .cf-copy { opacity: 0; transform: scale(.5); }
+.copy-field.is-copied .cf-tick { opacity: 1; transform: none; }
+:root[data-theme="dark"] .copy-field { --cf-base: var(--surface-2); }
+:root[data-theme="dark"] .copy-field.is-copied .copy-word, :root[data-theme="dark"] .cf-tick { color: #4ade80; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .copy-field { --cf-base: var(--surface-2); }
+  :root:not([data-theme="light"]) .copy-field.is-copied .copy-word, :root:not([data-theme="light"]) .cf-tick { color: #4ade80; }
+}
+
+.mcp-sheet { display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; }
+.mcp-hero { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 6px 0 0; }
+.mcp-app { width: 60px; height: 60px; border-radius: 14px; box-shadow: var(--shadow); }
+.mcp-tile { width: 60px; height: 60px; border-radius: 14px; display: grid; place-items: center; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.mcp-link { display: flex; gap: 6px; }
+.mcp-link i { width: 5px; height: 5px; border-radius: 50%; background: var(--faint); opacity: .45; animation: mcp-flow 2.4s var(--ease) infinite; }
+.mcp-link i:nth-child(2) { animation-delay: .12s; }
+.mcp-link i:nth-child(3) { animation-delay: .24s; }
+.mcp-link i:nth-child(4) { animation-delay: .36s; }
+.mcp-link i:nth-child(5) { animation-delay: .48s; }
+@keyframes mcp-flow { 0%, 36%, 100% { opacity: .45; transform: none; } 14% { opacity: 1; transform: scale(1.3); background: var(--text); } }
+.mcp-title { text-align: center; margin-top: -2px; }
+.mcp-label { font-size: 12px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--faint); margin: 2px 0 -4px 2px; }
+.sheet:has(.mcp-sheet) { max-width: 640px; } /* the zyt Claude Code command stays on one line */
+.mcp-seg { width: 100%; }
+.mcp-seg button { flex: 1; justify-content: center; min-height: 38px; padding: 8px 6px; white-space: nowrap; }
+.mcp-panes { display: grid; grid-template-columns: minmax(0, 1fr); }
+.mcp-panes > * { grid-area: 1 / 1; align-self: start; }
+.mcp-panes > :not(.is-on) { visibility: hidden; }
+.mcp-panes > .is-on { animation: mcp-pane .22s var(--ease); }
+@keyframes mcp-pane { from { opacity: 0; transform: translateY(4px); } }
+.mcp-panes .setting { flex-wrap: nowrap; }
+.setting .si.is-num { background: var(--surface-2); color: var(--text); font-size: 14px; font-weight: 700; }
+.mcp-code { display: flex; flex-direction: column; gap: 10px; }
+.mcp-note { font-size: 13px; color: var(--muted); line-height: 1.45; margin: 0 2px; }
+.mcp-note code { font-size: 12.5px; color: var(--text); }
+@media (prefers-reduced-motion: reduce) { .mcp-link i { animation: none; opacity: .7; } .mcp-panes > .is-on { animation: none; } }
+

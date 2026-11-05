@@ -1,0 +1,488 @@
+{
+ "operations": {
+  "chats.list": {
+   "handler": "chatsList",
+   "auth": "user",
+   "risk": "read",
+   "sensitive": true,
+   "summary": "See your chats",
+   "description": "Lists the person’s Relay chats, most recent first: one-to-one chats with friends and groups. Each has an id, a name, the friend’s @username or the group’s members, the last message, when it was sent, how many messages are unread, and a link to open it in Relay. Pass an id or @username to messages_list to read a chat, or to messages_send to write in it.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "unread": {
+      "type": "boolean",
+      "description": "Only chats with unread messages."
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "friend",
+       "group"
+      ],
+      "description": "Only one-to-one chats with friends, or only groups."
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "How many to return (default 30)."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "messages.unread": {
+   "handler": "messagesUnread",
+   "auth": "user",
+   "risk": "read",
+   "summary": "Catch up on unread messages",
+   "description": "Returns the person’s unread messages: for each chat with any, newest chat first, the unread messages from other people, oldest first, with the chat’s name and a link to open it. Use it for \"what did I miss\". Reading here doesn’t mark them read; call chats_read for each chat once the person has seen them.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "chats": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20,
+      "description": "How many chats with unread messages (default 10)."
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "The most unread messages to return from each chat, newest kept (default 10)."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "chats.read": {
+   "handler": "chatsRead",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Mark a chat as read",
+   "idempotency": "optional",
+   "description": "Marks every message in a chat as read for the person, clearing its unread count on all their devices. Use after showing them what was unread, or when they ask.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "chat": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "The chat’s id from chats_list, a friend’s @username, or a group’s handle."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "chat"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "messages.list": {
+   "handler": "messagesList",
+   "auth": "user",
+   "risk": "read",
+   "sensitive": true,
+   "summary": "Read a chat",
+   "description": "Returns a chat’s latest messages, oldest first, with who sent each, when, its text, what it replies to and any photos or files by name. Messages the person sent say from \"you\". Pass before to read further back. Reading here doesn’t mark the chat as read.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "chat": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "The chat’s id from chats_list, a friend’s @username, or a group’s handle."
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "How many messages (default 20)."
+     },
+     "before": {
+      "type": "string",
+      "maxLength": 4000,
+      "description": "The before value from an earlier answer, to read older messages."
+     }
+    },
+    "required": [
+     "chat"
+    ],
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "messages.send": {
+   "handler": "messagesSend",
+   "auth": "user",
+   "risk": "write",
+   "idempotency": "optional",
+   "summary": "Send a message",
+   "description": "Sends a text message as the person to a chat they are in; everyone in it sees it at once, as if it were typed in Relay. Only send what the person asked you to send, and show them the text first when they haven’t given it word for word. Optionally reply to a message by its id. Text only, up to 8,000 characters: photos and files are sent from Relay itself. To write to someone new, invite them with invites_send; a chat opens once they accept.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "chat": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "The chat’s id from chats_list, a friend’s @username, or a group’s handle."
+     },
+     "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000,
+      "description": "The message."
+     },
+     "reply_to": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "A message id from messages_list, to reply to it."
+     }
+    },
+    "required": [
+     "chat",
+     "text"
+    ],
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "friends.list": {
+   "handler": "friendsList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "List your friends",
+   "description": "Lists the person’s friends on Relay, alphabetically: the name they see (their own nickname if they set one, with the real name), the @username, the id of the one-to-one chat and how many messages are unread there. Groups are in chats_list.",
+   "input": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "invites.list": {
+   "handler": "invitesList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "See your invites",
+   "description": "Lists invites waiting for the person to answer (from whom, and into which group if any), and invites they sent. Relay only tells a sender when an invite is accepted, so a sent invite reads as pending until then, whether or not the person exists or declined. Answer one with invites_answer.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "The most sent invites to return, newest first (default 30)."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "invites.send": {
+   "handler": "invitesSend",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Invite someone",
+   "idempotency": "optional",
+   "description": "Invites someone to be the person’s friend on Relay, by @username or by email address, or into one of their groups by username. Only invite people the person asked you to. The answer is the same whether or not the username exists: they get the invite if they’re on Relay or join later, and a chat appears once they accept. An email invite sends a one-time join link, valid 14 days, with an optional note; twenty a day.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "username": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "Their Relay username, with or without @."
+     },
+     "email": {
+      "type": "string",
+      "maxLength": 254,
+      "description": "Their email address, to invite someone who isn’t on Relay yet."
+     },
+     "group": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "A group’s id or handle from chats_list, to invite the username into that group."
+     },
+     "note": {
+      "type": "string",
+      "maxLength": 280,
+      "description": "A short note for an email invite."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    },
+    "APP_UNAVAILABLE": {
+     "status": 503,
+     "public": true
+    }
+   }
+  },
+  "invites.answer": {
+   "handler": "invitesAnswer",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Answer an invite",
+   "idempotency": "optional",
+   "description": "Accepts, declines or blocks an invite waiting for the person, by its id from invites_list. Accepting opens the chat, or joins the group. Declining is never shown to the sender; block also drops any future invites from them. Only answer as the person asked.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "invite": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "The invite id from invites_list."
+     },
+     "answer": {
+      "type": "string",
+      "enum": [
+       "accept",
+       "decline",
+       "block"
+      ],
+      "description": "accept, decline or block."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "invite",
+     "answer"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  }
+ }
+}

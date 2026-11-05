@@ -28,6 +28,13 @@ build step or third-party runtime CDN; vendor fonts and icons with licences.
   the guide offers no way to admit only that member to a private: channel,
   name a plain channel with a random secret given only to that member, and
   say so in the README.
+- MCP tools as named operations with auth "user", each checking the caller:
+  list chats with unread counts, catch up on unread messages and mark a chat
+  read, read a chat further back on request, send a text message, list
+  friends, and list, send (username, group or email) and answer invites
+  without revealing whether a username exists. Settings has Connect via
+  MCP with the MCP mark: a sheet with the connector address to click and
+  copy, and tabs for Claude, ChatGPT, Claude Code and what the tools do.
 - A phone-first app shell where only panels scroll: Chats, Add, Friends,
   Settings tabs, light/dark/auto themes and accent colours, sounds,
   in-app notifications, an installable manifest and service worker. Follow
@@ -58,3 +65,13 @@ repository with this message:
 > I think we can move relay project from [the maintainer's other repository] to unofficial apps?
 > - refine it (i think its logo & assets needs work)
 > - and get it in unofficial's store?
+
+**Iteration 2**
+
+Relay 0.3.0 came from this request, when the repository made MCP standard:
+
+> Shall we add mcp support for relay & feedback?
+
+Its tools grew from a follow-up the same day:
+
+> I hope relay also has the ability to list friends, see unread messages, invite folks etc?

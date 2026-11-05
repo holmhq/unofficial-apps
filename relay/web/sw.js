@@ -2,7 +2,7 @@
 // clicks. (No `push` handler: Holm has no Web Push yet.)
 // Holm serves /sw.js with short/revalidating cache headers so update checks stay fresh.
 
-const VERSION = 'relay-v0.2.0'; // the version in holm.json
+const VERSION = 'relay-v0.3.0'; // the version in holm.json
 const CACHE_PREFIX = 'relay-v';
 const SHELL = [
   '/',
