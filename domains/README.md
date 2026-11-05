@@ -78,8 +78,12 @@ served as files: `api/` and `holm.json` are not public URLs.
 
 A native-app shell: the window never scrolls, bars stay put, and only the
 panel moves. A sidebar of places (Search, Saved, your lists) hides with one
-tap and starts hidden; phones get a tab bar. The round avatar button holds
-sign-in and a three-icon theme switch, and closes when tapped again. Cards
+tap and starts hidden; phones get a tab bar. The footer line (A Holm app,
+How it works, Source) sits in the sidebar's foot, or at the end of the page
+when the sidebar is hidden. The round avatar button holds sign-in and a
+three-icon theme switch, and closes when tapped again. ⌘K opens a command
+menu of places, lists and actions, Connect via MCP… among them; anything
+else typed there searches for that name. Cards
 rise into place, the AI mark breathes while it thinks, and a thin line under
 the field shows progress. Light and dark, and less motion when the device
 asks for it. Answers are kept for 15 minutes, so changing a filter redraws

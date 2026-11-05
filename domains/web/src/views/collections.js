@@ -7,7 +7,7 @@ import * as saved from '../saved.js'
 import * as lists from '../lists.js'
 import { settings } from '../settings.js'
 import { provider as providerById, fallback } from '../providers/index.js'
-import { state, layerKind, openLayer, closeLayer, drawLayer, paintSide, signIn, go, isOpen, copyHTML } from '../shell.js'
+import { state, layerKind, openLayer, closeLayer, drawLayer, paintSide, signIn, go, isOpen, copyHTML, pageCreditHTML } from '../shell.js'
 import { cardHTML, fromItem } from './cards.js'
 
 const lastChecked = (items) => Math.max(0, ...items.map((i) => i.checked || i.at || 0))
@@ -23,7 +23,7 @@ export function savedHTML() {
   const items = saved.list()
   return `<div class="panel"><div class="wrap">${headHTML('Saved', items, '', '')}
     ${items.length ? `<div class="grid">${items.map((it) => cardHTML(fromItem(it), 'saved')).join('')}</div>` : `<div class="empty">${svg('star', 22, 1.6)}<span>Star a name to keep it here${state.me && state.me.signed_in ? '' : '. Sign in to keep them on every device'}.</span></div>`}
-  </div></div>`
+  </div>${pageCreditHTML()}</div>`
 }
 
 export function listHTML(id) {
@@ -33,14 +33,14 @@ export function listHTML(id) {
     ${headHTML(l.name, l.items, l.shared && l.slug ? ' · shared' : '', `<button type="button" class="btn sm primary" data-act="share" data-id="${l.id}">${svg('share', 15, 2)} Share</button><button type="button" class="icon-btn" data-act="list-menu" data-id="${l.id}" aria-label="More for this list" title="More">${svg('ellipsis', 18, 2)}</button>`)}
     <label class="note"><span>Note for whoever you share it with</span><textarea class="note-in" rows="2" data-note="${l.id}" maxlength="280" placeholder="Say why you picked these">${esc(l.note || '')}</textarea></label>
     ${l.items.length ? `<div class="grid">${l.items.map((it) => cardHTML(fromItem(it), 'saved')).join('')}</div>` : `<div class="empty">${svg('folder', 22, 1.6)}<span>Nothing here yet. In a search, use the folder button on a name to add it.</span><a class="btn sm" href="/" data-act="nav">Search</a></div>`}
-  </div></div>`
+  </div>${pageCreditHTML()}</div>`
 }
 
 export function listsHTML() {
   const all = lists.all()
   return `<div class="panel"><div class="wrap"><div class="col-h"><div class="col-t"><h1 class="lt">Lists</h1><p class="sub">Collect names for a friend or a project, and share them by link.</p></div></div>
     <div class="group">${all.map((l) => `<a class="g-row" href="/lists/${l.id}" data-act="nav">${svg('folder', 19, 1.9)}<span class="g-t">${esc(l.name)}</span><span class="n">${l.items.length || ''}</span>${svg('chevronRight', 16, 2)}</a>`).join('')}
-    <button type="button" class="g-row" data-act="newlist">${svg('plus', 19, 2)}<span class="g-t">New list</span></button></div></div></div>`
+    <button type="button" class="g-row" data-act="newlist">${svg('plus', 19, 2)}<span class="g-t">New list</span></button></div></div>${pageCreditHTML()}</div>`
 }
 
 /* ---- Check them all again ---- */

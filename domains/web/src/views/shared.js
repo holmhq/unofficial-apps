@@ -7,11 +7,12 @@ import * as api from '../api.js'
 import { settings } from '../settings.js'
 import { provider as providerById, fallback } from '../providers/index.js'
 import { cardHTML, fromItem } from './cards.js'
+import { pageCreditHTML } from '../shell.js'
 
 export function sharedHTML() {
   return `<div class="shell friend">
     <header class="top"><a class="brand" href="/">${svgMark(26)}<span>Domains</span></a><a class="text-btn" href="/">Find your own</a></header>
-    <div class="panel"><div class="fr-wrap" id="shared"><div class="fr-eyebrow"><i class="live"></i>Opening the list…</div><div class="grid fr-grid"><div class="ghost"></div><div class="ghost"></div><div class="ghost"></div></div></div></div>
+    <div class="panel"><div class="fr-wrap" id="shared"><div class="fr-eyebrow"><i class="live"></i>Opening the list…</div><div class="grid fr-grid"><div class="ghost"></div><div class="ghost"></div><div class="ghost"></div></div></div>${pageCreditHTML()}</div>
     <div class="toast" id="toast" role="status"></div>
   </div>`
 }

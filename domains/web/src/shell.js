@@ -51,7 +51,7 @@ export function topHTML(fieldHTML) {
 function avatarHTML() {
   const m = state.me && state.me.signed_in ? state.me : null
   const inner = m && m.picture ? `<img src="${esc(m.picture)}" alt="" referrerpolicy="no-referrer">` : svg('user', 17, 2)
-  return `<button type="button" class="avatar" id="avatar" data-act="account" aria-haspopup="menu" aria-label="${m ? 'Account: ' + esc(m.name || m.email || 'you') : 'Sign in and settings'}" title="${m ? esc(m.name || 'Account') : 'Account'}">${inner}</button>`
+  return `<button type="button" class="avatar-btn" id="avatar" data-act="account" aria-haspopup="menu" aria-label="${m ? 'Account: ' + esc(m.name || m.email || 'you') : 'Sign in and settings'}" title="${m ? esc(m.name || 'Account') : 'Account'}"><span class="avatar">${inner}</span></button>`
 }
 
 export function sideHTML() {
@@ -65,9 +65,16 @@ export function sideHTML() {
     ${lists.all().map((l) => nav('list', 'folder', l.name, l.items.length || null, l.id)).join('') || '<p class="side-empty">Collect names for a friend or a project.</p>'}
     <div class="side-foot">
       <p>Checked live with <b>Namecheap</b>. Prices are a guide; checkout has the final one.</p>
-      <p class="credit"><a href="https://holmhq.com" target="_blank" rel="noopener">${svgHolm(11)}<span>A Holm app</span></a><i></i><a href="/about" data-act="nav">How it works</a><i></i><a href="${SOURCE}" target="_blank" rel="noopener">Source</a></p>
+      ${creditHTML()}
     </div>`
 }
+
+// The footer line: in the sidebar's foot on a desk, and at the end of each page when the
+// sidebar is hidden or on a phone. The only place Holm's name appears.
+export function creditHTML() {
+  return `<p class="credit"><a href="https://holmhq.com" target="_blank" rel="noopener">${svgHolm(11)}<span>A Holm app</span></a><i></i><a href="/about" data-act="nav">How it works</a><i></i><a href="${SOURCE}" target="_blank" rel="noopener">Source</a></p>`
+}
+export const pageCreditHTML = () => `<div class="page-credit">${creditHTML()}</div>`
 
 export function tabsHTML() {
   const t = (view, ic, label, href) => `<a class="tab${state.view === view || (view === 'lists' && state.view === 'list') ? ' on' : ''}" href="${href}" data-act="nav">${svg(ic, 23, 1.9)}<span>${label}</span></a>`

@@ -56,7 +56,12 @@ vendor Inter with its licence.
   lists) that starts hidden on desktop, a tab bar on phones; a round avatar
   button top right whose menu toggles closed when tapped again, holds a
   light/dark/auto switch as three icons and sign-in, and never Holm branding
-  (that goes in the sidebar's foot and the About page).
+  (that goes in the footer line: in the sidebar's foot, or at the end of the
+  page when the sidebar is hidden or on a phone). Buttons a finger taps are
+  44 px, even where they look smaller.
+- ⌘K opens a command menu: the places, each list, new list, filters, the
+  sidebar, Connect via MCP… and sign-in, by a few letters; anything else
+  typed searches for that name.
 - MCP tools as named operations with auth "user", each checking the caller:
   suggest names the way the search makes them (they can't be checked from a
   tool, so say "unchecked" and link to the search, which checks them live),
@@ -171,3 +176,9 @@ Version 0.3.0 added the MCP tools and the Connect via MCP sheet from this
 message, about this app and two others:
 
 > Can we now add it for overlap, domains, pastebin
+
+Version 0.4.0 came from a sweep of every app in this repository against its
+cookbook, which brought ⌘K, the footer line on every page and 44 px touch
+targets. The owner's message was:
+
+> Sure do cookbook sweep

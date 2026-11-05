@@ -19,6 +19,7 @@ import { submitNewList, onChange } from './views/cards.js'
 import { savedHTML, listHTML, listsHTML, submitRename, rerender } from './views/collections.js'
 import { aboutHTML } from './views/about.js'
 import { sharedHTML, mountShared } from './views/shared.js'
+import './palette.js'
 
 theme.apply()
 const root = document.getElementById('root')

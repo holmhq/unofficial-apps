@@ -10,7 +10,7 @@ import * as saved from '../saved.js'
 import { settings, on as onSettings, changed, SEARCH_KEYS, MAX_ANY } from '../settings.js'
 import { Search, HACKS } from '../search.js'
 import { provider as providerById } from '../providers/index.js'
-import { state, openLayer, closeLayer, isOpen, render } from '../shell.js'
+import { state, openLayer, closeLayer, isOpen, render, pageCreditHTML } from '../shell.js'
 import { cardHTML, fromCell, onChange } from './cards.js'
 import { summary } from './filters.js'
 
@@ -35,12 +35,12 @@ export function heroHTML({ animateIn = false, hold = false } = {}) {
     <p>Type a name. Shorter spellings, sound-alikes and AI ideas, checked live. Only available names show.</p>
     ${fieldHTML(false, hold)}
     <div class="try">Try <button type="button" data-act="try" data-q="photon">photon</button><button type="button" data-act="try" data-q="harbour labs">harbour labs</button><button type="button" data-act="try" data-q="orbit">orbit</button></div>
-  </div></div>`
+  </div>${pageCreditHTML()}</div>`
 }
 
 export function resultsHTML() {
   return `<div class="ideas-bar"><div class="wrap"><div class="chips" id="chips"><span class="ai-mark" title="">${svg('sparkles', 16, 2)}</span><button type="button" class="chip on" data-act="chip" data-l="">All <span class="n">0</span></button></div></div></div>
-    <div class="panel" id="panel"><div class="wrap"><div class="note-line" id="note-line" hidden></div><div class="grid" id="grid"></div><div id="after"></div></div></div>
+    <div class="panel" id="panel"><div class="wrap"><div class="note-line" id="note-line" hidden></div><div class="grid" id="grid"></div><div id="after"></div></div>${pageCreditHTML()}</div>
     <p class="sr" id="status" aria-live="polite"></p>`
 }
 

@@ -53,6 +53,9 @@ for (const m of shell.matchAll(/\?v=([\d.]+)/g)) check(m[1] === holm.version, `s
 const FILE = new RegExp(sw.match(/const FILE = \/(.+)\/i/)[1], 'i')
 for (const p of ['/', '/saved', '/about', '/lists', '/lists/for-a-friend-x1y2z', '/s/7fK2mQab']) check(!FILE.test(p), `${p} opens the app`)
 for (const p of ['/icon-512.png', '/manifest.webmanifest', '/data/tlds.json']) check(FILE.test(p), `${p} is a file`)
+const PASS = new RegExp(sw.match(/const PASS = \/(.+)\/\n/)[1])
+for (const p of ['/_holm/mcp', '/_holm/members/x/avatar', '/_analytics/', '/api/me', '/auth/login', '/sw.js']) check(PASS.test(p), `${p} passes through to the network`)
+for (const p of ['/', '/saved', '/lists/x1', '/s/7fK2mQab', '/src/main.js']) check(!PASS.test(p), `${p} is answered from the cache`)
 
 console.log(failed ? `${failed} failed` : 'all checks passed')
 process.exit(failed ? 1 : 0)
