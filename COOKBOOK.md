@@ -81,7 +81,23 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 - **Cover what people do in the app**, not just its first screen: Relay's
   tools catch up on unread messages, read and send, list friends, and send
   and answer invites. Wrap the app's own handlers so the access checks stay
-  in one place, and keep its privacy rules in the tools' answers.
+  in one place, and keep its privacy rules in the tools' answers. Where the
+  routes are written inline in `fetch`, a tool can build a `Request` and pass
+  it through the app's own `fetch`, as Overlap's do. An operation can't reach
+  `web/`: `env.holm.web` is undefined there and imports from `web/` are
+  refused. A tool that needs browser code, like Domains' name maker, uses a
+  copy in `api/` that a check script keeps the same.
+- **A tool that destroys something for other people asks first.** Pastebin's
+  `pastes.open` answers a one-time paste as sealed, and burns it only when
+  called again with `burn: true`. The owner's own reads never burn it.
+- **Don't declare idempotency on a tool whose result must not be kept.**
+  Holm keeps a keyed answer for 24 hours to replay it, which would keep a
+  one-time paste's text after it's gone.
+- **A page that saves whole documents takes the account's copy back.** When
+  it regains focus or comes back into view with nothing of its own unsent,
+  it reads the account's copy and redraws. Otherwise its next save erases
+  what Claude added. Count edits, so one made while a save is out still
+  counts as unsent (Domains' `saved.js` and `lists.js`).
 - **The account menu has Connect via MCP…** when you're signed in, with the
   MCP mark as its icon. ⌘K has it too. It opens one sheet, never a page,
   and other sheets that mention Claude link to it rather than repeat it.
@@ -104,7 +120,12 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   as tall as the tallest and never changes height between tabs. It fits a
   390 × 844 phone without scrolling. Each Tools row's line fits on one line
   there. Closing the sheet puts focus back on the avatar button, since the
-  menu item that opened it is gone.
+  menu item that opened it is gone. On desktop it's wide enough for the
+  zyt command on one line, with some to spare: about 640 px for a narrow
+  mono, 720 px for Fragment Mono. A modal `<dialog>` is capped by the
+  browser at the viewport minus about 38 px, so set `max-width: none`
+  before sizing it. Focus the dialog itself (`tabindex="-1"`), or
+  `showModal()` puts a focus ring on the copy field.
 - **The dots keep moving while the sheet is open.** A wave runs from the app
   to the mark every 2.4 s and rests between waves. With reduced motion they
   stand still; turn the animation off by name, because a global
@@ -313,7 +334,15 @@ current guide too, since some of them will change.
   a few thousand. Pass it back untouched.
 - **Calls out of the app go in raw routes.** Named operations (the ones MCP
   exposes) can't call `net.fetch` or `ai.chat` and have no secrets, so do
-  outbound work in a `fetch` route.
+  outbound work in a `fetch` route. On 0.278 that holds for read, write and
+  destructive operations alike (`READ_EFFECT_DENIED`). `env.holm.private.read`
+  works in them.
+- **A read operation can't write**, so it can't do the app's lazy clean-up,
+  such as purging an expired paste. It reports the state as it should be,
+  and the next write cleans up.
+- **A tool's input is capped at about 50 KB**, whatever its `maxLength` says.
+  Past that Holm answers 413 `SCHEMA_RESOURCE_LIMIT`, so cap text inputs below
+  it; Pastebin's take 48,000 characters.
 - **A paged `ds.find` returns at most 100 rows a page**, whatever `limit`
   asks for; follow the cursor. A find without `page` returns up to its
   `limit`. Shelf's highlights asked for 1,000 a page and showed 100.
