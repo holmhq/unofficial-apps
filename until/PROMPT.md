@@ -28,8 +28,12 @@ the font and icons with their licences.
   move the device's trackers over once, skipping duplicates. A browser-made
   key on each new tracker makes a retried save find the first attempt.
 - Two colours, green and pink, each light and dark or following the device,
-  in the account menu. Installable, with a network-first service worker; offline,
-  show the last synced copy read only.
+  in the account menu, light, dark and auto as three icons. Installable, with a
+  service worker that precaches every page file at the holm.json version and
+  opens cache-first; draw the last kept trackers at once and redraw only on a
+  change, and count a number down only when it changed. Offline, show the
+  last synced copy read only. ⌘K opens, adds or edits a tracker and does what
+  the account menu does.
 - MCP tools as named operations in api/contract.json with auth "user", each
   going through the app's own routes for the signed-in member: list trackers
   with days left, read one with its ratings, add, change, rate a day (never a
@@ -66,3 +70,9 @@ four apps that already had tools up to it, then to give Zend, Roll and Until
 tools of their own. This was the reply:
 
 > yes, do both batches
+
+**Iteration 3.** Version 0.3.0 came from a sweep of every app against the
+repository's cookbook, which found Until without ⌘K and with a service worker
+that waited on the network:
+
+> Sure do cookbook sweep

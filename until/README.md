@@ -38,19 +38,28 @@ surface off (`surfaces.web.renderer: "off"`).
   skipping any it already has.
 - **Signed in:** trackers and the colour choice are kept on the node for that
   member alone and appear on every device.
-- **Installable and offline:** the generated web manifest makes it an app on
-  the home screen. A small service worker keeps the page's files; offline, a
+- **Installable, quick and offline:** the generated web manifest makes it an
+  app on the home screen. A service worker precaches every page file at the
+  `holm.json` version, all or nothing, and opens cache-first; a new deploy
+  takes over on the next launch. It never answers `/api/`, `/auth/` or Holm's
+  own `/_` paths, and an address that ends like a file (`/icon-512.png`)
+  opens that file. A launch draws your trackers at once from what this
+  browser last saw, then redraws only if the node's copy differs, and a
+  number counts down only when it changed since you last looked. Offline, a
   signed-in member sees their last synced trackers, read only.
 - **MCP tools:** Claude, ChatGPT or Claude Code can list your trackers with
   the days left, read one with every day's stars, add one, change its title,
   icon or dates, rate a day (today unless told otherwise; never a day still to
-  come) and delete one. **Connect via MCP…** in the account menu, shown when
-  you're signed in, opens a sheet with the connector address to click and
+  come) and delete one. **Connect via MCP…** in the account menu and in ⌘K,
+  shown when you're signed in, opens a sheet with the connector address to click and
   copy, and tabs with the steps for Claude, ChatGPT and Claude Code and what
   the tools do. An open page picks up what Claude changed when you come back
   to it.
+- **⌘K** (Ctrl+K) opens any tracker to rate a day, edits one, adds one, and
+  does what the account menu does.
 - **Looks:** two colours, Green and Bloom, each in light and dark or
-  following the device, chosen from the account menu. The page never scrolls
+  following the device, chosen from the account menu (light, dark and auto
+  as three icons). Analytics shows there only for the app's admins. The page never scrolls
   as a whole; only the list moves under the header, as in a native app.
 
 ## How it is built
@@ -63,15 +72,18 @@ api/main.js             every route: who is signed in, trackers, settings, impor
 api/contract.json       the MCP tools: names, inputs, risk and errors
 api/ops.js              the tools' code, which calls the routes above
 web/index.html          the page shell, with the theme applied before first paint
-web/sw.js               network-first offline cache of the page's files
+web/sw.js               precached page files at the holm.json version, cache-first
 web/src/app.js          the list, the add/edit and rate sheets, the account menu
 web/src/mcp.js          the Connect via MCP sheet and its click-to-copy field
+web/src/palette.js      ⌘K: open, add or edit a tracker, or do what the menu does
 web/src/dates.js        calendar-day arithmetic, sorting and captions
 web/src/ui.js           DOM helper, bottom sheets, the status line
 web/src/icons.js        the Lucide icons it uses, copied in
 web/src/styles.css      the whole look: two colours in light and dark, layout, motion
 web/fonts/              Manrope (OFL), vendored
 web/vendor/lucide/      the Lucide licence
+tools/check.mjs         release checks: sw.js lists every file at the holm.json
+                        version and spares files and Holm's paths
 listing/                store listing and screenshots (not deployed)
 ```
 

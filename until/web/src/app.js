@@ -9,10 +9,13 @@ import { h, openSheet, closeTopSheet, say } from './ui.js'
 import { icon } from './icons.js'
 import * as days from './dates.js'
 import { openMcpSheet } from './mcp.js'
+import { togglePalette } from './palette.js'
 
 const LOCAL = 'until:countdowns:v1'   // signed-out trackers, on this device
 const SETTINGS = 'until:settings:v1'  // colour and appearance
-const SYNCED = 'until:account:v1'     // a member's trackers as last loaded, for offline launches
+const SYNCED = 'until:account:v1'     // a member's trackers as last loaded, drawn at once on launch
+const ME = 'until:me:v1'              // who was signed in at the last launch
+const COUNTED = 'until:counted:v1'    // numbers that have already counted down, so a reload doesn't replay it
 const BARS = { garden: { light: '#eff8f1', dark: '#102019' }, signal: { light: '#fff3ef', dark: '#201620' } }
 
 // The rating is feed-stars, Holm's own star component, from its CDN: pinned
@@ -29,6 +32,7 @@ const store = {
 
 const state = {
   me: null,
+  admin: false,
   mcp: null, // this host's connector address, from /api/me
   loginURL: '/auth/login',
   logoutURL: null,
@@ -86,26 +90,53 @@ darkQuery.addEventListener('change', applyTheme)
 const deviceTrackers = () =>
   (store.get(LOCAL, []) || []).filter(x => x && typeof x === 'object').map(days.normalize).filter(t => t.title)
 
+// Draws at once from what this browser last saw (the kept account trackers, or the ones on
+// this device), then asks the node, and redraws only if its answer differs.
+function drawKept() {
+  const kept = store.get(ME, null)
+  const synced = store.get(SYNCED, null)
+  if (kept?.member && Array.isArray(synced)) {
+    Object.assign(state, { me: kept.member, admin: !!kept.admin, mcp: kept.mcp || null, loginURL: kept.loginURL || state.loginURL, logoutURL: kept.logoutURL || null, mode: 'account' })
+    state.trackers = synced.map(days.normalize)
+  } else if (store.get(LOCAL, null)) {
+    state.mode = 'device'
+    state.trackers = deviceTrackers()
+  } else {
+    // Nothing kept here yet: wait for the node rather than flash an empty list at someone
+    // who turns out to be signed in.
+    return renderAccount()
+  }
+  renderAccount()
+  render()
+}
+
 async function start() {
   try {
     const me = await api(`/api/me?next=${encodeURIComponent(location.pathname)}`)
+    const changed = (state.me?.email || null) !== (me.member?.email || null)
     state.me = me.member
+    state.admin = !!me.admin
     state.mcp = me.mcp || null
     state.loginURL = me.loginURL
     state.logoutURL = me.logoutURL
+    if (me.member) store.set(ME, { member: me.member, admin: state.admin, mcp: state.mcp, loginURL: me.loginURL, logoutURL: me.logoutURL })
+    else store.drop(ME)
+    if (changed) renderAccount()
   } catch (error) {
     if (error.offline && store.get(SYNCED, null)) return showOffline()
   }
-  renderAccount()
   await load()
 }
 
 async function load() {
+  const was = { mode: state.mode, trackers: JSON.stringify(state.trackers) }
+  const redraw = () => { if (state.mode !== was.mode || JSON.stringify(state.trackers) !== was.trackers) render() }
   if (!state.me) {
     state.mode = 'device'
     state.trackers = deviceTrackers()
     store.drop(SYNCED)
-    return render()
+    if (was.mode !== 'device') renderAccount()
+    return redraw()
   }
   try {
     const [list, remote] = await Promise.all([api('/api/countdowns'), api('/api/settings').catch(() => null)])
@@ -114,23 +145,25 @@ async function load() {
     store.set(SYNCED, state.trackers)
     // A first visit since signing in keeps this device's choice and saves it.
     if (remote?.settings) {
+      const before = JSON.stringify(settings)
       Object.assign(settings, remote.settings)
       store.set(SETTINGS, settings)
-      applyTheme()
-      renderAccount()
+      if (JSON.stringify(settings) !== before) { applyTheme(); renderAccount() }
     } else {
       api('/api/settings', { method: 'PATCH', body: settings }).catch(() => {})
     }
+    if (was.mode !== 'account') renderAccount()
     say('')
   } catch (error) {
     if (error.status === 401) {
       state.me = null
+      store.drop(ME)
       renderAccount()
       return load()
     }
     return showOffline()
   }
-  render()
+  redraw()
 }
 
 function showOffline() {
@@ -241,7 +274,10 @@ const addButton = document.getElementById('add')
 addButton.append(icon('plus', 22))
 addButton.addEventListener('click', () => openEditor())
 
-const counted = new Set() // cards that have already counted down once
+// Cards whose number has already counted down, kept across launches: the count plays when a
+// number changes (a new day, a new tracker), never again on a reload.
+const counted = new Set(store.get(COUNTED, []) || [])
+const keepCounted = () => store.set(COUNTED, [...counted].slice(-200))
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)')
 
 function render() {
@@ -277,6 +313,7 @@ function card(t, editable) {
   const key = `${t.id}:${big}`
   if (!counted.has(key)) {
     counted.add(key)
+    keepCounted()
     number.classList.add('enter')
     if (phase === 'running') countDown(number, Math.max(big + 1, t.count), big)
   }
@@ -557,7 +594,7 @@ function renderAccount(keepOpen = false) {
   const surfaces = globalThis.__HOLM_SURFACES__
   const segment = (key, value, content, label) => h('button', {
     class: `seg-btn${settings[key] === value ? ' active' : ''}`, type: 'button',
-    'aria-pressed': String(settings[key] === value), 'aria-label': label,
+    'aria-pressed': String(settings[key] === value), 'aria-label': label, title: label,
     onclick: () => setSetting(key, value)
   }, content)
 
@@ -582,8 +619,8 @@ function renderAccount(keepOpen = false) {
       h('div', { class: 'segmented three' },
         segment('appearance', 'light', icon('sun-medium', 18), 'Light'),
         segment('appearance', 'dark', icon('moon', 18), 'Dark'),
-        segment('appearance', 'system', icon('monitor', 18), 'Same as device'))),
-    surfaces?.analytics && h('a', { class: 'menu-row', href: surfaces.analytics, target: '_blank', rel: 'noopener' }, icon('chart-column', 15), h('span', {}, 'Analytics')),
+        segment('appearance', 'system', icon('monitor', 18), 'Auto'))),
+    state.admin && surfaces?.analytics && h('a', { class: 'menu-row', href: surfaces.analytics, target: '_blank', rel: 'noopener' }, icon('chart-column', 15), h('span', {}, 'Analytics')),
     me && state.mode !== 'offline' && h('button', { class: 'menu-row', type: 'button', onclick: connect }, icon('mcp', 15), h('span', {}, 'Connect via MCP…')),
     state.mode === 'offline' ? null : me
       ? h('button', { class: 'menu-row', type: 'button', onclick: signOut }, icon('log-out', 15), h('span', {}, 'Sign out'))
@@ -607,8 +644,34 @@ const closeMenu = () => {
 
 document.addEventListener('pointerdown', event => { if (!accountRoot.contains(event.target)) closeMenu() })
 document.addEventListener('keydown', event => {
+  if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === 'k') {
+    if (document.querySelector('.overlay')) return
+    event.preventDefault()
+    closeMenu()
+    togglePalette(paletteCommands)
+    return
+  }
   if (event.key === 'Escape' && !closeTopSheet() && closeMenu()) accountRoot.querySelector('.avatar-btn').focus()
 })
+
+// ⌘K: each tracker (rate a day, or edit it), adding one, and what the account menu does.
+function paletteCommands() {
+  const editable = state.mode === 'account' || state.mode === 'device'
+  const list = days.sortTrackers(state.trackers)
+  return [
+    editable && { label: 'Add tracker', icon: 'plus', run: () => openEditor() },
+    ...list.map(t => ({ label: t.title, icon: t.icon, hint: days.caption(t), run: () => openRating(t.id) })),
+    ...(editable ? list.map(t => ({ label: `Edit ${t.title}`, icon: 'pencil', hint: 'Edit', run: () => openEditor(t) })) : []),
+    state.me && state.mode !== 'offline' && { label: 'Connect via MCP…', icon: 'mcp', run: () => openMcpSheet(state.mcp) },
+    ...[['light', 'sun-medium', 'Light appearance'], ['dark', 'moon', 'Dark appearance'], ['system', 'monitor', 'Match this device']]
+      .filter(([v]) => settings.appearance !== v).map(([v, name, label]) => ({ label, icon: name, hint: 'Theme', run: () => setSetting('appearance', v) })),
+    { label: settings.themeFamily === 'garden' ? 'Bloom colours' : 'Green colours', icon: 'palette', hint: 'Colour', run: () => setSetting('themeFamily', settings.themeFamily === 'garden' ? 'signal' : 'garden') },
+    state.admin && globalThis.__HOLM_SURFACES__?.analytics && { label: 'Analytics', icon: 'chart-column', run: () => window.open(globalThis.__HOLM_SURFACES__.analytics, '_blank', 'noopener') },
+    state.mode === 'offline' ? null : state.me
+      ? { label: 'Sign out', icon: 'log-out', run: signOut }
+      : { label: 'Sign in', icon: 'log-in', run: () => { location.href = state.loginURL } }
+  ].filter(Boolean)
+}
 
 // The sheet hands focus back to the avatar button when it closes.
 function connect() {
@@ -621,6 +684,7 @@ function connect() {
 async function signOut() {
   try { await fetch(state.logoutURL || '/auth/logout', { method: 'POST', headers: { accept: 'application/json' } }) } catch {}
   store.drop(SYNCED)
+  store.drop(ME)
   location.reload()
 }
 
@@ -648,5 +712,5 @@ visualViewport?.addEventListener('scroll', syncViewport)
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})
 
 applyTheme()
-renderAccount()
+drawKept()
 start()

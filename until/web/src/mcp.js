@@ -91,6 +91,7 @@ export function openMcpSheet(address) {
     h('p', { class: 'field-label mcp-label' }, 'Connector address'),
     copyField(mcp),
     seg,
-    h('div', { class: 'mcp-panes' }, ...Object.values(panes)))
+    h('div', { class: 'mcp-panes' }, ...Object.values(panes)),
+    h('button', { class: 'chip-btn full-width mcp-done', type: 'button', onclick: () => sheet.close() }, 'Done'))
   return sheet
 }

@@ -109,8 +109,12 @@ export default {
       const appKV = env.holm.app.kv
       if (appKV.get('site:origin') !== url.origin) appKV.set('site:origin', url.origin)
       const next = url.searchParams.get('next') || '/'
+      let admin = false
+      try { admin = !!(member && auth.isAppAdmin && auth.isAppAdmin()) } catch { admin = false }
       return json({
         member: member && { name: member.name || '', email: member.email || '', picture: member.picture || null },
+        // Analytics shows in the account menu only for the app's admins.
+        admin,
         loginURL: auth.getLoginURL(next.startsWith('/') && !next.startsWith('//') ? next : '/'),
         logoutURL: member ? auth.getLogoutURL() : null,
         // This host's connector address, for the Connect via MCP sheet.
