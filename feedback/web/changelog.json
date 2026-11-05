@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "0.18.0",
+      "date": "2026-11-05",
+      "title": "Connect via MCP",
+      "changes": [
+        "Connect via MCP… in the avatar menu shows the address to give Claude, ChatGPT or Claude Code, with the steps for each and what the tools can do. Click the address to copy it.",
+        "Once connected and signed in, Claude can list your projects and what waits in each, read an inbox, file and answer an item, mark it done, turn its link on or off, and count visits, scans and sends.",
+        "Anyone signed in can connect their own projects, not just the node's admins. Claude sees only the projects you own.",
+        "Clicking the avatar again closes its menu instead of opening it a second time."
+      ]
+    },
+    {
       "version": "0.17.0",
       "date": "2026-10-25",
       "title": "Answer by link",

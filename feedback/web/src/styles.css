@@ -203,6 +203,96 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .signin { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 1rem; background: var(--scrim); }
 .signin iframe { width: min(27.5rem, 100%); height: min(40rem, 100%); border: 0; border-radius: 18px; background: #fff; box-shadow: var(--lift); }
 
+/* Connect via MCP (src/mcp.js): the menu item, and one sheet that says how
+   to connect. A sheet from the bottom on a phone, a card on a desk. Its
+   panes share one grid cell, so it keeps one height across the tabs. */
+
+.menu .menu-mcp { align-items: center; justify-content: space-between; gap: 1rem; }
+.menu-mcp .glyph { flex: none; width: 1.05rem; height: 1.05rem; fill: currentColor; color: var(--ink-3); }
+.menu-mcp:hover .glyph { color: var(--ink); }
+
+.mcp-scrim { position: fixed; inset: 0; z-index: 40; display: grid; place-items: end center; background: var(--scrim); animation: mcp-fade 0.2s ease-out; }
+.mcp-sheet {
+  width: 100%; max-height: calc(100dvh - 1rem); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.85rem; padding: 0 1rem max(1.25rem, env(safe-area-inset-bottom));
+  background: var(--paper); color: var(--ink); border-radius: 18px 18px 0 0; box-shadow: var(--lift);
+  animation: mcp-up 0.36s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+.mcp-sheet::-webkit-scrollbar { display: none; }
+.mcp-scrim.is-closing { animation: mcp-fade 0.2s ease-in reverse forwards; }
+.mcp-scrim.is-closing .mcp-sheet { animation: mcp-up 0.22s ease-in reverse forwards; }
+@media (min-width: 40rem) {
+  .mcp-scrim { place-items: center; padding: 1.5rem; }
+  .mcp-sheet { width: min(44rem, 100%); max-height: min(48rem, 100%); padding: 0 1.25rem 1.35rem; border-radius: 20px; animation-name: mcp-pop; }
+  .mcp-scrim.is-closing .mcp-sheet { animation-name: mcp-pop; }
+}
+@keyframes mcp-fade { from { opacity: 0; } }
+@keyframes mcp-up { from { transform: translateY(100%); } }
+@keyframes mcp-pop { from { opacity: 0; transform: translateY(12px) scale(0.97); } }
+
+.mcp-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.4rem; margin-bottom: -0.35rem; }
+.mcp-head h2 { margin: 0; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
+.mcp-done { margin-right: -0.6rem; min-height: 2.75rem; padding: 0 0.6rem; border: 0; border-radius: 10px; background: none; color: var(--accent); font: 650 1rem var(--font); cursor: pointer; }
+.mcp-done:hover { background: var(--sheet); }
+
+.mcp-hero { display: flex; align-items: center; justify-content: center; gap: 0.9rem; padding: 0.25rem 0 0.15rem; }
+.mcp-app, .mcp-tile { width: 60px; height: 60px; border-radius: 14px; box-shadow: 0 1px 2px rgba(20, 16, 30, 0.08), 0 6px 16px -8px rgba(20, 16, 30, 0.3); }
+.mcp-tile { display: grid; place-items: center; background: var(--sheet); color: var(--ink); }
+.mcp-tile .glyph { width: 32px; height: 32px; fill: currentColor; }
+.mcp-link { display: flex; gap: 6px; }
+.mcp-link i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); opacity: 0.45; animation: mcp-flow 2.4s ease-in-out infinite; }
+.mcp-link i:nth-child(2) { animation-delay: 0.12s; }
+.mcp-link i:nth-child(3) { animation-delay: 0.24s; }
+.mcp-link i:nth-child(4) { animation-delay: 0.36s; }
+.mcp-link i:nth-child(5) { animation-delay: 0.48s; }
+@keyframes mcp-flow { 0%, 36%, 100% { opacity: 0.45; transform: none; } 14% { opacity: 1; transform: scale(1.3); background: var(--ink); } }
+
+.mcp-label { margin: 0.15rem 0.25rem -0.45rem; font-size: 0.82rem; font-weight: 650; color: var(--ink-2); }
+.mcp-sheet .mcp-tabs { display: grid; justify-self: stretch; }
+.mcp-sheet .mcp-tabs button { padding: 0 0.35rem; min-height: 2.5rem; }
+@media (max-width: 26rem) { .mcp-sheet .mcp-tabs button { font-size: 0.82rem; } }
+.mcp-panes { display: grid; grid-template-columns: minmax(0, 1fr); }
+.mcp-panes > * { grid-area: 1 / 1; align-self: start; }
+.mcp-panes > :not(.is-on) { visibility: hidden; }
+.mcp-panes > .is-on { animation: mcp-pane 0.22s ease-out; }
+@keyframes mcp-pane { from { opacity: 0; transform: translateY(4px); } }
+.mcp-group { border-radius: 14px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); }
+.mcp-row { display: flex; align-items: center; gap: 0.8rem; min-height: 3.6rem; padding: 0.6rem 0.9rem; }
+.mcp-row + .mcp-row { background: linear-gradient(var(--rule), var(--rule)) no-repeat 3.6rem 0 / calc(100% - 3.6rem) 1px; }
+.mcp-row strong { display: block; font-size: 0.95rem; font-weight: 650; }
+.mcp-row span:not(.mcp-num):not(.mcp-ic) { display: block; margin-top: 0.1rem; font-size: 0.85rem; line-height: 1.4; color: var(--ink-2); }
+.mcp-num, .mcp-ic { flex: none; display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 9px; background: var(--paper); color: var(--ink-2); }
+.mcp-num { font: 700 0.88rem/1 var(--font); font-variant-numeric: tabular-nums; }
+.mcp-ic .glyph { width: 1.05rem; height: 1.05rem; }
+.mcp-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.8rem; }
+.mcp-note { margin: 0 0.25rem; font-size: 0.88rem; line-height: 1.5; color: var(--ink-2); }
+.mcp-note code { padding: 0.1em 0.35em; border-radius: 5px; background: var(--sheet); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink); font-size: 0.85em; }
+
+/* Click to copy: the value on one line, a copy icon at its end, Copy on
+   hover and Copied with a tick after. */
+.copy-field { --cf-bg: var(--sheet); display: flex; align-items: center; gap: 0.6rem; height: 46px; padding: 0 0.9rem; border-radius: 12px; background: var(--cf-bg); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s, box-shadow 0.15s; }
+.copy-field:active { --cf-bg: color-mix(in oklab, var(--sheet), var(--ink) 8%); }
+@media (hover: hover) { .copy-field:hover { --cf-bg: color-mix(in oklab, var(--sheet), var(--ink) 4%); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--rule), var(--ink) 18%); } }
+.copy-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.copy-value { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; white-space: nowrap; font: 12.5px/46px var(--mono); letter-spacing: 0; }
+.copy-value::-webkit-scrollbar { display: none; }
+.copy-field.is-long .copy-value { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.copy-cue { position: relative; flex: none; display: grid; color: var(--ink-3); transition: color 0.15s; }
+.copy-cue .glyph { grid-area: 1 / 1; width: 16px; height: 16px; transition: opacity 0.15s, transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.copy-cue .glyph:last-child { opacity: 0; transform: scale(0.5); color: var(--done-ink); }
+.copy-word { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); padding: 3px 7px 3px 26px; background: linear-gradient(to right, transparent, var(--cf-bg) 20px); color: var(--ink-2); font: 600 0.82rem/1.2 var(--font); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+@media (hover: hover) { .copy-field:hover .copy-cue { color: var(--ink); } .copy-field:hover .copy-word { opacity: 1; } }
+.copy-field.is-copied .copy-word { opacity: 1; color: var(--done-ink); }
+.copy-field.is-refused .copy-word { opacity: 1; color: var(--danger); }
+.copy-field.is-copied .copy-cue .glyph:first-of-type { opacity: 0; transform: scale(0.5); }
+.copy-field.is-copied .copy-cue .glyph:last-child { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mcp-scrim, .mcp-sheet, .mcp-panes > .is-on { animation: none; }
+  /* By name: a global short duration on an infinite animation flickers. */
+  .mcp-link i { animation: none; opacity: 0.7; }
+}
+
 /* Landing */
 
 .hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 3rem; align-items: center; padding-block: 3rem 2rem; }

@@ -2,6 +2,7 @@
 // hosted sign-in page in an overlay, so the reader keeps their place.
 import { $, el, api, glyph, store, link } from './lib.js'
 import { remembered, startLink, forget } from './link.js'
+import { mcpSheet } from './mcp.js'
 
 // Light, dark or the system's choice. index.html applies the saved one
 // before the first paint.
@@ -33,6 +34,8 @@ function themeSwitch() {
 
 let me = null
 let opened = null
+// This host's MCP connector address, from the server.
+let mcp = null
 const listeners = []
 
 // `link`: this tab was opened from an inbox link, and its session is live.
@@ -46,6 +49,7 @@ export async function loadViewer() {
     const body = await api('GET', '/api/me')
     me = body.member
     opened = body.link || null
+    mcp = body.mcp || null
   } catch {
     me = null
     opened = null
@@ -87,6 +91,8 @@ function toggleMenu(button) {
         el('a', { href: '/mine', 'data-link': true, role: 'menuitem' }, 'Your feedback'),
         el('a', { href: '/stats', 'data-link': true, role: 'menuitem' }, 'Stats'),
         el('a', { href: '/keys', 'data-link': true, role: 'menuitem' }, 'API keys'),
+        el('button', { type: 'button', role: 'menuitem', class: 'menu-mcp', onclick: () => mcpSheet(mcp || undefined) },
+          el('span', {}, 'Connect via MCP…'), glyph('mcp')),
         theme,
         el('button', { type: 'button', role: 'menuitem', onclick: signOut }, 'Sign out'))
     : el('div', { class: 'menu', role: 'menu' },
@@ -99,6 +105,9 @@ function toggleMenu(button) {
     if (event.type === 'keydown' && event.key !== 'Escape') return
     // The theme buttons and the menu's own padding keep it open.
     if (event.type === 'click' && menu.contains(event.target) && (!event.target.closest('a, button') || event.target.closest('.theme'))) return
+    // A second click on the avatar only closes the menu; it never reaches
+    // the avatar's own handler, which would open it again.
+    if (event.type === 'click' && button.contains(event.target)) event.stopPropagation()
     close(menu, button, event.type === 'keydown')
     document.removeEventListener('click', dismiss, true)
     document.removeEventListener('keydown', dismiss)

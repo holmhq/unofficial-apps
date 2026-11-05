@@ -124,6 +124,10 @@ deploy. They are still public source in this repository.
   anything the owner can, so setting up feedback on a new site is one
   request. Keys are shown once and stored as SHA-256 hashes; a key can't make
   more keys.
+- **Connect via MCP,** in the avatar menu: the address and steps to connect
+  Claude, ChatGPT or Claude Code, which can then list your projects, read an
+  inbox, file and answer items, mark them done, share them by link and count
+  visits, scans and sends, as you and only on your projects.
 - **Its own feedback:** the footer's Feedback link opens this app's own form,
   through the same `embed.js` every site uses, sent to its maintainers'
   project on feedback.zyt.app. It isn't on projects' feedback pages.
@@ -182,14 +186,17 @@ with `request.formData()`, and converts its answers to standard `Response`
 objects. Other paths go to `env.holm.web.fetch(request)` for static files
 and SPA fallback. There is no build step.
 
-Named typed operations are also exported in `contract.operations`, with
-native `(input, env, ctx)` handlers and shared request-local storage factories.
-Call them with JSON at `POST /api/<operation key>`: `projects.get` reads only
-public widget configuration; `feedback.submit` sends JSON without attachments;
-`items.list`, `items.done`, `items.create`, `items.share` and `stats.get`
-require a signed-in project owner. Inbox items and stats are sensitive and never public. Existing routes,
-bearer API keys, the dashboard, widget, QR codes and multipart uploads remain
-available; app-owned bearer keys do not authorize member operations.
+Named typed operations are declared in `api/contract.json`, with native
+`(input, env, ctx)` handlers exported from `api/main.js` and shared
+request-local storage factories. Call them with JSON at
+`POST /api/<operation key>`: `projects.get` reads only public widget
+configuration; `feedback.submit` sends JSON without attachments;
+`projects.list`, `items.list`, `items.done`, `items.create`, `items.share`
+and `stats.get` take any signed-in person (`auth: "user"`) and each checks
+that the caller owns the project, so other people get 404. Inbox items and
+stats are sensitive and never public. Existing routes, bearer API keys, the
+dashboard, widget, QR codes and multipart uploads remain available; app-owned
+bearer keys do not authorize these operations.
 
 `feedback.submit` requires an `Idempotency-Key` header; `items.done`
 accepts one optionally. Matching completed calls replay for 24 hours under
@@ -201,12 +208,31 @@ still perform. See the public guide's “Named JSON operations and keyed
 retries” section and use a node supporting that runtime. The web renderer is
 off; this does not change static web serving.
 
-AI assistants can use the public operations as tools: connect ChatGPT or
-Claude to `https://<your feedback domain>/_holm/mcp` (Holm serves it; the app
-writes no MCP route). `projects.get` and `feedback.submit` appear as
-`projects_get` and `feedback_submit`; owner-only operations stay private until
-Holm supports signed-in tools. Set `"connectedAgents": false` in `holm.json`
-to turn this off.
+### Connect via MCP
+
+The operations are also MCP tools, which Holm serves at
+`https://<your feedback domain>/_holm/mcp` (the app writes no MCP route).
+**Connect via MCP…** in the avatar menu opens a sheet with that address to
+click and copy, and tabs for Claude, ChatGPT and Claude Code (the command is
+`claude mcp add --transport http feedback <address>`) and for what the tools
+do (`web/src/mcp.js`). The address comes from `/api/me`, so every host shows
+its own. Signing in when you connect lets Claude act as you, on your own
+projects only:
+
+- `projects_list`: your projects and how many new items and comments wait in each
+- `items_list`: a project's inbox, newest first (100 by default, up to 1,000)
+- `items_create`: file an item that reached you another way, answer it and share it
+- `items_done`: mark an item done
+- `items_share`: turn an item's link on or off, or replace it
+- `stats_get`: visits, scans and sends over 7, 30 or 90 days
+- `projects_get` and `feedback_submit`: a form's public settings, and sending to it
+- `follow_send` and `follow_verify`: the sender's email code, as in the form
+
+`accounts.create` is callable at `/api/accounts.create` but isn't listed as a
+tool (`auth.discover` is off). Set `"connectedAgents": false` in `holm.json`
+to turn MCP off.
+
+### Files
 
 ```text
 holm.json           name, version, colour, SPA routing, store metadata
@@ -227,6 +253,7 @@ web/                public files, served as-is:
   src/qr.js         QR codes and the poster
   src/icons.js      a project's mark: its logo, icon or initial
   src/account.js    avatar, menu, theme and Holm's sign-in page in an overlay
+  src/mcp.js        the Connect via MCP sheet and click-to-copy field
   src/keys.js       the API keys page
   src/link.js       an inbox link's page: idle bar, clock and lock
   src/follow.js     the code step after sending
@@ -238,7 +265,9 @@ web/                public files, served as-is:
   assets/           icon, favicon, link preview and fonts (SIL OFL 1.1)
   vendor/qrcode/    qrcode-generator 2.0.4 (MIT)
   vendor/lucide/    48 Lucide icons (ISC; MIT for those from Feather)
-api/main.js         v1 entry: hands /api requests to the routes
+api/main.js         v1 entry: hands /api requests to the routes, and the
+                    named operations' handlers
+api/contract.json   the named operations, which are also the MCP tools
 api/_holm.js        gives the routes `holm` and `respond` for each request
 api/_legacy_main.js routes (below), written in Holm's original app format
 api/projects.js     projects, their settings and custom addresses
@@ -501,6 +530,10 @@ and dark, and browser CSP errors. Local validation is not runtime proof.
 - A shared feedback page previews as the app, not as its project: link
   previews read the static `index.html`, and the page is drawn in the
   browser.
+- The Connect via MCP sheet shows no connection status: Holm doesn't yet
+  tell an app whether someone has connected. Over MCP, Claude acts only as
+  the person who signed in, on the projects they own; an inbox link or an
+  API key can't be used as a connector.
 
 ## Licenses
 

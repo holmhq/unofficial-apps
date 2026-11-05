@@ -26,7 +26,8 @@ async function route(request, method, parts) {
 
   if (area === 'me' && parts.length === 2 && method === 'GET') {
     const value = member()
-    const me = { authenticated: !!value, member: value ? { ...profile(value), email: value.email || '' } : null }
+    // mcp: this host's connector address, for the Connect via MCP sheet.
+    const me = { authenticated: !!value, member: value ? { ...profile(value), email: value.email || '' } : null, mcp: request.origin + '/_holm/mcp' }
     return ok(linked(request) ? { ...me, link: await linkState(request) } : me)
   }
 

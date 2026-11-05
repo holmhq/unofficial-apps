@@ -214,10 +214,20 @@ for a new link.
 
 ## For AI assistants (MCP)
 
-`https://feedback.zyt.app/_holm/mcp` is an MCP endpoint with two public tools: `projects_get`
-(a widget's public settings) and `feedback_submit` (send text or rated feedback; it requires an
-`idempotency_key`, reused only to retry the same input, so a retry is never sent twice). Owner tools (inbox, triage, filing and sharing items, settings) need
-sign-in, which is not available yet; use the owner API above.
+`https://feedback.zyt.app/_holm/mcp` is an MCP endpoint. Connecting signs the person in, and
+the tools then act as them, on the projects they own only:
+
+- `projects_list` — call it first: their projects, each with its id and what waits in it.
+- `items_list` — a project's inbox, newest first; `status` filters, `limit` caps it (default 100).
+- `items_create` — file an item that reached them another way, optionally with an `answer` and
+  `share: true` for a no-sign-in link.
+- `items_done`, `items_share` — mark an item done; turn its link on, off or `"new"`.
+- `stats_get` — visits, scans, opens and sends over 7, 30 or 90 days.
+- `projects_get`, `feedback_submit` — a form's public settings, and sending to it
+  (`feedback_submit` requires an `idempotency_key`, reused only to retry the same input).
+
+Settings, deleting and API keys stay in the owner API above. In the app, the avatar menu's
+Connect via MCP… shows the address and the steps for Claude, ChatGPT and Claude Code.
 
 ## Rules for agents
 

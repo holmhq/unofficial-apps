@@ -243,7 +243,12 @@ function tools(dir) {
   const where = `${dir}/api/contract.json`
   const operations = Object.entries(JSON.parse(readFileSync(path, 'utf8')).operations || {})
   if (!operations.length) return null
-  return operations.map(([name, op]) => {
+  // An operation whose auth is an object with no `discover`, like Feedback's
+  // accounts.create ({ invoke: { public: true } }), can be called over HTTP but
+  // isn't one of the app's MCP tools, so the store doesn't list it.
+  const listed = operations.filter(([, op]) => !(op.auth && typeof op.auth === 'object' && !op.auth.discover))
+  if (!listed.length) return null
+  return listed.map(([name, op]) => {
     if (typeof op.summary !== 'string' || !op.summary) fail(`${where}: operation "${name}" needs a "summary"`)
     if (!RISKS.includes(op.risk)) fail(`${where}: operation "${name}" has an unknown "risk"`)
     if (!AUTHS.includes(op.auth)) fail(`${where}: operation "${name}" has an unknown "auth"`)

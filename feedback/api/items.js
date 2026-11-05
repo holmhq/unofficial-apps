@@ -148,12 +148,13 @@ function fileItem(user, projectId, input) {
   return itemDTO(ds().findOne('items', { id }))
 }
 
-function listItems(user, projectId, status) {
+function listItems(user, projectId, status, limit = INBOX_LIMIT) {
   const project = ownProject(user, projectId)
   const query = { project: project.id }
   if (status === 'open') query.status = { $in: ['new', 'planned', 'progress'] }
   else if (STATUSES.includes(status)) query.status = status
-  return ds().find('items', query, { limit: INBOX_LIMIT, orderBy: 'createdAt', order: 'desc' }).map(itemDTO)
+  const count = Math.min(INBOX_LIMIT, Math.max(1, Math.trunc(limit) || INBOX_LIMIT))
+  return ds().find('items', query, { limit: count, orderBy: 'createdAt', order: 'desc' }).map(itemDTO)
 }
 
 function ownItem(user, id) {

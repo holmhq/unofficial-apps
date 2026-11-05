@@ -270,6 +270,12 @@ question a friend asked in a chat:
 
 > why cant i create as a random user issue in feedback ... and reply to it? yes we need per item link to share; we dont need to send reply by email in cases were we dont have a user to start with
 
+**Iteration 22** gave every signed-in owner the inbox tools over MCP, not
+just the node's admins, added a tool that lists their projects, and put
+Connect via MCP… in the avatar menu, from:
+
+> Shall we add mcp support for relay & feedback?
+
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private
 documentation, downloaded icon attachment or pre-existing feedback app.

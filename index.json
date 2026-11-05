@@ -528,11 +528,11 @@
     {
       "name": "feedback",
       "path": "feedback",
-      "version": "0.17.0",
-      "tag": "feedback/v0.17.0",
-      "h1": "h1:wt0kMHFkcruI0tWpDoeMRZVcQDqzbULGhdEIvyRS6WI=",
-      "files": 64,
-      "size": 898473,
+      "version": "0.18.0",
+      "tag": "feedback/v0.18.0",
+      "h1": "h1:3oLkK8Wi3CVOxWrktbm3PPZ+M581FXymhLRpbm3RH8M=",
+      "files": 66,
+      "size": 921558,
       "title": "feedback",
       "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
       "themeColor": "#c2410c",
@@ -542,7 +542,7 @@
         "subtitle": "Feedback for websites, shops and events",
         "category": "Developer tools",
         "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-        "whatsNew": "Answer by link: file feedback that reached you another way, reply, and send one link that opens it with no sign-in.",
+        "whatsNew": "Connect via MCP: give Claude or ChatGPT your inbox, so it can list your projects, read and file feedback, answer it and mark it done.",
         "featured": true,
         "related": [
           "kalendar",
@@ -629,8 +629,75 @@
           "hash": "ca10dee8098e"
         }
       },
+      "mcp": [
+        {
+          "name": "follow.send",
+          "summary": "Email a sender a code so they can follow what they sent",
+          "risk": "write",
+          "auth": "public"
+        },
+        {
+          "name": "follow.verify",
+          "summary": "Confirm a sender’s emailed code",
+          "risk": "write",
+          "auth": "public"
+        },
+        {
+          "name": "projects.get",
+          "summary": "Read a feedback form’s public settings",
+          "risk": "read",
+          "auth": "public"
+        },
+        {
+          "name": "feedback.submit",
+          "summary": "Send feedback to a project",
+          "risk": "write",
+          "auth": "public"
+        },
+        {
+          "name": "projects.list",
+          "summary": "List your projects and what’s waiting",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "items.list",
+          "summary": "Read a project’s inbox",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "items.done",
+          "summary": "Mark an item done",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "items.create",
+          "summary": "File an item, answer it and share it",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "items.share",
+          "summary": "Turn an item’s link on or off",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "stats.get",
+          "summary": "Read a project’s visits, scans and sends",
+          "risk": "read",
+          "auth": "user"
+        }
+      ],
       "prompt": "Build a feedback app using https://holmhq.com/llms-full.txt as the only Holm\nreference; Holm's own https://github.com/holmhq/cdn is allowed for feed-stars.\nRead the v1 sections 9–12 first. Use holm.json with web.spa true, public web/\nfiles and api/main.js exporting default { async fetch(request, env) }.\nUse env.holm auth/DS/KV/S3/image, standard Request/Response and same-origin\nbrowser API calls; fall back to env.holm.web.fetch(request). No build step.\nUse relative server imports, request.formData() and File.arrayBuffer() for\nuploads; no global holm/request/respond and no request.files API.\n\n- Signed-in people make one project per website, shop or event. Supply a\n  one-tag widget: a button in a shadow root opens an iframe form; also a\n  stand-alone feedback page at a custom address, with SVG QR code/poster.\n- Design/Form tabs customize title, words, colour, logo, cover, icon, button\n  label/corner/style and theme, with a live preview. Website kinds: Issue,\n  Idea, Question; places: Praise, Problem, Idea. Add optional/required stars,\n  contact email/phone and up to eight text/select/radio/checkbox questions.\n  Support four files, 8 MiB total, and a one-tap phone photo; photo or rating\n  alone can send. Shrink big photos in the browser before upload (at most\n  2048 px, JPEG quality 0.82), and turn iPhone HEIC photos into JPEG. Strip query/fragment from the sending page's address.\n- One private inbox per project: ticket numbers, statuses, notes and a team\n  thread, sort/search/filter for hundreds of items. Only the owner sees\n  files/contact details. The optional public page shows selected items,\n  votes once per browser, and comments only after owner approval. The owner\n  can file an item themselves and share one item by an unguessable link\n  that needs no sign-in and shows no private fields.\n- Keep spam out with a trap field, project caps and allowed sites, honestly\n  described as casual-misuse guards, not strong sender authentication.\n  Track daily visits, QR/email-link visits, opens, sends, votes and comments\n  in app KV; no visitor tracking. “Where it's live” separates local copies.\n- Add typed operations for public widget settings and JSON feedback with keyed retries, plus a signed-in owner's private inbox, mark-done, filing and sharing actions and dashboard counts; keep all existing routes and file flows.\n- API keys: show once, hash SHA-256, accept bearer tokens on owner routes,\n  check project ownership, return the setup snippet; keys cannot mint keys.\n- Make it refined on phones/desktop, light/dark/system, a fixed footer and\n  scrolling projects panel, avatar menu for keys/theme/stats, /changelog,\n  and an optional footer Feedback link to a project I supply.\n- Vendor fonts, QR code code and icons with licenses. For feed-stars use\n  Holm's CDN pinned to a commit and v-X.Y.Z folder with integrity, plus plain\n  stars as fallback. Copy embed.js into other Holm sites when their CSP\n  requires it and allow the feedback origin in the site's frame-src.\n  The guide does not guarantee frame-ancestors defaults: set deliberate\n  web.headers for framing, inspect both responses and test the iframe.\n- Make holm.symbol.svg and run holm app identity generate for the icons,\n  manifest and social card; author og:image tags only to keep a hand-made\n  social preview. Add authored social metadata in web/index.html. Make\n  listing/listing.json plus sample screenshots; these are repo conventions,\n  not a Holm store schema documented by the guide. Use holm.json version.\n\nRun holm app validate --spec-v1 feedback. With my approval, deploy with\nholm @<peer> app deploy feedback --spec-v1 --host feedback.<my-domain>.\nAsk before replacing a host or moving an older-format app. Validation does\nnot run the app: test cross-site embedding, uploads, ownership, comments,\nvotes/stats and mobile/desktop light/dark. Inspect the target settings schema\nbefore setting sign-in branding. Report any guide or runtime gaps honestly.",
       "history": [
+        {
+          "version": "0.17.0",
+          "date": "2026-10-25",
+          "whatsNew": "Answer by link: file feedback that reached you another way, reply, and send one link that opens it with no sign-in."
+        },
         {
           "version": "0.16.0",
           "date": "2026-10-23",
@@ -1657,11 +1724,11 @@
     {
       "name": "relay",
       "path": "relay",
-      "version": "0.2.0",
-      "tag": "relay/v0.2.0",
-      "h1": "h1:p/bkDCNB4WmuE594uDc48xSkVn4CX81BnqTYVAt/gKo=",
-      "files": 49,
-      "size": 745251,
+      "version": "0.3.0",
+      "tag": "relay/v0.3.0",
+      "h1": "h1:QQDkWR4eXChH93XAIQCmsgK1i9DVduk8tym39xgLhIU=",
+      "files": 52,
+      "size": 784512,
       "title": "Relay",
       "description": "A private messenger for the people on your Holm node. Add friends by username, chat one to one or in groups, and share photos and files.",
       "themeColor": "#6a3fe0",
@@ -1671,7 +1738,7 @@
         "subtitle": "Private chat for the people on your node",
         "category": "Social",
         "description": "A messenger for the people who share your Holm node. Pick a username, add friends by theirs, and chat one to one or in groups. Messages, typing and unread counts arrive live, on your phone and your desktop at once.\n\nReply to a message by swiping it, forward it, copy it or delete it for everyone. Send photos, which shrink on your phone before they upload, and videos, audio or any other file up to 16 MB. Links unfold into previews that the server fetches, so the sites you share never see who's reading.\n\nRelay never says whether a username exists: an invite arrives quietly, and you only learn when someone accepts. Invite a friend who isn't here yet with a one-time email link, block anyone, and give contacts your own nicknames and photos. It installs like an app, with light and dark themes and your choice of colour.",
-        "whatsNew": "First release in this store. A new icon and colour, and messages, typing and unread counts now arrive live again.",
+        "whatsNew": "Connect Relay to Claude, ChatGPT or Claude Code: Settings → Connect via MCP shows how. Ask what you missed, have a chat summed up, send a message, or invite a friend and answer invites, without leaving the conversation.",
         "featured": false,
         "related": [
           "zend",
@@ -1716,8 +1783,70 @@
           "hash": "d1eeb0c1addb"
         }
       },
-      "prompt": "Build \"relay\", a private messenger for the members of my Holm node, using\nonly https://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\nthe common recipes first. Make holm.json, public web/ files and api/main.js\nexporting default { async fetch(request, env) }. Set web.spa true, use\nenv.holm for storage, sign-in, images, email, outbound HTTP and realtime,\nreturn standard Responses and fall back to env.holm.web.fetch(request). No\nbuild step or third-party runtime CDN; vendor fonts and icons with licences.\n\n- After sign-in, claim a username. Add people by username without revealing\n  whether it exists: they accept, decline or block, and the sender learns only\n  of an acceptance. Email a one-time join link to someone not here yet.\n- One-to-one chats and groups with an optional handle in the address. Text,\n  reply with a quote (menu or swipe), copy, forward and delete for everyone.\n  Photos shrink in the browser before upload; any other file up to the node's\n  form-file limit. Server-fetched link previews. Paginated history, search,\n  exact unread counts, typing, nicknames and photos for contacts.\n- Send live events to each member on their own channel, never per room. If\n  the guide offers no way to admit only that member to a private: channel,\n  name a plain channel with a random secret given only to that member, and\n  say so in the README.\n- A phone-first app shell where only panels scroll: Chats, Add, Friends,\n  Settings tabs, light/dark/auto themes and accent colours, sounds,\n  in-app notifications, an installable manifest and service worker. Follow\n  the guide's \"feel finished\" and \"feel native\" recipes, and draw one\n  holm.symbol.svg for every icon.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 relay. With my approval, deploy with\nholm @<peer> app deploy relay --spec-v1 --host relay.<my-domain>. Never\nreplace an occupied host without asking, and ask before granting email or\noutbound HTTP. Validation does not run the app: test two and three members\nin separate browsers, invites, a group, live delivery both ways, uploads,\nand mobile/desktop in light/dark. Report gaps honestly. Inspect the target\nsettings schema before setting sign-in branding.",
-      "history": []
+      "mcp": [
+        {
+          "name": "chats.list",
+          "summary": "See your chats",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "messages.unread",
+          "summary": "Catch up on unread messages",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "chats.read",
+          "summary": "Mark a chat as read",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "messages.list",
+          "summary": "Read a chat",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "messages.send",
+          "summary": "Send a message",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "friends.list",
+          "summary": "List your friends",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "invites.list",
+          "summary": "See your invites",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "invites.send",
+          "summary": "Invite someone",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "invites.answer",
+          "summary": "Answer an invite",
+          "risk": "write",
+          "auth": "user"
+        }
+      ],
+      "prompt": "Build \"relay\", a private messenger for the members of my Holm node, using\nonly https://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\nthe common recipes first. Make holm.json, public web/ files and api/main.js\nexporting default { async fetch(request, env) }. Set web.spa true, use\nenv.holm for storage, sign-in, images, email, outbound HTTP and realtime,\nreturn standard Responses and fall back to env.holm.web.fetch(request). No\nbuild step or third-party runtime CDN; vendor fonts and icons with licences.\n\n- After sign-in, claim a username. Add people by username without revealing\n  whether it exists: they accept, decline or block, and the sender learns only\n  of an acceptance. Email a one-time join link to someone not here yet.\n- One-to-one chats and groups with an optional handle in the address. Text,\n  reply with a quote (menu or swipe), copy, forward and delete for everyone.\n  Photos shrink in the browser before upload; any other file up to the node's\n  form-file limit. Server-fetched link previews. Paginated history, search,\n  exact unread counts, typing, nicknames and photos for contacts.\n- Send live events to each member on their own channel, never per room. If\n  the guide offers no way to admit only that member to a private: channel,\n  name a plain channel with a random secret given only to that member, and\n  say so in the README.\n- MCP tools as named operations with auth \"user\", each checking the caller:\n  list chats with unread counts, catch up on unread messages and mark a chat\n  read, read a chat further back on request, send a text message, list\n  friends, and list, send (username, group or email) and answer invites\n  without revealing whether a username exists. Settings has Connect via\n  MCP with the MCP mark: a sheet with the connector address to click and\n  copy, and tabs for Claude, ChatGPT, Claude Code and what the tools do.\n- A phone-first app shell where only panels scroll: Chats, Add, Friends,\n  Settings tabs, light/dark/auto themes and accent colours, sounds,\n  in-app notifications, an installable manifest and service worker. Follow\n  the guide's \"feel finished\" and \"feel native\" recipes, and draw one\n  holm.symbol.svg for every icon.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 relay. With my approval, deploy with\nholm @<peer> app deploy relay --spec-v1 --host relay.<my-domain>. Never\nreplace an occupied host without asking, and ask before granting email or\noutbound HTTP. Validation does not run the app: test two and three members\nin separate browsers, invites, a group, live delivery both ways, uploads,\nand mobile/desktop in light/dark. Report gaps honestly. Inspect the target\nsettings schema before setting sign-in branding.",
+      "history": [
+        {
+          "version": "0.2.0",
+          "date": "2026-10-24",
+          "whatsNew": "First release in this store. A new icon and colour, and messages, typing and unread counts now arrive live again."
+        }
+      ]
     },
     {
       "name": "roll",
