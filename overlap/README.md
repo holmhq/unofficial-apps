@@ -45,14 +45,36 @@ as files: `api/` and `holm.json` are not public URLs.
 - **Sound and motion:** painting plays a pentatonic note per slot, lower for
   later times, synthesised with the Web Audio API (no audio files). Sound can
   be turned off; motion respects "reduce motion".
+- **Claude and other AI apps:** eight MCP tools, open to anyone signed in:
+  - `plans_list`: the plans you organised or answered.
+  - `plans_get`: who is free when, the best times with who is missing, and
+    the settled time.
+  - `plans_create`: a new plan and its link to share.
+  - `times_set`: mark when you're free, joining the plan if you haven't
+    answered; replace, add or clear ranges, on one date or every date.
+  - `plans_settle`, `plans_update`, `people_remove`, `plans_delete`: the
+    organiser picks or reopens the time, renames the plan, removes an
+    answer or deletes the plan.
+
+  Times are 24-hour, in the plan's own zone, which every answer names. Each
+  tool sends its change through the app's own routes, so the same checks
+  apply and every open page updates live. **Connect via MCP…** in the
+  account menu opens a sheet with the connector address
+  (`https://<host>/_holm/mcp`) to click and copy, and tabs for Claude,
+  ChatGPT, Claude Code and what the tools do.
+- A plan's link, in its share sheet, copies with one click.
 - Light, dark and system themes; phones and big screens.
 
 ## How it is built
 
 ```text
-holm.json               identity, web.spa, store listing exclusion
+holm.json               identity, web.spa, no generated web surface, store
+                        listing exclusion
 holm.symbol.svg         app icon: two crescents around the space they share
-api/main.js             every route: plans, people, presence, plan pages
+api/main.js             every route: plans, people, presence, plan pages;
+                        and the MCP tools' handlers, which load ops.js
+api/contract.json       the MCP tools: named operations, their input and errors
+api/ops.js              the tools, sent through the same /api/ routes
 web/index.html          the page shell
 web/css/app.css         the whole look: tokens, light/dark, layout, motion
 web/js/app.js           router, theme and sound toggles, the account menu
@@ -63,7 +85,8 @@ web/js/grid.js          the availability grid: painting, keyboard, tooltips
 web/js/live.js          the realtime channel and presence heartbeats
 web/js/time.js          time zones, labels, best times, calendar files
 web/js/sound.js         the synthesised sounds
-web/js/ui.js            DOM helpers, avatars, toasts, confetti
+web/js/mcp.js           the Connect via MCP sheet
+web/js/ui.js            DOM helpers, avatars, toasts, confetti, copy fields
 web/fonts/              Instrument Serif (OFL), vendored
 listing/                store listing and screenshots (not deployed)
 ```
@@ -76,13 +99,18 @@ The Holm primitives it uses, all described in
   and `1`, and the SHA-256 hash of their edit key). Deleting a plan deletes its
   people in one `ds.transaction`.
 - **Key-value store, `env.holm.app.kv`:** a few seconds of presence
-  de-duplication, with a TTL.
+  de-duplication, with a TTL, and the address the app was last opened at,
+  for the tools' links.
 - **Sign-in, `env.holm.auth`:** organisers sign in on the node's own page;
   `getMember()` decides who owns a plan and who may change an answer.
 - **Realtime, `env.holm.realtime`:** every change is broadcast on the plan's
   public channel `plan-<id>`; pages subscribe over `/_ws`, answer pings,
   reconnect with back-off and reload the plan after a gap. `realtime.count`
   reports how many are watching.
+- **Named operations and MCP:** `api/contract.json` declares eight
+  operations with `auth: "user"`, which Holm serves as tools at
+  `/_holm/mcp` with OAuth sign-in. Each builds a `Request` for the app's own
+  `/api/` route and runs it through `fetch` as the signed-in person.
 - **`env.holm.web.fetch`:** serves the app's files and, for `/p/<id>`, the page
   shell with the plan's name in its title and link previews.
 
@@ -115,6 +143,10 @@ peer.
 - The grid is drawn in the plan's time zone. Viewers elsewhere see their local
   time in the note and tooltips, not as relabelled rows.
 - Up to 100 people per plan and 200 plans per organiser.
+- The tools give times in the plan's own zone: the server has no `Intl`, so
+  converting to the person's zone is left to Claude. Their links use the
+  address overlap was last opened at.
+- Signed out, the header shows a Sign in button rather than a round avatar.
 
 ## Testing
 

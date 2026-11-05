@@ -34,6 +34,13 @@ any font with its licence.
   themes, excellent on phones and desktop. Soft Web Audio sounds (a
   pentatonic note per painted slot, a chord when a time settles) with a mute
   switch, small spring motions and confetti, all respecting reduced motion.
+- MCP tools as named operations with auth "user", each sent through the
+  app's own routes so the same checks apply and open pages update live:
+  list plans, see who is free when with the best times, start a plan, mark
+  your free times (joining if needed), and for the organiser settle or
+  reopen, rename, remove an answer and delete. Connect via MCP… in the
+  account menu opens a sheet with the connector address to click and copy,
+  and tabs for Claude, ChatGPT, Claude Code and what the tools do.
 - Give each plan page its own title and link preview, noindex. Never show the
   organiser's email.
 - For this repository's store, use holm.json version, holm.symbol.svg (one
@@ -64,3 +71,9 @@ agent, which chose the subject itself.
 and, sent while the agent was working:
 
 > So, making something useful would be great
+
+**Iteration 2**
+
+overlap 0.2.0 came from this request, when the repository made MCP standard:
+
+> Can we now add it for overlap, domains, pastebin

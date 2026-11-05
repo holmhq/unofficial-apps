@@ -1,4 +1,5 @@
-import { h, api, avatar } from './ui.js'
+import { h, api, avatar, mcpMark } from './ui.js'
+import { mcpSheet } from './mcp.js'
 import { soundOn, setSound, tick } from './sound.js'
 import { homeView } from './home.js'
 import { createView } from './create.js'
@@ -17,6 +18,7 @@ async function loadSession() {
     const data = await api(`/api/me?next=${encodeURIComponent(location.pathname)}`)
     session.me = data.member
     session.logoutURL = data.logoutURL
+    session.mcp = data.mcp
   } catch { session.me = null }
   renderAccount()
 }
@@ -39,6 +41,9 @@ function renderAccount() {
     h('div', { class: 'who' }, h('strong', {}, session.me.name || 'Signed in'), session.me.email || ''),
     h('a', { href: '/', role: 'menuitem' }, 'Your plans'),
     h('a', { href: '/new', role: 'menuitem' }, 'New plan'),
+    // The menu item is gone once the sheet opens, so closing it puts focus on the avatar.
+    h('button', { type: 'button', role: 'menuitem', class: 'menu-mcp', onclick: () => mcpSheet(session.mcp, { onClose: () => button.focus() }) },
+      h('span', {}, 'Connect via MCP…'), mcpMark()),
     h('button', { type: 'button', role: 'menuitem', onclick: signOut }, 'Sign out'))
   const button = h('button', { class: 'avatar-button', type: 'button', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: 'Account' }, avatar(me, '2.1rem'))
   const wrap = h('div', { class: 'menu-wrap' }, button, menu)

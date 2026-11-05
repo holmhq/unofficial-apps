@@ -1,4 +1,4 @@
-import { h, api, avatar, icon, toast, confetti, segmented, store, personColor } from './ui.js'
+import { h, api, avatar, icon, toast, confetti, segmented, store, personColor, copyField } from './ui.js'
 import { session, signIn, navigate } from './app.js'
 import { createGrid } from './grid.js'
 import { connect, presence } from './live.js'
@@ -360,25 +360,18 @@ export async function planView(view, slug) {
   }
   function share() {
     const url = `${location.origin}/p/${slug}`
-    const input = h('input', { class: 'input', value: url, readonly: true, 'aria-label': 'Link to this plan' })
-    const copy = h('button', { class: 'button accent', type: 'button' }, 'Copy')
-    const dialog = h('dialog', { class: 'sheet' },
+    const dialog = h('dialog', { class: 'sheet', tabindex: '-1' },
       h('h2', {}, isNewShare ? 'Your plan is ready' : 'Share this plan'),
       h('p', {}, 'Anyone with the link can add their times. They’ll appear here as they answer.'),
-      h('div', { class: 'share-row' }, input, copy),
+      copyField(url, { label: 'Copy the link to this plan', onCopy: sound.tick }),
       h('div', { class: 'sheet-actions' },
         navigator.share ? h('button', { class: 'button quiet', type: 'button', onclick: () => navigator.share({ title: plan.title, text: `Which times work for you? ${plan.title}`, url }).catch(() => {}) }, 'More options…') : null,
         h('button', { class: 'button quiet', type: 'button', onclick: () => dialog.close() }, 'Done')))
-    copy.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(url) } catch { input.select(); document.execCommand?.('copy') }
-      copy.replaceChildren(icon('check'), 'Copied')
-      sound.tick()
-      setTimeout(() => copy.replaceChildren('Copy'), 1800)
-    })
     dialog.addEventListener('close', () => dialog.remove())
     document.body.append(dialog)
     dialog.showModal()
-    input.select()
+    // Start on the sheet, so the link doesn't show a focus ring before anyone uses the keyboard.
+    dialog.focus()
     isNewShare = false
   }
   let isNewShare = isNew

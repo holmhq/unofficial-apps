@@ -4,6 +4,10 @@
 // Anyone with the link adds the times they are free, with just a name; the
 // browser keeps a private key for editing them later. Every change is
 // broadcast on the plan's realtime channel, so open pages update live.
+//
+// The named operations at the end are the tools Claude uses through Holm's MCP
+// endpoint (/_holm/mcp); contract.json describes them, and their code is in
+// ops.js, which sends each one through these same routes.
 
 const json = (body, status = 200) =>
   Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
@@ -102,7 +106,10 @@ export default {
 
     if (path === '/api/me' && method === 'GET') {
       const next = url.searchParams.get('next') || '/'
+      // Tools have no address of their own, so their links use the last one seen.
+      if (kv.get('site:origin') !== url.origin) kv.set('site:origin', url.origin)
       return json({
+        mcp: `${url.origin}/_holm/mcp`,
         member: member && { id: member.id, name: member.name || '', email: member.email || '', picture: member.picture || null },
         loginURL: auth.getLoginURL(next.startsWith('/') && !next.startsWith('//') ? next : '/'),
         logoutURL: auth.getLogoutURL()
@@ -288,3 +295,13 @@ export default {
     return env.holm.web.fetch(request)
   }
 }
+
+const ops = () => import('./ops.js')
+export async function plansList(input, env, ctx) { return (await ops()).plansList(input, env, ctx) }
+export async function plansGet(input, env, ctx) { return (await ops()).plansGet(input, env, ctx) }
+export async function plansCreate(input, env, ctx) { return (await ops()).plansCreate(input, env, ctx) }
+export async function timesSet(input, env, ctx) { return (await ops()).timesSet(input, env, ctx) }
+export async function plansSettle(input, env, ctx) { return (await ops()).plansSettle(input, env, ctx) }
+export async function plansUpdate(input, env, ctx) { return (await ops()).plansUpdate(input, env, ctx) }
+export async function peopleRemove(input, env, ctx) { return (await ops()).peopleRemove(input, env, ctx) }
+export async function plansDelete(input, env, ctx) { return (await ops()).plansDelete(input, env, ctx) }

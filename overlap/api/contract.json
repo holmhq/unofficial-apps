@@ -1,0 +1,534 @@
+{
+ "operations": {
+  "plans.list": {
+   "handler": "plansList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "See your plans",
+   "description": "Lists the plans the person organised and the ones they answered while signed in, newest first: each with its id, name, organiser, dates, daily hours, slot length, time zone, how many people answered, the settled time if there is one, and its link. Use plans_get with an id for who is free when.",
+   "input": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "plans.get": {
+   "handler": "plansGet",
+   "auth": "user",
+   "risk": "read",
+   "summary": "See who’s free when",
+   "description": "Returns one plan: its dates, hours and time zone, the best times so far (runs where the same people are free, most people first, then longest, with who is free and who is missing), the settled time, and everyone who answered with the times they’re free, date by date. All times are 24-hour wall-clock times in the plan’s own zone, which the answer names; convert them for the person when their zone differs.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "plan": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 300,
+      "description": "The plan’s id from plans_list, or its link."
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20,
+      "description": "How many best times (default 5)."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "plan"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "plans.create": {
+   "handler": "plansCreate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Start a plan",
+   "idempotency": "optional",
+   "description": "Creates a plan the person organises and returns its link to share: anyone with it adds their times, with just a name. Give a name, up to 14 dates, the daily hours, a slot length and the IANA time zone the hours are in (ask the person, or use their own zone). The hours must fall on whole slots.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "What the plan is for."
+     },
+     "note": {
+      "type": "string",
+      "maxLength": 280,
+      "description": "An optional note for the people answering."
+     },
+     "dates": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+      },
+      "minItems": 1,
+      "maxItems": 14,
+      "description": "Dates as YYYY-MM-DD."
+     },
+     "from": {
+      "type": "string",
+      "pattern": "^\\d{1,2}:\\d{2}$",
+      "description": "When each day starts, 24-hour, like 09:00."
+     },
+     "to": {
+      "type": "string",
+      "pattern": "^\\d{1,2}:\\d{2}$",
+      "description": "When each day ends, 24-hour, like 17:30; 24:00 for midnight."
+     },
+     "slot_minutes": {
+      "type": "integer",
+      "enum": [
+       15,
+       30,
+       60
+      ],
+      "description": "Slot length (default 30)."
+     },
+     "zone": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "IANA time zone, like Europe/London (default UTC)."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "dates",
+     "from",
+     "to"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   }
+  },
+  "times.set": {
+   "handler": "timesSet",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Add your times",
+   "idempotency": "optional",
+   "description": "Marks when the person is free on a plan, as they would by painting the grid, joining the plan under their name if they haven’t answered yet. Give ranges in the plan’s own time zone (plans_get names it); a range without a date applies to every date. Slots wholly inside a range count. mode replace (default) sets exactly these times, add adds them to what is there, and remove clears them. Everyone with the plan open sees the change at once.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "plan": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 300,
+      "description": "The plan’s id from plans_list, or its link."
+     },
+     "free": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+       "type": "object",
+       "properties": {
+        "date": {
+         "type": "string",
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "from": {
+         "type": "string",
+         "pattern": "^\\d{1,2}:\\d{2}$",
+         "description": "Start, 24-hour."
+        },
+        "to": {
+         "type": "string",
+         "pattern": "^\\d{1,2}:\\d{2}$",
+         "description": "End, 24-hour."
+        }
+       },
+       "required": [
+        "from",
+        "to"
+       ],
+       "additionalProperties": false
+      },
+      "description": "Free time ranges."
+     },
+     "mode": {
+      "type": "string",
+      "enum": [
+       "replace",
+       "add",
+       "remove"
+      ],
+      "description": "replace (default), add or remove."
+     },
+     "name": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "The name to show, if not the person’s own."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "plan",
+     "free"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   }
+  },
+  "plans.settle": {
+   "handler": "plansSettle",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Pick the time",
+   "idempotency": "optional",
+   "description": "For the plan’s organiser: settles on a time, which every open page shows at once with a calendar file and link; or reopen it. The time is in the plan’s zone and must fall on whole slots inside its hours, usually one of the best times from plans_get. Only settle on a time the person chose.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "plan": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 300,
+      "description": "The plan’s id from plans_list, or its link."
+     },
+     "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+     },
+     "from": {
+      "type": "string",
+      "pattern": "^\\d{1,2}:\\d{2}$",
+      "description": "Start, 24-hour."
+     },
+     "to": {
+      "type": "string",
+      "pattern": "^\\d{1,2}:\\d{2}$",
+      "description": "End, 24-hour."
+     },
+     "reopen": {
+      "type": "boolean",
+      "description": "true to clear the settled time instead."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "plan"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   }
+  },
+  "plans.update": {
+   "handler": "plansUpdate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Rename a plan",
+   "idempotency": "optional",
+   "description": "For the plan’s organiser: changes its name or note. Everyone with it open sees the change.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "plan": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 300,
+      "description": "The plan’s id from plans_list, or its link."
+     },
+     "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+     },
+     "note": {
+      "type": "string",
+      "maxLength": 280
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "plan"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   }
+  },
+  "people.remove": {
+   "handler": "peopleRemove",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Remove someone’s answer",
+   "description": "For the plan’s organiser, or for the person’s own answer: removes someone and their times from a plan, by name or by id from plans_get. Only remove people the person asked to.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "plan": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 300,
+      "description": "The plan’s id from plans_list, or its link."
+     },
+     "person": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "Their name as it shows, or their id."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "plan",
+     "person"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   }
+  },
+  "plans.delete": {
+   "handler": "plansDelete",
+   "auth": "user",
+   "risk": "destructive",
+   "summary": "Delete a plan",
+   "description": "For the plan’s organiser: deletes the plan and everyone’s answers for good; its link stops working. Only when the person asks.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "plan": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 300,
+      "description": "The plan’s id from plans_list, or its link."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "plan"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   }
+  }
+ }
+}
