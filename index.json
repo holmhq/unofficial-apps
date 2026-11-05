@@ -883,11 +883,11 @@
     {
       "name": "kalendar",
       "path": "kalendar",
-      "version": "0.9.0",
-      "tag": "kalendar/v0.9.0",
-      "h1": "h1:JGf5RjdtpHSuztYCWWQW02nOiRNrP+R1X6Fy4wIafjY=",
+      "version": "0.10.0",
+      "tag": "kalendar/v0.10.0",
+      "h1": "h1:/xZZgbF3wgagDwpVjJhOogy/M8cFqDd5jWDgLvnmazA=",
       "files": 77,
-      "size": 989369,
+      "size": 1003698,
       "title": "Kalendar",
       "description": "Share one link and let people book time with you, on a timeline of your free time. Guests can ask for other times; you can run it from Claude.",
       "themeColor": "#e0352b",
@@ -897,7 +897,7 @@
         "subtitle": "Let people book you, no sign-up for them",
         "category": "Productivity",
         "description": "Share one link and let people book time with you: no account for them, no app, no back-and-forth. Guests pick a time on a strip of your free days, or paint when they’re free and you choose.\n\nYour page lives at your own address, like /@avery, with your photo, what you do, your website and profiles, and a link for each kind of meeting you offer, each showing the next time that's open. Give your pages one of six colours, each made for light and for dark, and a link that shares with a cover of your name and photo, or an image of your own.\n\nYour free time lies on a strip of days, time running left to right like a video editor's timeline. Guests tap a shaded span and the meeting drops in, the length of the event; they drag it along the day and it snaps to the times that are open. If nothing suits them, they paint when they're free instead, even outside your hours, and where it meets your free time it glows. You see their times over your own week, drag the meeting to a time inside them and accept, or say no with a note.\n\nBoth of you get an email whose calendar invite puts the meeting on your calendar. The guest can move or cancel with the link in their email. Paint your weekly hours on the same kind of strip, trimming and sliding spans like clips, even onto another day, where they trade places with what's in the way; drag a day over another and the two swap as you go. Pause a day with a switch, zoom the day in and out, and keep days off. Guests see times in their own zone, with daylight saving handled on both sides.\n\nInsights show page views, visitors, profile clicks, bookings, time on page, where visitors came from, what they used and where they are, without cookies. Tracked links tag your page for a flyer, a newsletter or a talk, each with a QR code, and show which one brought each visit and booking. And you can run all of it from Claude: connect its MCP connector and it can change your profile, hours and event types, list meetings, answer requests and read your insights.",
-        "whatsNew": "Choose a photo of your own and drag and zoom it into its circle; your drawn cover redraws with it, or use an image of your own as the cover. Change your time zone under Profile, or switch to your device's when you travel, and visitors can pick theirs on your page. Booked times show as Busy, so nobody can pick or ask for one.",
+        "whatsNew": "Connect via MCP in the account menu shows how to add Kalendar to Claude, ChatGPT or Claude Code, with the address to click and copy and what its tools do. Your link and your calendar feed are now one field each: click to copy. The theme switch is just its three icons now.",
         "featured": false,
         "related": [
           "overlap",
@@ -978,7 +978,7 @@
         },
         {
           "name": "guide.get",
-          "summary": "Read how to manage a Kalendar booking page (call this first)",
+          "summary": "How Kalendar's tools work",
           "risk": "read",
           "auth": "public"
         },
@@ -1008,7 +1008,7 @@
         },
         {
           "name": "events.list",
-          "summary": "Your kinds of meeting (event types)",
+          "summary": "Your kinds of meeting",
           "risk": "read",
           "auth": "user"
         },
@@ -1085,8 +1085,13 @@
           "auth": "user"
         }
       ],
-      "prompt": "Build \"Kalendar\", a Calendly-like booking app, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json\n(web.spa true), public web/ files and api/main.js exporting default\n{ fetch(request, env) }, with booking and cancelling as public named\noperations behind Holm's challenge and rate limits. No build step or\nthird-party runtime CDN; vendor Inter and Lucide icons with their licences.\n\n- A signed-in person chooses a link (/@handle), their time zone and weekly\n  hours (several ranges a day, days off), and event types (title, link,\n  length, where: video link, phone, address or other; notice, how far\n  ahead, start-time step, free time before and after, colour, on/off).\n- Anyone opens /@handle or /@handle/event and books without an account.\n  Show the host's free time on a horizontal strip of days, time running\n  left to right like a video editor's timeline, in the guest's own zone\n  (12- or 24-hour): tap a shaded span to drop in a meeting the length of the\n  event, drag it to adjust (it snaps to open times), then name, email and\n  notes. Never double-book; a taken time shows as busy to everyone else\n  (never who) and can't be picked or asked for.\n- Guests may also ask for other times, even outside the host's hours: drop\n  the meeting outside the shading, or paint spans of their own free time\n  (trim the ends, slide them) and see where they overlap the host's. The\n  host sees those spans over their own week, drags the meeting inside them\n  and accepts, or declines with a note. Hosts paint their weekly hours the\n  same way and drag a span onto another day, where it trades places with\n  what's in its way; a day dragged over another swaps hours with it live, as\n  you go. A switch pauses a day and keeps its hours. Every strip zooms:\n  pinch, ctrl-scroll, or − and + with a button to fit the day.\n- A profile page: photo, role, company, place with local time, a note,\n  website and profile links with their icons, and each event type with its\n  next open time. The host edits it under Profile, a tab of its own in the\n  sidebar and tab bar, which saves as they type. Never a coloured stripe\n  down the side of a rounded card. The photo is one the host chooses there,\n  dragged and zoomed into a circle in their browser, or else their\n  account's. The host changes their time zone under Profile or\n  Availability, and is offered their device's zone when it differs;\n  visitors pick their own zone on the profile or booking page.\n- Insights for the host without cookies: views, visitors, profile clicks,\n  bookings, time on page, sources, devices, places from time zones, and a\n  visit-to-booking funnel. Tracked links: /@handle?ref=tag (also #ref= and\n  utm_campaign) with a QR code adding &via=qr; the tag follows the guest to\n  their booking, and Insights shows each link's visitors, scans and bookings. Expose the host's management (profile, hours,\n  event types, meetings, requests, open times, insights) as auth \"user\"\n  named operations, so Claude can run it all over Holm's MCP endpoint.\n- The server has no Intl, so have the host's browser send its zone's UTC\n  offsets for the next year and turn hours into real times on the server.\n- Email both sides with env.holm.email: beautifully designed HTML (tables,\n  inline styles, dark mode) plus plain text. Each booking email carries a\n  calendar invite through email.send's calendar option, and no Add to\n  Calendar buttons: a REQUEST to the guest with the host as organizer, and a\n  REQUEST to the host named for the guest, organized by the sender address\n  email.send reports and already accepted; a CANCEL to both when it's off,\n  one UID per booking even when it moves. The booking page offers Google,\n  Outlook.com and a hosted calendar file whose link doesn't end in .ics\n  (Apple Mail offers to subscribe to those). Emailed links let the guest move\n  or cancel; the host can cancel from their list. Give the host a private\n  calendar feed, and let them add other addresses, each confirmed by a link\n  sent to it, and pick which one gets booking email and organizes invites.\n- The booking form's \"Add guests\" is an address line like Mail's: a comma,\n  space or Return makes a bubble, a bad address stays red, Backspace selects\n  then removes the last bubble. Up to five guests are on the invite and get\n  their own email, without the links to change it. Holm sends one email a\n  call within a request's few seconds, so queue the guests' emails that don't\n  fit and have the page send them after.\n- An Apple-quality UI on phone and desktop, with a fixed shell where only\n  panels scroll: a round avatar button top right\n  (signed out too) whose menu holds light/dark/auto, sounds, 24-hour time\n  and Holm's analytics link for admins, and closes when it's tapped again;\n  sheets that don't shrink as a search narrows; fine motion, quiet Web Audio\n  sounds, and Inter weights that mean something. The host picks their\n  pages' colour (red, amber, teal, blue, violet, graphite): their dashboard,\n  page, booking pages, emails and browser tab icon wear it, each colour\n  tuned for light and dark with readable text on it. A shared link to their\n  page shows a cover in that colour with their name, what they do and their\n  photo when it's a real one (not Holm's drawn avatar), drawn in their\n  browser and drawn again whenever those details change, or an image of\n  their own, framed the same way to the link preview's shape. The signed-out home shows\n  a booking card that plays itself: a pointer books a time, then asks for\n  another. The card is an ordinary flat component set in a real CSS 3D\n  scene, with its edge and shadow behind it and the pointer and result\n  hovering in front, standing up as it scrolls into view and turning toward\n  the mouse.\n  It must open and move like a native app, with no flicker: a versioned\n  service worker that serves the whole shell offline (an address that names\n  a file, such as an icon, still opens that file), pages drawn at once\n  from the last answers kept in the browser and refreshed quietly, motion\n  only for changes. Public pages end in a frosted footer: A Holm app, Source,\n  Send feedback (the repo's feedback app, embed.js vendored).\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 kalendar. With my approval, deploy with\nholm @<peer> app deploy kalendar --spec-v1 --host kalendar.<my-domain>, then\nask before enabling email for the app. Test booking, double-booking,\nrescheduling, cancelling, time zones across daylight saving, phone and\ndesktop, light and dark, touch and mouse, requests and their answers,\nthe MCP tools, and sign in and out as a real person would.",
+      "prompt": "Build \"Kalendar\", a Calendly-like booking app, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json\n(web.spa true), public web/ files and api/main.js exporting default\n{ fetch(request, env) }, with booking and cancelling as public named\noperations behind Holm's challenge and rate limits. No build step or\nthird-party runtime CDN; vendor Inter and Lucide icons with their licences.\n\n- A signed-in person chooses a link (/@handle), their time zone and weekly\n  hours (several ranges a day, days off), and event types (title, link,\n  length, where: video link, phone, address or other; notice, how far\n  ahead, start-time step, free time before and after, colour, on/off).\n- Anyone opens /@handle or /@handle/event and books without an account.\n  Show the host's free time on a horizontal strip of days, time running\n  left to right like a video editor's timeline, in the guest's own zone\n  (12- or 24-hour): tap a shaded span to drop in a meeting the length of the\n  event, drag it to adjust (it snaps to open times), then name, email and\n  notes. Never double-book; a taken time shows as busy to everyone else\n  (never who) and can't be picked or asked for.\n- Guests may also ask for other times, even outside the host's hours: drop\n  the meeting outside the shading, or paint spans of their own free time\n  (trim the ends, slide them) and see where they overlap the host's. The\n  host sees those spans over their own week, drags the meeting inside them\n  and accepts, or declines with a note. Hosts paint their weekly hours the\n  same way and drag a span onto another day, where it trades places with\n  what's in its way; a day dragged over another swaps hours with it live, as\n  you go. A switch pauses a day and keeps its hours. Every strip zooms:\n  pinch, ctrl-scroll, or − and + with a button to fit the day.\n- A profile page: photo, role, company, place with local time, a note,\n  website and profile links with their icons, and each event type with its\n  next open time. The host edits it under Profile, a tab of its own in the\n  sidebar and tab bar, which saves as they type. Never a coloured stripe\n  down the side of a rounded card. The photo is one the host chooses there,\n  dragged and zoomed into a circle in their browser, or else their\n  account's. The host changes their time zone under Profile or\n  Availability, and is offered their device's zone when it differs;\n  visitors pick their own zone on the profile or booking page.\n- Insights for the host without cookies: views, visitors, profile clicks,\n  bookings, time on page, sources, devices, places from time zones, and a\n  visit-to-booking funnel. Tracked links: /@handle?ref=tag (also #ref= and\n  utm_campaign) with a QR code adding &via=qr; the tag follows the guest to\n  their booking, and Insights shows each link's visitors, scans and bookings. Expose the host's management (profile, hours,\n  event types, meetings, requests, open times, insights) as auth \"user\"\n  named operations, so Claude can run it all over Holm's MCP endpoint.\n  Connect via MCP… in the account menu, with the MCP mark, opens a sheet:\n  the app's icon joined to the mark by five moving dots, the connector\n  address to click and copy, and tabs for Claude, ChatGPT, Claude Code and\n  what the tools do. Every link to copy (yours, the feed) is one field you\n  click, never a box beside a Copy button.\n- The server has no Intl, so have the host's browser send its zone's UTC\n  offsets for the next year and turn hours into real times on the server.\n- Email both sides with env.holm.email: beautifully designed HTML (tables,\n  inline styles, dark mode) plus plain text. Each booking email carries a\n  calendar invite through email.send's calendar option, and no Add to\n  Calendar buttons: a REQUEST to the guest with the host as organizer, and a\n  REQUEST to the host named for the guest, organized by the sender address\n  email.send reports and already accepted; a CANCEL to both when it's off,\n  one UID per booking even when it moves. The booking page offers Google,\n  Outlook.com and a hosted calendar file whose link doesn't end in .ics\n  (Apple Mail offers to subscribe to those). Emailed links let the guest move\n  or cancel; the host can cancel from their list. Give the host a private\n  calendar feed, and let them add other addresses, each confirmed by a link\n  sent to it, and pick which one gets booking email and organizes invites.\n- The booking form's \"Add guests\" is an address line like Mail's: a comma,\n  space or Return makes a bubble, a bad address stays red, Backspace selects\n  then removes the last bubble. Up to five guests are on the invite and get\n  their own email, without the links to change it. Holm sends one email a\n  call within a request's few seconds, so queue the guests' emails that don't\n  fit and have the page send them after.\n- An Apple-quality UI on phone and desktop, with a fixed shell where only\n  panels scroll: a round avatar button top right\n  (signed out too) whose menu holds light/dark/auto, sounds, 24-hour time\n  and Holm's analytics link for admins, and closes when it's tapped again;\n  sheets that don't shrink as a search narrows; fine motion, quiet Web Audio\n  sounds, and Inter weights that mean something. The host picks their\n  pages' colour (red, amber, teal, blue, violet, graphite): their dashboard,\n  page, booking pages, emails and browser tab icon wear it, each colour\n  tuned for light and dark with readable text on it. A shared link to their\n  page shows a cover in that colour with their name, what they do and their\n  photo when it's a real one (not Holm's drawn avatar), drawn in their\n  browser and drawn again whenever those details change, or an image of\n  their own, framed the same way to the link preview's shape. The signed-out home shows\n  a booking card that plays itself: a pointer books a time, then asks for\n  another. The card is an ordinary flat component set in a real CSS 3D\n  scene, with its edge and shadow behind it and the pointer and result\n  hovering in front, standing up as it scrolls into view and turning toward\n  the mouse.\n  It must open and move like a native app, with no flicker: a versioned\n  service worker that serves the whole shell offline (an address that names\n  a file, such as an icon, still opens that file), pages drawn at once\n  from the last answers kept in the browser and refreshed quietly, motion\n  only for changes. Public pages end in a frosted footer: A Holm app, Source,\n  Send feedback (the repo's feedback app, embed.js vendored).\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 kalendar. With my approval, deploy with\nholm @<peer> app deploy kalendar --spec-v1 --host kalendar.<my-domain>, then\nask before enabling email for the app. Test booking, double-booking,\nrescheduling, cancelling, time zones across daylight saving, phone and\ndesktop, light and dark, touch and mouse, requests and their answers,\nthe MCP tools, and sign in and out as a real person would.",
       "history": [
+        {
+          "version": "0.9.0",
+          "date": "2026-10-31",
+          "whatsNew": "Choose a photo of your own and drag and zoom it into its circle; your drawn cover redraws with it, or use an image of your own as the cover. Change your time zone under Profile, or switch to your device's when you travel, and visitors can pick theirs on your page. Booked times show as Busy, so nobody can pick or ask for one."
+        },
         {
           "version": "0.8.2",
           "date": "2026-10-31",
@@ -1761,11 +1766,11 @@
     {
       "name": "ralk",
       "path": "ralk",
-      "version": "0.1.1",
-      "tag": "ralk/v0.1.1",
-      "h1": "h1:U1x1ZTOz74CZwHHy+QWxfKv6M5b05dTZL7ubpe8utTM=",
+      "version": "0.2.0",
+      "tag": "ralk/v0.2.0",
+      "h1": "h1:YNOjvBCsj0uPif6EOvdfHLlkHiGhD0nb8I54ebPafeU=",
       "files": 51,
-      "size": 767028,
+      "size": 783297,
       "title": "Ralk",
       "description": "Your agents, out loud. Claude tells this tab when a build finished, needs you, or broke: a chime, Olivia's voice, a notification.",
       "themeColor": "#6d4cf2",
@@ -1775,7 +1780,7 @@
         "subtitle": "Your agents, out loud",
         "category": "Productivity",
         "description": "Claude Code runs in a VM, a container or a server with no speaker. Ralk is the tab on the machine in front of you: a chime when the build finishes, Olivia's voice when something needs you, a browser notification when you're in another window.\n\nConnect Claude, Claude Code or ChatGPT once. From then on Claude can tell you a task is done, that it needs your approval, that something broke, or ask a question: each kind has its own sound, and a spoken line follows a few seconds later. Every device you have open plays it; the card says which one heard it.\n\nThe 52 sounds are made from code in your browser, nothing to download, and you pick which one goes with each kind. The voice is Inworld TTS on fal.ai, Olivia by default, any of its voices with a sample; a line said before plays again at once and costs nothing.\n\nIt feels like an app: a bar that stays put, one panel that scrolls, a tab bar on your phone, light and dark, and sounds you can try before you sign in.",
-        "whatsNew": "The account menu closes when you tap the avatar again, its theme switch is three icons, and the Holm credit stays in the footer.",
+        "whatsNew": "Connect via MCP in the account menu: one sheet with the address to copy, the steps for Claude, ChatGPT and Claude Code, and what the tools do. Claude can now change your voice and sounds, and clear your history when you ask.",
         "featured": true,
         "related": [
           "zend",
@@ -1807,10 +1812,10 @@
           },
           {
             "path": "listing/connect.webp",
-            "alt": "The Connect tab: the address for Claude, Claude Code and ChatGPT, and prompts to try",
+            "alt": "The Connect tab: Connect via MCP, and prompts to try once Claude is connected",
             "width": 780,
             "height": 1688,
-            "hash": "16490f895537"
+            "hash": "3959c2efedcf"
           },
           {
             "path": "listing/landing-dark.webp",
@@ -1830,49 +1835,66 @@
       "mcp": [
         {
           "name": "guide.get",
-          "summary": "Read how and when to notify the person through Ralk (call this first)",
+          "summary": "Read Ralk’s guide",
           "risk": "read",
           "auth": "public"
         },
         {
           "name": "me.get",
-          "summary": "Who you are on Ralk, how many devices are listening, and your voice usage",
+          "summary": "See who’s listening",
           "risk": "read",
           "auth": "user"
         },
         {
           "name": "notify.send",
-          "summary": "Notify the person: a sound and a browser notification on every device they have Ralk open, with an optional spoken line",
+          "summary": "Send you a notification",
           "risk": "write",
           "auth": "user"
         },
         {
           "name": "say.send",
-          "summary": "Speak a line out loud on the person's devices, with no notification sound",
+          "summary": "Say a line out loud",
           "risk": "write",
           "auth": "user"
         },
         {
           "name": "sounds.list",
-          "summary": "The sounds Ralk can play, by id, with the default for each kind of notification",
+          "summary": "See the sounds and voices",
           "risk": "read",
           "auth": "public"
         },
         {
           "name": "sounds.play",
-          "summary": "Play one sound on the person's devices, with no card or notification",
+          "summary": "Play a sound",
           "risk": "write",
           "auth": "user"
         },
         {
           "name": "history.list",
-          "summary": "Your recent notifications and which devices heard them",
+          "summary": "See recent notifications",
           "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "prefs.update",
+          "summary": "Change your voice or sounds",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "history.clear",
+          "summary": "Clear your notifications",
+          "risk": "destructive",
           "auth": "user"
         }
       ],
-      "prompt": "Build \"Ralk\" (Remote Talk), an app that lets Claude reach the person out loud,\nusing only https://holmhq.com/llms-full.txt for Holm. Read its v1 sections\n9–12, \"Use your app from ChatGPT or Claude\", \"Realtime\", \"Make an app feel\nfinished\" and \"Make it feel native\" first. Make holm.json (web.spa true),\npublic web/ files and api/main.js exporting default { fetch(request, env) },\nplus named operations that Holm projects as MCP tools. No build step or\nthird-party runtime CDN; vendor Inter with its licence.\n\nWhy: Claude Code runs in a VM or a container with no speaker. The person keeps\na Ralk tab open on the machine in front of them; what Claude sends plays\nthere.\n\n- Sign in with the node's accounts. Each person gets a secret realtime channel\n  that every tab they have open subscribes to, with reconnects.\n- Claude's tools (auth \"user\", each acting only on the caller's own data):\n  a guide on when to notify and how to write for the ear; notify_send with a\n  kind (done, attention, question, error, info, start), a title, a body, an\n  optional spoken line and a project tag; say_send for a spoken line alone;\n  sounds_play; sounds_list; me_get (listening devices, voice, usage);\n  history_list. Every send answers with how many devices are listening.\n- Sounds are made from code in the browser, not downloaded: vendor earshotjs\n  (MIT) and render in a worker. Six kinds with default sounds the person can\n  change; a library with a play button on every row; a volume for the device.\n- Voice: fal.ai's Inworld TTS through env.holm.net.fetch with an app-scoped\n  runtime secret, Olivia by default, any built-in voice with a sample. Queue\n  the line, let the browser poll once a second, play the finished file as\n  soon as fal.ai has it, then copy it into storage keyed by text and voice so\n  a repeated line is instant and free. A monthly allowance per person.\n- When a note arrives: the kind's sound plays at once, a browser notification\n  shows if the tab is not in front, the voice follows, and the card records\n  which device heard it. Tabs in one browser elect one to play.\n- Apple-quality UI on phone and desktop, light and dark, with a round avatar\n  button top right (signed out too) whose menu closes when it's tapped again\n  and holds light/dark/auto as three icons; Holm branding stays in the\n  footer. Native-like: the window never scrolls,\n  bars stay fixed, panels scroll with no scroll bars, a tab bar on phones and\n  a sidebar on desks, meaningful motion. Signed out, a landing page that plays\n  the sounds without an account.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/listing.json with sample screenshots. These are repo conventions,\n  not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 ralk. With my approval, deploy with\nholm @<peer> app deploy ralk --spec-v1 --host ralk.<my-domain>, set the FAL_KEY\nsecret and allow queue.fal.run and fal.media for the app. Test every tool\nover HTTP, a note landing in an open tab with its sound and voice, two people\nseeing only their own, phone and desktop, light and dark.",
+      "prompt": "Build \"Ralk\" (Remote Talk), an app that lets Claude reach the person out loud,\nusing only https://holmhq.com/llms-full.txt for Holm. Read its v1 sections\n9–12, \"Use your app from ChatGPT or Claude\", \"Realtime\", \"Make an app feel\nfinished\" and \"Make it feel native\" first. Make holm.json (web.spa true),\npublic web/ files and api/main.js exporting default { fetch(request, env) },\nplus named operations that Holm projects as MCP tools. No build step or\nthird-party runtime CDN; vendor Inter with its licence.\n\nWhy: Claude Code runs in a VM or a container with no speaker. The person keeps\na Ralk tab open on the machine in front of them; what Claude sends plays\nthere.\n\n- Sign in with the node's accounts. Each person gets a secret realtime channel\n  that every tab they have open subscribes to, with reconnects.\n- Claude's tools (auth \"user\", each acting only on the caller's own data):\n  a guide on when to notify and how to write for the ear; notify_send with a\n  kind (done, attention, question, error, info, start), a title, a body, an\n  optional spoken line and a project tag; say_send for a spoken line alone;\n  sounds_play; sounds_list (with the voices); me_get (listening devices,\n  voice, usage); history_list; prefs_update for the voice and each kind's\n  sound; history_clear. Every send answers with how many devices are\n  listening. Connect via MCP… in the account menu, with the MCP mark, opens a\n  sheet with the connector address to click and copy, and tabs for Claude,\n  ChatGPT, Claude Code and what the tools do; the Connect tab leads to it and\n  has prompts to try, each copied with a tap.\n- Sounds are made from code in the browser, not downloaded: vendor earshotjs\n  (MIT) and render in a worker. Six kinds with default sounds the person can\n  change; a library with a play button on every row; a volume for the device.\n- Voice: fal.ai's Inworld TTS through env.holm.net.fetch with an app-scoped\n  runtime secret, Olivia by default, any built-in voice with a sample. Queue\n  the line, let the browser poll once a second, play the finished file as\n  soon as fal.ai has it, then copy it into storage keyed by text and voice so\n  a repeated line is instant and free. A monthly allowance per person.\n- When a note arrives: the kind's sound plays at once, a browser notification\n  shows if the tab is not in front, the voice follows, and the card records\n  which device heard it. Tabs in one browser elect one to play.\n- Apple-quality UI on phone and desktop, light and dark, with a round avatar\n  button top right (signed out too) whose menu closes when it's tapped again\n  and holds light/dark/auto as three icons; Holm branding stays in the\n  footer. Native-like: the window never scrolls,\n  bars stay fixed, panels scroll with no scroll bars, a tab bar on phones and\n  a sidebar on desks, meaningful motion. Signed out, a landing page that plays\n  the sounds without an account.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/listing.json with sample screenshots. These are repo conventions,\n  not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 ralk. With my approval, deploy with\nholm @<peer> app deploy ralk --spec-v1 --host ralk.<my-domain>, set the FAL_KEY\nsecret and allow queue.fal.run and fal.media for the app. Test every tool\nover HTTP, a note landing in an open tab with its sound and voice, two people\nseeing only their own, phone and desktop, light and dark.",
       "history": [
+        {
+          "version": "0.1.1",
+          "date": "2026-11-01",
+          "whatsNew": "The account menu closes when you tap the avatar again, its theme switch is three icons, and the Holm credit stays in the footer."
+        },
         {
           "version": "0.1.0",
           "date": "2026-10-29",
@@ -2562,11 +2584,11 @@
     {
       "name": "until",
       "path": "until",
-      "version": "0.1.0",
-      "tag": "until/v0.1.0",
-      "h1": "h1:Zj6siAiiS9uMV5Nqu+PcBaVZBFXhsHKsrzeOau6em5Y=",
-      "files": 27,
-      "size": 438296,
+      "version": "0.2.0",
+      "tag": "until/v0.2.0",
+      "h1": "h1:4bZ0ITkRKHEDqzsqDrtbgMn+LzNloXfOLYAaN3ZU5Lw=",
+      "files": 30,
+      "size": 479802,
       "title": "Until",
       "description": "Count down the days to anything, and rate each one as it passes. Works on your phone without an account; sign in to keep it everywhere.",
       "themeColor": "#177a5e",
@@ -2576,7 +2598,7 @@
         "subtitle": "Count down the days, rate each one",
         "category": "Lifestyle",
         "description": "Give Until a start and an end, or a number of days, and it counts down to it: the days left in big, friendly numbers, with the trip, the deadline or the due date underneath.\n\nTap a tracker to rate any day so far from one to five stars, and see today's rating on its card. Trackers that are running come first, then the ones still to start, then the ones you've finished.\n\nIt works straight away on your phone, keeping trackers on the device. Sign in and they move to your account and follow you everywhere, and the installed app still opens offline with your last synced copy. Two colours, Green and Bloom, each in light and dark.",
-        "whatsNew": "Until joins the store: rewritten without a build step, with sign-in on the node's own page, a retry that never makes a second copy, and an installed app that opens offline.",
+        "whatsNew": "Claude can count down with you: connect Until through MCP to see your trackers and the days left, add or change one, rate a day or delete one. Connect via MCP… in the account menu shows the address and the steps, and an open page picks up what Claude changed.",
         "featured": false,
         "related": [
           "kalendar",
@@ -2621,15 +2643,59 @@
           "hash": "bf013ebb6dfe"
         }
       },
-      "prompt": "Build \"Until\", a day-countdown app for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for member\nstorage and sign-in, return standard Responses and fall back to\nenv.holm.web.fetch(request). No build step or third-party runtime CDN; vendor\nthe font and icons with their licences.\n\n- A tracker has a title, an optional subtitle, a start date, and either a\n  number of days or an end date, plus a random icon you can re-roll. Cards show\n  the days left in big numbers (a dash before it starts, \"Today\" on the last\n  day, days since after), running ones first.\n- Tap a card to rate any day so far from one to five stars, stepping through\n  the days; show today's rating on the card.\n- Signed out, keep trackers in localStorage. Signed in, keep them in the\n  member's own document store and the colour choice in member KV; offer to\n  move the device's trackers over once, skipping duplicates. A browser-made\n  key on each new tracker makes a retried save find the first attempt.\n- Two colours, green and pink, each light and dark or following the device,\n  in the account menu. Installable, with a network-first service worker; offline,\n  show the last synced copy read only.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 until. With my approval, deploy with\nholm @<peer> app deploy until --spec-v1 --host until.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test signed out and signed in, moving trackers over, going offline, and\nmobile/desktop in light/dark. Report gaps honestly. Inspect the target\nsettings schema before setting sign-in branding.",
-      "history": []
+      "mcp": [
+        {
+          "name": "trackers.list",
+          "summary": "See your trackers",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "trackers.get",
+          "summary": "Read a tracker",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "trackers.create",
+          "summary": "Add a tracker",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "trackers.update",
+          "summary": "Change a tracker",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "days.rate",
+          "summary": "Rate a day",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "trackers.delete",
+          "summary": "Delete a tracker",
+          "risk": "destructive",
+          "auth": "user"
+        }
+      ],
+      "prompt": "Build \"Until\", a day-countdown app for phones, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 and\n\"Make an app feel finished\" and \"Make it feel native\" first. Make holm.json,\npublic web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for member\nstorage and sign-in, return standard Responses and fall back to\nenv.holm.web.fetch(request). No build step or third-party runtime CDN; vendor\nthe font and icons with their licences.\n\n- A tracker has a title, an optional subtitle, a start date, and either a\n  number of days or an end date, plus a random icon you can re-roll. Cards show\n  the days left in big numbers (a dash before it starts, \"Today\" on the last\n  day, days since after), running ones first.\n- Tap a card to rate any day so far from one to five stars, stepping through\n  the days; show today's rating on the card.\n- Signed out, keep trackers in localStorage. Signed in, keep them in the\n  member's own document store and the colour choice in member KV; offer to\n  move the device's trackers over once, skipping duplicates. A browser-made\n  key on each new tracker makes a retried save find the first attempt.\n- Two colours, green and pink, each light and dark or following the device,\n  in the account menu. Installable, with a network-first service worker; offline,\n  show the last synced copy read only.\n- MCP tools as named operations in api/contract.json with auth \"user\", each\n  going through the app's own routes for the signed-in member: list trackers\n  with days left, read one with its ratings, add, change, rate a day (never a\n  future one; a per-day rating that keeps the others) and delete. Each takes\n  the person's date, since the server has no time zone. Connect via MCP… in\n  the account menu, signed in, opens a sheet with the connector address to\n  click and copy, and tabs for Claude, ChatGPT, Claude Code and what the tools\n  do. A signed-in page takes the account's trackers again when it comes back\n  into view.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 until. With my approval, deploy with\nholm @<peer> app deploy until --spec-v1 --host until.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test signed out and signed in, moving trackers over, going offline, and\nmobile/desktop in light/dark. Report gaps honestly. Inspect the target\nsettings schema before setting sign-in branding.",
+      "history": [
+        {
+          "version": "0.1.0",
+          "date": "2026-10-25",
+          "whatsNew": "Until joins the store: rewritten without a build step, with sign-in on the node's own page, a retry that never makes a second copy, and an installed app that opens offline."
+        }
+      ]
     },
     {
       "name": "zend",
       "path": "zend",
       "version": "0.2.1",
       "tag": "zend/v0.2.1",
-      "h1": "h1:8KRBRE+WAerhyBwtNoU1hkCXsjIUljSEyZ4VpuQDB58=",
+      "h1": "h1:a74lMhhEmrE4zY21XZQ7Sbx9mtl9hvM2n8/W4efvwiA=",
       "files": 48,
       "size": 579335,
       "title": "Zend",
