@@ -1,6 +1,6 @@
 {
   "name": "feedback",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "title": "feedback",
   "description": "A button for your website, a QR code for your tables or event. Count the scans, read every word.",
   "themeColor": "#c2410c",
@@ -15,7 +15,8 @@
   },
   "publish": {
     "exclude": [
-      "/listing/"
+      "/listing/",
+      "/tools/"
     ]
   },
   "ext": {

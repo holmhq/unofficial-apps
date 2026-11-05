@@ -1,5 +1,6 @@
 // API keys: for scripts and agents that set up and triage projects for you.
-import { el, api, ago, copyButton } from './lib.js'
+import { el, api, ago } from './lib.js'
+import { copyField } from './mcp.js'
 import { show } from './app.js'
 
 export async function keysPage() {
@@ -29,8 +30,7 @@ export async function keysPage() {
       name.value = ''
       fresh.replaceChildren(el('div', { class: 'new-key' },
         el('p', {}, el('strong', {}, 'Your new key. '), 'Copy it now; it won’t be shown again.'),
-        el('pre', {}, el('code', {}, key)),
-        copyButton(key, 'Copy key')))
+        copyField(key)))
       load()
     } catch (problem) { error.textContent = problem.message; error.hidden = false }
   } }, name, el('button', { type: 'submit', class: 'button primary' }, 'Make a key'))

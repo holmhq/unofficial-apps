@@ -48,8 +48,8 @@ deploy. They are still public source in this repository.
   delighted. Ask for it, optionally or always, with your own words above it.
   If it can't load, plain stars stand in.
 - **Projects:** sign in and make one per site, shop, restaurant or event.
-  They sit in a panel that scrolls on its own, so the page never does and the
-  footer stays at the bottom. Each row shows the project's icon or logo, the
+  They sit in a panel that scrolls on its own, and the list shows at once
+  from your last visit while the server is asked. Each row shows the project's icon or logo, the
   site it's on (its allowed sites, or where its button is live), its
   feedback page and what's waiting. Tabs: Inbox, Stats, Design, Form, Share
   and Set up; switching tabs changes only what's below them.
@@ -128,6 +128,13 @@ deploy. They are still public source in this repository.
   Claude, ChatGPT or Claude Code, which can then list your projects, read an
   inbox, file and answer items, mark them done, share them by link and count
   visits, scans and sends, as you and only on your projects.
+- **Feels like an app:** the window never scrolls. The header and a small
+  footer stay put and frost over what scrolls under them; each page scrolls
+  in its own panel. A service worker keeps this version's page files on the
+  device, so the app opens at once; nothing anyone sends is kept. ⌘K
+  (Ctrl+K) goes to every place in the avatar menu, Connect via MCP and the
+  theme. Links, the Holm-site command and a new API key copy with one click
+  on the field itself.
 - **Its own feedback:** the footer's Feedback link opens this app's own form,
   through the same `embed.js` every site uses, sent to its maintainers'
   project on feedback.zyt.app. It isn't on projects' feedback pages.
@@ -238,6 +245,7 @@ to turn MCP off.
 holm.json           name, version, colour, SPA routing, store metadata
 web/                public files, served as-is:
   index.html        the app: landing, projects, inbox, stats, feedback pages
+  sw.js             service worker: keeps this version's page files, never what's sent
   embed.js          the script sites add: button and panel in a shadow root
   widget.html       the form inside the panel
   preview.html      a stand-in site running embed.js, for the previews
@@ -252,7 +260,8 @@ web/                public files, served as-is:
   src/preview.js    starts embed.js on the stand-in site
   src/qr.js         QR codes and the poster
   src/icons.js      a project's mark: its logo, icon or initial
-  src/account.js    avatar, menu, theme and Holm's sign-in page in an overlay
+  src/account.js    avatar, menu, theme, ⌘K's commands and Holm's sign-in page in an overlay
+  src/palette.js    the ⌘K command menu
   src/mcp.js        the Connect via MCP sheet and click-to-copy field
   src/keys.js       the API keys page
   src/link.js       an inbox link's page: idle bar, clock and lock
@@ -260,7 +269,7 @@ web/                public files, served as-is:
   src/mine.js       Your feedback, and stopping emails
   src/widget.js     the panel's logic
   src/lib.js        DOM, API and formatting helpers, icons, dropdown,
-                    segmented choice and code box
+                    segmented choice, code box and panel scrolling
   src/styles.css    the app's design;  src/widget.css  the panel's
   assets/           icon, favicon, link preview and fonts (SIL OFL 1.1)
   vendor/qrcode/    qrcode-generator 2.0.4 (MIT)
@@ -284,6 +293,7 @@ api/accounts.js     agent accounts: making one, keeping one, the sweep
 api/follow.js       confirming a sender's email; replies; Your feedback
 api/links.js        inbox links and their idle-locked sessions
 api/lib.js          responses, request checks, ids, who is asking
+tools/check.mjs     checks sw.js lists every file and follows holm.json (not deployed)
 holm.symbol.svg     the app's icon
 listing/            its store listing (not deployed)
 ```

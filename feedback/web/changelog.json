@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "0.19.0",
+      "date": "2026-11-05",
+      "title": "Feels like an app",
+      "changes": [
+        "The header and a small footer stay put while each page scrolls under them, and the app opens at once: this version's pages are kept on your device. What people send never is.",
+        "Your projects show straight away from your last visit while the server is asked.",
+        "⌘K (Ctrl+K) goes to your projects, your feedback, stats, API keys, the changelog or Connect via MCP, or changes the theme.",
+        "A feedback page's link, an item's share link, the command for a Holm site and a new API key copy with one click on the field itself.",
+        "Status chips stay on one line and scroll sideways; the line counting items above the inbox is gone, since the chips count them. The changelog moved from the footer to the avatar menu."
+      ]
+    },
+    {
       "version": "0.18.0",
       "date": "2026-11-05",
       "title": "Connect via MCP",

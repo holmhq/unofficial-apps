@@ -1,7 +1,7 @@
 // The feedback form, shared by the panel on a site (widget.js) and a
 // project's own page (board.js): kind, a star rating, message, files, the
 // project's own questions and contact details.
-import { el, glyph, size, picker, KIND, KIND_SETS } from './lib.js'
+import { el, glyph, size, picker, KIND, KIND_SETS, reveal } from './lib.js'
 
 const PROMPTS = {
   issue: 'What went wrong? What did you expect to happen?',
@@ -62,7 +62,7 @@ function ratingInput(onChange) {
     element.addEventListener('change', event => set(event.detail.value))
     slot.replaceChildren(element)
   })
-  return { node: el('div', { class: 'rating-row' }, slot, word), read: () => value, focus: () => slot.scrollIntoView({ block: 'nearest' }) }
+  return { node: el('div', { class: 'rating-row' }, slot, word), read: () => value, focus: () => reveal(slot) }
 }
 
 // Big photos shrink before they're sent: at most 2048 pixels a side, as JPEG

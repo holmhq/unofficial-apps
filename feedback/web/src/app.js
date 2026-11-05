@@ -1,7 +1,8 @@
 // feedback: router, landing page and the projects list.
-import { $, el, api, glyph, inkOn } from './lib.js'
+import { $, el, api, glyph, inkOn, store } from './lib.js'
 import { mark } from './icons.js'
-import { loadViewer, onViewer, viewer, signIn } from './account.js'
+import { loadViewer, onViewer, viewer, signIn, commands, cachedViewer } from './account.js'
+import { togglePalette } from './palette.js'
 import { projectPage } from './project.js'
 import { boardPage, sharedPage } from './board.js'
 import { keysPage } from './keys.js'
@@ -19,7 +20,7 @@ const RESERVED = new Set(['api', 'auth', 'b', 'f', 'projects', 'keys', 'stats', 
 const main = $('#main')
 // Optional sections pass false or undefined; leave them out of the page.
 export const show = (...sections) => main.replaceChildren(...sections.flat(Infinity).filter(Boolean))
-export const go = path => { history.pushState(null, '', path); route(); scrollTo(0, 0) }
+export const go = path => { history.pushState(null, '', path); route(); main.scrollTop = 0 }
 
 function landing() {
   document.title = 'feedback'
@@ -60,7 +61,9 @@ function demoForm() {
 async function projectsPage() {
   document.title = 'Your projects – feedback'
   document.body.classList.add('fit')
-  const list = el('ul', { class: 'projects' }, el('li', { class: 'muted empty' }, 'Loading…'))
+  const key = `projects.${viewer().me.id}`
+  const kept = store.get(key, null)
+  const list = el('ul', { class: 'projects' }, !kept && el('li', { class: 'muted empty' }, 'Loading…'))
   const count = el('span', { class: 'panel-count' })
   const name = el('input', { name: 'name', placeholder: 'Name a new project', maxlength: '60', autocomplete: 'off', 'aria-label': 'New project’s name', required: true })
   const error = el('p', { class: 'form-error', role: 'alert', hidden: true })
@@ -78,8 +81,8 @@ async function projectsPage() {
     el('section', { class: 'panel projects-panel', 'aria-label': 'Projects' },
       el('header', { class: 'panel-head' }, el('h2', {}, 'Projects', count), create),
       error, list))
-  try {
-    const { projects } = await api('GET', '/api/projects')
+  // The list draws at once from this device's copy and again only if the server's differs.
+  const draw = projects => {
     count.textContent = projects.length
     const waiting = ({ items, comments }) => [
       items > 0 && `${items} new`,
@@ -100,8 +103,15 @@ async function projectsPage() {
       glyph('chevron', 'glyph line go'))) :
       [el('li', { class: 'muted empty' }, 'No projects yet. Name your first one above. Sent feedback to someone? See it in ',
         el('a', { href: '/mine', 'data-link': true }, 'Your feedback'), '.')]))
+  }
+  if (kept) draw(kept)
+  try {
+    const { projects } = await api('GET', '/api/projects')
+    store.set(key, projects)
+    if (!list.isConnected || JSON.stringify(projects) === JSON.stringify(kept)) return
+    draw(projects)
   } catch (problem) {
-    list.replaceChildren(el('li', { class: 'form-error empty' }, problem.message))
+    if (!kept) list.replaceChildren(el('li', { class: 'form-error empty' }, problem.message))
   }
 }
 
@@ -156,11 +166,32 @@ document.addEventListener('click', event => {
   route()
   // A project's tabs keep the page where it is, and focus on the tab.
   if (link.dataset.tab) return
-  scrollTo(0, 0)
+  main.scrollTop = 0
   main.focus({ preventScroll: true })
 })
+
+// The window never scrolls; <main> does. The bar frosts once something scrolls under it.
+const topBar = $('.top')
+main.addEventListener('scroll', () => topBar.classList.toggle('glass', main.scrollTop > 2), { passive: true })
+
+// ⌘K: the places and actions of the account menu, from the keyboard.
+document.addEventListener('keydown', event => {
+  if (!(event.metaKey || event.ctrlKey) || (event.key !== 'k' && event.key !== 'K') || event.altKey || event.shiftKey) return
+  if (document.querySelector('.mcp-scrim, .signin, dialog[open]')) return
+  event.preventDefault()
+  togglePalette(() => commands(go))
+})
 addEventListener('popstate', route)
-onViewer(route)
+// A reload draws at once for whoever was here last; the session's answer draws the page
+// again only if it's someone else.
+const who = () => JSON.stringify([viewer().me?.id ?? null, viewer().link?.project ?? null])
+let drawnFor = cachedViewer() ? who() : null
+if (drawnFor !== null) route()
+onViewer(() => {
+  if (drawnFor !== null && who() === drawnFor) { drawnFor = null; return }
+  drawnFor = null
+  route()
+})
 loadViewer()
 
 // The footer's Feedback link opens the app's own feedback form (embed.js in
@@ -171,3 +202,6 @@ const offerFeedback = () => { ownFeedback.hidden = !window.HolmFeedback?.ready }
 addEventListener('holmfeedback:ready', offerFeedback)
 offerFeedback()
 ownFeedback.addEventListener('click', () => window.HolmFeedback ? window.HolmFeedback.open() : (ownFeedback.hidden = true))
+
+// The app shell: every file of this version is kept on the device, so pages open at once.
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})

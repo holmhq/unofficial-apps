@@ -98,6 +98,8 @@ body.on-board { --accent: var(--project); --accent-ink: var(--project-ink); }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
+/* The window never scrolls: the bars stay put and <main> is the one panel that does. */
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 /* Display rules below must never undo the hidden attribute. */
 [hidden] { display: none !important; }
 body {
@@ -120,27 +122,35 @@ h2 { font-size: 1.3rem; }
 .skip { position: absolute; left: 1rem; top: -3rem; z-index: 50; background: var(--ink); color: var(--paper); padding: 0.5rem 0.8rem; border-radius: 6px; }
 .skip:focus { top: 1rem; }
 
-.top, main, .foot { width: 100%; max-width: 64rem; margin: 0 auto; padding-inline: 1rem; }
-@media (min-width: 40rem) { .top, main, .foot { padding-inline: 2rem; } }
-/* The page is at least the window's height, with the footer at the bottom.
-   A page that fits (body.fit, the projects list) never scrolls at all: its
-   panel scrolls instead. */
-body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
-main { flex: 1 0 auto; }
-body.fit { height: 100vh; height: 100dvh; overflow: hidden; }
-body.fit main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* Each bar and the panel span the window, so they frost and scroll edge to edge; their
+   padding keeps everything in a 64rem column. */
+.top, main, .foot { --gutter: 1rem; width: 100%; padding-inline: max(var(--gutter), calc((100% - 64rem) / 2 + var(--gutter))); }
+@media (min-width: 40rem) { .top, main, .foot { --gutter: 2rem; } }
+body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+main {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+main::-webkit-scrollbar { display: none; }
+/* A page that fits (body.fit, the projects list) doesn't scroll at all: its own panel does. */
+body.fit main { overflow: hidden; display: flex; flex-direction: column; }
 
-.top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.1rem; }
+.top { position: relative; z-index: 20; flex: none; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: max(0.85rem, env(safe-area-inset-top)) 0.85rem; transition: background-color 0.2s, box-shadow 0.2s; }
+.top.glass, .foot {
+  background: color-mix(in oklab, var(--paper) 80%, transparent);
+  -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px);
+}
+.top.glass { box-shadow: 0 0.5px 0 var(--rule); }
 .brand { display: inline-flex; align-items: center; gap: 0.55rem; text-decoration: none; font-weight: 700; letter-spacing: -0.01em; }
 .brand svg { width: 1.4rem; height: 1.4rem; fill: var(--accent); }
 
-.foot { flex: none; display: flex; justify-content: center; flex-wrap: wrap; gap: 0.4rem 1.4rem; padding-block: 2.5rem max(1.25rem, env(safe-area-inset-bottom)); font-size: 0.82rem; }
-.fit .foot { padding-top: 1.25rem; }
-.foot a, .foot button { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0; border: 0; background: none; color: var(--ink-3); font: inherit; text-decoration: none; cursor: pointer; }
+/* Footer: small, frosted and stuck to the bottom, on one line. */
+.foot { position: relative; z-index: 20; flex: none; display: flex; justify-content: center; gap: 1.4rem; padding-block: 0.45rem max(0.45rem, env(safe-area-inset-bottom)); box-shadow: 0 -0.5px 0 var(--rule); font-size: 0.78rem; }
+.foot a, .foot button { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; white-space: nowrap; padding: 0; border: 0; background: none; color: var(--ink-3); font: inherit; text-decoration: none; cursor: pointer; }
 .foot a:hover, .foot button:hover { color: var(--ink); }
 /* A project's public page is someone else's: no link to this app's own form. */
 .on-board #own-feedback { display: none; }
-.foot svg { width: 0.95rem; height: 0.95rem; }
+.foot svg { width: 0.85rem; height: 0.85rem; }
 
 /* Buttons and fields */
 
@@ -178,13 +188,17 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 /* Account (shared with the store's avatar menu) */
 
 .account { position: relative; display: flex; align-items: center; }
+/* A 44px target around a 36px face, so it's easy to tap without looking bigger. */
 .avatar-btn {
-  width: 2.25rem; height: 2.25rem; padding: 0;
-  display: grid; place-items: center;
-  border: 1px solid var(--rule); border-radius: 50%;
-  background: var(--sheet); color: var(--ink-2);
-  overflow: hidden; cursor: pointer;
+  width: 2.75rem; height: 2.75rem; margin: -0.25rem; padding: 0.25rem;
+  border: 0; border-radius: 50%; background: none; color: var(--ink-2);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
+.avatar-face {
+  display: grid; place-items: center; width: 2.25rem; height: 2.25rem;
+  border: 1px solid var(--rule); border-radius: 50%; background: var(--sheet); overflow: hidden;
+}
+.avatar-btn:hover .avatar-face { border-color: var(--ink-3); }
 .avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
 .avatar-btn svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .menu {
@@ -270,7 +284,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 
 /* Click to copy: the value on one line, a copy icon at its end, Copy on
    hover and Copied with a tick after. */
-.copy-field { --cf-bg: var(--sheet); display: flex; align-items: center; gap: 0.6rem; height: 46px; padding: 0 0.9rem; border-radius: 12px; background: var(--cf-bg); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s, box-shadow 0.15s; }
+.copy-field { --cf-bg: var(--sheet); min-width: 0; display: flex; align-items: center; gap: 0.6rem; height: 46px; padding: 0 0.9rem; border-radius: 12px; background: var(--cf-bg); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s, box-shadow 0.15s; }
 .copy-field:active { --cf-bg: color-mix(in oklab, var(--sheet), var(--ink) 8%); }
 @media (hover: hover) { .copy-field:hover { --cf-bg: color-mix(in oklab, var(--sheet), var(--ink) 4%); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--rule), var(--ink) 18%); } }
 .copy-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -379,7 +393,10 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 
 /* Inbox */
 
-.chips { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 1.25rem 0 1rem; }
+/* A row of chips is one line: it scrolls sideways under a soft fade, never wraps. */
+.chips { display: flex; gap: 0.4rem; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 1.25rem 0 1rem; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent); padding-right: 1.5rem; }
+.chips::-webkit-scrollbar { display: none; }
+.chips > * { flex: none; }
 .chips button {
   display: inline-flex; align-items: center; gap: 0.4rem;
   font: 550 0.88rem var(--font); padding: 0.35rem 0.75rem;
@@ -437,7 +454,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .item-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.25rem; }
 .item-switches { display: grid; gap: 0.6rem; }
 /* An item's share link, under its switches; on a phone, Delete goes last. */
-.share-link { flex: 1 1 100%; display: grid; gap: 0.5rem; }
+.share-link { flex: 1 1 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; }
 .share-link p { margin: 0; font-size: 0.88rem; }
 @media (max-width: 36rem) { .item-actions > .danger { order: 1; } }
 .notes-section { margin-top: 2.25rem; }
@@ -479,6 +496,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 /* Theme switch in the menu */
 
 .menu-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.4rem 0.4rem 0.4rem 0.65rem; margin: 0.3rem 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); font-size: 0.95rem; }
+.menu-row:last-child { margin-bottom: 0; border-bottom: 0; }
 .theme { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); }
 .menu .theme button, .theme button { width: 2rem; height: 1.7rem; padding: 0; display: grid; place-items: center; border: 0; border-radius: 999px; background: none; color: var(--ink-3); cursor: pointer; }
 .theme button .glyph { width: 0.95rem; height: 0.95rem; fill: currentColor; }
@@ -562,7 +580,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .qr-actions { display: grid; gap: 0.5rem; justify-items: start; }
 .qr-actions p { margin: 0 0 0.25rem; font-size: 0.92rem; }
 @media (max-width: 48rem) {
-  .share-grid { grid-template-columns: 1fr; }
+  .share-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 30rem) {
   .prefixed { flex-wrap: wrap; }
@@ -743,7 +761,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .picture-text small { font-size: 0.82rem; }
 .picture-actions { display: flex; gap: 0.4rem; margin-top: 0.35rem; }
 .picture-actions .button { padding: 0.3rem 0.8rem; font-size: 0.85rem; }
-.chart-table { overflow-x: auto; }
+.chart-table { overflow-x: auto; scrollbar-width: none; }
+.chart-table::-webkit-scrollbar { display: none; }
 
 /* An item's team thread */
 
@@ -909,9 +928,9 @@ input.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .preview-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
 .preview-head h2 { font-size: 1.1rem; }
 .preview-stage { display: flex; justify-content: center; overflow: hidden; border: 1px solid var(--rule); border-radius: 20px; background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in oklab, var(--rule) 45%, transparent) 10px 11px), var(--paper); }
-.preview-frame { display: block; width: 100%; height: min(44rem, calc(100vh - 9rem)); border: 0; background: transparent; transition: width 0.45s cubic-bezier(0.2, 0.9, 0.3, 1), border-radius 0.45s; }
+.preview-frame { display: block; width: 100%; height: min(44rem, calc(100vh - 11rem), calc(100dvh - 11rem)); border: 0; background: transparent; transition: width 0.45s cubic-bezier(0.2, 0.9, 0.3, 1), border-radius 0.45s; }
 .preview-stage[data-device="phone"] { padding: 1rem 0; }
-.preview-stage[data-device="phone"] .preview-frame { width: 22.5rem; max-width: calc(100% - 2rem); height: min(42rem, calc(100vh - 11rem)); border-radius: 30px; box-shadow: 0 0 0 7px var(--ink), 0 24px 48px -24px rgba(0, 0, 0, 0.55); }
+.preview-stage[data-device="phone"] .preview-frame { width: 22.5rem; max-width: calc(100% - 2rem); height: min(42rem, calc(100vh - 13rem), calc(100dvh - 13rem)); border-radius: 30px; box-shadow: 0 0 0 7px var(--ink), 0 24px 48px -24px rgba(0, 0, 0, 0.55); }
 .preview-pane .section-note { margin-top: 0.6rem; font-size: 0.85rem; }
 @media (max-width: 60rem) {
   .design-grid { grid-template-columns: 1fr; }
@@ -1000,7 +1019,7 @@ button.swatch:hover, label.swatch:hover { transform: scale(1.08); }
 .danger-zone { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
 .danger-zone p { font-size: 0.92rem; }
 @keyframes ping { 75%, 100% { transform: scale(2.6); opacity: 0; } }
-@media (max-width: 52rem) { .setup-columns { grid-template-columns: 1fr; } }
+@media (max-width: 52rem) { .setup-columns { grid-template-columns: minmax(0, 1fr); } }
 
 /* Share */
 
@@ -1106,3 +1125,26 @@ button.swatch:hover, label.swatch:hover { transform: scale(1.08); }
 .add-note.replying textarea { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .add-note.replying .button { border-color: transparent; background: var(--accent); color: var(--accent-ink); }
 .reply-sent { margin: 0.5rem 0 0; font-size: 0.9rem; text-align: right; }
+
+/* ⌘K (src/palette.js) */
+.pal-layer { position: fixed; inset: 0; z-index: 45; display: flex; justify-content: center; align-items: flex-start; padding: 12vh 1rem 1rem; background: var(--scrim); opacity: 0; transition: opacity 0.16s; }
+.pal-layer.is-in { opacity: 1; }
+.pal { width: min(36rem, 100%); max-height: 70vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--rule); border-radius: 18px; background: var(--sheet); box-shadow: var(--lift); transform: translateY(-6px) scale(0.985); transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1); }
+.pal-layer.is-in .pal { transform: none; }
+.pal-top { display: flex; align-items: center; gap: 0.65rem; padding: 0.8rem 1rem; border-bottom: 1px solid var(--rule); color: var(--ink-3); }
+.pal-top > .glyph { width: 1.1rem; height: 1.1rem; flex: none; }
+.pal-field { flex: 1; min-width: 0; padding: 0; border: 0; border-radius: 0; background: none; color: var(--ink); font-size: max(1.05rem, 16px); outline: none; }
+.pal-field:focus-visible { outline: none; }
+.pal-field::placeholder { color: var(--ink-3); }
+.pal-top kbd { flex: none; font: 600 0.7rem var(--font); color: var(--ink-3); padding: 2px 6px; border-radius: 5px; box-shadow: 0 0 0 1px var(--rule); }
+.pal-list { overflow-y: auto; padding: 0.35rem; scrollbar-width: none; }
+.pal-list::-webkit-scrollbar { display: none; }
+.pal-item { display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: 2.75rem; padding: 0 0.6rem; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; font-size: 0.95rem; text-align: left; cursor: pointer; }
+.pal-item.is-on { background: var(--paper); }
+.pal-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pal-item small { flex: none; color: var(--ink-3); font-size: 0.78rem; }
+.pal-ic { flex: none; width: 1.75rem; height: 1.75rem; border-radius: 8px; display: grid; place-items: center; background: var(--paper); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--rule); }
+.pal-ic .glyph { width: 1rem; height: 1rem; }
+.pal-ic .glyph:not(.line) { fill: currentColor; }
+.pal-none { padding: 1.1rem; color: var(--ink-3); text-align: center; font-size: 0.9rem; }
+@media (prefers-reduced-motion: reduce) { .pal-layer, .pal { transition: none; } }

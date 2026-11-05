@@ -1,6 +1,7 @@
 // A project: its inbox, one item at a time, its stats, its look, its form,
 // how to share it and how to set it up.
 import { el, api, ago, glyph, store, size, inkOn, lighten, picker, segmented, codeBox, link, linkURL, STATUS, KIND, KIND_SETS } from './lib.js'
+import { copyField } from './mcp.js'
 import { show, go } from './app.js'
 import { viewer, signIn } from './account.js'
 import { leave, hold } from './link.js'
@@ -255,10 +256,9 @@ function inbox(project, items) {
     }, label, el('span', { class: 'count' }, pool.filter(item => matchesStatus(item, key)).length))))
     const shown = pool.filter(item => matchesStatus(item, filter)).sort(ORDER[sort] || ORDER.new)
     const page = shown.slice(0, limit)
-    summary.replaceChildren(...[
-      el('strong', {}, shown.length), ` ${shown.length === 1 ? 'item' : 'items'}`,
-      shown.length < items.length && el('span', { class: 'muted' }, ` of ${items.length}`),
-      items.length >= 1000 && el('span', { class: 'muted' }, ' · the newest 1,000 are here')].filter(Boolean))
+    // The chips already count each status (All counts everything), so the only line left
+    // here is the cap.
+    summary.textContent = 'The newest 1,000 are here.'
     moreButton.hidden = shown.length <= limit
     moreButton.textContent = `Show ${Math.min(PAGE, shown.length - limit)} more · ${shown.length - limit} left`
     list.replaceChildren(...(page.length ? page.map(item => el('li', {},
@@ -287,7 +287,7 @@ function inbox(project, items) {
   }
   paint()
   put(waiting > 0 && el('p', { class: 'notice' }, glyph('comment'), `${waiting} ${waiting === 1 ? 'comment is' : 'comments are'} waiting for your approval.`),
-    items.length > 0 && bar, chips, items.length > 0 && summary, list, moreButton)
+    items.length > 0 && bar, chips, items.length >= 1000 && summary, list, moreButton)
 
   function fileOne() {
     return el('a', { class: 'button primary file-one', href: `/projects/${project.id}/new`, 'data-link': true, 'aria-label': 'New item', title: 'File feedback that reached you another way' },
@@ -450,7 +450,7 @@ function itemPage(project, item) {
   const shown = el('input', { type: 'checkbox', class: 'switch', onchange: event => save({ public: event.target.checked }) })
   // A link to this item alone, for someone without an account.
   const sharing = el('input', { type: 'checkbox', class: 'switch', onchange: event => save({ share: event.target.checked }) })
-  const linkBox = codeBox('', 'Copy link')
+  const linkBox = copyField('')
   const shareBox = el('div', { class: 'share-link', hidden: true },
     linkBox,
     el('p', { class: 'muted' }, 'Anyone with this link can read the item, who asked and its public comments, and comment, without signing in. It never shows contact details, the page, browser, answers or files. ',
@@ -898,7 +898,7 @@ function setup(project) {
         codeBox(snippetFor(project, 'holm'))),
       el('div', { class: 'step' },
         el('p', {}, el('strong', {}, '3. '), 'Let its pages show the form. The node’s operator runs this once:'),
-        codeBox(`holm policy set security.csp.frame_src "${location.origin}" --app <your-app-id>`)),
+        copyField(`holm policy set security.csp.frame_src "${location.origin}" --app <your-app-id>`)),
       own,
       el('p', { class: 'hint' }, 'The look is written into this tag; copy it again after you change it in Design.')
     ] : [
@@ -1034,7 +1034,7 @@ function share(project, saved = '') {
     `&body=${encodeURIComponent(`We'd love to hear from you. It takes a minute:\n\n${url}?via=email\n`)}`
   const handout = project.public ? el('section', { class: 'handout' },
     el('h2', {}, 'Link and QR code'),
-    codeBox(url, 'Copy link'),
+    copyField(url),
     el('div', { class: 'link-actions' },
       el('a', { class: 'button small', href: mail }, 'Email it'),
       el('a', { class: 'button small', href: url, target: '_blank', rel: 'noopener' }, 'Open', glyph('out', 'glyph line'))),

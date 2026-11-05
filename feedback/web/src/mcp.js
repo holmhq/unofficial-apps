@@ -6,12 +6,13 @@ import { el, glyph, segmented } from './lib.js'
 
 // Anything to copy is one field: the value on one line and a copy icon,
 // Copy on hover and Copied with a tick after. No separate button.
+// `field.set(value)` changes what it holds.
 export function copyField(value) {
   const text = el('code', { class: 'copy-value' }, value)
   const word = el('span', { class: 'copy-word', 'aria-live': 'polite' }, 'Copy')
   let timer
   const copy = async () => {
-    try { await navigator.clipboard.writeText(value) } catch {
+    try { await navigator.clipboard.writeText(text.textContent) } catch {
       getSelection().selectAllChildren(text)
       word.textContent = 'Selected: copy it by hand'
       field.classList.add('is-refused')
@@ -34,6 +35,7 @@ export function copyField(value) {
   const fade = () => field.classList.toggle('is-long', text.scrollLeft + text.clientWidth < text.scrollWidth - 1)
   text.addEventListener('scroll', fade, { passive: true })
   new ResizeObserver(fade).observe(text)
+  field.set = next => { text.textContent = next; field.setAttribute('aria-label', 'Copy ' + next); fade() }
   return field
 }
 

@@ -6,7 +6,7 @@ import { mcpSheet } from './mcp.js'
 
 // Light, dark or the system's choice. index.html applies the saved one
 // before the first paint.
-const THEMES = [['light', 'sun', 'Light'], ['system', 'system', 'System'], ['dark', 'moon', 'Dark']]
+const THEMES = [['light', 'sun', 'Light'], ['system', 'system', 'Auto'], ['dark', 'moon', 'Dark']]
 
 function applyTheme(choice) {
   const root = document.documentElement
@@ -19,13 +19,15 @@ function applyTheme(choice) {
 }
 applyTheme(store.get('theme', 'system'))
 
+function setTheme(choice) { store.set('theme', choice); applyTheme(choice) }
+
 function themeSwitch() {
   const group = el('div', { class: 'theme', role: 'group', 'aria-label': 'Theme' })
   const paint = () => group.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.choice === store.get('theme', 'system'))))
   for (const [choice, icon, label] of THEMES) {
     group.append(el('button', {
       type: 'button', 'data-choice': choice, 'aria-label': label + ' theme', title: label,
-      onclick: () => { store.set('theme', choice); applyTheme(choice); paint() }
+      onclick: () => { setTheme(choice); paint() }
     }, glyph(icon)))
   }
   paint()
@@ -42,6 +44,18 @@ const listeners = []
 export const viewer = () => ({ me, link: opened })
 export const onViewer = fn => listeners.push(fn)
 
+// Who was here last time, so a reload draws at once; /api/me corrects it a moment later. A
+// tab opened from an inbox link always asks first.
+export function cachedViewer() {
+  if (remembered()) return false
+  const kept = store.get('viewer', null)
+  if (!kept) return false
+  me = kept.me || null
+  mcp = kept.mcp || null
+  render()
+  return true
+}
+
 export async function loadViewer() {
   const mine = remembered()
   if (mine && mine !== 'locked') link.project = mine
@@ -50,6 +64,7 @@ export async function loadViewer() {
     me = body.member
     opened = body.link || null
     mcp = body.mcp || null
+    if (!opened) store.set('viewer', { me, mcp })
   } catch {
     me = null
     opened = null
@@ -76,7 +91,7 @@ function render() {
     type: 'button', class: 'avatar-btn', 'aria-haspopup': 'menu', 'aria-expanded': 'false',
     'aria-label': me ? `Account: ${me.name}` : 'Sign in',
     onclick: event => { event.stopPropagation(); toggleMenu(button) }
-  }, me ? el('img', { src: me.avatar, alt: '', referrerpolicy: 'no-referrer' }) : person())
+  }, el('span', { class: 'avatar-face' }, me ? el('img', { src: me.avatar, alt: '', referrerpolicy: 'no-referrer' }) : person()))
   $('#account').replaceChildren(button)
 }
 
@@ -91,12 +106,14 @@ function toggleMenu(button) {
         el('a', { href: '/mine', 'data-link': true, role: 'menuitem' }, 'Your feedback'),
         el('a', { href: '/stats', 'data-link': true, role: 'menuitem' }, 'Stats'),
         el('a', { href: '/keys', 'data-link': true, role: 'menuitem' }, 'API keys'),
+        el('a', { href: '/changelog', 'data-link': true, role: 'menuitem' }, 'Changelog'),
         el('button', { type: 'button', role: 'menuitem', class: 'menu-mcp', onclick: () => mcpSheet(mcp || undefined) },
           el('span', {}, 'Connect via MCP…'), glyph('mcp')),
         theme,
         el('button', { type: 'button', role: 'menuitem', onclick: signOut }, 'Sign out'))
     : el('div', { class: 'menu', role: 'menu' },
         !opened && el('button', { type: 'button', role: 'menuitem', onclick: () => signIn().catch(() => {}) }, 'Sign in'),
+        el('a', { href: '/changelog', 'data-link': true, role: 'menuitem' }, 'Changelog'),
         theme)
   $('#account').append(menu)
   button.setAttribute('aria-expanded', 'true')
@@ -130,6 +147,8 @@ async function signOut() {
     await fetch('/auth/logout', { method: 'POST', credentials: 'include', redirect: 'manual' })
   } catch {}
   me = null
+  // Signing out leaves nothing of the account on this device.
+  try { Object.keys(localStorage).filter(key => /^feedback\.(viewer|projects\.)/.test(key)).forEach(key => localStorage.removeItem(key)) } catch {}
   render()
   listeners.forEach(fn => fn())
 }
@@ -163,4 +182,19 @@ export function signIn() {
     document.body.append(overlay)
   })
   return pending
+}
+
+// ⌘K: the places and actions of the account menu, from the keyboard.
+export function commands(go) {
+  const current = store.get('theme', 'system')
+  return [
+    me && { label: 'Your projects', icon: 'boxes', run: () => go('/') },
+    me && { label: 'Your feedback', icon: 'comment', run: () => go('/mine') },
+    me && { label: 'Stats', icon: 'chart', run: () => go('/stats') },
+    me && { label: 'API keys', icon: 'lock', run: () => go('/keys') },
+    { label: 'Changelog', icon: 'file', run: () => go('/changelog') },
+    me && { label: 'Connect via MCP…', icon: 'mcp', run: () => mcpSheet(mcp || undefined) },
+    ...THEMES.map(([choice, icon, label]) => ({ label: label + ' theme', icon, hint: current === choice ? 'Current' : null, run: () => setTheme(choice) })),
+    me ? { label: 'Sign out', icon: 'person', run: signOut } : !opened && { label: 'Sign in', icon: 'person', run: () => signIn().catch(() => {}) }
+  ].filter(Boolean)
 }

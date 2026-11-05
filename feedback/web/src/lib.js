@@ -14,6 +14,21 @@ export function el(tag, attrs = {}, ...children) {
   return element
 }
 
+// Brings an element into view by scrolling its own boxes by hand, up to the page's one panel
+// (<main id="main">). scrollIntoView would move the fixed shell too. A page without that
+// panel (the form on its own, widget.html) scrolls as usual.
+export function reveal(node, margin = 8) {
+  if (!document.getElementById('main')) return node.scrollIntoView({ block: 'nearest' })
+  for (let box = node.parentElement; box && box !== document.body; box = box.parentElement) {
+    if (/(auto|scroll)/.test(getComputedStyle(box).overflowY) && box.scrollHeight > box.clientHeight) {
+      const r = node.getBoundingClientRect(), b = box.getBoundingClientRect()
+      if (r.top < b.top + margin) box.scrollTop -= b.top + margin - r.top
+      else if (r.bottom > b.bottom - margin) box.scrollTop += Math.min(r.bottom - b.bottom + margin, r.top - b.top - margin)
+    }
+    if (box.id === 'main') return
+  }
+}
+
 export const store = {
   get(key, fallback) { try { return JSON.parse(localStorage.getItem('feedback.' + key)) ?? fallback } catch { return fallback } },
   set(key, value) { try { localStorage.setItem('feedback.' + key, JSON.stringify(value)) } catch {} }
@@ -240,7 +255,12 @@ export function picker({ label, value = '', options, onchange, menu = false, cla
   const highlight = index => {
     active = index
     items.forEach((item, i) => item.classList.toggle('active', i === index))
-    if (index >= 0) { list.setAttribute('aria-activedescendant', items[index].id); items[index].scrollIntoView({ block: 'nearest' }) }
+    if (index < 0) return
+    list.setAttribute('aria-activedescendant', items[index].id)
+    // Keep the option in view by scrolling the list itself, never the page.
+    const item = items[index].getBoundingClientRect(), box = list.getBoundingClientRect()
+    if (item.top < box.top) list.scrollTop -= box.top - item.top
+    else if (item.bottom > box.bottom) list.scrollTop += item.bottom - box.bottom
   }
   const outside = event => { if (!root.contains(event.target)) close(false) }
   const open = () => {
@@ -298,12 +318,3 @@ export function picker({ label, value = '', options, onchange, menu = false, cla
   return root
 }
 
-export function copyButton(text, label = 'Copy') {
-  const button = el('button', { type: 'button', class: 'button' }, label)
-  button.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(typeof text === 'function' ? text() : text); button.textContent = 'Copied' }
-    catch { button.textContent = 'Select and copy' }
-    setTimeout(() => { button.textContent = label }, 1600)
-  })
-  return button
-}

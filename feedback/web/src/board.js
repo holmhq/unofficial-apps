@@ -2,7 +2,7 @@
 // a feedback form anyone can use, then the items the owner chose to show, by
 // status, with votes and comments. It wears the project's name and colour,
 // not the app's. One item the owner shared by link looks the same, alone.
-import { el, api, glyph, store, ago, inkOn, lighten, STATUS, KIND, KIND_SETS } from './lib.js'
+import { el, api, glyph, store, ago, inkOn, lighten, STATUS, KIND, KIND_SETS, reveal } from './lib.js'
 import { show } from './app.js'
 import { composer, sentMark } from './compose.js'
 import { mark as markOf } from './icons.js'
@@ -135,7 +135,7 @@ function listView(data, base) {
       contact: project.contact,
       rating: project.rating,
       attachments: project.attachments,
-      onSent: (number, reply = {}) => { card.replaceChildren(thanks(project, number, fresh, reply.follow)); card.scrollIntoView({ block: 'nearest' }) },
+      onSent: (number, reply = {}) => { card.replaceChildren(thanks(project, number, fresh, reply.follow)); reveal(card) },
       fine: project.contact && project.contact.email === 'off' && project.contact.phone === 'off' ? null : 'Your contact details are only shown to the team.'
     }))
   fresh()

@@ -39,9 +39,13 @@ uploads; no global holm/request/respond and no request.files API.
 - Add typed operations for public widget settings and JSON feedback with keyed retries, plus a signed-in owner's private inbox, mark-done, filing and sharing actions and dashboard counts; keep all existing routes and file flows.
 - API keys: show once, hash SHA-256, accept bearer tokens on owner routes,
   check project ownership, return the setup snippet; keys cannot mint keys.
-- Make it refined on phones/desktop, light/dark/system, a fixed footer and
-  scrolling projects panel, avatar menu for keys/theme/stats, /changelog,
-  and an optional footer Feedback link to a project I supply.
+- Make it refined on phones/desktop, light/dark/system. The window never
+  scrolls: a frosted header and a small frosted footer stay put and each
+  page scrolls in its own panel. A round avatar menu for keys, theme, stats
+  and /changelog, and ⌘K with the same places and actions. Anything to copy
+  is a click-to-copy field. A versioned service worker keeps every page
+  file, never anything sent, and the projects list draws from the last
+  visit. An optional footer Feedback link to a project I supply.
 - Vendor fonts, QR code code and icons with licenses. For feed-stars use
   Holm's CDN pinned to a commit and v-X.Y.Z folder with integrity, plus plain
   stars as fallback. Copy embed.js into other Holm sites when their CSP
@@ -275,6 +279,12 @@ just the node's admins, added a tool that lists their projects, and put
 Connect via MCP… in the avatar menu, from:
 
 > Shall we add mcp support for relay & feedback?
+
+**Iteration 23** came from a sweep of every app in the repository against
+its cookbook (the fixed shell, ⌘K, click-to-copy fields, the service
+worker), started by the owner's:
+
+> Sure do cookbook sweep
 
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private
