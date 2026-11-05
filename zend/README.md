@@ -18,7 +18,9 @@ public files, and `api/main.js` exports `default { fetch(request, env) }`. The
 handler returns standard `Response` objects and uses `env.holm` for storage,
 sign-in, outbound HTTP, secrets and realtime. `web.spa` is on; the node runs
 no build. Every deploy needs `--spec-v1`. Only `web/` is served as files:
-`api/` and `holm.json` are not public URLs.
+`api/` and `holm.json` are not public URLs. The MCP tools are named
+operations described in `api/contract.json`, so `holm.json` turns the
+generated web surface off (`surfaces.web.renderer: "off"`).
 
 ## What it does
 
@@ -46,6 +48,12 @@ no build. Every deploy needs `--spec-v1`. Only `web/` is served as files:
   it goes down. A key is shown once, can be held to a few numbers, and
   follows every limit the page does. An `Idempotency-Key` header makes
   retries safe.
+- **Claude, ChatGPT and other MCP clients:** **Connect via MCP…** in the
+  account menu shows the connector address and how to add it. Claude can
+  catch up on replies, read conversations, see the phone and today's
+  limits, name numbers, read templates, and draft texts. It can't send one:
+  a draft waits at the top of Chats, live, and goes out only when you open
+  it, check it and tap Send.
 - **Your data:** disconnect the phone (conversations stay), delete a
   conversation, or delete everything Zend keeps for you.
 
@@ -108,7 +116,11 @@ advice. Sources:
 holm.json               identity, web.spa, what stays out of deploy
 holm.symbol.svg         app icon: a speech bubble with a send arrow
 holm.generated.json     record of the icons Holm generated from the symbol
-api/main.js             every route: page, API (/api/v1) and webhooks (/hooks)
+api/main.js             small entry: loads http.js, and the MCP tools' handlers
+api/http.js             every route: page, API (/api/v1) and webhooks (/hooks)
+api/contract.json       the MCP tools: names, inputs, what each may change
+api/ops.js              the MCP tools' code
+api/drafts.js           texts drafted through the tools, waiting to be sent
 api/phone.js            connecting a phone, live receipts, the member's channel
 api/gateway.js          SMSGate's cloud API, and the demo phone
 api/messages.js         sending, conversations, receipts, replies, opt-outs by reply
@@ -122,6 +134,7 @@ api/lib.js              small shared helpers
 web/index.html          the page shell, with the saved theme applied before first paint
 web/sw.js               network-first offline cache of the page's files
 web/src/main.js         start-up, the shell, routing, account menu, shortcuts, swipe back
+web/src/mcp.js          the Connect via MCP sheet
 web/src/ui.js           elements, avatars, times, sheets, menus, toasts, list animation
 web/src/store.js        what the page knows, catching up on receipts, live updates
 web/src/composer.js     writing, the SMS ring, templates, send later, SIM, the rules check
@@ -146,16 +159,23 @@ The Holm primitives it uses, all described in
   host for this app.
 - **Runtime secrets, `env.holm.secrets`:** `VAULT_KEY`, from which the vault
   derives its keys. Without it, only the demo phone works.
+- **Named operations and MCP, `api/contract.json`:** ten tools with
+  `auth: "user"`, served at `/_holm/mcp` with sign-in. Each reaches only the
+  caller's own phone, conversations and drafts. `main.js` loads the real
+  code with `import()`, because Holm scans what it imports when an app has
+  a contract.
 - **Shared document store, `env.holm.app.ds`:** `phones`, `messages`,
-  `threads`, `templates`, `optouts` and `apikeys`, every row tagged with its
+  `threads`, `templates`, `optouts`, `apikeys` and `drafts`, every row tagged with its
   owner. Webhooks and API keys arrive without a session, so this is shared
   storage, and every query names the owner.
 - **Key-value store, `env.holm.app.kv`:** each member's channel name, the
-  per-minute counter, webhook envelopes already seen, and idempotent API
-  answers (24 hours).
+  per-minute counter, webhook envelopes already seen, idempotent API
+  answers (24 hours), and the address last seen on `/api/me`, which the
+  tools' links use.
 - **Realtime, `env.holm.realtime`:** a receipt or reply announces itself on
   the member's own channel, a name with a random secret that only they are
-  given, and the page reloads that conversation.
+  given, and the page reloads that conversation. A draft made or discarded
+  through the tools announces itself the same way.
 - **Sign-in, `env.holm.auth`:** `/api/me` returns the member with
   `getLoginURL()` and `getLogoutURL()`. Sign-in happens on the node's own
   page; sign-out is a POST.
@@ -164,6 +184,17 @@ The Holm primitives it uses, all described in
 - **`env.holm.web.fetch`:** serves everything else.
 - **App identity:** `holm app identity generate` made the icons, manifest,
   social card and 404 page from `holm.symbol.svg`, in the `soft` style.
+
+### Why Claude drafts and you send
+
+A tool can't send a text: sending calls SMSGate with the phone's sealed
+sign-in, and named operations can't make outbound calls or read secrets.
+Zend wouldn't let one send even if it could. A text goes out on your own
+number, to people who know you, and can't be taken back, so a person checks
+each one. `drafts_create` checks what it can without sending (the numbers,
+opt-outs, length, SIM and time) and keeps the draft. The open page shows it
+at once, and Send goes through the same route and checks as any text you
+type. A text that reads like an offer still asks you first.
 
 ### Why not `env.holm.sms`
 
@@ -252,6 +283,12 @@ regulation's own numbers.
   pictures (MMS) aren't shown.
 - Inter covers Latin scripts; other scripts use the device's own fonts.
 - Conversations are kept until you delete them; nothing expires on its own.
+- The MCP tools draft texts but never send them, and can't cancel a
+  scheduled one; both need the phone. A draft not sent within a day is
+  dropped, and at most 20 wait at once.
+- The tools read what Zend already knows. Receipts for a real phone without
+  live receipts arrive while Zend is open, so a tool may show a text as sent
+  that has since been delivered.
 
 ## Testing
 
@@ -265,8 +302,11 @@ template with a bad blank, two members who can't see each other's data, and
 an API key held to one number. Webhooks can be tested by signing a body
 with `openssl dgst -sha256 -hmac <key>` over the body followed by the
 timestamp: a wrong key, a stale timestamp and a repeat must all be refused
-or skipped. Look at a phone and a desktop in light and dark, and sign out
-and in again.
+or skipped. For the MCP tools, POST `/api/<tool name>` (such as
+`/api/drafts.create`) with the session cookie and an `Origin` header: a
+draft appears in the open page at once, Send takes it away, and a second
+member can't see or discard it. Look at a phone and a desktop in light and
+dark, and sign out and in again.
 
 ## Licenses
 

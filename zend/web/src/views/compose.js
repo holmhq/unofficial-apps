@@ -1,9 +1,10 @@
 // A new text: pick up to ten people (names you've given, or any number),
 // write, send. One person opens their conversation; several stay here with
-// a note of how it went.
+// a note of how it went. /new?draft=<id> opens a text drafted through the
+// MCP tools, to check and send or discard.
 
-import { h, fill, ic, avatar, toast, wide, nope, haptic } from '../ui.js'
-import { store, addSent } from '../store.js'
+import { h, fill, ic, avatar, toast, wide, nope, haptic, MIN } from '../ui.js'
+import { store, addSent, loadDrafts, dropDraft } from '../store.js'
 import { normalizePhone, formatPhone } from '../sms.js'
 import { composer } from '../composer.js'
 import { sound } from '../sound.js'
@@ -21,13 +22,17 @@ export function compose(params) {
   const rows = h('div.rows')
   const head = h('div.suggest-label')
   const panel = h('div.panel', head, rows)
+  const note = h('div.draft-note', { hidden: true, role: 'status' })
+  let draft = null
 
   const box = composer({
     numbers: () => current(),
     placeholder: 'Text Message',
     send: async (payload) => {
       const numbers = current()
-      const result = await api.post('/api/messages', { to: numbers, ...payload })
+      // Sending a draft takes it off the list, here and on the server.
+      const result = await api.post('/api/messages', { to: numbers, ...payload, ...(draft ? { draft: draft.id } : {}) })
+      if (draft) dropDraft(draft.id)
       addSent(result)
       if (numbers.length === 1) {
         go(`/t/${encodeURIComponent(result.messages[0].number)}`, { replace: true })
@@ -113,16 +118,57 @@ export function compose(params) {
     fill(rows, out)
   }
 
+  // A draft fills in who, what, the SIM and the time, and says nothing has gone yet.
+  function useDraft(d) {
+    if (!d) {
+      toast('That draft is gone: it was sent, discarded or left to expire.', { kind: 'info' })
+      return
+    }
+    draft = d
+    for (const n of d.to) if (!chosen.includes(n) && chosen.length < MAX) chosen.push(n)
+    changed()
+    const at = d.scheduleAt ? Date.parse(d.scheduleAt) : null
+    const late = at && at < Date.now() + MIN
+    box.set(d.body, { sim: d.sim || null, scheduleAt: late ? null : at })
+    fill(note,
+      h('span.glyph', ic('compose', 18, 2)),
+      h('span.grow', h('b', 'Drafted for you'), h('small', late ? 'Its time has passed, so it sends now. Nothing goes out until you tap Send.' : 'Check it. Nothing goes out until you tap Send.')),
+      h('button.btn.small', { type: 'button', onclick: discard }, 'Discard'))
+    note.hidden = false
+  }
+
+  async function discard() {
+    try {
+      await api.del('/api/drafts/' + encodeURIComponent(draft.id))
+    } catch (error) {
+      if (error.status !== 404) { toast(error.message, { kind: 'bad' }); return }
+    }
+    dropDraft(draft.id)
+    haptic(6)
+    toast('Draft discarded')
+    go('/', { replace: true })
+  }
+
   if (params.to) {
     for (const raw of params.to.split(',')) { const n = normalizePhone(raw); if (n && !chosen.includes(n)) chosen.push(n) }
   }
   drawChips()
   drawSuggest()
-  setTimeout(() => (chosen.length ? box.focus() : input.focus({ preventScroll: true })), wide() ? 30 : 460)
+  if (params.draft) {
+    const find = (list) => (list || []).find(d => d.id === params.draft)
+    if (store.drafts) useDraft(find(store.drafts))
+    else loadDrafts().then(list => useDraft(find(list)))
+  }
+  // A draft is there to be read first, so a phone keeps its keyboard down.
+  setTimeout(() => {
+    if (params.draft && !wide()) return
+    if (chosen.length) box.focus()
+    else input.focus({ preventScroll: true })
+  }, wide() ? 30 : 460)
 
   const bar = h('header.bar.glass',
     h('button.back.only-narrow', { type: 'button', 'aria-label': 'Back to chats', onclick: back }, ic('back', 28, 2.2), 'Chats'),
     h('span.small-title', { style: { opacity: 1, transform: 'none' } }, 'New text'),
     h('span.right', h('span.only-wide', accountButton())))
-  return { el: h('div', { style: { display: 'contents' } }, bar, to, panel, box.el) }
+  return { el: h('div', { style: { display: 'contents' } }, bar, to, note, panel, box.el) }
 }

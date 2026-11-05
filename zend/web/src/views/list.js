@@ -1,5 +1,6 @@
 // The conversation list: beside the open conversation on a wide screen, the
 // Chats tab on a phone. Rows are kept by number and slide when they move.
+// Texts drafted through the MCP tools wait above them until sent or discarded.
 
 import { h, fill, ic, avatar, listWhen, flip, wide, menu, sheet, confirm, toast, collapsing, ago, haptic } from '../ui.js'
 import { ticks } from '../icons.js'
@@ -14,6 +15,7 @@ export function list() {
   let folder = 'all'
   let query = ''
   let selected = null
+  let draftOpen = null
 
   const search = h('input', { type: 'search', placeholder: 'Search', 'aria-label': 'Search conversations', autocomplete: 'off', enterkeyhint: 'search' })
   const clear = h('button.clear', { type: 'button', 'aria-label': 'Clear search', hidden: true, onclick: () => { search.value = ''; query = ''; clear.hidden = true; draw(); search.focus() } }, ic('x', 12, 3))
@@ -27,8 +29,9 @@ export function list() {
   const ink = h('span.ink', { 'aria-hidden': 'true' })
   const folders = h('div.folders', { role: 'tablist', 'aria-label': 'Show' }, ink)
   const rows = h('div.rows', { role: 'list' })
+  const draftsBox = h('section.drafts', { 'aria-label': 'Drafts to send', hidden: true })
   const strip = h('button.phone-strip', { type: 'button', onclick: () => go('/phone') })
-  const panel = h('div.panel', h('h1.large-title', 'Chats'), searchBox, folders, rows)
+  const panel = h('div.panel', h('h1.large-title', 'Chats'), searchBox, folders, draftsBox, rows)
   const compose = h('button.icon-btn', { type: 'button', 'aria-label': 'New text', title: 'New text (N)', onclick: () => newText() }, ic('compose', 23, 1.8))
   const bar = h('header.bar', h('span.small-title', 'Chats'), h('span.right', compose, h('span.only-narrow', accountButton())))
   collapsing(bar, panel)
@@ -73,6 +76,7 @@ export function list() {
   function draw() {
     drawFolders()
     drawStrip()
+    drawDrafts()
     if (!store.threads) {
       fill(rows, Array.from({ length: 6 }, () => h('div.skeleton-row', h('span.s-av.shimmer'), h('span.s-lines', h('span.shimmer', { style: { height: '14px', width: '42%' } }), h('span.shimmer', { style: { height: '12px', width: '78%' } })))))
       return
@@ -89,6 +93,30 @@ export function list() {
       rows.replaceChildren(...next)
       if (!list.length) rows.append(emptyNote())
     })
+  }
+
+  // Drafts wait at the top of All, like a text you started and didn't send.
+  function drawDrafts() {
+    const list = store.drafts || []
+    const hide = !list.length || query || folder === 'unread'
+    draftsBox.hidden = Boolean(hide)
+    if (hide) { draftsBox.replaceChildren(); return }
+    const named = (n) => label((store.threads || []).find(t => t.number === n) || { number: n })
+    fill(draftsBox,
+      h('div.drafts-label', list.length === 1 ? 'A draft to check' : `${list.length} drafts to check`),
+      list.map(d => {
+        const one = d.to.length === 1 && (store.threads || []).find(t => t.number === d.to[0])
+        return h('button.row.draft', {
+          type: 'button',
+          'aria-current': String(d.id === draftOpen),
+          'aria-label': `Draft to ${d.to.map(named).join(', ')}: ${d.body}`,
+          onclick: () => go('/new?draft=' + encodeURIComponent(d.id), { state: { fromList: true } })
+        },
+        d.to.length > 1 ? h('span.avatar.ghost', { 'aria-hidden': 'true' }, ic('users', 22, 1.9)) : avatar({ key: d.to[0], name: one ? one.name : '' }),
+        h('span.body',
+          h('span.top', h('span.name.trunc', d.to.map(named).join(', ')), h('span.when.num', listWhen(d.at))),
+          h('span.bottom', h('span.preview', h('span.draft-tag', 'Draft'), d.body))))
+      }))
   }
 
   function emptyNote() {
@@ -181,6 +209,7 @@ export function list() {
 
   on((event) => {
     if (event.type === 'threads' || event.type === 'state') draw()
+    if (event.type === 'drafts') drawDrafts()
   })
   addEventListener('resize', drawStrip)
   draw()
@@ -191,6 +220,12 @@ export function list() {
       selected = number
       for (const row of rows.querySelectorAll('.row')) row.setAttribute('aria-current', String(row.dataset.key === number))
       if (folder === 'unread') draw()
+    },
+    // The draft open beside the list, if any.
+    selectDraft(id) {
+      if (draftOpen === id) return
+      draftOpen = id
+      drawDrafts()
     },
     focusSearch() { search.focus(); search.select() },
     step(delta) {

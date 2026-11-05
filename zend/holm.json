@@ -1,6 +1,6 @@
 {
   "name": "zend",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "title": "Zend",
   "shortName": "Zend",
   "description": "Text from your own Android phone, in a browser or from your scripts.",
@@ -10,6 +10,11 @@
     "spa": true,
     "inject": {
       "analytics": true
+    }
+  },
+  "surfaces": {
+    "web": {
+      "renderer": "off"
     }
   },
   "publish": {

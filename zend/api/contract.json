@@ -1,0 +1,408 @@
+{
+  "operations": {
+    "chats.list": {
+      "handler": "chatsList",
+      "auth": "user",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "See your conversations",
+      "description": "Lists the person’s text conversations, newest first: each one’s number, the name they gave it, unread replies, and the last text with who sent it. Filter to unread ones, or search names, numbers and last texts. Also says how many drafts are waiting to be sent.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "unread": {
+            "type": "boolean",
+            "description": "Only conversations with replies not read yet."
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Part of a name, number or last text."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many (default 30)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        }
+      }
+    },
+    "messages.unread": {
+      "handler": "messagesUnread",
+      "auth": "user",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "Catch up on replies",
+      "description": "Returns the replies the person hasn’t read yet, conversation by conversation, oldest first in each. Reading them here doesn’t mark them read; chats_read does, once you’ve shown them.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "chats": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "How many conversations (default 10)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Most replies per conversation (default 10)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        }
+      }
+    },
+    "messages.list": {
+      "handler": "messagesList",
+      "auth": "user",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "Read a conversation",
+      "description": "Returns a conversation’s latest texts, oldest first: who sent each (you, or the other person), when, the text, and for texts the person sent whether they were delivered, failed or are scheduled. Pass before to read further back. Reading here doesn’t mark replies read.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "chat": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "description": "A phone number in any usual form (Indian numbers can leave out +91), or the name the person gave the conversation."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "How many texts (default 20)."
+          },
+          "before": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "The before value from an earlier answer, to read older texts."
+          }
+        },
+        "required": [
+          "chat"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
+    "chats.read": {
+      "handler": "chatsRead",
+      "auth": "user",
+      "risk": "write",
+      "sensitive": true,
+      "summary": "Mark as read",
+      "description": "Marks a conversation’s replies as read, clearing its unread count in Zend on every device. Use after showing the person what was unread, or when they ask.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "chat": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "description": "A phone number in any usual form (Indian numbers can leave out +91), or the name the person gave the conversation."
+          }
+        },
+        "required": [
+          "chat"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      },
+      "idempotency": "optional"
+    },
+    "chats.rename": {
+      "handler": "chatsRename",
+      "auth": "user",
+      "risk": "write",
+      "sensitive": true,
+      "summary": "Name a conversation",
+      "description": "Gives a number a name in Zend, shown instead of the number, or clears it with an empty name. Works for a number with no conversation yet, so a draft to it shows the name.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "chat": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "description": "A phone number in any usual form (Indian numbers can leave out +91), or the name the person gave the conversation."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "The name, such as Asha or Plumber. Empty clears it."
+          }
+        },
+        "required": [
+          "chat",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      },
+      "idempotency": "optional"
+    },
+    "phone.get": {
+      "handler": "phoneGet",
+      "auth": "user",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "See your phone",
+      "description": "Says which phone Zend texts through (a real Android phone or the demo phone), when it was last online, its SIMs, how many texts and people the person has texted in the last 24 hours, and Zend’s limits: per day, per minute, per text and for the same text again. Zend keeps a personal SIM looking personal, so texts past a limit are refused.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        }
+      }
+    },
+    "templates.list": {
+      "handler": "templatesList",
+      "auth": "user",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "See your templates",
+      "description": "Lists the person’s saved templates: texts they send often, with typed blanks such as a name or a number to fill in. Use one’s wording, with the blanks filled, when drafting a text they ask for.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        }
+      }
+    },
+    "drafts.create": {
+      "handler": "draftsCreate",
+      "auth": "user",
+      "risk": "write",
+      "sensitive": true,
+      "summary": "Draft a text",
+      "description": "Drafts a text for the person to send from Zend. Nothing is sent: Zend shows the draft at the top of Chats at once, and the person checks it and taps Send, which applies every limit and check. Give them the link it returns. Draft only what the person asked for, and show them the text when they haven’t given it word for word. Texts go out from their own SIM, so only personal texts: no marketing, one-time codes or bulk messages. Up to 10 people, 8 SMS long. A draft not sent within a day is dropped.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60,
+              "description": "A phone number in any usual form (Indian numbers can leave out +91), or the name the person gave the conversation."
+            },
+            "description": "Who it goes to: numbers in any usual form, or names of conversations."
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1600,
+            "description": "The text, word for word."
+          },
+          "sim": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Which SIM to send from, when the phone has two (see phone_get). Leave out for the usual one."
+          },
+          "send_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Send later: an ISO 8601 time with its offset, 5 minutes to 30 days ahead. The phone holds the text until then."
+          }
+        },
+        "required": [
+          "to",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      },
+      "idempotency": "optional"
+    },
+    "drafts.list": {
+      "handler": "draftsList",
+      "auth": "user",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "See waiting drafts",
+      "description": "Lists drafts waiting for the person to send from Zend, newest first, with who each goes to, its text, and when it will be dropped.",
+      "input": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        }
+      }
+    },
+    "drafts.discard": {
+      "handler": "draftsDiscard",
+      "auth": "user",
+      "risk": "write",
+      "sensitive": true,
+      "summary": "Discard a draft",
+      "description": "Discards a waiting draft, when the person changes their mind or wants a different one. A draft they already sent is gone already.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "draft": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "The draft’s id from drafts_create or drafts_list."
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        }
+      },
+      "idempotency": "optional"
+    }
+  }
+}

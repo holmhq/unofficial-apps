@@ -3,10 +3,10 @@
 // network fails or takes more than four seconds. Nothing under /api/, /auth/
 // or /hooks/ is ever cached: conversations stay on the server.
 
-const CACHE = 'zend-shell-v1'
+const CACHE = 'zend-shell-v2'
 const SHELL = [
   '/', '/src/styles.css', '/src/main.js', '/src/ui.js', '/src/icons.js', '/src/api.js', '/src/store.js',
-  '/src/sound.js', '/src/theme.js', '/src/sms.js', '/src/composer.js',
+  '/src/sound.js', '/src/theme.js', '/src/sms.js', '/src/composer.js', '/src/mcp.js',
   '/src/views/list.js', '/src/views/thread.js', '/src/views/compose.js', '/src/views/templates.js',
   '/src/views/developers.js', '/src/views/phone.js', '/src/views/welcome.js',
   '/assets/inter-latin.woff2', '/icon-192.png'

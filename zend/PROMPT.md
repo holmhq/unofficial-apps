@@ -37,6 +37,14 @@ runtime CDN; vendor the font and icons with their licences.
 - API keys for the member's own scripts: shown once, stored as a hash,
   optionally held to a few numbers, with the same limits and an
   Idempotency-Key for safe retries.
+- MCP tools as named operations in api/contract.json with auth "user", each
+  reaching only the caller's own data: conversations and unread replies,
+  reading one, marking it read, naming a number, the phone and today's
+  limits, templates, and drafts. Tools never send. A draft waits at the top
+  of Chats, live, until the person opens it, checks it and taps Send, or
+  discards it; drafts go after a day. Connect via MCP… in the account menu,
+  with the MCP mark, opens a sheet with the connector address to click and
+  copy, and tabs for Claude, ChatGPT, Claude Code and what the tools do.
 - An exquisite UI that feels like Apple's Messages or Telegram, on a phone
   and on a desktop: a tab bar on phones, a rail with the conversation list
   beside the open conversation on wide screens, frosted bars, large titles,
@@ -98,3 +106,9 @@ another app's account menu (Domains), and applied here:
 > Avoid the labels for light/dark/auto; its stupidly makes the memu wider
 
 > yes, fix ralk, zend and 3dsvg; then /close
+
+**Iteration 4** (0.3.0) added the MCP tools and Connect via MCP. The agent
+had offered to give Zend, Roll and Until tools, with Zend asking before it
+sends; the owner replied:
+
+> yes, do both batches

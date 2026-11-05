@@ -268,7 +268,14 @@ export function composer({ numbers, send, draftKey = null, placeholder = 'Text M
     el: form,
     focus: () => area.focus({ preventScroll: true }),
     refresh: update,
-    set: (text) => { area.value = text; grow(); update() },
+    // A draft also brings its SIM and time.
+    set: (text, { sim, scheduleAt } = {}) => {
+      area.value = text
+      if (sim !== undefined) st.sim = sim
+      if (scheduleAt !== undefined) st.scheduleAt = scheduleAt
+      grow()
+      update()
+    },
     onAllow: (fn) => form.addEventListener('allow', fn)
   }
 }

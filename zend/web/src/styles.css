@@ -120,7 +120,7 @@ a { color: var(--accent-text); text-decoration: none; }
 :focus { outline: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 button, .tab, .row, .item, .menu-item, .chip, .seg, header { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.selectable, .bubble .text, input, textarea, .code, .keybox { user-select: text; -webkit-user-select: text; }
+.selectable, .bubble .text, input, textarea, .code, .copy-value { user-select: text; -webkit-user-select: text; }
 [hidden] { display: none !important; }
 svg.i { flex: none; display: block; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -264,12 +264,18 @@ svg.i { flex: none; display: block; }
 .row .badge { flex: none; min-width: 22px; height: 22px; padding: 0 7px; margin-top: 10px; border-radius: 11px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 600; display: grid; place-items: center; animation: pop .45s var(--spring); }
 .row .badge.bad { background: var(--red); padding: 0; }
 .row .badge.still { animation: none; }
+/* Drafts made through the MCP tools wait above the conversations. */
+.drafts { border-bottom: .5px solid var(--line-2); }
+.drafts-label { padding: 12px 18px 0; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.row .preview .draft-tag { margin-right: 5px; color: var(--accent-text); font-weight: 600; }
 .row .tag { flex: none; margin-top: 11px; font-size: 12px; font-weight: 600; color: var(--ink-2); padding: 2px 7px; border-radius: 6px; background: var(--fill-2); }
 .row.unread .name { font-weight: 700; }
 .row.unread .preview { color: var(--ink); }
 @keyframes pop { from { transform: scale(0); } }
 @media (min-width: 760px) {
   .rows { padding: 4px 8px 16px; gap: 1px; }
+  .drafts { display: flex; flex-direction: column; gap: 1px; padding: 0 8px 6px; }
+  .drafts-label { padding-left: 10px; }
   .row { min-height: 72px; border-radius: 12px; padding: 8px 10px; }
   .row .avatar { width: 50px; height: 50px; font-size: 18px; }
   .row::after { display: none; }
@@ -277,6 +283,7 @@ svg.i { flex: none; display: block; }
   .row[aria-current="true"] .when, .row[aria-current="true"] .preview, .row[aria-current="true"] .preview .you, .row[aria-current="true"] .when .ticks, .row[aria-current="true"] .preview.bad { color: rgba(255, 255, 255, .86); }
   .row[aria-current="true"] .badge { background: #fff; color: var(--accent); }
   .row[aria-current="true"] .tag { background: rgba(255, 255, 255, .2); color: #fff; }
+  .row[aria-current="true"] .preview .draft-tag { color: #fff; }
   @media (hover: hover) { .row:hover:not([aria-current="true"]) { background: color-mix(in srgb, var(--ink) 5%, transparent); } }
 }
 .list-empty { padding: 48px 28px; text-align: center; color: var(--ink-2); font-size: 15px; line-height: 1.5; }
@@ -521,7 +528,6 @@ textarea.input { height: auto; min-height: 120px; padding: 12px 14px; line-heigh
 .code .k { color: var(--accent-text); }
 .code .s { color: color-mix(in srgb, var(--green) 70%, var(--ink)); }
 .code .c { color: var(--ink-3); }
-.keybox { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; border-radius: 12px; background: var(--fill-2); font: 15px/1.45 var(--mono); word-break: break-all; }
 .steps { margin: 0; padding: 4px 0; list-style: none; counter-reset: step; }
 .steps li { counter-increment: step; position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 2px 14px; padding: 12px 16px; }
 .steps li + li::before { content: ""; position: absolute; top: 0; left: 58px; right: 0; border-top: .5px solid var(--line-2); }
@@ -652,4 +658,65 @@ textarea.input { height: auto; min-height: 120px; padding: 12px 14px; line-heigh
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; transition-delay: 0s !important; }
+}
+
+/* ---- A draft opened to send ------------------------------------------------ */
+
+.draft-note { flex: none; display: flex; align-items: center; gap: 12px; margin: 8px 16px 4px; padding: 10px 10px 10px 12px; border-radius: 14px; background: var(--accent-soft); animation: rise .35s var(--ease) both; }
+.draft-note .glyph { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); }
+.draft-note b { display: block; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.draft-note small { display: block; font-size: 13px; line-height: 1.35; color: var(--ink-2); }
+.draft-note .btn.small { flex: none; background: var(--surface); color: var(--red-text); }
+
+/* ---- Click to copy ------------------------------------------------------------ */
+
+.copy-field { --cf-base: var(--fill-2); --cf-bg: var(--cf-base); display: flex; align-items: center; gap: 10px; min-width: 0; height: 46px; padding: 0 14px; border-radius: 12px; background: var(--cf-bg); box-shadow: inset 0 0 0 .5px var(--line-2); color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color .12s; }
+.sheet .copy-field { --cf-base: var(--surface); }
+:root.dark .sheet .copy-field { --cf-base: #2c2c2e; }
+.copy-field:active { --cf-bg: color-mix(in srgb, var(--ink) 8%, var(--cf-base)); }
+@media (hover: hover) { .copy-field:hover { --cf-bg: color-mix(in srgb, var(--ink) 5%, var(--cf-base)); } }
+.copy-value { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; white-space: nowrap; font: 12.5px/46px var(--mono); letter-spacing: 0; }
+.copy-value::-webkit-scrollbar { display: none; }
+.copy-field.is-long .copy-value { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.copy-cue { position: relative; flex: none; display: grid; color: var(--ink-3); transition: color .12s; }
+.copy-cue svg { grid-area: 1 / 1; transition: opacity .15s, transform .25s var(--spring); }
+.copy-cue .cf-tick { opacity: 0; transform: scale(.5); color: var(--green); }
+.copy-word { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); padding: 3px 7px 3px 26px; background: linear-gradient(to right, transparent, var(--cf-bg) 20px); color: var(--ink-2); font-size: 13px; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; }
+@media (hover: hover) { .copy-field:hover .copy-cue { color: var(--ink); } .copy-field:hover .copy-word { opacity: 1; } }
+.copy-field.is-copied .copy-word { opacity: 1; color: var(--green); }
+.copy-field.is-copied .cf-copy { opacity: 0; transform: scale(.5); }
+.copy-field.is-copied .cf-tick { opacity: 1; transform: none; }
+
+/* ---- Connect via MCP -------------------------------------------------------------- */
+
+.mcp { display: flex; flex-direction: column; gap: 12px; }
+.mcp-hero { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 0 4px; }
+.mcp-app { width: 60px; height: 60px; border-radius: 14px; box-shadow: var(--shadow-1); }
+.mcp-tile { width: 60px; height: 60px; border-radius: 14px; display: grid; place-items: center; background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 .5px var(--line-2); }
+:root.dark .sheet .mcp-tile { background: #2c2c2e; }
+.mcp-link { display: flex; gap: 6px; }
+.mcp-link i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); opacity: .45; animation: mcp-flow 2.4s ease-in-out infinite; }
+.mcp-link i:nth-child(2) { animation-delay: .12s; }
+.mcp-link i:nth-child(3) { animation-delay: .24s; }
+.mcp-link i:nth-child(4) { animation-delay: .36s; }
+.mcp-link i:nth-child(5) { animation-delay: .48s; }
+@keyframes mcp-flow { 0%, 36%, 100% { opacity: .45; transform: none; } 14% { opacity: 1; transform: scale(1.3); background: var(--accent); } }
+.mcp-label { margin: 2px 0 -5px 16px; font-size: 13px; font-weight: 500; letter-spacing: .01em; text-transform: uppercase; color: var(--ink-2); }
+.mcp-seg button { padding: 0 4px; }
+.mcp-panes { display: grid; grid-template-columns: minmax(0, 1fr); }
+.mcp-panes > * { grid-area: 1 / 1; align-self: start; }
+.mcp-panes > :not(.is-on) { visibility: hidden; }
+.mcp-panes > .is-on { animation: rise .3s var(--ease) both; }
+.mcp .item { padding: 10px 14px; }
+.mcp .group.icons .item { --inset: 56px; }
+.sq.step { background: var(--fill-2); color: var(--ink); font-size: 15px; font-weight: 650; }
+:root.dark .sheet .sq.step { background: #3a3a3c; }
+.mcp-code { display: flex; flex-direction: column; gap: 10px; }
+.mcp-note { margin: 0 16px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+.mcp-note code { font: 13px var(--mono); color: var(--ink); }
+
+/* The dots and panes stop by name: a global short duration on an endless animation flickers. */
+@media (prefers-reduced-motion: reduce) {
+  .mcp-link i { animation: none !important; opacity: .7; }
+  .mcp-panes > .is-on, .draft-note { animation: none !important; }
 }

@@ -1,7 +1,7 @@
 // API: keys for your own scripts, and how to use them. A key is shown once;
 // the server keeps only its hash.
 
-import { h, fill, ic, sheet, confirm, toast, collapsing, copyText, listWhen, segmented, nope } from '../ui.js'
+import { h, fill, ic, sheet, confirm, toast, collapsing, copyText, copyField, listWhen, segmented, nope } from '../ui.js'
 import { store, loadState } from '../store.js'
 import { normalizePhone, formatPhone } from '../sms.js'
 import { sound } from '../sound.js'
@@ -113,7 +113,7 @@ async function create(redraw) {
         h('span.sq.green', { style: { width: '52px', height: '52px', 'border-radius': '14px' } }, ic('key', 26, 2)),
         h('b', { style: { 'font-size': '19px', 'margin-top': '6px' } }, made.record.name),
         h('p.muted', { style: { margin: 0, 'font-size': '15px', 'line-height': '1.5' } }, 'Copy it now. This is the only time it’s shown; Zend keeps only a fingerprint of it.')),
-      h('div.keybox.selectable', h('span.grow', made.key), h('button.btn.small.primary', { type: 'button', onclick: () => copyText(made.key, 'Key copied') }, ic('copy', 15, 2.2), 'Copy'))
+      copyField(made.key, 'Copy the key')
     ]
   })
 }

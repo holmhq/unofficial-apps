@@ -6,7 +6,7 @@ import { h, fill, ic, wide, menu, toast, segmented, haptic, $ } from './ui.js'
 import { mark, HOLM } from './icons.js'
 import * as theme from './theme.js'
 import { sound } from './sound.js'
-import { store, on, loadMe, loadState, loadThreads, connect, unread } from './store.js'
+import { store, on, loadMe, loadState, loadThreads, loadDrafts, connect, unread } from './store.js'
 import { list } from './views/list.js'
 import { thread } from './views/thread.js'
 import { compose } from './views/compose.js'
@@ -14,6 +14,7 @@ import { templates } from './views/templates.js'
 import { developers } from './views/developers.js'
 import { phone } from './views/phone.js'
 import { welcome } from './views/welcome.js'
+import { mcpSheet } from './mcp.js'
 import * as api from './api.js'
 
 theme.apply()
@@ -37,7 +38,7 @@ function parse() {
   const query = new URLSearchParams(location.search)
   const t = /^\/t\/([^/]+)$/.exec(path)
   if (t) return { tab: 'chats', name: 'thread', number: decodeURIComponent(t[1]) }
-  if (path === '/new') return { tab: 'chats', name: 'compose', to: query.get('to') || '' }
+  if (path === '/new') return { tab: 'chats', name: 'compose', to: query.get('to') || '', draft: query.get('draft') || '' }
   if (path === '/templates') return { tab: 'templates', name: 'templates' }
   if (path === '/developers') return { tab: 'developers', name: 'developers' }
   if (path === '/phone') return { tab: 'phone', name: 'phone', demo: query.has('demo') }
@@ -105,6 +106,7 @@ function syncShell() {
   }
   drawBadges()
   shell.list.select(route.name === 'thread' ? route.number : null)
+  shell.list.selectDraft(route.name === 'compose' && route.draft ? route.draft : null)
 }
 
 function drawBadges() {
@@ -248,6 +250,7 @@ function accountMenu(anchor) {
     surfaces && surfaces.analytics ? { label: 'Analytics', icon: 'chart', onclick: () => { location.href = surfaces.analytics } } : null,
     feedback ? { label: 'Send feedback', icon: 'feedback', onclick: () => feedback.open() } : null,
     { label: 'Rules for texting', icon: 'shield', onclick: () => go('/phone#rules') },
+    { label: 'Connect via MCP…', icon: 'mcp', onclick: () => mcpSheet(anchor) },
     { label: 'Sign out', icon: 'logout', onclick: signOut }
   ])
 }
@@ -309,7 +312,7 @@ async function boot() {
   await loadMe()
   if (store.me.member) {
     try {
-      await Promise.all([loadState(), loadThreads()])
+      await Promise.all([loadState(), loadThreads(), loadDrafts()])
     } catch (error) {
       toast(error.message, { kind: 'bad' })
     }

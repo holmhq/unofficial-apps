@@ -1,6 +1,6 @@
 // What the page knows, and how it stays current. Views listen with on() and
 // redraw what they show: 'me', 'state', 'threads', 'thread' (a conversation
-// changed: { number }), 'templates'.
+// changed: { number }), 'templates', 'drafts'.
 
 import * as api from './api.js'
 
@@ -9,6 +9,7 @@ export const store = {
   state: null,     // { phone, vault, declaration, usage, limits, counts }
   threads: null,   // the conversation list
   templates: null,
+  drafts: null,    // texts drafted through the MCP tools, waiting for the person to send them
   open: new Map(), // conversations loaded in full, by number
   viewing: null    // the number of the conversation on screen
 }
@@ -64,6 +65,29 @@ export async function loadThread(number, before = null) {
   if (data.messages.some(m => m.dir === 'out' && OPEN.includes(m.state))) watch()
   return store.open.get(data.number)
 }
+
+// Drafts come and go from elsewhere (a tool makes one, another device sends
+// one), so the server says when they change, and the page asks again when
+// it comes back into view.
+export async function loadDrafts() {
+  try {
+    store.drafts = (await api.get('/api/drafts')).drafts
+  } catch {
+    return store.drafts
+  }
+  emit({ type: 'drafts' })
+  return store.drafts
+}
+
+export function dropDraft(id) {
+  if (!store.drafts || !store.drafts.some(d => d.id === id)) return
+  store.drafts = store.drafts.filter(d => d.id !== id)
+  emit({ type: 'drafts' })
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && store.me && store.me.member) loadDrafts()
+})
 
 export async function loadTemplates() {
   store.templates = (await api.get('/api/templates')).templates
@@ -204,9 +228,11 @@ export function connect(channel) {
         try { message = JSON.parse(line) } catch { continue }
         if (message.type === 'ping') socket.send(JSON.stringify({ type: 'pong' }))
         if (message.type === 'subscribed' && store.state && store.state.phone) loadThreads().catch(() => {})
+        if (message.type === 'subscribed') loadDrafts()
         if (message.type === 'message' && message.channel === channel) {
           const data = message.data || {}
           if (data.type === 'update') changes(data.numbers || [])
+          if (data.type === 'drafts') loadDrafts()
         }
       }
     })
