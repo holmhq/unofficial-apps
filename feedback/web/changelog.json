@@ -1,6 +1,14 @@
 {
   "releases": [
     {
+      "version": "0.19.1",
+      "date": "2026-11-05",
+      "title": "Link previews",
+      "changes": [
+        "A shared feedback link shows its picture on every site that unfurls links, not only on those that work out a short address."
+      ]
+    },
+    {
       "version": "0.19.0",
       "date": "2026-11-05",
       "title": "Feels like an app",

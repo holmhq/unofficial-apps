@@ -9,7 +9,7 @@
     "domains"
   ],
   "description": "Put a feedback button on your website with one script tag, or a QR code on your tables, counter or event badges. People send praise, problems and ideas from their phone, with a photo in one tap and a star rating if you ask for one.\n\nMake it yours: your logo, cover, colour and words on the form, a button that eases in and opens into a panel that springs up, light or dark to match your visitors. A live preview shows every change on a stand-in page, and your site picks it up with the same snippet.\n\nEverything arrives in one inbox per project, ready for hundreds of items: sort it, and filter it by status, time, kind, rating, site or any answer. Keep a thread of notes for your team, see where the button is live, and count how many people scanned, visited and sent something.",
-  "whatsNew": "feedback now feels like an app: the header and a small footer stay put while each page scrolls under them, the app opens at once, and your projects show straight away. ⌘K jumps to your projects, stats, keys or Connect via MCP. Links, the Holm-site command and new API keys copy with one click.",
+  "whatsNew": "feedback now feels like an app: the header and a small footer stay put while each page scrolls under them, the app opens at once, and your projects show straight away. ⌘K jumps to your projects, stats, keys or Connect via MCP. Links, the Holm-site command and new API keys copy with one click. A shared link now shows its picture everywhere.",
   "screenshots": [
     {
       "file": "widget.webp",

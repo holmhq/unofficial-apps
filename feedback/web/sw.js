@@ -16,7 +16,7 @@
 // page can't be answered with a redirected response, so those two are kept, and opened, at
 // their short addresses; a .html address goes to the network to be redirected.
 
-const VERSION = '0.19.0'
+const VERSION = '0.19.1'
 const CACHE = 'feedback-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/favicon.ico', '/apple-touch-icon.png', '/icon-192.png',
