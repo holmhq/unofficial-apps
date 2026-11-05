@@ -36,7 +36,12 @@ No build step or third-party runtime CDN; vendor the icons with their licence.
   after sign-in. Mind the runtime's per-request allocation budget: replay a
   long game without allocating every frame. Write a script that plays bot
   games and checks that they replay exactly.
-- Installable, with a network-first service worker, so it plays offline.
+- Installable. A versioned service worker precaches every page file, all or
+  nothing, and answers cache-first, so the game opens at once and plays
+  offline; its version follows holm.json, file addresses stay files and
+  Holm's /_ paths pass through. The avatar and the last leaderboard draw
+  from this browser at once; the board redraws only if the answer changed.
+  No entrance replays on a fresh page; the footer line never breaks.
 - For this repository's store, use holm.json version, holm.symbol.svg (one
   black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,
   category, description, whatsNew and sample screenshots. These are repo
@@ -65,3 +70,8 @@ Version 0.1.1 came from this follow-up, after Strata 0.1.1 had stopped its
 pieces gliding and the first Snake still slid smoothly into each cell:
 
 > Can we make the snake also quantised?
+
+Version 0.1.2 came from a sweep of every app in the repository against its
+cookbook (COOKBOOK.md), after the owner was offered one:
+
+> Sure do cookbook sweep
