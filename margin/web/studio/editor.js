@@ -692,9 +692,10 @@ export async function editorView(root, { me, id, go }) {
   const paintStatus = () => {
     const words = editor.storage.characterCount ? editor.storage.characterCount.words() : 0;
     countEl.textContent = words ? `${words.toLocaleString()} words · ${Math.max(1, Math.round(words / 230))} min` : '';
+    // On a phone the status says only the state, so the bar never runs off the screen.
     if (saving) statusEl.textContent = 'Saving…';
-    else if (dirty) statusEl.textContent = published() ? 'Unpublished changes' : 'Draft';
-    else if (post) statusEl.textContent = published() ? 'Published' : `Draft · Saved${lastSaved ? ' ' + ago(lastSaved).replace('just now', 'now') : ''}`;
+    else if (dirty) statusEl.innerHTML = published() ? '<span class="ed-full">Unpublished changes</span><span class="ed-brief">Changed</span>' : 'Draft';
+    else if (post) statusEl.innerHTML = published() ? 'Published' : `Draft<span class="ed-full"> · Saved${lastSaved ? ' ' + esc(ago(lastSaved).replace('just now', 'now')) : ''}</span>`;
     else statusEl.textContent = 'New draft';
     publishBtn.textContent = published() ? (dirty ? 'Update' : 'Published') : 'Publish';
     publishBtn.disabled = published() && !dirty && false;

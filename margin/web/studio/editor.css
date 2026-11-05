@@ -11,7 +11,8 @@
 .ed-as img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
 .ed-as span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ed-as .ic { width: 14px; height: 14px; color: var(--muted); }
-.ed-status { font-size: 13.5px; color: var(--muted); white-space: nowrap; }
+.ed-status { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13.5px; color: var(--muted); white-space: nowrap; }
+.ed-brief { display: none; }
 .ed-count { font-size: 13px; color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ed-grow { flex: 1; }
 .ed-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
@@ -141,6 +142,8 @@
   .ed-page { padding: 20px 20px 50vh; }
   .ed-count, .ed-back span { display: none; }
   .ed-status { font-size: 12.5px; }
+  .ed-top { gap: 6px; padding-right: 10px; }
+  .ed-as { max-width: 120px; }
   .ed-figure[data-width="wide"], .ed-figure[data-width="full"] { margin-left: -20px; margin-right: -20px; }
   .ed-figure[data-width] .ed-figure-media img { border-radius: 0; }
   .ed-prose { font-size: 18px; }
@@ -175,3 +178,4 @@
 .ed-math-help code { font: 12.5px var(--mono); background: var(--fill-2); padding: 1px 5px; border-radius: 5px; }
 .ed-math-actions { display: flex; gap: 8px; align-items: center; }
 .ed-math-actions .grow { flex: 1; }
+@media (max-width: 480px) { .ed-full { display: none; } .ed-brief { display: inline; } }

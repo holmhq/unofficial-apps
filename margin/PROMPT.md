@@ -85,7 +85,13 @@ script is in the folder.
   holm app identity), writers, posts and comments, loaded from Studio.
 - UI refined like Apple's apps: Inter, one accent, frosted bars, sheets on
   phones, a round avatar account button even when signed out, light, dark
-  and auto. For this repository's store, use holm.json version,
+  and auto. In Studio the avatar sits at the top right, the sidebar of
+  places hides, the footer carries A Holm app, Feedback and Source, every
+  dropdown is the app's own menu, and ⌘K finds places, posts and actions.
+  Studio opens at once: a service worker tied to the version keeps its
+  files (and leaves every reader page to the server), and the last answers
+  and account are kept in the browser, so a reload draws without waiting.
+  For this repository's store, use holm.json version,
   holm.symbol.svg and listing/listing.json with sample screenshots.
 
 Run holm app validate --spec-v1 margin. With my approval, deploy with
@@ -181,3 +187,11 @@ The tools were open only to the node's admins. Offered to give Kalendar, Deck,
 Margin and Ralk the repository's Connect via MCP sheet, the owner replied:
 
 > yes, do both batches
+
+**Margin 0.8.0: a Studio that opens at once**
+
+A sweep of every app in the repository against its cookbook gave Studio a
+service worker, answers kept across reloads, the avatar at the top right, a
+sidebar that hides, a footer, designed dropdowns and ⌘K. The owner's word was:
+
+> Sure do cookbook sweep

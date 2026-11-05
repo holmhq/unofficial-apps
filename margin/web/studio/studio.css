@@ -80,8 +80,9 @@ svg { flex: none; }
 .side {
   flex: none; width: 256px; height: 100%; background: var(--side); border-right: 1px solid var(--line);
   display: flex; flex-direction: column; padding: calc(14px + var(--sat)) 12px 14px;
-  user-select: none; -webkit-user-select: none;
+  user-select: none; -webkit-user-select: none; transition: margin-left .32s var(--ease), opacity .24s;
 }
+.app.is-side-hidden .side { margin-left: -256px; opacity: 0; pointer-events: none; }
 .side-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 14px; min-width: 0; }
 .side-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; flex: none; }
 .side-site { min-width: 0; display: flex; flex-direction: column; }
@@ -97,6 +98,31 @@ svg { flex: none; }
 .nav-item.on .ic { color: var(--accent); }
 .nav-count { margin-left: auto; min-width: 22px; height: 20px; padding: 0 7px; border-radius: 10px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
 .side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 2px; }
+.side-foot .credit { justify-content: flex-start; padding: 12px 8px 2px; column-gap: 7px; }
+
+/* The footer credit: Holm's mark, Feedback and Source, small and quiet. */
+.credit { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; margin: 0; font-size: 12px; font-weight: 500; color: var(--faint); }
+.credit a, .credit button { display: inline-flex; flex: none; white-space: nowrap; align-items: center; gap: 6px; border: 0; background: none; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.credit i { flex: none; width: 3px; height: 3px; border-radius: 50%; background: var(--line); }
+/* Under the page when there's no sidebar to hold it: on a phone, or with the sidebar hidden. */
+.phone-credit { display: none; }
+.app.is-side-hidden .phone-credit { display: block; padding: 0 16px 24px; }
+.app.is-side-hidden .panel > .page:has(+ .phone-credit) { padding-bottom: 40px; }
+.panel { display: flex; flex-direction: column; }
+.panel > * { flex: none; width: 100%; }
+.panel > .page { flex: 1 0 auto; }
+
+/* The round avatar at the top right. */
+.avatar-btn { flex: none; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; display: grid; place-items: center; }
+.avatar-btn img, .avatar-btn .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.avatar-empty { display: grid; place-items: center; color: var(--muted); background: var(--fill); }
+.avatar-empty .ic { width: 18px; height: 18px; }
+.side-btn { flex: none; width: 34px; height: 34px; margin-left: -6px; color: var(--muted); }
+.menu .menu-head { display: flex; align-items: center; gap: 10px; padding: 6px 8px 8px; min-width: 0; }
+.menu .menu-head img, .menu .menu-head .avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex: none; }
+.menu .menu-head > span { min-width: 0; display: flex; flex-direction: column; }
+.menu .menu-head b { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu .menu-head small { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .me-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; cursor: pointer; border: 0; background: transparent; text-align: left; width: 100%; position: relative; }
 .me-row img, .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--fill); flex: none; }
 .me-row span { min-width: 0; display: flex; flex-direction: column; }
@@ -152,6 +178,31 @@ svg { flex: none; }
 }
 .textarea { resize: vertical; min-height: 64px; line-height: 1.45; }
 .select { appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; }
+/* A select drawn as a designed dropdown (designSelect in lib.js): the choice and a chevron. */
+.select.pick { display: flex; align-items: center; gap: 8px; min-height: 26px; text-align: left; line-height: 1.4; }
+.select.pick.boxed { min-height: 38px; }
+.select.pick:disabled { cursor: default; color: var(--muted); }
+.select.pick:disabled .ic { display: none; }
+.select.pick .pick-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.select.pick .ic { width: 16px; height: 16px; color: var(--faint); }
+
+/* ⌘K: a place, a post or something to do. */
+.pal-layer { position: fixed; inset: 0; z-index: 130; display: flex; justify-content: center; align-items: flex-start; padding: min(14vh, 120px) 16px 16px; background: var(--scrim); animation: fade .16s ease both; }
+.pal-layer.out { opacity: 0; transition: opacity .15s; }
+.pal { width: min(560px, 100%); max-height: min(460px, 70svh); display: flex; flex-direction: column; border-radius: 16px; background: var(--raised); box-shadow: var(--shadow); overflow: hidden; animation: popm .2s var(--ease) both; }
+.pal-top { display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 54px; border-bottom: 1px solid var(--line); color: var(--faint); }
+.pal-field { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; font-size: 16px; color: var(--ink); }
+.pal-field::placeholder { color: var(--faint); }
+.pal-top kbd { flex: none; padding: 2px 6px; border-radius: 6px; background: var(--fill-2); font: 600 11px/1.4 var(--font); color: var(--muted); }
+.pal-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px; }
+.pal-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 42px; padding: 6px 10px; border: 0; border-radius: 9px; background: transparent; text-align: left; font-size: 14.5px; cursor: pointer; }
+.pal-item.is-on { background: var(--fill-2); }
+.pal-ic { flex: none; display: grid; place-items: center; width: 22px; color: var(--muted); }
+.pal-ic .ic { width: 18px; height: 18px; }
+.pal-ic .ws-logo { width: 18px !important; height: 18px !important; border-radius: 5px; font-size: 10px; }
+.pal-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pal-item small { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--faint); }
+.pal-none { padding: 18px 10px; text-align: center; font-size: 14px; color: var(--muted); }
 .input::placeholder, .textarea::placeholder { color: var(--faint); }
 .boxed { background: var(--fill-2); border-radius: 10px; padding: 9px 12px; }
 .switch { position: relative; width: 51px; height: 31px; flex: none; }
@@ -281,14 +332,18 @@ p, .row-sub, small { text-wrap: pretty; }
   .row.link:hover, .post-row:hover { background: var(--fill-2); }
   .btn:hover:not(:disabled) { filter: brightness(1.04); }
   .menu button:hover, .menu a:hover { background: var(--fill-2); }
-  .me-row:hover { background: var(--fill-2); }
+  .credit a:hover, .credit button:hover { color: var(--ink-2); }
   .icon-btn:hover { background: var(--fill-2); }
 }
 
 /* ---------- phones ---------- */
 @media (max-width: 860px) {
-  .side { display: none; }
+  .side, .side-btn { display: none; }
   .top { padding-left: 16px; padding-right: 12px; }
+  .panel > .page:has(+ .phone-credit) { padding-bottom: 28px; }
+  .phone-credit { display: block; padding: 8px 16px calc(80px + var(--sab)); }
+  .pal-layer { padding-top: calc(10px + var(--sat)); }
+  .pal-top kbd { display: none; }
   .page { padding: 4px 16px calc(96px + var(--sab)); }
   .page-title { font-size: 30px; margin-top: 6px; }
   .tabbar {
@@ -306,7 +361,7 @@ p, .row-sub, small { text-wrap: pretty; }
   .sheet { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 92vh; transform: none; border-radius: 16px 16px 0 0; animation: rise .38s var(--ease); padding-bottom: var(--sab); }
   @keyframes rise { from { transform: translateY(100%); } }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 
 /* ---------- copy field, Connect via MCP ---------- */
 .sheet:focus { outline: none; }

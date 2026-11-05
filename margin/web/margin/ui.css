@@ -236,8 +236,8 @@ mark.m-hl-draft { background: color-mix(in srgb, var(--m-accent) 24%, transparen
 .m-icon-button { width: 36px; height: 36px; border-radius: 50%; border: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--m-ink) 7%, transparent); color: var(--m-muted); cursor: pointer; flex: none; }
 .m-icon-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 .m-panel .m-seg { margin: 0; }
-.m-panel-quote { flex: none; margin: 4px 16px 6px; padding: 11px 14px; border-radius: 12px; background: var(--m-surface); display: flex; gap: 10px; font-size: 14.5px; line-height: 1.45; color: var(--m-muted); max-height: 7.5em; overflow: hidden; }
-.m-panel-quote::before { content: ''; flex: none; width: 3px; border-radius: 2px; background: var(--m-accent); }
+/* The passage a comment is about, tinted like a highlight in the post (no stripe at its edge). */
+.m-panel-quote { flex: none; margin: 4px 16px 6px; padding: 11px 14px; border-radius: 12px; background: var(--m-highlight); display: flex; gap: 10px; font-size: 14.5px; line-height: 1.45; color: var(--m-ink); max-height: 7.5em; overflow: hidden; }
 .m-panel-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px 18px; display: flex; flex-direction: column; gap: 6px; }
 .m-panel-empty { margin: auto; text-align: center; color: var(--m-muted); padding: 28px; font-size: 15px; }
 .m-panel-empty strong { display: block; color: var(--m-ink); font-size: 17px; margin-bottom: 4px; }

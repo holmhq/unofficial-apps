@@ -1,7 +1,7 @@
 // Margin Studio: a workspace's posts, comments, team and settings; your names and personas;
 // Claude; and, for Margin's admins, Margin itself. Starting out (/new) and invites
 // (/join/<code>) live here too.
-import { api, remembered, esc, h, $, $$, toast, ago, icons, sheet, menu, copy, copyField, upload, pickFile, setTheme, currentTheme, setWorkspace, currentWorkspace } from './lib.js';
+import { api, remembered, recall, forgetAll, designSelects, esc, h, $, $$, toast, ago, icons, sheet, menu, copy, copyField, upload, pickFile, setTheme, currentTheme, setWorkspace, currentWorkspace } from './lib.js';
 import { mcpSheet } from './mcp.js';
 import { makeZip, readZip } from './zip.js';
 
@@ -30,9 +30,48 @@ function ticket() { const mine = ++tickets; return () => mine === tickets; }
 const remember = (slug) => { try { if (slug) localStorage.setItem(LAST, slug); } catch { /* fine */ } };
 const recalled = () => { try { return localStorage.getItem(LAST); } catch { return null; } };
 
+// Who's here, for each workspace, kept in this browser so Studio draws at once on a reload.
+// The server's answer follows; if anything that shows has changed, the page draws again.
+const ME = 'margin.studio.me';
+const shown = (m) => JSON.stringify({ ...m, login_url: null, logout_url: null });
+function keptMe(slug) {
+  try { const m = JSON.parse(localStorage.getItem(ME) || '{}')[slug || ''] || null; return m && m.signed_in ? m : null; } catch { return null; }
+}
+function keepMe(slug, m) {
+  try {
+    const all = m.signed_in ? JSON.parse(localStorage.getItem(ME) || '{}') : {};
+    if (m.signed_in) all[slug || ''] = m;
+    localStorage.setItem(ME, JSON.stringify(all));
+  } catch { /* private mode */ }
+}
+// Holm writes the addresses of its own pages for this app, analytics among them, into the
+// page it serves to the people allowed to see them. The copy the service worker keeps may
+// predate sign-in, so an admin's browser reads them from a fresh copy (the worker lets a
+// no-store request through).
+let surfaces = globalThis.__HOLM_SURFACES__ || null;
+let surfacesAsked = false;
+function loadSurfaces(path) {
+  if (surfacesAsked) return;
+  surfacesAsked = true;
+  fetch(path, { cache: 'no-store' }).then((r) => r.text()).then((page) => {
+    const m = /__HOLM_SURFACES__\s*=\s*(\{[^}]*\})/.exec(page);
+    surfaces = m ? JSON.parse(m[1]) : null;
+  }).catch(() => { surfacesAsked = false; });
+}
 async function loadMe(slug) {
   setWorkspace(slug);
-  me = await api('/api/me?return=' + encodeURIComponent(location.pathname + location.search));
+  const ask = api('/api/me?return=' + encodeURIComponent(location.pathname + location.search)).then((m) => { keepMe(slug, m); if (m.admin) loadSurfaces('/studio'); return m; });
+  const kept = keptMe(slug);
+  if (kept) {
+    me = kept;
+    ask.then((fresh) => {
+      if (currentWorkspace() !== (slug || null)) return;
+      const changed = shown(fresh) !== shown(kept);
+      me = fresh;
+      if (me.workspace) remember(me.workspace.slug);
+      if (changed && !location.pathname.startsWith('/studio/write')) { delete root.dataset.shell; route(); }
+    }).catch(() => {});
+  } else me = await ask;
   if (me.workspace) remember(me.workspace.slug);
   return me;
 }
@@ -64,6 +103,7 @@ async function refreshCounts() {
 }
 
 async function route() {
+  palette?.close();
   $$('.menu').forEach((el) => (el._close ? el._close() : el.remove()));
   $$('.scrim, .sheet').forEach((el) => el.remove());
   const url = new URL(location.href);
@@ -197,7 +237,7 @@ function nameStep() {
   const input = $('#h', root);
   const hint = $('[data-hint]', root);
   input.addEventListener('input', () => { input.value = input.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); });
-  checkAs(input, hint, 'handle', { empty: 'Pick a handle.', free: (v) => `@${v} is free.` });
+  checkAs(input, hint, 'handle', { empty: 'Pick a handle.', free: (v) => `@${v} is available.` });
   if (input.value) input.dispatchEvent(new Event('input'));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -236,7 +276,7 @@ function workspaceStep(first) {
   const paint = () => { $('[data-addr]', root).textContent = `/${slug.value || 'yourteam'}/@${me.handle}`; };
   name.addEventListener('input', () => { if (!touched) { slug.value = slugOf(name.value); slug.dispatchEvent(new Event('input')); } });
   slug.addEventListener('input', (e) => { if (e.isTrusted) touched = true; slug.value = slug.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); paint(); });
-  checkAs(slug, hint, 'workspace', { empty: 'Lowercase letters, numbers and dashes.', free: (v) => `${location.host}/${v} is free.` });
+  checkAs(slug, hint, 'workspace', { empty: 'Lowercase letters, numbers and dashes.', free: (v) => `${location.host}/${v} is available.` });
   name.focus();
   $('form', root).addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -325,7 +365,7 @@ async function joinView(code) {
   const input = $('#h', root);
   if (input) {
     input.addEventListener('input', () => { input.value = input.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); });
-    checkAs(input, $('[data-hint]', root), 'handle', { empty: 'Pick a handle.', free: (v) => `@${v} is free.` });
+    checkAs(input, $('[data-hint]', root), 'handle', { empty: 'Pick a handle.', free: (v) => `@${v} is available.` });
   }
   $('form', root).addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -371,10 +411,10 @@ function shell(pane) {
         <nav class="nav">${nav.map((n) => (n.key === 'sep' ? '<div class="nav-sep"></div>' : `<a class="nav-item" href="${n.path}" data-nav data-key="${n.key}">${icons[n.icon]}<span>${esc(n.label)}</span>${n.count ? '<span class="nav-count" hidden></span>' : ''}${n.admin ? '<span class="chip nav-chip">Admin</span>' : ''}</a>`)).join('')}</nav>
         <div class="side-foot">
           ${w ? `<a class="nav-item" href="/${esc(w.slug)}" target="_blank" rel="noopener">${icons.external}<span>View ${esc(w.name)}</span></a>` : `<a class="nav-item" href="/" target="_blank" rel="noopener">${icons.external}<span>View Margin</span></a>`}
-          <button type="button" class="me-row" data-me>${me.picture ? `<img src="${esc(me.picture)}" alt="">` : '<span class="avatar"></span>'}<span><b>${esc(me.name || 'You')}</b><small>${esc(me.handle ? '@' + me.handle : '')}</small></span></button>
+          ${credit()}
         </div>
       </aside>
-      <div class="main"><header class="top"><h1></h1><div data-actions style="display:flex;gap:8px;align-items:center"></div></header><div class="panel"></div></div>
+      <div class="main"><header class="top"><button type="button" class="icon-btn side-btn" data-side aria-label="Hide sidebar" title="Hide sidebar">${icons.panelLeft}</button><h1></h1><div data-actions style="display:flex;gap:8px;align-items:center"></div><button type="button" class="avatar-btn" data-me aria-label="Account" aria-haspopup="menu">${me.picture ? `<img src="${esc(me.picture)}" alt="">` : `<span class="avatar avatar-empty">${icons.user}</span>`}</button></header><div class="panel"></div></div>
       <nav class="tabbar" aria-label="Studio">
         ${w ? `<a class="tab" href="/studio/${esc(w.slug)}" data-nav data-key="posts">${icons.posts}Posts</a>
         <a class="tab" href="/studio/${esc(w.slug)}/comments" data-nav data-key="comments">${icons.comments}Comments<span class="nav-count" hidden></span></a>
@@ -386,6 +426,9 @@ function shell(pane) {
     $('[data-me]', root).addEventListener('click', (e) => accountMenu(e.currentTarget));
     $('[data-more]', root).addEventListener('click', (e) => moreMenu(e.currentTarget));
     $('[data-switch]', root).addEventListener('click', (e) => switcher(e.currentTarget));
+    $('[data-side]', root).addEventListener('click', () => toggleSide());
+    wireCredit(root);
+    try { if (localStorage.getItem(SIDE) === 'hidden') $('.app', root).classList.add('is-side-hidden'); } catch { /* private mode */ }
     const panel = $('.panel', root);
     panel.addEventListener('scroll', () => $('.top', root).classList.toggle('lined', panel.scrollTop > 4), { passive: true });
     refreshCounts();
@@ -396,6 +439,10 @@ function shell(pane) {
   const view = views[pane];
   const panel = $('.panel', root);
   const top = $('.top', root);
+  // Each place keeps its scroll: leaving one remembers where it was, and coming back draws it
+  // at once from the last answer (remembered) and scrolls there again.
+  if (shownPane && shownPane !== `${key}:${pane}`) scrolls.set(shownPane, panel.scrollTop);
+  shownPane = `${key}:${pane}`;
   $('[data-actions]', top).innerHTML = '';
   panel.scrollTop = 0;
   top.classList.remove('lined');
@@ -406,6 +453,48 @@ function shell(pane) {
     return;
   }
   view(panel, top);
+  // On a phone the credit sits at the foot of each page, under what it shows.
+  panel.append(h(`<div class="phone-credit">${credit()}</div>`));
+  wireCredit(panel);
+  panel.scrollTop = scrolls.get(shownPane) || 0;
+  top.classList.toggle('lined', panel.scrollTop > 4);
+}
+const scrolls = new Map();
+let shownPane = null;
+
+// The sidebar holds places; it hides on a desk, and stays hidden until shown again.
+const SIDE = 'margin.studio.side';
+function toggleSide() {
+  const app = $('.app', root);
+  const hidden = !app.classList.contains('is-side-hidden');
+  app.classList.toggle('is-side-hidden', hidden);
+  const b = $('[data-side]', root);
+  b.setAttribute('aria-label', hidden ? 'Show sidebar' : 'Hide sidebar');
+  b.title = b.getAttribute('aria-label');
+  try { if (hidden) localStorage.setItem(SIDE, 'hidden'); else localStorage.removeItem(SIDE); } catch { /* private mode */ }
+}
+
+// The footer credit: Holm's mark, Feedback and Source. Feedback opens Margin's form on
+// feedback.zyt.app; its script (a copy in /vendor/feedback/) loads only when it's asked for.
+const SOURCE = 'https://github.com/holmhq/unofficial-apps/tree/main/margin';
+const HOLM = '<svg viewBox="0 0 32 32" width="11" height="11" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0ZM6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>';
+function credit() {
+  return `<p class="credit"><a href="https://holmhq.com" target="_blank" rel="noopener">${HOLM}<span>A Holm app</span></a><i></i><button type="button" data-feedback>Feedback</button><i></i><a href="${SOURCE}" target="_blank" rel="noopener">Source</a></p>`;
+}
+function wireCredit(scope) { for (const b of $$('[data-feedback]', scope)) b.addEventListener('click', feedback); }
+let feedbackScript = null;
+function feedback() {
+  if (!feedbackScript) {
+    feedbackScript = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/vendor/feedback/embed.js';
+      Object.assign(s.dataset, { project: 'arj5vnyf', origin: 'https://feedback.zyt.app', color: '#1a7f64', button: 'none' });
+      s.onload = () => (window.HolmFeedback ? resolve(window.HolmFeedback) : reject(new Error('Feedback is not available right now.')));
+      s.onerror = () => { feedbackScript = null; reject(new Error('Feedback is not available right now.')); };
+      document.head.append(s);
+    });
+  }
+  feedbackScript.then((f) => f.open()).catch((error) => toast(error.message));
 }
 
 function switcher(anchor) {
@@ -434,9 +523,8 @@ function setTop(top, title, actions = '') {
 }
 
 function accountMenu(anchor) {
-  const theme = currentTheme();
-  const analytics = globalThis.__HOLM_SURFACES__ && globalThis.__HOLM_SURFACES__.analytics;
-  const items = [];
+  const analytics = surfaces && typeof surfaces.analytics === 'string' ? surfaces.analytics : null;
+  const items = [{ custom: h(`<div class="menu-head">${me.picture ? `<img src="${esc(me.picture)}" alt="">` : `<span class="avatar avatar-empty">${icons.user}</span>`}<span><b>${esc(me.name || 'You')}</b><small>${esc(me.handle ? '@' + me.handle : '')}</small></span></div>`) }, '-'];
   if (me.handle) items.push({ label: 'Your page', icon: icons.user, href: `/@${me.handle}`, blank: true });
   if (me.admin && analytics) items.push({ label: 'Analytics', icon: icons.chart, href: analytics, blank: true });
   items.push({ label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp, anchor) });
@@ -462,6 +550,7 @@ function themeChoices() {
 
 async function signOut() {
   await fetch(me.logout_url, { method: 'POST', headers: { accept: 'application/json' } }).catch(() => {});
+  forgetAll();
   location.href = '/';
 }
 
@@ -906,7 +995,7 @@ function identitySheet(identity, done) {
   const ph = $('#ph', form);
   if (ph) {
     ph.addEventListener('input', () => { ph.value = ph.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); });
-    checkAs(ph, $('[data-hint]', form), 'handle', { empty: 'Pick a handle.', free: (v) => `@${v} is free.` });
+    checkAs(ph, $('[data-hint]', form), 'handle', { empty: 'Pick a handle.', free: (v) => `@${v} is available.` });
   }
   $('[data-delete]', form)?.addEventListener('click', async () => {
     if (!confirm(`Remove @${identity.handle}?`)) return;
@@ -1099,6 +1188,109 @@ async function uploadTheme(done) {
   $('[data-save]', box)?.addEventListener('click', async () => {
     try { await api('/api/themes', { method: 'POST', body: { files }, workspace: false }); s.close(); toast('Theme added'); done(); } catch (error) { toast(error.message); }
   });
+}
+
+// ---------- ⌘K ----------
+
+// A place, a post or something to do, by typing a few letters of it. ⌘K again, Escape or a
+// click outside closes it.
+let palette = null;
+function openPalette() {
+  if (palette) { palette.close(); return; }
+  if (!me || !me.signed_in || !$('.app', root)) return;
+  const w = me.workspace;
+  const opener = document.activeElement;
+  const input = h('<input class="pal-field" type="text" placeholder="Go to, find or do…" aria-label="Go to, find or do" autocomplete="off" spellcheck="false">');
+  const list = h('<div class="pal-list" role="listbox" aria-label="Results"></div>');
+  const box = h(`<div class="pal" role="dialog" aria-modal="true" aria-label="Command menu"><div class="pal-top">${icons.search}</div></div>`);
+  $('.pal-top', box).append(input, h('<kbd>esc</kbd>'));
+  box.append(list);
+  const layer = h('<div class="pal-layer"></div>');
+  layer.append(box);
+  layer.addEventListener('pointerdown', (e) => { if (e.target === layer) close(); });
+  document.body.append(layer);
+  input.focus();
+  const posts = (w && (recall(`/api/posts?scope=${postsFilter.scope}&status=${postsFilter.status}`) || recall('/api/posts?scope=mine&status=all'))?.posts) || [];
+  const commands = () => [
+    ...navItems().filter((n) => n.key !== 'sep').map((n) => ({ label: n.label, icon: icons[n.icon], hint: w && ['posts', 'comments', 'team', 'workspace'].includes(n.key) ? w.name : '', run: () => go(n.path) })),
+    ...posts.map((p) => ({ label: p.title, icon: icons.pen, hint: p.status === 'draft' ? 'Draft' : 'Post', post: true, run: () => go(`/studio/write/${p.id}`) })),
+    ...(w && w.writer ? [{ label: 'New post', icon: icons.plus, run: () => go(`/studio/write?ws=${w.slug}`) }] : []),
+    { label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp) },
+    ...(me.workspaces || []).filter((x) => !w || x.slug !== w.slug).map((x) => ({ label: x.name, icon: wsLogo(x, 18), hint: 'Workspace', run: () => go(`/studio/${x.slug}`) })),
+    { label: w ? `View ${w.name}` : 'View Margin', icon: icons.external, run: () => window.open(w ? `/${w.slug}` : '/', '_blank', 'noopener') },
+  ];
+  const score = (text, q) => {
+    const t = String(text).toLowerCase();
+    if (t.startsWith(q)) return 3;
+    if (t.includes(' ' + q)) return 2;
+    if (t.includes(q)) return 1;
+    let i = 0;
+    for (const ch of t) if (ch === q[i]) i++;
+    return i === q.length ? 0.5 : 0;
+  };
+  let at = 0;
+  let shown = [];
+  function draw() {
+    const q = input.value.trim().toLowerCase();
+    const all = commands();
+    // With nothing typed: places, the six latest posts, then the rest.
+    let left = 6;
+    shown = q ? all.map((c) => ({ ...c, s: score(c.label, q) })).filter((c) => c.s > 0).sort((a, b) => b.s - a.s).slice(0, 12) : all.filter((c) => !c.post || left-- > 0);
+    at = Math.min(at, Math.max(0, shown.length - 1));
+    list.replaceChildren(...(shown.length ? shown.map((c, n) => {
+      const b = h(`<button type="button" class="pal-item${n === at ? ' is-on' : ''}" role="option" aria-selected="${n === at}"><span class="pal-ic">${c.icon}</span><span class="pal-label"></span>${c.hint ? '<small></small>' : ''}</button>`);
+      $('.pal-label', b).textContent = c.label;
+      if (c.hint) $('small', b).textContent = c.hint;
+      b.addEventListener('pointermove', () => { if (at !== n) { at = n; mark(); } });
+      b.addEventListener('click', () => pick(c));
+      return b;
+    }) : [h('<div class="pal-none">Nothing matches</div>')]));
+  }
+  const mark = () => [...list.children].forEach((el, n) => { el.classList.toggle('is-on', n === at); el.setAttribute('aria-selected', String(n === at)); });
+  // Keep the chosen row in view by scrolling the list itself, never the page.
+  const reveal = () => {
+    const el = list.children[at];
+    if (!el) return;
+    if (el.offsetTop < list.scrollTop) list.scrollTop = el.offsetTop - 6;
+    else if (el.offsetTop + el.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = el.offsetTop + el.offsetHeight - list.clientHeight + 6;
+  };
+  function pick(c) { close(); setTimeout(() => c.run(), 0); }
+  function close() {
+    if (palette !== handle) return;
+    palette = null;
+    document.removeEventListener('keydown', onKey, true);
+    layer.classList.add('out');
+    setTimeout(() => layer.remove(), 160);
+    if (opener && opener.isConnected && opener !== document.body) opener.focus({ preventScroll: true });
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); at = Math.min(shown.length - 1, at + 1); mark(); reveal(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); at = Math.max(0, at - 1); mark(); reveal(); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (shown[at]) pick(shown[at]); }
+  }
+  document.addEventListener('keydown', onKey, true);
+  input.addEventListener('input', () => { at = 0; draw(); list.scrollTop = 0; });
+  draw();
+  const handle = { close };
+  palette = handle;
+}
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K')) {
+    if (!palette && ($('.sheet') || $('.menu'))) return;
+    if (!palette && !$('.app', root)) return;
+    e.preventDefault();
+    openPalette();
+  }
+});
+
+// Every select Studio draws becomes a designed dropdown, in pages and in sheets alike.
+new MutationObserver((records) => {
+  for (const r of records) for (const n of r.addedNodes) if (n.nodeType === 1 && (n.tagName === 'SELECT' || n.firstElementChild)) designSelects(n.parentNode || n);
+}).observe(document.body, { childList: true, subtree: true });
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname.endsWith('localhost'))) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
 start();

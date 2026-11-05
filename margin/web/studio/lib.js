@@ -16,7 +16,7 @@ export async function api(path, options = {}) {
   if (options.form) init.body = options.form;
   else if (options.body !== undefined) { init.headers['content-type'] = 'application/json'; init.body = JSON.stringify(options.body); }
   // Any change may show anywhere, so a write forgets every remembered answer.
-  if (init.method !== 'GET') memory.clear();
+  if (init.method !== 'GET') { memory.clear(); keep(); }
   let res;
   try { res = await fetch(path, init); } catch { throw Object.assign(new Error('You seem to be offline.'), { status: 0 }); }
   if (res.status === 413) throw Object.assign(new Error('That is too large for this server.'), { status: 413 });
@@ -28,8 +28,19 @@ export async function api(path, options = {}) {
 
 // Studio's views ask again every time they open, but paint the last answer at once and then
 // again only if the server has news. Each view passes alive(), so a late answer never paints
-// over a view that was left.
+// over a view that was left. The answers are kept in this browser too (the last 40), so a
+// reload draws at once; signing out forgets them.
+const KEPT = 'margin.studio.kept';
 const memory = new Map();
+try { for (const [key, text] of JSON.parse(localStorage.getItem(KEPT) || '[]')) memory.set(key, { data: JSON.parse(text), text }); } catch { /* nothing kept */ }
+let keepTimer = 0;
+function keep() {
+  clearTimeout(keepTimer);
+  keepTimer = setTimeout(() => {
+    const last = [...memory].slice(-40).map(([key, v]) => [key, v.text]);
+    try { localStorage.setItem(KEPT, JSON.stringify(last)); } catch { try { localStorage.removeItem(KEPT); } catch { /* private mode */ } }
+  }, 300);
+}
 export async function remembered(paths, paint, alive = () => true) {
   const many = Array.isArray(paths);
   const asks = (many ? paths : [paths]).map((p) => (typeof p === 'string' ? { path: p } : p));
@@ -44,11 +55,21 @@ export async function remembered(paths, paint, alive = () => true) {
   fresh.forEach((data, n) => {
     const text = JSON.stringify(data);
     if (!kept[n] || kept[n].text !== text) changed = true;
+    memory.delete(keys[n]);
     memory.set(keys[n], { data, text });
   });
+  keep();
   if (changed && alive()) paint(shape(fresh), false);
 }
-export function forget() { memory.clear(); }
+export function forget() { memory.clear(); keep(); }
+// The last answer kept for a path in this workspace, if any (for ⌘K's list of posts).
+export function recall(path) { const kept = memory.get(`${workspace || ''} ${path}`); return kept ? kept.data : null; }
+// Signing out leaves nothing of the account in this browser.
+export function forgetAll() {
+  memory.clear();
+  clearTimeout(keepTimer);
+  try { for (const key of Object.keys(localStorage)) if (key.startsWith('margin.studio.') && key !== 'margin.studio.side') localStorage.removeItem(key); } catch { /* private mode */ }
+}
 
 export function toast(text) {
   $('.toast')?.remove();
@@ -84,6 +105,8 @@ export const icons = {
   back: P('<path d="m15 18l-6-6l6-6"/>'),
   chev: P('<path d="m9 18l6-6l-6-6"/>'),
   updown: P('<path d="m7 15l5 5l5-5M7 9l5-5l5 5"/>'),
+  search: P('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'),
+  panelLeft: P('<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>'),
   user: P('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
   home: P('<path d="M4 21V9l8-6l8 6v12h-5v-6H9v6z"/>'),
   shield: P('<path d="M12 3L4 6v6c0 4.5 3.4 8.2 8 9c4.6-.8 8-4.5 8-9V6z"/>'),
@@ -122,7 +145,7 @@ export function sheet(title, content, options = {}) {
   document.addEventListener('keydown', onKey);
   document.body.append(scrim, box);
   // The first field, or the sheet itself, so focus is inside it without a ring on a button.
-  setTimeout(() => (box.querySelector('input, textarea, select') || box).focus({ preventScroll: true }), 80);
+  setTimeout(() => (box.querySelector('input:not([type=hidden]), textarea') || box).focus({ preventScroll: true }), 80);
   const handle = { body, close, box };
   return handle;
 }
@@ -137,6 +160,7 @@ export function menu(anchor, items) {
   el._anchor = anchor;
   for (const item of items) {
     if (item === '-') { el.append(h('<div class="sep" role="separator"></div>')); continue; }
+    if (item.custom) { el.append(item.custom); continue; }
     // A row of icon choices, such as the theme: each is named for screen readers and on hover.
     if (item.choices) {
       const row = h(`<div class="menu-choices" role="group" aria-label="${esc(item.label)}"></div>`);
@@ -193,6 +217,32 @@ export function menu(anchor, items) {
   window.addEventListener('resize', close);
   return el;
 }
+
+// Every select in Studio is drawn as a designed dropdown: a field that shows the choice, and
+// the app's own menu of choices with a tick. The select stays in the page, hidden, so code
+// that reads its value and listens for change works as before.
+export function designSelect(select) {
+  if (select._designed) return;
+  select._designed = true;
+  const button = h(`<button type="button" class="${esc(select.className)} pick" aria-haspopup="menu"><span class="pick-label"></span>${icons.updown}</button>`);
+  if (select.getAttribute('style')) button.setAttribute('style', select.getAttribute('style'));
+  const label = select.labels && select.labels[0];
+  button.setAttribute('aria-label', select.getAttribute('aria-label') || (label ? label.textContent : 'Choose'));
+  if (label) label.addEventListener('click', (e) => { e.preventDefault(); button.focus(); });
+  const show = () => {
+    const option = select.selectedOptions[0];
+    button.querySelector('.pick-label').textContent = option ? option.textContent : '';
+    button.disabled = select.disabled;
+  };
+  button.addEventListener('click', () => menu(button, [...select.options].map((o) => ({
+    label: o.textContent, checked: o.selected,
+    run: () => { if (select.value === o.value) return; select.value = o.value; show(); select.dispatchEvent(new Event('change', { bubbles: true })); },
+  }))));
+  select.hidden = true;
+  select.after(button);
+  show();
+}
+export function designSelects(root) { for (const select of root.querySelectorAll('select.select')) designSelect(select); }
 
 // Anything to copy (an address, a command, a link) is one button: the value on one line in
 // mono with a copy icon at its end. Pointing at it fades in Copy; a click turns the icon into

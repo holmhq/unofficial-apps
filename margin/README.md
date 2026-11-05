@@ -88,7 +88,10 @@ are not public URLs.
 - **Studio** at `/studio`, with a workspace switcher: posts, the comment
   inbox, the team and invites, the workspace's settings (home page, comments,
   cover style, theme, menu), your names and personas, and how to connect
-  Claude.
+  Claude. Like a native app: the avatar at the top right, a sidebar of places
+  that hides (or a tab bar on a phone), the Holm credit with Feedback and
+  Source at the foot, and ⌘K (Ctrl K) to jump to a place, a post or an
+  action.
 - **Margin's own settings** (the node's admins, in Studio → Margin): who can
   join (anyone; anyone to read and comment, with new workspaces by invitation;
   or invited people only), the front page, which workspaces it shows, the one
@@ -231,8 +234,13 @@ field and hook; Claude reads it through `themes_reference`, and
   from `--m-*` variables each theme sets.
 - **Studio and the editor.** Plain modules in `web/studio/`. Each view paints
   its last answer at once and again only if the server has news (`remembered`
-  in `lib.js`); any change clears that memory, and a settings form stops
-  repainting once you touch it. The editor uses
+  in `lib.js`); the last 40 answers and who you are stay in the browser, so a
+  reload draws without waiting, and signing out forgets them. Any change
+  clears that memory, and a settings form stops repainting once you touch it.
+  Every `<select>` is drawn as the app's own menu (`designSelect`).
+  `web/sw.js` keeps Studio's files at the version in `holm.json`, all or
+  nothing, and opens Studio's addresses from them; it leaves every reader page
+  and its files to the server. The editor uses
   [Tiptap](https://tiptap.dev) 3 with its Markdown extension, built into one
   file, `web/vendor/editor/tiptap.js`, from `tools/editor/` (`npm install &&
   npm run build`), plus Margin's own figure, embed and callout blocks that
@@ -259,6 +267,7 @@ api/vendor/               marked, mustache.js, highlight.js and KaTeX, with thei
 web/shell.html            where Holm's head tags come from
 web/llms.txt              Margin explained to agents
 web/studio.html, studio/  Studio, starting out, invites and the editor
+web/sw.js                 Studio's service worker
 web/upload.html           the upload link's page (web/margin/upload.js, upload.css)
 web/margin/               the reader script, live covers, the front page's styles
 web/themes/               the built-in themes' CSS and fonts
@@ -268,6 +277,7 @@ web/vendor/feedback/      the feedback form's embed script
 web/vendor/katex/         KaTeX for the editor, its stylesheet and fonts
 tools/editor/             how the bundle is built (not deployed)
 tools/maths-and-code/     how the KaTeX and highlight.js files are built (not deployed)
+tools/check.mjs           release check: the service worker and server cache follow holm.json (not deployed)
 tools/theme-check.mjs     checks a theme folder locally (not deployed)
 tools/sample-images.py    draws the sample avatars (not deployed)
 tools/cover-pngs.mjs      lists the sample covers to screenshot as PNGs (not deployed)
