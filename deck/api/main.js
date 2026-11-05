@@ -29,3 +29,7 @@ export async function opAssetsPut(input, env) { return (await ops()).opAssetsPut
 export async function opAssetsLink(input, env) { return (await ops()).opAssetsLink(input, env); }
 export async function opShareSet(input, env) { return (await ops()).opShareSet(input, env); }
 export async function opStudioShow(input, env) { return (await ops()).opStudioShow(input, env); }
+export async function opDecksDuplicate(input, env) { return (await ops()).opDecksDuplicate(input, env); }
+export async function opDecksDelete(input, env) { return (await ops()).opDecksDelete(input, env); }
+export async function opTeamGet(input, env) { return (await ops()).opTeamGet(input, env); }
+export async function opInvitesCreate(input, env) { return (await ops()).opInvitesCreate(input, env); }

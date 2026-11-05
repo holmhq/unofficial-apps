@@ -29,9 +29,14 @@ third-party runtime CDN; vendor Inter with its licence.
   format guide, list/create decks, read a deck with an outline and a check,
   save the whole deck or apply small slide edits, revisions and restore,
   pictures (SVG, small base64, or an upload link), a workspace's name and
-  logo from its library, share, the deck's stats, and point the person's open
-  deck at a slide with a message. Every save names the version
-  it was made from; a stale one gets 409.
+  logo from its library, copy and delete decks (delete says what would go
+  until called again with confirm), the team and invite links, share, the
+  deck's stats, and point the person's open deck at a slide with a message.
+  Every save names the version it was made from; a stale one gets 409.
+- Connect via MCP… in the account menu opens one sheet: the app's icon joined
+  to the MCP mark by five dots, the connector address to click and copy, and
+  tabs for Claude, ChatGPT, Claude Code and what the tools do. Anything to
+  copy is one click-to-copy field.
 - Live loop: each save pings the deck's secret realtime channel; the open
   studio reloads in place on the same slide and says what changed, or asks
   which version to keep if the person was typing.
@@ -91,3 +96,9 @@ and:
 > - no scroll bars only panels scroll
 > - add feedback.zyt.app to the app
 > - add some stats page so that stats on the deck can be read: opens, reads etc
+
+**Iteration 2** gave Deck the repository's Connect via MCP sheet in place of
+its Connect Claude page, four more tools and click-to-copy fields. The owner,
+asked whether Kalendar, Deck, Margin and Ralk should get the sheet, answered:
+
+> yes, do both batches

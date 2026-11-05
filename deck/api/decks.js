@@ -83,7 +83,8 @@ export function createDeck(env, ctx, wid, input, by) {
   const content = shape(input.content || starter(title || 'Untitled deck'));
   if (title) content.title = title;
   const result = checkFor(env, wid, content);
-  if (by === 'claude' && !result.ok) reject(422, 'invalid_deck', `This deck has ${result.errors.length} error(s). ${result.errors.slice(0, 6).join(' ')}`, { errors: result.errors, warnings: result.warnings });
+  // A copy keeps what its source had, so it isn't held to Claude's check.
+  if (by === 'claude' && !input.copy && !result.ok) reject(422, 'invalid_deck', `This deck has ${result.errors.length} error(s). ${result.errors.slice(0, 6).join(' ')}`, { errors: result.errors, warnings: result.warnings });
   const now = Date.now();
   const who = { name: ctx.member.name || '', by };
   const doc = {
@@ -245,12 +246,12 @@ export function restoreRevision(env, ctx, did, n, by) {
   return commit(env, ctx, deck, ws, content, { message: `Restored revision ${rev.n}`, by, check: checkFor(env, deck.wid, content), seal: true });
 }
 
-export function duplicateDeck(env, ctx, did) {
+export function duplicateDeck(env, ctx, did, by = 'person') {
   const { deck } = deckAccess(env, ctx, did, 'editor');
   const head = revisionOf(env, deck.did, deck.head);
   const content = JSON.parse(JSON.stringify(head.content));
   content.title = `${content.title || 'Untitled deck'} (copy)`.slice(0, 120);
-  return createDeck(env, ctx, deck.wid, { content, message: `Copied from “${deck.title}”` }, 'person');
+  return createDeck(env, ctx, deck.wid, { content, message: `Copied from “${deck.title}”`, copy: true }, by);
 }
 
 export function deleteDeck(env, ctx, did) {

@@ -1,9 +1,9 @@
-// Deck's web app: the landing page, a workspace's decks, library, team and Claude page,
+// Deck's web app: the landing page, a workspace's decks, library and team, Connect via MCP,
 // invites and the first workspace. The studio (studio.js) loads when a deck opens.
-import { api, esc, $, $$, html, toast, ago, kb, icons, MARK, sheet, menu, copy, confirmSheet, currentTheme, setTheme, applyTheme, uploadTo, pickFiles, avatar, wsLogo } from './lib.js?v=0.2.0';
-import { thumb } from '/deck/render.js?v=0.2.0';
-import { LAYOUTS } from './schema.js?v=0.2.0';
-import { subscribe } from './live.js?v=0.2.0';
+import { api, esc, $, $$, html, toast, ago, kb, icons, MARK, MCP_MARK, sheet, menu, copy, copyField, confirmSheet, currentTheme, setTheme, applyTheme, uploadTo, pickFiles, avatar, wsLogo } from './lib.js?v=0.3.0';
+import { thumb } from '/deck/render.js?v=0.3.0';
+import { LAYOUTS } from './schema.js?v=0.3.0';
+import { subscribe } from './live.js?v=0.3.0';
 
 const root = document.getElementById('app');
 let me = null;
@@ -50,13 +50,15 @@ async function route() {
   }
   if ((m = /^\/w\/([a-z0-9]{10})(?:\/(library|team|claude))?$/.exec(path))) {
     if (!me.signed_in) return signIn();
+    // The old Connect Claude page is now a sheet over the workspace's decks.
+    if (m[2] === 'claude') { history.replaceState(null, '', `/w/${m[1]}`); await workspacePage(m[1], 'decks'); return mcpSheet(); }
     return workspacePage(m[1], m[2] || 'decks');
   }
   if ((m = /^\/d\/([a-z0-9]{12})$/.exec(path))) {
     if (!me.signed_in) return signIn();
     document.title = 'Deck';
     root.innerHTML = '<div class="boot"><div class="spinner"></div></div>';
-    const studio = await import('./studio.js?v=0.2.0');
+    const studio = await import('./studio.js?v=0.3.0');
     return studio.open(root, m[1], { me, go, onLeave, accountButton, rememberWorkspace });
   }
   if ((m = /^\/join\/([a-z0-9]{10,40})$/.exec(path))) return joinPage(m[1]);
@@ -83,7 +85,9 @@ export function accountButton() {
     const analytics = globalThis.__HOLM_SURFACES__ && globalThis.__HOLM_SURFACES__.analytics;
     const head = html(`<div class="menu-head">${avatar(me, 34)}<span style="min-width:0"><b>${esc(me.name || 'You')}</b><small>${esc(me.email || '')}</small></span></div>`);
     const items = [];
-    for (const [t, label, icon] of [['light', 'Light', icons.sun], ['dark', 'Dark', icons.moon], ['system', 'Match device', icons.monitor]]) items.push({ label, icon, checked: theme === t, run: () => setTheme(t) });
+    // The theme switch: three icons, never the words, so the menu stays narrow.
+    items.push({ label: 'Appearance', choices: [['light', 'Light', icons.sun], ['dark', 'Dark', icons.moon], ['system', 'Match device', icons.monitor]].map(([t, label, icon]) => ({ label, icon, checked: theme === t, run: () => setTheme(t) })) });
+    items.push('-', { label: 'Connect via MCP…', icon: MCP_MARK, run: () => mcpSheet(b) });
     if (me.admin && analytics) items.push('-', { label: 'Analytics', icon: icons.chart, href: analytics, blank: true });
     items.push('-', { label: 'Sign out', icon: icons.out, run: signOut });
     menu(b, items, { header: head });
@@ -145,9 +149,10 @@ function topBar({ ws, tab } = {}) {
       <a href="/w/${ws.id}/library" data-nav data-tab="library">Library</a>
       <a href="/w/${ws.id}/team" data-nav data-tab="team">Team</a>
     </nav>` : ''}
-    <div class="bar-end">${ws ? `<a class="btn ghost claude-btn" href="/w/${ws.id}/claude" data-nav>${icons.claude}<span>Connect Claude</span></a>` : ''}</div>
+    <div class="bar-end">${ws ? `<button type="button" class="btn ghost claude-btn">${icons.claude}<span>Connect Claude</span></button>` : ''}</div>
   </div></header>`);
   $('.bar-end', bar).append(accountButton());
+  $('.claude-btn', bar)?.addEventListener('click', (e) => mcpSheet(e.currentTarget));
   if (ws) {
     $(`[data-tab="${tab}"]`, bar)?.classList.add('on');
     $('.ws-switch', bar).addEventListener('click', (e) => switcher(e.currentTarget, ws));
@@ -160,9 +165,10 @@ function tabBar(ws, tab) {
     <a href="/w/${ws.id}" data-nav data-tab="decks">${icons.decks}Decks</a>
     <a href="/w/${ws.id}/library" data-nav data-tab="library">${icons.image}Library</a>
     <a href="/w/${ws.id}/team" data-nav data-tab="team">${icons.team}Team</a>
-    <a href="/w/${ws.id}/claude" data-nav data-tab="claude">${icons.claude}Claude</a>
+    <button type="button" data-mcp>${icons.claude}Claude</button>
   </nav>`);
   $(`[data-tab="${tab}"]`, el)?.classList.add('on');
+  $('[data-mcp]', el).addEventListener('click', (e) => mcpSheet(e.currentTarget));
   return el;
 }
 
@@ -225,7 +231,7 @@ async function workspacePage(wid, tab) {
   rememberWorkspace(wid);
   const page = html('<main class="page"></main>');
   mount(topBar({ ws, tab }), page, tabBar(ws, tab));
-  const views = { decks: decksView, library: libraryView, team: teamView, claude: claudeView };
+  const views = { decks: decksView, library: libraryView, team: teamView };
   views[tab](page, ws);
 }
 
@@ -239,8 +245,9 @@ async function decksView(page, ws) {
     const decks = data.decks;
     $('.count', page).textContent = decks.length ? `${decks.length} deck${decks.length === 1 ? '' : 's'} in ${ws.name}` : ws.name;
     if (!decks.length) {
-      box.replaceChildren(html(`<div class="empty"><div class="art">${markTile(54)}</div><h2>No decks yet</h2><p>Start one here, or connect Claude and ask it for a deck about anything you’re working on.</p><div class="row-actions"><button class="btn primary" data-new>${icons.plus}New deck</button><button class="btn" data-sample>Add the sample deck</button><a class="btn" href="/w/${ws.id}/claude" data-nav>${icons.claude}Connect Claude</a></div></div>`));
+      box.replaceChildren(html(`<div class="empty"><div class="art">${markTile(54)}</div><h2>No decks yet</h2><p>Start one here, or connect Claude and ask it for a deck about anything you’re working on.</p><div class="row-actions"><button class="btn primary" data-new>${icons.plus}New deck</button><button class="btn" data-sample>Add the sample deck</button><button class="btn" data-mcp>${icons.claude}Connect Claude</button></div></div>`));
       $('.empty [data-new]', page).addEventListener('click', () => newDeck(ws));
+      $('.empty [data-mcp]', page).addEventListener('click', (e) => mcpSheet(e.currentTarget));
       $('.empty [data-sample]', page).addEventListener('click', () => newDeck(ws, 'sample'));
       return;
     }
@@ -392,8 +399,8 @@ export function dropZone(send) {
 export async function phoneLink(ws) {
   try {
     const link = await api(`/api/w/${ws.id}/media/link`, { method: 'POST', body: {} });
-    const box = html(`<div><p style="color:var(--text-2)">Open this link on your phone to add up to ${link.files} pictures to ${esc(ws.name)}’s library. It works for an hour.</p><div class="copy-row" style="margin-top:14px"><input class="input mono" readonly value="${esc(link.url)}"><button class="btn" data-copy>${icons.copy}Copy</button></div></div>`);
-    $('[data-copy]', box).addEventListener('click', () => copy(link.url, 'Link copied'));
+    const box = html(`<div class="sheet-stack"><p style="color:var(--text-2)">Open this link on your phone to add up to ${link.files} pictures to ${esc(ws.name)}’s library. It works for an hour.</p></div>`);
+    box.append(copyField(link.url));
     sheet('Add pictures from your phone', box, { focus: false });
   } catch (error) { toast(error.message); }
 }
@@ -475,44 +482,58 @@ function inviteSheet(ws, done) {
     const email = box.email.value.trim();
     try {
       const inv = await api(`/api/w/${ws.id}/invites`, { method: 'POST', body: { role, email: email || undefined, send_email: !!(email && box.send.checked) } });
-      const out = html(`<div><p style="color:var(--text-2)">Send this link to ${esc(email || 'the person you’re inviting')}. It works once, for 14 days.</p><div class="copy-row" style="margin-top:14px"><input class="input mono" readonly value="${esc(inv.link)}"><button class="btn primary" data-copy>${icons.copy}Copy</button></div>${inv.emailed ? `<p class="hint" style="margin-top:10px">${inv.emailed.ok ? 'Emailed as well.' : `The email didn’t go out (${esc(inv.emailed.message || inv.emailed.code || 'email is off on this server')}); send the link yourself.`}</p>` : ''}</div>`);
-      $('[data-copy]', out).addEventListener('click', () => copy(inv.link, 'Invite link copied'));
+      const out = html(`<div class="sheet-stack"><p style="color:var(--text-2)">Send this link to ${esc(email || 'the person you’re inviting')}. It works once, for 14 days.</p><span data-field></span>${inv.emailed ? `<p class="hint">${inv.emailed.ok ? 'Emailed as well.' : `The email didn’t go out (${esc(inv.emailed.message || inv.emailed.code || 'email is off on this server')}); send the link yourself.`}</p>` : ''}</div>`);
+      $('[data-field]', out).replaceWith(copyField(inv.link));
       s.body.replaceChildren(out);
       done();
     } catch (error) { toast(error.message); }
   });
 }
 
-function claudeView(page, ws) {
-  document.title = `Connect Claude — ${ws.name}`;
-  const url = `${location.origin}/_holm/mcp`;
-  const prompts = [
-    `Make a 7-slide deck in Deck's ${ws.name} workspace about our Q4 plan: the problem, three bets, how it works, the numbers, and the ask.`,
-    'Open my latest deck in Deck, read it, and tighten every slide title so it states the point, not the topic.',
-    'Add a numbers slide before the ask with our three key figures, each with a source, then show me it.',
-    'Write speaker notes for every slide in my deck, in my voice, about 40 seconds each.',
-    'Share the deck by link so it follows my latest changes, and give me the link and the embed code.',
-  ];
-  page.innerHTML = `<div class="page-head"><div><h1>Connect Claude</h1><p>Once connected, Claude can read and write ${esc(ws.name)}’s decks and library as you. Changes show in your open deck as they happen.</p></div></div>
-    <div class="claude-grid">
-      <div class="panel-card"><h2>${icons.claude}Add Deck to Claude</h2>
-        <ol class="steps-list">
-          <li><span>In Claude, open <b>Settings → Connectors</b> and choose <b>Add custom connector</b>.</span></li>
-          <li><div style="min-width:0"><span>Name it <b>Deck</b> and paste this address:</span><div class="copy-row" style="margin-top:8px"><input class="input mono" readonly value="${esc(url)}"><button class="btn" data-copy>${icons.copy}Copy</button></div></div></li>
-          <li><span>Choose <b>Connect</b>, sign in with the account you use here, and allow access.</span></li>
-          <li><span>In a chat, turn Deck on from the tools menu and ask for a deck.</span></li>
-        </ol>
-        <p class="hint" style="margin-top:16px">Claude Code: <code class="inline">claude mcp add --transport http deck ${esc(url)}</code></p>
-      </div>
-      <div class="panel-card"><h2>Try asking</h2><div class="group" style="box-shadow:none;background:transparent" data-prompts></div></div>
-    </div>`;
-  $('[data-copy]', page).addEventListener('click', () => copy(url, 'Address copied'));
-  const list = $('[data-prompts]', page);
-  for (const p of prompts) {
-    const row = html(`<div class="prompt-card"><p>${esc(p)}</p><button class="icon-btn" aria-label="Copy">${icons.copy}</button></div>`);
-    $('button', row).addEventListener('click', () => copy(p, 'Copied'));
-    list.append(row);
-  }
+// ---------- Connect via MCP ----------
+
+// One sheet: Deck's icon joined to the MCP mark, the connector address to copy, and how to add
+// it to Claude, ChatGPT or Claude Code, or what its tools do. The address comes from /api/me,
+// so every host shows its own. Closing it puts focus back where it was opened from, or on the
+// avatar when that was the account menu.
+const MCP_TABS = [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['code', 'Claude Code'], ['tools', 'Tools']];
+
+export function mcpSheet(opener) {
+  const address = me.mcp || `${location.origin}/_holm/mcp`;
+  const command = `claude mcp add --transport http deck ${address}`;
+  const row = (lead, title, text) => `<div class="mcp-row">${lead}<div class="mcp-t"><b>${title}</b><small>${text}</small></div></div>`;
+  const step = (n, title, text) => row(`<span class="mcp-ic num">${n}</span>`, title, text);
+  const can = (icon, title, text) => row(`<span class="mcp-ic">${icon}</span>`, title, text);
+  const panes = {
+    claude: `<div class="group">${step(1, 'Open Settings, then Connectors', 'On claude.ai or in the Claude app.')}${step(2, 'Add a custom connector', 'Name it Deck and paste the address.')}${step(3, 'Connect and sign in', 'Allow access once. Claude sees only your workspaces.')}</div>`,
+    chatgpt: `<div class="group">${step(1, 'Turn on Developer mode', 'In Settings, under Apps, then Advanced. On the web, on paid plans.')}${step(2, 'Create a connector', 'Name it Deck, paste the address and choose OAuth.')}${step(3, 'Connect and sign in', 'Then pick Deck from + in a chat.')}</div>`,
+    code: '<div class="sheet-stack" data-code><p class="mcp-note">Run it in a terminal, then type <code class="inline">/mcp</code> in Claude Code and sign in.</p></div>',
+    tools: `<div class="group">${can(icons.decks, 'Make and edit decks', 'Write a deck, or change a few slides.')}${can(icons.history, 'Read and go back', 'Any deck, its notes and earlier versions.')}${can(icons.image, 'Add pictures', 'Drawings, or a link to send from a phone.')}${can(icons.share, 'Share and invite', 'Share by link, and invite your team.')}</div>`,
+  };
+  const box = html(`<div class="sheet-stack mcp">
+    <div class="mcp-hero" aria-hidden="true"><img class="mcp-app" src="/icon-192.png" alt="" width="60" height="60"><span class="mcp-link"><i></i><i></i><i></i><i></i><i></i></span><span class="mcp-tile">${MCP_MARK}</span></div>
+    <div class="mcp-label">Connector address</div>
+    <span data-address></span>
+    <div class="seg mcp-seg" role="group" aria-label="Where to connect">${MCP_TABS.map(([k, l]) => `<button type="button" data-tab="${k}">${l}</button>`).join('')}</div>
+    <div class="mcp-panes">${MCP_TABS.map(([k]) => `<div data-pane="${k}">${panes[k]}</div>`).join('')}</div>
+  </div>`);
+  $('[data-address]', box).replaceWith(copyField(address));
+  $('[data-code]', box).prepend(copyField(command));
+  const show = (tab) => {
+    $$('[data-tab]', box).forEach((b) => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-pressed', String(b.dataset.tab === tab)); });
+    $$('[data-pane]', box).forEach((p) => { p.classList.toggle('is-on', p.dataset.pane === tab); p.inert = p.dataset.pane !== tab; });
+  };
+  $$('[data-tab]', box).forEach((b) => b.addEventListener('click', () => show(b.dataset.tab)));
+  show('claude');
+  const s = sheet('Connect via MCP', box, {
+    focus: false,
+    onClose: () => { const back = opener && opener.isConnected && !opener.closest('.menu') ? opener : $('.avatar-btn'); back?.focus({ preventScroll: true }); },
+  });
+  s.box.classList.add('mcp-box');
+  // Focus the sheet itself, so nothing inside it shows a focus ring until someone tabs.
+  s.box.tabIndex = -1;
+  s.box.focus({ preventScroll: true });
+  return s;
 }
 
 // ---------- first workspace, invites ----------

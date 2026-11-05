@@ -3,10 +3,10 @@
 // membership of the workspace it touches, so a stranger's Claude sees nothing.
 import { reject, int } from './lib/util.js';
 import { context, requireMember } from './people.js';
-import { access, myWorkspaces, createWorkspace, updateWorkspace, wsDTO } from './workspaces.js';
+import { access, myWorkspaces, createWorkspace, updateWorkspace, wsDTO, teamList, createInvite } from './workspaces.js';
 import {
   listDecks, createDeck, getDeck, saveDeck, editSlides, checkDeck, listRevisions, restoreRevision,
-  setShare, showStudio, summary, deckAccess,
+  setShare, showStudio, summary, deckAccess, duplicateDeck, deleteDeck,
 } from './decks.js';
 import { listMedia, storeMedia, createUploadLink, inLibrary } from './media.js';
 import { deckStats } from './stats.js';
@@ -165,3 +165,44 @@ export function opStudioShow(input, env) {
   return op(env, (ctx) => showStudio(env, ctx, input.deck, input));
 }
 
+
+export function opDecksDuplicate(input, env) {
+  return op(env, (ctx) => {
+    const made = duplicateDeck(env, ctx, input.deck, 'claude');
+    return { ...made, deck: linked(env, made.deck) };
+  });
+}
+
+// Deleting takes a deck from everyone on its workspace, so the first call only says what
+// would go; the deck goes when the call comes again with confirm: true.
+export function opDecksDelete(input, env) {
+  return op(env, (ctx) => {
+    const { deck, ws } = deckAccess(env, ctx, input.deck, 'editor');
+    if (input.confirm !== true) {
+      return {
+        deleted: false, deck: deck.did, title: deck.title, workspace: ws.name, revisions: deck.head, shared: !!deck.sid,
+        note: `Deleting “${deck.title}” removes it and its history for everyone on ${ws.name}${deck.sid ? ', and its share link stops working' : ''}. It can’t be undone. Ask the person, then call again with confirm true.`,
+      };
+    }
+    deleteDeck(env, ctx, deck.did);
+    return { deleted: true, title: deck.title, workspace: ws.name };
+  });
+}
+
+export function opTeamGet(input, env) {
+  return op(env, (ctx) => {
+    const team = teamList(env, ctx, input.workspace);
+    return { ...team, members: team.members.map(({ picture, ...m }) => m) };
+  });
+}
+
+// An invite link for one address or for anyone who has it (owners and admins). The link
+// goes to the person to send on, unless they asked Deck to email it.
+export async function opInvitesCreate(input, env) {
+  return opAsync(env, async (ctx) => {
+    if (!origin(env)) reject(409, 'conflict', 'Open Deck once in a browser first, so the invite can link to it.');
+    if (input.send_email && !input.email) reject(400, 'invalid_input', 'Give the email address to send the invite to.');
+    const invite = await createInvite(env, ctx, input.workspace, input, origin(env));
+    return { ...invite, emailed: invite.emailed || undefined };
+  });
+}

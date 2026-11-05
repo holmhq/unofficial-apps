@@ -175,8 +175,6 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .input.mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12.5px; }
 .check { display: flex; align-items: center; gap: 9px; font-size: 13.5px; cursor: pointer; }
 .check input { width: 16px; height: 16px; accent-color: var(--accent); }
-.copy-row { display: flex; gap: 8px; }
-.copy-row .input { flex: 1; min-width: 0; }
 .seg { display: inline-flex; padding: 3px; border-radius: 9px; background: var(--hover); gap: 2px; }
 .seg button { height: 28px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; font-size: 13px; font-weight: 520; color: var(--text-2); cursor: pointer; }
 .seg button.on { background: var(--panel); color: var(--text); box-shadow: var(--raise); }
@@ -229,6 +227,10 @@ button, input, textarea, select { font: inherit; color: inherit; }
 }
 .menu [role^='menuitem']:hover, .menu [role^='menuitem']:focus-visible { background: var(--hover); outline: none; }
 .menu [role^='menuitem'][disabled] { opacity: 0.45; pointer-events: none; }
+.menu .menu-choices { display: flex; gap: 2px; padding: 2px; margin: 2px 0 4px; border-radius: 9px; background: var(--sunken); }
+.menu .menu-choices [role='menuitemradio'] { flex: 1; justify-content: center; min-height: 30px; padding: 0; color: var(--text-3); }
+.menu .menu-choices [role='menuitemradio'][aria-checked='true'] { background: var(--raise-bg); color: var(--text); box-shadow: var(--raise); }
+.menu .menu-choices .ic { width: 16px; height: 16px; color: inherit; }
 .menu [role^='menuitem'] .ic { width: 16px; height: 16px; color: var(--text-2); }
 .menu .danger, .menu .danger .ic { color: #c33b2f; }
 [data-theme='dark'] .menu .danger, [data-theme='dark'] .menu .danger .ic { color: #ff8f84; }
@@ -285,8 +287,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
     -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   }
   [data-theme='dark'] .tabbar { background: color-mix(in srgb, var(--panel-2) 86%, transparent); }
-  .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; font-size: 10.5px; font-weight: 550; color: var(--text-3); text-decoration: none; }
-  .tabbar a .ic { width: 23px; height: 23px; stroke-width: 1.6; }
+  .tabbar a, .tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; border: 0; background: none; font: inherit; font-size: 10.5px; font-weight: 550; color: var(--text-3); text-decoration: none; cursor: pointer; }
+  .tabbar a .ic, .tabbar button .ic { width: 23px; height: 23px; stroke-width: 1.6; }
   .tabbar a.on { color: var(--accent-text); }
   .credit { padding-bottom: 20px; }
 }
@@ -345,18 +347,66 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .solo form { margin-top: 20px; }
 .solo .btn.primary { width: 100%; height: 40px; font-size: 14.5px; margin-top: 4px; }
 
-/* Connect Claude */
-.steps-list { counter-reset: step; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-.steps-list li { counter-increment: step; display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; }
-.steps-list li::before { content: counter(step); display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; font-weight: 650; color: var(--accent-text); background: var(--accent-tint); }
-.prompt-card { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; }
-.prompt-card + .prompt-card { border-top: 1px solid var(--line); }
-.prompt-card p { flex: 1; font-size: 13.5px; }
-.claude-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
-@media (max-width: 860px) { .claude-grid { grid-template-columns: 1fr; } }
-.panel-card { padding: 18px; border-radius: 14px; background: var(--panel); box-shadow: var(--sheet); }
-[data-theme='dark'] .panel-card { background: var(--panel-2); }
-.panel-card h2 { font-size: 16px; font-weight: 650; letter-spacing: -0.01em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+/* Connect via MCP: Deck's icon joined to the MCP mark by five dots, the address to copy, then
+   a segmented control over panes that share one grid cell, so the sheet never changes height. */
+@media (min-width: 641px) { .sheet-box.mcp-box { width: min(700px, calc(100vw - 32px)); } }
+.sheet-box.mcp-box:focus { outline: none; }
+.sheet-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.mcp { gap: 12px; }
+.mcp-hero { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 2px 0 6px; }
+.mcp-app, .mcp-tile { width: 60px; height: 60px; border-radius: 14px; box-shadow: var(--sheet); }
+.mcp-tile { display: grid; place-items: center; background: var(--raise-bg); color: var(--text); }
+.mcp-tile .ic { width: 32px; height: 32px; }
+.mcp-link { display: flex; gap: 6px; }
+.mcp-link i { width: 5px; height: 5px; border-radius: 50%; background: var(--text-3); opacity: 0.45; animation: mcp-flow 2.4s var(--ease) infinite; }
+.mcp-link i:nth-child(2) { animation-delay: 0.12s; }
+.mcp-link i:nth-child(3) { animation-delay: 0.24s; }
+.mcp-link i:nth-child(4) { animation-delay: 0.36s; }
+.mcp-link i:nth-child(5) { animation-delay: 0.48s; }
+@keyframes mcp-flow { 0%, 36%, 100% { opacity: 0.45; transform: none; } 14% { opacity: 1; transform: scale(1.3); background: var(--accent); } }
+/* By name: Deck's reduced-motion rule shortens every animation, and an endless one would flicker. */
+@media (prefers-reduced-motion: reduce) { .mcp-link i { animation-name: none; opacity: 0.7; } }
+.mcp-label { margin: 2px 2px -6px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.mcp-seg { display: flex; width: 100%; }
+.mcp-seg button { flex: 1; min-width: 0; padding: 0 4px; white-space: nowrap; }
+.mcp-panes { display: grid; grid-template-columns: minmax(0, 1fr); }
+.mcp-panes > * { grid-area: 1 / 1; align-self: start; }
+.mcp-panes > :not(.is-on) { visibility: hidden; }
+.mcp-panes > .is-on { animation: mcp-pane 220ms var(--ease); }
+@keyframes mcp-pane { from { opacity: 0; transform: translateY(4px); } }
+.mcp-row { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 9px 14px; }
+.mcp-row + .mcp-row { border-top: 1px solid var(--line); }
+.mcp-ic { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: var(--accent-text); background: var(--accent-tint); }
+.mcp-ic .ic { width: 17px; height: 17px; }
+.mcp-ic.num { font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.mcp-t { min-width: 0; display: flex; flex-direction: column; }
+.mcp-t b { font-weight: 600; }
+.mcp-t small { font-size: 12.5px; color: var(--text-3); }
+.mcp-note { font-size: 13px; color: var(--text-2); }
+
+/* Anything to copy: one field that is a button, the value on one line in mono. */
+.copy-field {
+  --cf-base: var(--panel); --cf-bg: var(--cf-base); --good: #1d8a4b;
+  display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-radius: 10px;
+  background: var(--cf-bg); box-shadow: inset 0 0 0 1px var(--line-2), var(--well); color: var(--text);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background var(--fast), box-shadow var(--fast);
+}
+[data-theme='dark'] .copy-field { --cf-base: var(--sunken); --good: #5cc98f; }
+.copy-field:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px var(--focus); }
+.copy-field:active { --cf-bg: color-mix(in srgb, var(--cf-base), var(--text) 8%); }
+@media (hover: hover) { .copy-field:hover { --cf-bg: color-mix(in srgb, var(--cf-base), var(--text) 4%); } }
+.copy-value { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: 12.5px/44px ui-monospace, 'SF Mono', Menlo, monospace; }
+.copy-field.is-long .copy-value { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.copy-cue { position: relative; flex: none; display: grid; color: var(--text-3); transition: color var(--fast); }
+.copy-cue .cf-copy, .copy-cue .cf-tick { grid-area: 1 / 1; display: grid; transition: opacity 150ms, transform 250ms var(--spring); }
+.copy-cue .ic { width: 16px; height: 16px; }
+.copy-cue .cf-tick { opacity: 0; transform: scale(0.5); color: var(--good); }
+.copy-cue .cf-tick .ic { stroke-width: 2.4; }
+.copy-word { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); padding: 3px 7px 3px 26px; background: linear-gradient(to right, transparent, var(--cf-bg) 20px); color: var(--text-2); font-size: 13px; font-weight: 600; line-height: 1.2; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 150ms; }
+@media (hover: hover) { .copy-field:hover .copy-cue { color: var(--text); } .copy-field:hover .copy-word { opacity: 1; } }
+.copy-field.is-copied .copy-word { opacity: 1; color: var(--good); }
+.copy-field.is-copied .cf-copy { opacity: 0; transform: scale(0.5); }
+.copy-field.is-copied .cf-tick { opacity: 1; transform: none; }
 code.inline { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12.5px; padding: 1px 5px; border-radius: 5px; background: var(--sunken); }
 
 /* ======================================================================

@@ -3,10 +3,10 @@
 // including lists, links, colours and pictures. Edits save a moment after typing stops.
 // Saves from Claude (or a teammate) arrive over realtime and reload the deck in place on
 // the same slide; if you were mid-edit, a banner asks which version to keep.
-import { api, esc, $, $$, html, toast, ago, icons, sheet, menu, copy, confirmSheet, uploadTo, pickFiles, chime, kb } from './lib.js?v=0.2.0';
-import { renderSlide, thumb, slideTitle } from '/deck/render.js?v=0.2.0';
-import { LAYOUTS, TEMPLATES, switchLayout, ACCENT_NAMES, CARD_COLORS } from './schema.js?v=0.2.0';
-import { subscribe } from './live.js?v=0.2.0';
+import { api, esc, $, $$, html, toast, ago, icons, sheet, menu, copyField, confirmSheet, uploadTo, pickFiles, chime, kb } from './lib.js?v=0.3.0';
+import { renderSlide, thumb, slideTitle } from '/deck/render.js?v=0.3.0';
+import { LAYOUTS, TEMPLATES, switchLayout, ACCENT_NAMES, CARD_COLORS } from './schema.js?v=0.3.0';
+import { subscribe } from './live.js?v=0.3.0';
 
 const CLIENT = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -849,18 +849,17 @@ async function shareSheet() {
     const head = S.deck.revision;
     box.innerHTML = `<div class="share-state${sh ? ' on' : ''}"><span class="ic-wrap">${icons.link}</span><div class="row-main"><b>${sh ? 'Anyone with the link can view' : 'Only people in ' + esc(S.ws.name)}</b><span class="row-sub" style="white-space:normal">${sh ? 'They see the slides and notes, not your workspace or its people.' : 'Turn on a link to show this deck to anyone.'}</span></div><button type="button" class="switch" role="switch" aria-checked="${!!sh}" aria-label="Share with a link"></button></div>
       ${sh ? `<div class="share-opts">
-        <div class="copy-row"><input class="input mono" readonly value="${esc(shareURL(sh.url))}"><button class="btn primary" data-copy>${icons.copy}Copy link</button></div>
+        <span data-link></span>
         <label class="radio"><input type="radio" name="mode" value="latest"${sh.mode === 'latest' ? ' checked' : ''}><span><b>Follow every change</b><small>The link always shows the latest save, live.</small></span></label>
         <label class="radio"><input type="radio" name="mode" value="pinned"${sh.mode === 'pinned' ? ' checked' : ''}><span><b>Keep this version</b><small>${sh.mode === 'pinned' ? `Shows revision ${sh.revision}${sh.revision !== head ? ` (the deck is at ${head})` : ''} until you update it.` : 'Freeze the link at the current revision.'}</small></span></label>
         ${sh.mode === 'pinned' && sh.revision !== head ? '<button class="btn" data-update>Update the link to the latest</button>' : ''}
-        <div class="field" style="margin-top:16px"><span>Embed on a website</span><textarea class="textarea input mono" readonly rows="3"></textarea><button class="btn" data-embed style="align-self:flex-start">${icons.code}Copy embed code</button></div>
+        <div class="field" style="margin-top:16px"><span>Embed on a website</span><span data-embed></span></div>
       </div>` : ''}`;
     $('.switch', box).addEventListener('click', () => setMode(sh ? 'off' : 'latest'));
     if (sh) {
       const code = `<iframe src="${shareURL(sh.embed)}" title="${esc(S.content.title || 'Deck')}" style="width:100%;aspect-ratio:16/9;border:0;border-radius:12px" allow="fullscreen" allowfullscreen loading="lazy"></iframe>`;
-      $('textarea', box).value = code;
-      $('[data-copy]', box).addEventListener('click', () => copy(shareURL(sh.url), 'Link copied'));
-      $('[data-embed]', box).addEventListener('click', () => copy(code, 'Embed code copied'));
+      $('[data-link]', box).replaceWith(copyField(shareURL(sh.url)));
+      $('[data-embed]', box).replaceWith(copyField(code));
       $$('[name="mode"]', box).forEach((r) => r.addEventListener('change', () => setMode(r.value)));
       $('[data-update]', box)?.addEventListener('click', () => setMode('pinned', head));
     }

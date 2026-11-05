@@ -29,12 +29,16 @@ needs `--spec-v1`; the node runs no build. Only `web/` is served as files:
   email address. Owners and admins manage the team; editors make, edit, share
   and present. A first workspace starts with a sample deck that uses every
   layout.
-- **Claude over MCP.** Connect Claude to `https://<your-host>/_holm/mcp`. Its
-  tools read the format guide, list and create decks, read a deck with an
-  outline and a check, save the whole deck or apply small slide edits (insert,
-  replace, update, move, delete), list and restore revisions, add pictures,
-  rename the workspace or make a library picture its logo, share, and point
-  your open deck at a slide with a short message.
+- **Claude over MCP.** Connect via MCP… in the account menu (and Connect
+  Claude in the top bar, or Claude in a phone's tab bar) opens one sheet: the
+  connector address to click and copy, and tabs for Claude, ChatGPT, Claude
+  Code and what the tools do. The tools read the format guide, list, create,
+  copy and delete decks, read a deck with an outline and a check, save the
+  whole deck or apply small slide edits (insert, replace, update, move,
+  delete), list and restore revisions, add pictures, rename the workspace or
+  make a library picture its logo, see the team and invite people, share, and
+  point your open deck at a slide with a short message. Deleting a deck takes
+  two calls: the first only says what would go, so Claude asks you first.
 - **The live loop.** Every save pings the deck's private realtime channel. An
   open studio reloads in place, keeps your slide, flashes the slides that
   changed and says who changed what. If you were typing, a banner lets you see
@@ -83,7 +87,7 @@ short stagger; numbers count up; a quiet chime marks Claude's saves.
 
 ```text
 api/main.js        tiny entry: loads http.js and ops.js with import()
-api/contract.json  Claude's 18 tools (auth "user"; each checks workspace membership)
+api/contract.json  Claude's 22 tools (auth "user"; each checks workspace membership)
 api/http.js        the web app's JSON API, shared and embedded pages with their link previews
 api/ops.js         the named operations
 api/workspaces.js  workspaces, members, roles, invites
@@ -171,6 +175,8 @@ workspace, presenting from the studio and the sample deck are not counted.
   draw the cover slide.
 - **Callouts** move by dragging on the slide; boxes are resized with numbers in
   the inspector.
+- **Email from a tool** is untested on a node with email turned on: invites.create
+  reaches `email.send`, and the local node answered that email is off for the app.
 - **Limits:** 60 slides and 200 KB per deck, 300 revisions per deck, 200 decks
   per workspace, 500 pictures (12 MB each) per library, 5 owned workspaces per
   person.

@@ -120,7 +120,7 @@ async function api(request, env, url) {
   const body = async () => readJSON(request);
   const [a, b, c, d] = parts;
 
-  if (a === 'me' && parts.length === 1 && method === 'GET') return json(me(env, ctx, url.searchParams.get('return')));
+  if (a === 'me' && parts.length === 1 && method === 'GET') return json(me(env, ctx, url.searchParams.get('return'), originOf(url)));
   if (a === 'sample' && parts.length === 1 && method === 'GET') return json({ content: env.holm.private.readJSON('sample.json') }, 200, { 'Cache-Control': 'public, max-age=300' });
   if (a === 's' && parts.length === 2 && method === 'GET') return json(publicDeck(env, b), 200, { 'Cache-Control': 'no-cache' });
   if (a === 's' && c === 'views' && method === 'POST') {
@@ -201,7 +201,7 @@ async function api(request, env, url) {
 
 // Who you are and where you belong. The web app asks first; its answer keeps the team list's
 // names and pictures current.
-export function me(env, ctx, back) {
+export function me(env, ctx, back, origin) {
   const auth = env.holm.auth;
   const after = typeof back === 'string' && /^\/(?!\/)[\w\-./?=&#%]*$/.test(back) && !back.startsWith('/auth') ? back : '/';
   let admin = false;
@@ -216,5 +216,7 @@ export function me(env, ctx, back) {
     login_url: auth.getLoginURL(after),
     logout_url: auth.getLogoutURL(),
     workspaces: myWorkspaces(env, ctx),
+    // This host's connector address, for the Connect via MCP sheet.
+    mcp: origin + '/_holm/mcp',
   };
 }

@@ -4,8 +4,8 @@
    "handler": "opGuide",
    "auth": "public",
    "risk": "read",
-   "summary": "Read Deck's format, layouts and workflow (call this first)",
-   "description": "Returns {guide}: the deck JSON format, the seven layouts with examples, how to write a good deck, and the save/review loop. Read it before writing or editing your first deck.",
+   "summary": "Read the guide to writing decks",
+   "description": "Call this first. Returns {guide}: the deck JSON format, the seven layouts with examples, how to write a good deck, and the save/review loop. Read it before writing or editing your first deck.",
    "input": {
     "type": "object",
     "properties": {},
@@ -333,6 +333,120 @@
    },
    "sensitive": true,
    "idempotency": "optional"
+  },
+  "decks.duplicate": {
+   "handler": "opDecksDuplicate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Copy a deck",
+   "description": "Makes a copy of a deck in the same workspace from its latest revision, titled “… (copy)”, with its notes and pictures. Returns the new deck and its studio url.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "deck"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true,
+   "idempotency": "optional"
+  },
+  "decks.delete": {
+   "handler": "opDecksDelete",
+   "auth": "user",
+   "risk": "destructive",
+   "summary": "Delete a deck",
+   "description": "Deletes a deck and its history for everyone on its workspace; a share link stops working. Without confirm it deletes nothing and says what would go: tell the person, and call again with confirm true only once they agree.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "deck": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{12}$",
+      "description": "A deck id from decks_list."
+     },
+     "confirm": {
+      "type": "boolean",
+      "description": "true once the person has agreed to delete it."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "deck"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   }
   },
   "deck.get": {
    "handler": "opDeckGet",
@@ -954,6 +1068,133 @@
       "type": "string",
       "pattern": "^[a-z0-9]{10}$",
       "description": "A workspace id from me_get."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "workspace"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "team.get": {
+   "handler": "opTeamGet",
+   "auth": "user",
+   "risk": "read",
+   "summary": "See who is on a workspace",
+   "description": "Returns the workspace, its people with their roles (owner, admin or editor) and, for owners and admins, their email addresses and the open invites.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "workspace": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{10}$",
+      "description": "A workspace id from me_get."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "workspace"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_INVALID": {
+     "status": 422,
+     "public": true
+    },
+    "APP_RATE_LIMITED": {
+     "status": 429,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "invites.create": {
+   "handler": "opInvitesCreate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Invite someone to a workspace",
+   "description": "Owners and admins only. Makes an invite link that works once, for 14 days. With email, only that address can use it; send_email also emails it from Deck. Give the link to the person to send on. Editors make and share decks; admins also invite people and manage the team.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "workspace": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{10}$",
+      "description": "A workspace id from me_get."
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "editor",
+       "admin"
+      ],
+      "description": "editor (the default) or admin."
+     },
+     "email": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Who the invite is for. Leave out for anyone who has the link."
+     },
+     "send_email": {
+      "type": "boolean",
+      "description": "Also email the invite to that address. Ask the person first."
      }
     },
     "additionalProperties": false,
