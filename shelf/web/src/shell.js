@@ -12,6 +12,20 @@ export const state = { me: null }
 export const SOURCE = 'https://github.com/holmhq/unofficial-apps/tree/main/shelf'
 export const FEEDBACK_PROJECT = 'rizukuta'
 
+// Holm writes the addresses of its own pages for this app, analytics among them, into the
+// page it serves to the people allowed to see them. The copy of the page the service worker
+// keeps may be from before sign-in, so an admin's browser reads them from a fresh copy (the
+// worker lets a no-store request through) and puts them where the page looks for them.
+let surfacesAsked = false
+function freshSurfaces() {
+  if (surfacesAsked) return
+  surfacesAsked = true
+  fetch('/', { cache: 'no-store' }).then((r) => r.text()).then((page) => {
+    const m = /__HOLM_SURFACES__\s*=\s*(\{[^}]*\})/.exec(page)
+    globalThis.__HOLM_SURFACES__ = m ? JSON.parse(m[1]) : undefined
+  }).catch(() => { surfacesAsked = false })
+}
+
 export async function loadMe(prefetched) {
   try {
     state.me = await (prefetched || api.get('/api/me?return=' + encodeURIComponent(location.pathname + location.search)))
@@ -19,6 +33,7 @@ export async function loadMe(prefetched) {
     state.me = state.me || { signed_in: false, login_url: '/auth/login' }
   }
   lib.me = state.me
+  if (state.me.signed_in && state.me.admin) freshSurfaces()
   try {
     if (state.me.signed_in) localStorage.setItem('shelf:me', JSON.stringify({ id: state.me.id, name: state.me.name, email: state.me.email, picture: state.me.picture, channel: state.me.channel, mcp: state.me.mcp, signed_in: true }))
     else localStorage.removeItem('shelf:me')
