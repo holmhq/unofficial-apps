@@ -77,7 +77,10 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   the contract in `api/contract.json`, not inline in `main.js`: the store
   reads only that file. An operation whose `auth` is an object without
   `discover`, like Feedback's `accounts.create`, is HTTP-only and the store
-  doesn't list it.
+  doesn't list it. Moving tools from `member` to `user` opens them to
+  everyone signed in, so check each handler first. Keep anything that
+  changes the whole node, such as Margin's `themes.save`, on `member`, and
+  Holm's own gate stays as a second check.
 - **Cover what people do in the app**, not just its first screen: Relay's
   tools catch up on unread messages, read and send, list friends, and send
   and answer invites. Wrap the app's own handlers so the access checks stay
@@ -85,11 +88,23 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   routes are written inline in `fetch`, a tool can build a `Request` and pass
   it through the app's own `fetch`, as Overlap's do. An operation can't reach
   `web/`: `env.holm.web` is undefined there and imports from `web/` are
-  refused. A tool that needs browser code, like Domains' name maker, uses a
-  copy in `api/` that a check script keeps the same.
-- **A tool that destroys something for other people asks first.** Pastebin's
-  `pastes.open` answers a one-time paste as sealed, and burns it only when
-  called again with `burn: true`. The owner's own reads never burn it.
+  refused. A tool that needs browser code or files, like Domains' name maker
+  or Margin's theme stylesheets, uses a copy in `api/` that a check script
+  keeps the same. `env.holm.env`, the app's settings, is undefined there too,
+  so a route records in KV whatever a tool needs from them (Roll's quota).
+  A link a tool returns needs an address in the page that opens that one
+  item, like Roll's `?photo=<id>`.
+- **A tool that can't be undone asks first.** Without its flag it answers
+  with what would happen, and the description tells the agent to ask the
+  person before calling again:
+  - Pastebin's `pastes.open` answers a one-time paste as sealed, and burns
+    it only with `burn: true`. The owner's own reads never burn it.
+  - Roll's `photos.delete` lists what would go, and deletes only with
+    `confirm: true`, and only photos already in the Trash.
+  - **Something that reaches other people, like a text, is a draft.** Zend's
+    `drafts.create` stores it and returns a link. The draft shows live in
+    the app, and the person taps Send there, through the app's own route
+    and its limits. No tool sends.
 - **Don't declare idempotency on a tool whose result must not be kept.**
   Holm keeps a keyed answer for 24 hours to replay it, which would keep a
   one-time paste's text after it's gone.
@@ -97,10 +112,17 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   it regains focus or comes back into view with nothing of its own unsent,
   it reads the account's copy and redraws. Otherwise its next save erases
   what Claude added. Count edits, so one made while a save is out still
-  counts as unsent (Domains' `saved.js` and `lists.js`).
+  counts as unsent (Domains' `saved.js` and `lists.js`). Better still, send
+  one change the server merges, as Until's page does when it rates one day,
+  so a tool's change to another day survives.
+- **Days follow the person's time zone, which the server doesn't know.**
+  Tools that work with days, like Until's and Roll's, take a `today` input
+  and fall back to the UTC date.
 - **The account menu has Connect via MCP…** when you're signed in, with the
   MCP mark as its icon. ⌘K has it too. It opens one sheet, never a page,
-  and other sheets that mention Claude link to it rather than repeat it.
+  and other sheets that mention Claude link to it rather than repeat it. An
+  app whose Connect page is its way in, like Ralk, keeps the page for what's
+  its own (Ralk's prompts to try) and opens the sheet for the steps.
   An app whose account lives in a Settings tab, like Relay, puts it there
   instead: a Connect section with one Connect via MCP row.
 - **The sheet shows the bare minimum.** It shows the app's icon joined to the
@@ -119,8 +141,8 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   There's no intro paragraph. The panes share one grid cell, so the sheet is
   as tall as the tallest and never changes height between tabs. It fits a
   390 × 844 phone without scrolling. Each Tools row's line fits on one line
-  there. Closing the sheet puts focus back on the avatar button, since the
-  menu item that opened it is gone. On desktop it's wide enough for the
+  there. Closing the sheet puts focus back on whatever opened it, or on the
+  avatar button when that was a menu item, which is gone by then. On desktop it's wide enough for the
   zyt command on one line, with some to spare: about 640 px for a narrow
   mono, 720 px for Fragment Mono. A modal `<dialog>` is capped by the
   browser at the viewport minus about 38 px, so set `max-width: none`
@@ -149,7 +171,11 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   Shelf's `copyField` (`shelf/web/src/ui.js`). When the icons sit in
   wrapper spans, as Relay's do, give the copy icon and the tick their own
   classes: `:first-of-type` would pick the word's span, and the copy icon
-  would stay under the tick.
+  would stay under the tick. A person's own link in a narrow column, such as
+  Kalendar's sidebar, would fade out the handle that matters. There the
+  field uses the app's own type, with a muted host and a bold `@handle`
+  (Kalendar's `is-link`). A list of things to copy, like Ralk's prompts, makes
+  each whole row the click-to-copy button.
 - **Summaries are read by people too.** Each operation's `summary` appears
   in the Tools tab, here and on the app's page in the store, so write it as
   a plain line on what the tool does. Instructions for the agent, such as
@@ -325,6 +351,9 @@ current guide too, since some of them will change.
   each, with progress kept in KV.
 - **There's no `Intl` on the server.** Time zones come from the browser.
   `toLocaleString` with options can throw.
+- **An operation's input is validated before its sign-in check.** A
+  signed-out call with bad input gets 400, not 401, so test the 401 with
+  valid input.
 - **An app with a contract turns the generated web surface off.** Set
   `surfaces.web.renderer` to `"off"` in `holm.json`, or the deploy stops
   with `V1_FEATURE_LATER: generated-web`; validate only lists it as a
@@ -339,7 +368,13 @@ current guide too, since some of them will change.
   works in them.
 - **A read operation can't write**, so it can't do the app's lazy clean-up,
   such as purging an expired paste. It reports the state as it should be,
-  and the next write cleans up.
+  and the next write cleans up. Nor can it reuse an app function that
+  writes as it reads: Zend's thread view marks a conversation read, so its
+  tools read through their own path.
+- **A tool that filters rows in code can't pass on the data store's
+  cursor**, because stopping partway through a page skips rows. Make its own
+  cursor from the sort value plus the ids already given at that value, as
+  Roll's `photos.list` does.
 - **A tool's input is capped at about 50 KB**, whatever its `maxLength` says.
   Past that Holm answers 413 `SCHEMA_RESOURCE_LIMIT`, so cap text inputs below
   it; Pastebin's take 48,000 characters.
