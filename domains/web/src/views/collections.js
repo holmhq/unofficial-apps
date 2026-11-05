@@ -7,7 +7,7 @@ import * as saved from '../saved.js'
 import * as lists from '../lists.js'
 import { settings } from '../settings.js'
 import { provider as providerById, fallback } from '../providers/index.js'
-import { state, layerKind, openLayer, closeLayer, drawLayer, paintSide, signIn, go, isOpen } from '../shell.js'
+import { state, layerKind, openLayer, closeLayer, drawLayer, paintSide, signIn, go, isOpen, copyHTML } from '../shell.js'
 import { cardHTML, fromItem } from './cards.js'
 
 const lastChecked = (items) => Math.max(0, ...items.map((i) => i.checked || i.at || 0))
@@ -82,7 +82,7 @@ layerKind('share', (o) => {
     <label class="note"><span>Note for them</span><textarea class="note-in" rows="2" data-note="${l.id}" maxlength="280" placeholder="Say why you picked these">${esc(l.note || '')}</textarea></label>
     <button type="button" class="btn primary block" data-act="make-link" data-id="${l.id}"${o.busy ? ' disabled' : ''}>${o.busy ? 'Making a link…' : `${svg('link', 16, 2)} Make a link`}</button>`
   else body = `<p class="m-sub">Anyone with the link sees ${these} on one page, checked again when they open it. No sign-in needed.</p>
-    <div class="linkbox">${svg('link', 16, 2)}<span>${esc(link.replace(/^https?:\/\//, ''))}</span><button type="button" class="btn sm primary" data-act="copy-link" data-id="${l.id}">Copy</button></div>
+    <div class="share-link">${copyHTML(link)}</div>
     <label class="note"><span>Note for them</span><textarea class="note-in" rows="2" data-note="${l.id}" maxlength="280" placeholder="Say why you picked these">${esc(l.note || '')}</textarea></label>
     <div class="m-foot"><button type="button" class="btn sm quiet danger" data-act="unshare" data-id="${l.id}">Stop sharing</button><a class="btn sm" href="${esc(link)}" target="_blank" rel="noopener">See what they see ${svg('arrowRight', 15, 2.2)}</a></div>`
   return { modal: true, head: false, title: `Share “${l.name}”`, html: `<h3 class="m-title">Share “${esc(l.name)}”</h3>${body}` }
@@ -118,7 +118,6 @@ act({
     if (state.layer) { state.layer.busy = false; drawLayer(true) }
     paintSide()
   },
-  'copy-link': async (el) => { const ok = await copy(lists.linkFor(lists.get(el.dataset.id))); toast(ok ? 'Link copied' : 'Select the link to copy it') },
   unshare: async (el) => {
     await lists.unshare(el.dataset.id).catch(() => {})
     toast('The link no longer opens')

@@ -2,7 +2,8 @@
 // with a note for whoever you share one with. Kept in this browser; when you're signed in,
 // also on the account, so every device has them and a list can be shared by link. The first
 // time a device signs in, its lists join the account's; after that the account's are the
-// ones.
+// ones. Claude can change them too (the MCP tools), so the page takes the account's lists
+// again whenever it comes back into view with nothing of its own still to send.
 //
 // list: { id, name, note, items: [item], shared, slug?, at }
 // item: { domain, at, status?, price?, premium?, checked? }
@@ -14,7 +15,11 @@ let lists = read()
 let account = null
 let timer = null
 let pushing = null
+let dirty = false
+let edits = 0 // so a change made while a send is out keeps the page from taking the account's copy
+let seen = 0 // the account lists' `updated` this page last had
 const listeners = new Set()
+const elsewhere = new Set()
 
 function read() {
   try { const v = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : [] } catch { return [] }
@@ -27,14 +32,33 @@ function keep() {
 
 function write() {
   keep()
-  if (account) { clearTimeout(timer); timer = setTimeout(push, 500) }
+  if (account) { dirty = true; edits++; clearTimeout(timer); timer = setTimeout(push, 500) }
 }
+
+// Back in view: the account's lists, if they changed somewhere else meanwhile.
+let lastLook = 0
+async function refresh() {
+  if (!account || dirty || Date.now() - lastLook < 2000) return
+  lastLook = Date.now()
+  let remote
+  try { remote = await api.get('/api/lists') } catch { return }
+  if (dirty || !remote.updated || remote.updated === seen) return
+  seen = remote.updated
+  lists = remote.lists || []
+  keep()
+  for (const fn of elsewhere) fn()
+}
+addEventListener('focus', refresh)
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh() })
 
 // Send the lists; the server answers with share slugs, which come back into ours.
 async function push() {
   clearTimeout(timer)
+  const at = edits
   const run = (async () => {
     const doc = await api.call('PUT', '/api/lists', { lists })
+    seen = doc.updated || seen
+    if (edits === at) dirty = false
     const slugs = new Map((doc.lists || []).map((l) => [l.id, l.slug]))
     lists = lists.map((l) => (slugs.has(l.id) ? { ...l, slug: slugs.get(l.id) || undefined } : l))
     keep()
@@ -50,6 +74,8 @@ export const signedIn = () => !!account
 export const has = (id, domain) => { const l = get(id); return !!l && l.items.some((i) => i.domain === domain) }
 export const containing = (domain) => lists.filter((l) => l.items.some((i) => i.domain === domain))
 export function on(fn) { listeners.add(fn); return () => listeners.delete(fn) }
+// Called when the account's copy changed somewhere else and this page took it.
+export function onRemote(fn) { elsewhere.add(fn) }
 
 const slugify = (name) => name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'list'
 
@@ -115,6 +141,7 @@ export async function connect(me) {
   let remote
   try { remote = await api.get('/api/lists') } catch { return }
   account = me.email || me.name || 'you'
+  seen = remote.updated || 0
   const flag = 'domains:lists:joined:' + account
   let joined = false
   try { joined = localStorage.getItem(flag) === '1' } catch {}

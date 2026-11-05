@@ -1,6 +1,6 @@
 // The JSON routes the page calls.
 //
-//   GET  /api/me      { signed_in, name, email, picture, admin, login_url, logout_url }
+//   GET  /api/me      { signed_in, name, email, picture, admin, login_url, logout_url, mcp }
 //   GET  /api/saved   { items, updated }                     signed in
 //   PUT  /api/saved   { items } -> { items, updated }        signed in, replaces the list
 //   GET  /api/lists   { lists, updated }                     signed in
@@ -11,12 +11,14 @@
 //   POST /api/rdap    { names } -> { results: [{ name, status, registrar?, since?, reason? }] }
 //
 // Ideas and lookups call out (the AI provider, registries), which Holm allows from routes
-// like these and not from named operations.
+// like these and not from named operations. The saved names and lists are kept by the
+// functions below, which the MCP tools in ops.js use too.
 
 const MAX_SAVED = 300
 const MAX_LISTS = 50
 const MAX_LIST_ITEMS = 200
-const DOMAIN = /^(?=.{3,80}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9-]+)+$/
+export const MAX_LISTS_EACH = MAX_LISTS
+export const DOMAIN = /^(?=.{3,80}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9-]+)+$/
 
 export default {
   async fetch(request, env) {
@@ -38,6 +40,9 @@ async function route(request, env) {
   const at = request.method + ' ' + url.pathname
 
   if (at === 'GET /api/me') {
+    // Tools have no request to read the address from, so their links use the last one seen.
+    const kv = env.holm.app.kv
+    if (kv.get('site:origin') !== url.origin) kv.set('site:origin', url.origin)
     let admin = false
     try { admin = !!(member && auth.isAppAdmin()) } catch {}
     const back = url.searchParams.get('return') || '/'
@@ -50,6 +55,7 @@ async function route(request, env) {
       admin,
       login_url: auth.getLoginURL(after),
       logout_url: auth.getLogoutURL(),
+      mcp: url.origin + '/_holm/mcp',
     })
   }
 
@@ -78,45 +84,55 @@ async function route(request, env) {
 
   if (url.pathname === '/api/lists') {
     if (!member) reject(401, 'unauthorized', 'Sign in to keep lists and share them.')
-    const kv = env.holm.app.kv
-    const key = 'lists:' + member.id
-    if (request.method === 'GET') return json(readLists(kv.get(key)))
-    if (request.method === 'PUT') {
-      const body = await readJSON(request)
-      const before = readLists(kv.get(key))
-      const lists = cleanLists(body.lists)
-      const had = new Map(before.lists.filter((l) => l.slug).map((l) => [l.id, l.slug]))
-      for (const l of lists) {
-        const old = had.get(l.id)
-        if (l.shared) {
-          l.slug = old || newSlug(kv)
-          kv.set('share:' + l.slug, JSON.stringify({ member: member.id, id: l.id }))
-        } else delete l.slug
-        had.delete(l.id)
-        if (!l.shared && old) kv.delete('share:' + old)
-      }
-      for (const slug of had.values()) kv.delete('share:' + slug)
-      const doc = { lists, updated: Date.now() }
-      kv.set(key, JSON.stringify(doc))
-      return json(doc)
-    }
+    if (request.method === 'GET') return json(getLists(env, member))
+    if (request.method === 'PUT') return json(putLists(env, member, (await readJSON(request)).lists))
   }
 
   if (url.pathname === '/api/saved') {
     if (!member) reject(401, 'unauthorized', 'Sign in to keep names on every device.')
-    const kv = env.holm.app.kv
-    const key = 'saved:' + member.id
-    if (request.method === 'GET') return json(read(kv.get(key)))
-    if (request.method === 'PUT') {
-      const body = await readJSON(request)
-      const items = clean(body.items)
-      const doc = { items, updated: Date.now() }
-      kv.set(key, JSON.stringify(doc))
-      return json(doc)
-    }
+    if (request.method === 'GET') return json(getSaved(env, member))
+    if (request.method === 'PUT') return json(putSaved(env, member, (await readJSON(request)).items))
   }
 
   reject(404, 'not_found', 'No such route.')
+}
+
+// A person's saved names and lists, each kept whole under their member id.
+export function getSaved(env, member) {
+  return read(env.holm.app.kv.get('saved:' + member.id))
+}
+
+export function putSaved(env, member, items) {
+  const doc = { items: clean(items), updated: Date.now() }
+  env.holm.app.kv.set('saved:' + member.id, JSON.stringify(doc))
+  return doc
+}
+
+export function getLists(env, member) {
+  return readLists(env.holm.app.kv.get('lists:' + member.id))
+}
+
+// Replace the lists: a list with shared: true keeps its link or gets one, and a list that
+// stops sharing, or is gone, loses its link at once.
+export function putLists(env, member, input) {
+  const kv = env.holm.app.kv
+  const key = 'lists:' + member.id
+  const before = readLists(kv.get(key))
+  const lists = cleanLists(input)
+  const had = new Map(before.lists.filter((l) => l.slug).map((l) => [l.id, l.slug]))
+  for (const l of lists) {
+    const old = had.get(l.id)
+    if (l.shared) {
+      l.slug = old || newSlug(kv)
+      kv.set('share:' + l.slug, JSON.stringify({ member: member.id, id: l.id }))
+    } else delete l.slug
+    had.delete(l.id)
+    if (!l.shared && old) kv.delete('share:' + old)
+  }
+  for (const slug of had.values()) kv.delete('share:' + slug)
+  const doc = { lists, updated: Date.now() }
+  kv.set(key, JSON.stringify(doc))
+  return doc
 }
 
 function read(raw) {
@@ -197,7 +213,7 @@ export function readShare(env, slug) {
   return list ? { list } : null
 }
 
-function reject(status, code, message) {
+export function reject(status, code, message) {
   throw Object.assign(new Error(message), { status, code, public: true })
 }
 

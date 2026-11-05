@@ -17,7 +17,8 @@ Domains follows [Holm App Spec v1](https://holmhq.com/llms-full.txt), sections
 
 - **`holm.json`:** identity and web settings.
 - **`web/`:** the public files.
-- **`api/main.js`:** exports `default { fetch(request, env) }`.
+- **`api/main.js`:** exports `default { fetch(request, env) }`, and the
+  handlers of the named operations in `api/contract.json` (the MCP tools).
 
 Every deploy needs `--spec-v1`, and the node runs no build. Only `web/` is
 served as files: `api/` and `holm.json` are not public URLs.
@@ -53,7 +54,25 @@ served as files: `api/` and `holm.json` are not public URLs.
 - **Share a list.** Signed in, a list gets a link that opens for anyone
   without signing in: every name on one page, checked again live as it
   opens, each with a link to register. The link's preview shows the list's
-  name and note. Stop sharing and the link stops working.
+  name and note. Stop sharing and the link stops working. The link is one
+  field that copies when clicked.
+- **Claude and other AI apps:** seven MCP tools, open to anyone signed in and
+  limited to their own names and lists:
+  - `names_suggest`: names made the way the search makes them (shorter
+    spellings, sound-alikes, initials, and optionally prefixes, suffixes and
+    domain hacks), what was typed first, with list prices. They come
+    **unchecked** (see Known limits), with a `check_live` link that opens the
+    search and checks them all.
+  - `saved_list` and `saved_update`: your saved names with what Domains last
+    knew about each; save or unsave names.
+  - `lists_list`, `lists_get`, `lists_create`, `lists_update` and
+    `lists_delete`: make lists, add and remove names, change the note, and
+    turn the share link on or off.
+
+  **Connect via MCP…** in the account menu opens a sheet with the connector
+  address (`https://<host>/_holm/mcp`) to click and copy, and tabs for
+  Claude, ChatGPT, Claude Code and what the tools do. An open page takes
+  changes Claude made to your names and lists when it comes back into view.
 
 ### How it feels
 
@@ -116,8 +135,22 @@ at once.
   list's name and note, so the link unfurls as that list.
 - **Offline-ready:** a versioned service worker (`web/sw.js`) precaches every
   file, so the app opens without waiting on the network.
+- **Named operations and MCP:** `api/contract.json` declares seven
+  operations with `auth: "user"`, which Holm serves as tools at `/_holm/mcp`
+  with OAuth sign-in; `api/ops.js` runs them through the same functions as
+  `/api/saved` and `/api/lists` in `api/http.js`.
+  - **No lookups:** named operations can't call out (`READ_EFFECT_DENIED`,
+    for read and write operations alike), so the tools never ask a registry
+    or the AI.
+  - **Server copies:** a server module can't import from `web/`, and an
+    operation has no `env.holm.web`. So `api/gen.js` and `api/tlds.json` are
+    copies of `web/src/gen.js` and `web/data/tlds.json`, which
+    `tools/catalog.mjs` writes together and `tools/check.mjs` keeps equal.
+  - **Links:** `/api/me` records the address the app was opened at, which
+    the tools use for their links.
 - **Checks:** `node tools/check.mjs` tests the name generator (including
-  that every made label can be said) and the worker's file list.
+  that every made label can be said), the worker's file list, and that the
+  server's copies match.
 
 ## Deploy your own copy
 
@@ -177,6 +210,13 @@ the RDAP list, run `node domains/tools/rdap.mjs`.
 - **Open routes, shared caps.** With no client address to count per person,
   the AI and RDAP limits are app-wide. One busy visitor can use up a day's AI
   ideas for everyone.
+- **Claude can't check availability.** Holm's named operations can't call
+  out, so `names_suggest` returns names marked `unchecked`, or with what
+  Domains last knew: an RDAP answer from the last ten minutes, or the status
+  when the name was saved. The `check_live` link checks them in the app.
+  Names Claude saves stay "Not checked" until someone checks them there.
+- **Changes from Claude reach an open page** when it comes back into view
+  (focus or a tab switch), not live while you watch it.
 - Only names in a-z, 0-9 and hyphens: no internationalised domain names yet.
 - iPhone Safari is not checked yet.
 

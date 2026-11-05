@@ -87,6 +87,10 @@ act({
 
 // A star or list changed: pages that show them redraw (not while a note is being typed).
 onChange(() => { if (['saved', 'list', 'lists'].includes(state.view)) rerender() })
+// Changed somewhere else (another device, or Claude): the sidebar and those pages redraw.
+const fromElsewhere = () => { paintSide(); if (['saved', 'list', 'lists'].includes(state.view)) rerender() }
+saved.onRemote(fromElsewhere)
+lists.onRemote(fromElsewhere)
 
 document.addEventListener('click', dispatch)
 document.addEventListener('submit', (e) => {

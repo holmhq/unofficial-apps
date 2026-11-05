@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Checks that need no browser: the names made from a few inputs, and the service worker's
-// file list against web/ (every page file precached, nothing listed that isn't there, page
-// addresses shelled and file addresses spared).
+// Checks that need no browser: the names made from a few inputs, the service worker's file
+// list against web/ (every page file precached, nothing listed that isn't there, page
+// addresses shelled and file addresses spared), and the server's copies of gen.js and the
+// extension catalog, which the MCP tools use because a server module can't import from web/.
 //
 //   node tools/check.mjs
 
@@ -29,6 +30,11 @@ const hacks = expand(labels(parse('internet', isTld)), ['com'], { hackTlds: cata
 check(hacks.some((c) => c.domain === 'inter.net'), 'internet gives inter.net')
 check(expand(labels(parse('zack.io', isTld)), ['com'], { typed: 'io' })[0].domain === 'zack.io', 'a typed name is checked first')
 check(zach.every((l) => /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(l)), 'every label is a valid label')
+
+// The server's copies.
+const same = (a, b) => readFileSync(new URL(a, import.meta.url), 'utf8') === readFileSync(new URL(b, import.meta.url), 'utf8')
+check(same('../api/gen.js', '../web/src/gen.js'), 'api/gen.js is the same as web/src/gen.js')
+check(same('../api/tlds.json', '../web/data/tlds.json'), 'api/tlds.json is the same as web/data/tlds.json')
 
 // Service worker.
 const sw = readFileSync(join(WEB, 'sw.js'), 'utf8')

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Refresh web/data/tlds.json: the extensions Namecheap sells and their list prices.
+// Refresh web/data/tlds.json: the extensions Namecheap sells and their list prices. The same
+// file goes to api/tlds.json, for the MCP tools, which can't read web/.
 //
 //   node tools/catalog.mjs              fetch both feeds with a real browser, then write
 //   node tools/catalog.mjs a.json b.json  build from saved copies of the two feeds
@@ -13,6 +14,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const OUT = new URL('../web/data/tlds.json', import.meta.url)
+const OUT_API = new URL('../api/tlds.json', import.meta.url)
 const TLDS = 'https://www.namecheap.com/domains/tlds.ashx'
 const PRICING = 'https://www.namecheap.com/api/v1/ncpl/landingpages/gateway/getdomainspricingdetails'
 
@@ -60,4 +62,5 @@ for (const t of tlds) {
 out.sort((x, y) => (x.t < y.t ? -1 : 1))
 const doc = { source: 'namecheap', currency: 'USD', updated: new Date().toISOString().slice(0, 10), tlds: out }
 writeFileSync(OUT, JSON.stringify(doc) + '\n')
+writeFileSync(OUT_API, JSON.stringify(doc) + '\n')
 console.log(`wrote ${out.length} extensions to web/data/tlds.json`)

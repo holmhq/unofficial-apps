@@ -57,6 +57,14 @@ vendor Inter with its licence.
   button top right whose menu toggles closed when tapped again, holds a
   light/dark/auto switch as three icons and sign-in, and never Holm branding
   (that goes in the sidebar's foot and the About page).
+- MCP tools as named operations with auth "user", each checking the caller:
+  suggest names the way the search makes them (they can't be checked from a
+  tool, so say "unchecked" and link to the search, which checks them live),
+  list, save and unsave names, and list, read, make, change, share and delete
+  lists. Connect via MCP… in the account menu with the MCP mark opens a sheet
+  with the connector address to click and copy, and tabs for Claude, ChatGPT,
+  Claude Code and what the tools do. A page that comes back into view takes
+  changes made elsewhere.
 - For this repository's store, use holm.json version, holm.symbol.svg and
   listing/listing.json with sample screenshots. These are repo conventions,
   not a catalog format promised by the Holm guide.
@@ -158,3 +166,8 @@ replaced):
 > - starring cause it to clip
 
 > sidebar ; and do deploy this
+
+Version 0.3.0 added the MCP tools and the Connect via MCP sheet from this
+message, about this app and two others:
+
+> Can we now add it for overlap, domains, pastebin

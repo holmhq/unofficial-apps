@@ -450,11 +450,11 @@
     {
       "name": "domains",
       "path": "domains",
-      "version": "0.2.0",
-      "tag": "domains/v0.2.0",
-      "h1": "h1:B1cuQlixN5ZJWyaKQtB/zG9x0fNpXaXSkf0ESRpfl+0=",
-      "files": 46,
-      "size": 433311,
+      "version": "0.3.0",
+      "tag": "domains/v0.3.0",
+      "h1": "h1:QuQYE1c3UmQquzClYULRK295dAekBHB4Hy4H9wU21Yc=",
+      "files": 50,
+      "size": 519955,
       "title": "Domains",
       "description": "Find a short domain that's still available: shorter spellings, sound-alikes and AI ideas, checked live. Save the good ones and share a list by link.",
       "themeColor": "#1d1d1f",
@@ -464,7 +464,7 @@
         "subtitle": "Short domains that are still available",
         "category": "Productivity",
         "description": "Type a name and Domains tries the shorter versions of it: clipped forms, sound-alikes, initials, a dropped vowel, domain hacks and AI ideas, including real words from the same world. From harbour labs it finds harbr, quay and berth; from flicker, flickr. Names nobody could say are left out.\n\nEvery name is checked live with Namecheap, shortest first, and only the available ones show, as cards that settle in one after another. One row of ideas sits above them: tap one to see only its names, or ask for more like the ones you like.\n\nFilters open from the search field in one compact panel: extensions, length, which ideas to make, and price. Tap a name for its first-year and renewal prices and a link to register it.\n\nStar the good ones and collect them into lists, with a note. Sign in and share a list by link: whoever opens it sees every name on one page, checked again live, no account needed.",
-        "whatsNew": "A calmer redesign. The search moves into the navbar, only available names show, and they arrive in a steady stream. One row of ideas replaces the long list, with an AI that also suggests words from the same world and a More like these round. Filters live in one compact panel. New: lists you can share by link, which open for anyone without signing in.",
+        "whatsNew": "Connect Domains to Claude, ChatGPT or Claude Code from the account menu. Ask for short names to try, save the good ones, and make, fill and share lists without leaving the chat; Domains checks them live when you open the link. Share links now copy with one click.",
         "featured": false,
         "related": [
           "pastebin",
@@ -516,8 +516,63 @@
           "hash": "ab8abd546af5"
         }
       },
-      "prompt": "Build \"Domains\", an app for finding a short domain name that is still\navailable, using only https://holmhq.com/llms-full.txt for Holm. Read its v1\nsections 9–12, \"Make an app feel finished\" and \"Make it feel native\" first.\nMake holm.json, public web/ files and api/main.js exporting\ndefault { fetch(request, env) }. No build step or third-party runtime CDN;\nvendor Inter with its licence.\n\n- From what someone types, make shorter labels in the browser: clipped forms,\n  sound-alikes (zach, zack, zak), initials, a dropped last vowel (flickr),\n  with switches for prefixes/suffixes and domain hacks (inter.net), and a\n  length limit. Leave out labels nobody could say (zchr). Add AI ideas from\n  env.holm.ai.chat, cached in KV: nicknames, other spellings, short forms,\n  real words from the same world (harbour: quay, berth, moor), blends and a\n  few new words, plus one short caption of how it read the input. A second\n  round, \"More like these\", asks for names in the style of the ones that came\n  back available and the ones starred.\n- Pair every label with the extensions picked and check the shortest whole\n  names first. Lookups go through provider adapters so a service can be\n  swapped. The first is Namecheap: its search page's WebSocket, from the\n  browser, with the page's CSP allowing that socket. Fall back to an RDAP\n  adapter (IANA bootstrap, env.holm.net.fetch) when it can't be reached.\n- Show only available names, as cards: the name on one line (smaller type\n  for longer names), its first-year price, why it was suggested, a star to\n  save it and a button to add it to a list. Lookups answer in bursts, so\n  reveal the cards one at a time at an even, quick pace, appended in order,\n  premium names last; nothing reshuffles. Above them, one row of the ideas\n  tried with a count each, never more than one line (it scrolls sideways):\n  tap one to see only its names; ideas with nothing available fold away at\n  the end. No line that repeats what the screen shows. Say \"Available\",\n  never \"free\".\n- Start on a hero with one big search field and a few example searches. The\n  first search moves that field up into the navbar while the rest of the\n  hero fades; clearing it goes back the same way, landing exactly.\n- Filters open from a button in the search field as one compact panel:\n  extension presets above the extensions themselves, a length ruler, which\n  ideas to make, a first-year price ruler and \"hide premium names\". Changes\n  apply as they're made.\n- A name up close: first-year and renewal prices, why it was suggested, a\n  link to register it, save and add to a list. Saved names and lists live in\n  the browser, or on the account when signed in. A list has a name and a\n  note; sharing it makes a link that opens for anyone without signing in: all\n  its names on one page, checked again live, each with a link to register,\n  and a link preview with the list's name.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places (Search, Saved,\n  lists) that starts hidden on desktop, a tab bar on phones; a round avatar\n  button top right whose menu toggles closed when tapped again, holds a\n  light/dark/auto switch as three icons and sign-in, and never Holm branding\n  (that goes in the sidebar's foot and the About page).\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/listing.json with sample screenshots. These are repo conventions,\n  not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 domains. With my approval, deploy with\nholm @<peer> app deploy domains --spec-v1 --host domains.<my-domain>. Test a\nsearch end to end, More like these, the fallback, saving, a shared list\nopened signed out, phone and desktop, light and dark.",
+      "mcp": [
+        {
+          "name": "names.suggest",
+          "summary": "Suggest short domain names",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "saved.list",
+          "summary": "See your saved names",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "saved.update",
+          "summary": "Save or unsave names",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "lists.list",
+          "summary": "See your lists",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "lists.get",
+          "summary": "Read a list",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "lists.create",
+          "summary": "Make a list",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "lists.update",
+          "summary": "Change a list",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "lists.delete",
+          "summary": "Delete a list",
+          "risk": "destructive",
+          "auth": "user"
+        }
+      ],
+      "prompt": "Build \"Domains\", an app for finding a short domain name that is still\navailable, using only https://holmhq.com/llms-full.txt for Holm. Read its v1\nsections 9–12, \"Make an app feel finished\" and \"Make it feel native\" first.\nMake holm.json, public web/ files and api/main.js exporting\ndefault { fetch(request, env) }. No build step or third-party runtime CDN;\nvendor Inter with its licence.\n\n- From what someone types, make shorter labels in the browser: clipped forms,\n  sound-alikes (zach, zack, zak), initials, a dropped last vowel (flickr),\n  with switches for prefixes/suffixes and domain hacks (inter.net), and a\n  length limit. Leave out labels nobody could say (zchr). Add AI ideas from\n  env.holm.ai.chat, cached in KV: nicknames, other spellings, short forms,\n  real words from the same world (harbour: quay, berth, moor), blends and a\n  few new words, plus one short caption of how it read the input. A second\n  round, \"More like these\", asks for names in the style of the ones that came\n  back available and the ones starred.\n- Pair every label with the extensions picked and check the shortest whole\n  names first. Lookups go through provider adapters so a service can be\n  swapped. The first is Namecheap: its search page's WebSocket, from the\n  browser, with the page's CSP allowing that socket. Fall back to an RDAP\n  adapter (IANA bootstrap, env.holm.net.fetch) when it can't be reached.\n- Show only available names, as cards: the name on one line (smaller type\n  for longer names), its first-year price, why it was suggested, a star to\n  save it and a button to add it to a list. Lookups answer in bursts, so\n  reveal the cards one at a time at an even, quick pace, appended in order,\n  premium names last; nothing reshuffles. Above them, one row of the ideas\n  tried with a count each, never more than one line (it scrolls sideways):\n  tap one to see only its names; ideas with nothing available fold away at\n  the end. No line that repeats what the screen shows. Say \"Available\",\n  never \"free\".\n- Start on a hero with one big search field and a few example searches. The\n  first search moves that field up into the navbar while the rest of the\n  hero fades; clearing it goes back the same way, landing exactly.\n- Filters open from a button in the search field as one compact panel:\n  extension presets above the extensions themselves, a length ruler, which\n  ideas to make, a first-year price ruler and \"hide premium names\". Changes\n  apply as they're made.\n- A name up close: first-year and renewal prices, why it was suggested, a\n  link to register it, save and add to a list. Saved names and lists live in\n  the browser, or on the account when signed in. A list has a name and a\n  note; sharing it makes a link that opens for anyone without signing in: all\n  its names on one page, checked again live, each with a link to register,\n  and a link preview with the list's name.\n- A native-feeling Apple-quality UI on phone and desktop, light and dark: a\n  fixed shell where only panels scroll; a sidebar of places (Search, Saved,\n  lists) that starts hidden on desktop, a tab bar on phones; a round avatar\n  button top right whose menu toggles closed when tapped again, holds a\n  light/dark/auto switch as three icons and sign-in, and never Holm branding\n  (that goes in the sidebar's foot and the About page).\n- MCP tools as named operations with auth \"user\", each checking the caller:\n  suggest names the way the search makes them (they can't be checked from a\n  tool, so say \"unchecked\" and link to the search, which checks them live),\n  list, save and unsave names, and list, read, make, change, share and delete\n  lists. Connect via MCP… in the account menu with the MCP mark opens a sheet\n  with the connector address to click and copy, and tabs for Claude, ChatGPT,\n  Claude Code and what the tools do. A page that comes back into view takes\n  changes made elsewhere.\n- For this repository's store, use holm.json version, holm.symbol.svg and\n  listing/listing.json with sample screenshots. These are repo conventions,\n  not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 domains. With my approval, deploy with\nholm @<peer> app deploy domains --spec-v1 --host domains.<my-domain>. Test a\nsearch end to end, More like these, the fallback, saving, a shared list\nopened signed out, phone and desktop, light and dark.",
       "history": [
+        {
+          "version": "0.2.0",
+          "date": "2026-10-31",
+          "whatsNew": "A calmer redesign. The search moves into the navbar, only available names show, and they arrive in a steady stream. One row of ideas replaces the long list, with an AI that also suggests words from the same world and a More like these round. Filters live in one compact panel. New: lists you can share by link, which open for anyone without signing in."
+        },
         {
           "version": "0.1.0",
           "date": "2026-10-31",
@@ -1435,11 +1490,11 @@
     {
       "name": "overlap",
       "path": "overlap",
-      "version": "0.1.1",
-      "tag": "overlap/v0.1.1",
-      "h1": "h1:Ima9xqwJ6QXdZgRexovVejimyORvJp41tt1zud2eZ+A=",
-      "files": 29,
-      "size": 470099,
+      "version": "0.2.0",
+      "tag": "overlap/v0.2.0",
+      "h1": "h1:jD10gO3tziKuhHuMtT0kruL+x9M6ZIYhWI3+JMFsppU=",
+      "files": 32,
+      "size": 509251,
       "title": "overlap",
       "description": "Find the time that works for everyone. Pick some dates, share one link, and watch everyone's free time overlap, live.",
       "themeColor": "#0e8a78",
@@ -1449,7 +1504,7 @@
         "subtitle": "Find a time that works for everyone",
         "category": "Productivity",
         "description": "Pick a few dates and the hours you could meet, then share one link. Everyone paints the times they're free, with just a name and no account, and the grid deepens in colour where people overlap, live, on every open screen.\n\nThe best times rise to the top as answers come in, with who can make each one. Pick a time and everyone sees it settle at once, with a calendar file and a Google Calendar link.\n\nPainting plays a soft note for each slot, and the page answers with small motions: it is built to be pleasant to use on a phone and a big screen, in light and dark.",
-        "whatsNew": "Sign out now ends your session: it posts to Holm instead of following a link.",
+        "whatsNew": "Connect overlap to Claude, ChatGPT or Claude Code from the account menu. Ask who's free when, start a plan, add your times from your calendar, or settle on the best time, and every open page updates live. A plan's link now copies with one click.",
         "featured": true,
         "related": [
           "kalendar",
@@ -1494,8 +1549,63 @@
           "hash": "fcc7ba48a60c"
         }
       },
-      "prompt": "Build \"overlap\", a group scheduling app, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 first.\nMake holm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in and realtime, return standard Responses and fall back to\nenv.holm.web.fetch(request). No build step or third-party runtime CDN; vendor\nany font with its licence.\n\n- A signed-in organiser creates a plan: a name, an optional note, up to 14\n  dates picked on a calendar by pressing and dragging across days, a daily\n  window, 15/30/60-minute slots and a time zone.\n- Anyone with the link answers with just a name (no sign-up) and paints the\n  times they are free: press and drag a rectangle that fills or clears. Keep\n  an edit key in the browser and store only its SHA-256 hash; signed-in\n  people edit from anywhere. Undo, keyboard painting, and touch that paints\n  instead of scrolling.\n- Two views: \"My times\" over a faint heatmap of everyone, and \"Everyone\" as a\n  heatmap. Tooltips name who is free and give the viewer's local time.\n  Ranked best times with who is missing; the organiser picks one and every\n  open page shows it settled, with a calendar file and a Google Calendar link.\n- Broadcast every change on a realtime channel per plan; flash other people's\n  changes in their colour, show who has the page open, reconnect and catch up.\n- Exceptional, warm design: an elegant serif for headings, light/dark/system\n  themes, excellent on phones and desktop. Soft Web Audio sounds (a\n  pentatonic note per painted slot, a chord when a time settles) with a mute\n  switch, small spring motions and confetti, all respecting reduced motion.\n- Give each plan page its own title and link preview, noindex. Never show the\n  organiser's email.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 overlap. With my approval, deploy with\nholm @<peer> app deploy overlap --spec-v1 --host overlap.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test an organiser and an anonymous person in two browsers, live\nupdates both ways, settling a time, and mobile/desktop in light/dark. Report\ngaps honestly. Inspect the target settings schema before setting sign-in\nbranding.",
+      "mcp": [
+        {
+          "name": "plans.list",
+          "summary": "See your plans",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "plans.get",
+          "summary": "See who’s free when",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "plans.create",
+          "summary": "Start a plan",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "times.set",
+          "summary": "Add your times",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "plans.settle",
+          "summary": "Pick the time",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "plans.update",
+          "summary": "Rename a plan",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "people.remove",
+          "summary": "Remove someone’s answer",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "plans.delete",
+          "summary": "Delete a plan",
+          "risk": "destructive",
+          "auth": "user"
+        }
+      ],
+      "prompt": "Build \"overlap\", a group scheduling app, using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections 9–12 first.\nMake holm.json, public web/ files and api/main.js exporting default\n{ async fetch(request, env) }. Set web.spa true, use env.holm for storage,\nsign-in and realtime, return standard Responses and fall back to\nenv.holm.web.fetch(request). No build step or third-party runtime CDN; vendor\nany font with its licence.\n\n- A signed-in organiser creates a plan: a name, an optional note, up to 14\n  dates picked on a calendar by pressing and dragging across days, a daily\n  window, 15/30/60-minute slots and a time zone.\n- Anyone with the link answers with just a name (no sign-up) and paints the\n  times they are free: press and drag a rectangle that fills or clears. Keep\n  an edit key in the browser and store only its SHA-256 hash; signed-in\n  people edit from anywhere. Undo, keyboard painting, and touch that paints\n  instead of scrolling.\n- Two views: \"My times\" over a faint heatmap of everyone, and \"Everyone\" as a\n  heatmap. Tooltips name who is free and give the viewer's local time.\n  Ranked best times with who is missing; the organiser picks one and every\n  open page shows it settled, with a calendar file and a Google Calendar link.\n- Broadcast every change on a realtime channel per plan; flash other people's\n  changes in their colour, show who has the page open, reconnect and catch up.\n- Exceptional, warm design: an elegant serif for headings, light/dark/system\n  themes, excellent on phones and desktop. Soft Web Audio sounds (a\n  pentatonic note per painted slot, a chord when a time settles) with a mute\n  switch, small spring motions and confetti, all respecting reduced motion.\n- MCP tools as named operations with auth \"user\", each sent through the\n  app's own routes so the same checks apply and open pages update live:\n  list plans, see who is free when with the best times, start a plan, mark\n  your free times (joining if needed), and for the organiser settle or\n  reopen, rename, remove an answer and delete. Connect via MCP… in the\n  account menu opens a sheet with the connector address to click and copy,\n  and tabs for Claude, ChatGPT, Claude Code and what the tools do.\n- Give each plan page its own title and link preview, noindex. Never show the\n  organiser's email.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 overlap. With my approval, deploy with\nholm @<peer> app deploy overlap --spec-v1 --host overlap.<my-domain>.\nNever replace an occupied host without asking. Validation does not run the\napp: test an organiser and an anonymous person in two browsers, live\nupdates both ways, settling a time, and mobile/desktop in light/dark. Report\ngaps honestly. Inspect the target settings schema before setting sign-in\nbranding.",
       "history": [
+        {
+          "version": "0.1.1",
+          "date": "2026-10-24",
+          "whatsNew": "Sign out now ends your session: it posts to Holm instead of following a link."
+        },
         {
           "version": "0.1.0",
           "date": "2026-10-21",
@@ -1506,11 +1616,11 @@
     {
       "name": "pastebin",
       "path": "pastebin",
-      "version": "0.3.3",
-      "tag": "pastebin/v0.3.3",
-      "h1": "h1:E4yjT0mCH2Q14EjpMstJ2YP2kwPB9tmzL0LB9HvElWw=",
-      "files": 51,
-      "size": 844466,
+      "version": "0.4.0",
+      "tag": "pastebin/v0.4.0",
+      "h1": "h1:itMqCNIry+i95SghRo0pgBuk3hhEXZTV2R2oLZ0RK60=",
+      "files": 54,
+      "size": 880957,
       "title": "pastebin",
       "description": "Private-first text, code and media pastes with expiring links and burn-after-read sharing.",
       "themeColor": "#173a72",
@@ -1520,7 +1630,7 @@
         "subtitle": "Links that expire or burn",
         "category": "Utilities",
         "description": "Paste text, code or files and share them behind a link that expires, opens only once, or can be revoked at any time.\n\nCode is highlighted as you type. Markdown renders like GitHub's, and images, video and audio play in place. Your name stays off the paste unless you choose to show it.\n\nAPI keys and a small command-line tool let scripts and agents file pastes for you.",
-        "whatsNew": "Icons are generated from the app's symbol in Holm's Glass style.",
+        "whatsNew": "Connect pastebin to Claude, ChatGPT or Claude Code from the avatar menu. Ask it to paste something and hand you the link, find and read your pastes, change or stop a link, or open one someone sent you. A one-time paste stays sealed until you say so.",
         "featured": true,
         "related": [
           "zend",
@@ -1565,8 +1675,57 @@
           "hash": "26430546121b"
         }
       },
-      "prompt": "Build a private-first pastebin using only https://holmhq.com/llms-full.txt for\nHolm. Read its v1 sections 9–12 first. Make holm.json, public web/ files and\napi/main.js exporting default { async fetch(request, env) }. Set web.spa\ntrue, use env.holm for storage/auth, return standard Responses and fall\nback to env.holm.web.fetch(request). No build step or third-party runtime CDN;\nvendor the Markdown parser, sanitizer, highlighter and fonts with licenses.\n\n- Make a minimal cyanotype design, light/dark/system themes, excellent on\n  phones and desktop. The page stays still; only the editor scrolls.\n- Paste text/code with syntax highlighting and safe GitHub-flavoured\n  Markdown (Preview/Source), plus images, video, audio or any file. Put the\n  attachment icon at the editor's top right; support drop and paste.\n- Signed-in owners create expiring, one-time or revocable links. Hide their\n  name/avatar by default. A sealed link needs a click to open, so unfurlers\n  cannot burn it; the owner's preview must not burn it. Use a documented DS\n  transaction to claim once; check expiry on access and delete expired blobs\n  then. The guide does not document ifRevision or blob TTL options: do not\n  promise automatic idle cleanup or claim race safety without testing it.\n- Centre a split create button reading “Create [one-time] link [with] my\n  name for [1h] ▾”; crossing out those words toggles them without layout shift.\n- Put pastes, theme and API keys in the avatar menu. Show keys once, store\n  SHA-256 hashes, check ownership on every owner route. Add JSON/multipart\n  HTTP creation and a small POSIX sh CLI using curl/jq. Read form files via\n  request.formData() and arrayBuffer(); do not expose private files directly.\n- Add safe file downloads, no-referrer/noindex, a Holm/source footer, and an\n  optional footer feedback link only if I supply a feedback project.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 pastebin. With my approval, deploy with\nholm @<peer> app deploy pastebin --spec-v1 --host pastebin.<my-domain>.\nNever replace an occupied host or move an older-format app without asking.\nValidation does not run the app: test uploads, expiry, revocation and two\nsimultaneous one-time opens, plus mobile/desktop in light/dark. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in branding.",
+      "mcp": [
+        {
+          "name": "pastes.list",
+          "summary": "List your pastes",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "pastes.read",
+          "summary": "Read one of your pastes",
+          "risk": "read",
+          "auth": "user"
+        },
+        {
+          "name": "pastes.create",
+          "summary": "Make a paste",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "pastes.update",
+          "summary": "Change a paste",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "pastes.revoke",
+          "summary": "Stop a paste’s link",
+          "risk": "write",
+          "auth": "user"
+        },
+        {
+          "name": "pastes.delete",
+          "summary": "Delete a paste",
+          "risk": "destructive",
+          "auth": "user"
+        },
+        {
+          "name": "pastes.open",
+          "summary": "Open a shared paste",
+          "risk": "write",
+          "auth": "user"
+        }
+      ],
+      "prompt": "Build a private-first pastebin using only https://holmhq.com/llms-full.txt for\nHolm. Read its v1 sections 9–12 first. Make holm.json, public web/ files and\napi/main.js exporting default { async fetch(request, env) }. Set web.spa\ntrue, use env.holm for storage/auth, return standard Responses and fall\nback to env.holm.web.fetch(request). No build step or third-party runtime CDN;\nvendor the Markdown parser, sanitizer, highlighter and fonts with licenses.\n\n- Make a minimal cyanotype design, light/dark/system themes, excellent on\n  phones and desktop. The page stays still; only the editor scrolls.\n- Paste text/code with syntax highlighting and safe GitHub-flavoured\n  Markdown (Preview/Source), plus images, video, audio or any file. Put the\n  attachment icon at the editor's top right; support drop and paste.\n- Signed-in owners create expiring, one-time or revocable links. Hide their\n  name/avatar by default. A sealed link needs a click to open, so unfurlers\n  cannot burn it; the owner's preview must not burn it. Use a documented DS\n  transaction to claim once; check expiry on access and delete expired blobs\n  then. The guide does not document ifRevision or blob TTL options: do not\n  promise automatic idle cleanup or claim race safety without testing it.\n- Centre a split create button reading “Create [one-time] link [with] my\n  name for [1h] ▾”; crossing out those words toggles them without layout shift.\n- Put pastes, theme and API keys in the avatar menu. Show keys once, store\n  SHA-256 hashes, check ownership on every owner route. Add JSON/multipart\n  HTTP creation and a small POSIX sh CLI using curl/jq. Read form files via\n  request.formData() and arrayBuffer(); do not expose private files directly.\n- Expose the main actions as MCP tools (named operations, auth \"user\", each\n  checking the owner): list and read your pastes without burning one-time\n  ones, create, change, revoke and delete, and open a shared link, sealed\n  until the person agrees to burn a one-time paste. Put Connect via MCP… in\n  the avatar menu: a sheet with the connector address to click and copy,\n  and tabs for Claude, ChatGPT, Claude Code and what the tools do.\n- Add safe file downloads, no-referrer/noindex, a Holm/source footer, and an\n  optional footer feedback link only if I supply a feedback project.\n- For this repository's store, use holm.json version, holm.symbol.svg (one\n  black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,\n  category, description, whatsNew and sample screenshots. These are repo\n  conventions, not a catalog format promised by the Holm guide.\n\nRun holm app validate --spec-v1 pastebin. With my approval, deploy with\nholm @<peer> app deploy pastebin --spec-v1 --host pastebin.<my-domain>.\nNever replace an occupied host or move an older-format app without asking.\nValidation does not run the app: test uploads, expiry, revocation and two\nsimultaneous one-time opens, plus mobile/desktop in light/dark. Report gaps\nhonestly. Inspect the target settings schema before setting sign-in branding.",
       "history": [
+        {
+          "version": "0.3.3",
+          "date": "2026-10-20",
+          "whatsNew": "Icons are generated from the app's symbol in Holm's Glass style."
+        },
         {
           "version": "0.3.2",
           "date": "2026-10-20",

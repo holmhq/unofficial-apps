@@ -1,8 +1,9 @@
 // What every page shares: who's signed in, moving between pages, the navbar (the search
 // lives there once a search has run), the sidebar of places, the phone's tab bar, the
-// account menu, and one layer for popovers, sheets and modals.
+// account menu, one layer for popovers, sheets and modals, click-to-copy fields, and the
+// Connect via MCP sheet.
 
-import { $, esc, act, phone, rel, toast } from './dom.js'
+import { $, $$, esc, act, phone, rel, toast, copy, haptic } from './dom.js'
 import { svg, svgMark, svgHolm } from './icons.js'
 import * as api from './api.js'
 import * as theme from './theme.js'
@@ -100,13 +101,14 @@ export function drawLayer(still) {
   if (!o) { L.className = 'layer'; L.innerHTML = ''; return }
   const b = bodies[o.kind](o)
   const small = phone()
+  const modal = 'modal' + (b.wide ? ' wide' : '')
   const box = $('.pop, .sheet, .modal', L)
   const scroll = box ? box.scrollTop : 0
   if (b.modal || small) {
     L.className = 'layer on dim'
     L.innerHTML = small
       ? `<div class="scrim" data-act="close-layer"></div><div class="sheet${still ? ' still' : ''}" role="dialog" aria-modal="true" aria-label="${esc(b.title || 'Details')}"><div class="grab"></div>${b.title && b.head !== false ? `<div class="sheet-h"><h3>${esc(b.title)}</h3><button type="button" class="link-btn" data-act="close-layer">Done</button></div>` : ''}${b.html}</div>`
-      : `<div class="scrim" data-act="close-layer"></div><div class="modal${still ? ' still' : ''}" role="dialog" aria-modal="true" aria-label="${esc(b.title || 'Details')}"><button type="button" class="icon-btn sm m-x" data-act="close-layer" aria-label="Close">${svg('x', 16)}</button>${b.html}</div>`
+      : `<div class="scrim" data-act="close-layer"></div><div class="${modal}${still ? ' still' : ''}" role="dialog" aria-modal="true" aria-label="${esc(b.title || 'Details')}"><button type="button" class="icon-btn sm m-x" data-act="close-layer" aria-label="Close">${svg('x', 16)}</button>${b.html}</div>`
   } else {
     L.className = 'layer on'
     const w = Math.min(b.w || 280, innerWidth - 24)
@@ -129,6 +131,78 @@ export function drawLayer(still) {
   if (nb && still) nb.scrollTop = scroll
   const focus = $('[autofocus]', L)
   if (focus && !still) setTimeout(() => focus.focus({ preventScroll: true }), 30)
+  fadeLong(L)
+}
+
+/* ---- Click to copy ---- */
+
+// Anything to copy is one field: the value on one line, a copy icon at its end, Copy on
+// hover, and a tick with Copied for 1.6 s after a click. A value too long for the line
+// scrolls sideways under a fade.
+export function copyHTML(value) {
+  return `<div class="copy-field" role="button" tabindex="0" data-act="copy-field" data-v="${esc(value)}" aria-label="Copy ${esc(value)}"><code class="copy-value">${esc(value)}</code><span class="copy-cue"><span class="copy-word" aria-live="polite">Copy</span><span class="cf-copy">${svg('copy', 16, 2)}</span><span class="cf-tick">${svg('check', 16, 2.4)}</span></span></div>`
+}
+
+function fadeLong(root) {
+  for (const v of $$('.copy-value', root)) {
+    const f = v.parentElement
+    const fade = () => f.classList.toggle('is-long', v.scrollLeft + v.clientWidth < v.scrollWidth - 1)
+    fade()
+    if (!v.dataset.fade) { v.dataset.fade = '1'; v.addEventListener('scroll', fade, { passive: true }) }
+  }
+}
+
+async function copyField(el) {
+  const word = $('.copy-word', el)
+  if (!(await copy(el.dataset.v))) {
+    getSelection().selectAllChildren($('.copy-value', el))
+    toast('Couldn’t copy. It’s selected, so copy it by hand.')
+    return
+  }
+  haptic()
+  el.classList.add('is-copied')
+  word.textContent = 'Copied'
+  clearTimeout(el._t)
+  el._t = setTimeout(() => { el.classList.remove('is-copied'); word.textContent = 'Copy' }, 1600)
+}
+
+document.addEventListener('keydown', (e) => {
+  const el = e.target
+  if ((e.key === 'Enter' || e.key === ' ') && el && el.classList && el.classList.contains('copy-field')) { e.preventDefault(); copyField(el) }
+})
+
+/* ---- Connecting Claude, or any app that takes MCP connectors ---- */
+
+const MCP_TABS = [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['code', 'Claude Code'], ['tools', 'Tools']]
+
+layerKind('mcp', (o) => {
+  const address = (state.me && state.me.mcp) || location.origin + '/_holm/mcp'
+  const tab = o.tab || 'claude'
+  const row = (lead, title, text) => `<div class="mcp-row">${lead}<div class="mcp-t"><b>${esc(title)}</b><small>${esc(text)}</small></div></div>`
+  const step = (n, title, text) => row(`<span class="mcp-ic num">${n}</span>`, title, text)
+  const can = (ic, title, text) => row(`<span class="mcp-ic">${svg(ic, 17, 2)}</span>`, title, text)
+  // Every pane sits in the same grid cell, so the sheet is as tall as the tallest and never jumps.
+  const panes = {
+    claude: `<div class="mcp-group">${step(1, 'Open Settings, then Connectors', 'On claude.ai or in the Claude app.')}${step(2, 'Add a custom connector', 'Name it Domains and paste the address.')}${step(3, 'Connect and sign in', 'Allow access once. Claude sees only your names and lists.')}</div>`,
+    chatgpt: `<div class="mcp-group">${step(1, 'Turn on Developer mode', 'In Settings, under Apps, then Advanced. On the web, on paid plans.')}${step(2, 'Create a connector', 'Name it Domains, paste the address and choose OAuth.')}${step(3, 'Connect and sign in', 'Then pick Domains from + in a chat.')}</div>`,
+    code: `<div class="mcp-code">${copyHTML('claude mcp add --transport http domains ' + address)}<p class="mcp-note">Run it in a terminal, then type <code>/mcp</code> in Claude Code and sign in.</p></div>`,
+    tools: `<div class="mcp-group">${can('sparkles', 'Suggest names', 'Short names to check here, with prices.')}${can('star', 'Your saved names', 'See them, save more and unsave.')}${can('folder', 'Your lists', 'Make lists, add names and notes.')}${can('link', 'Share a list', 'Turn a list’s link on or off.')}</div>`,
+  }
+  return {
+    modal: true, wide: true, title: 'Connect via MCP',
+    html: `${phone() ? '' : '<h3 class="m-title">Connect via MCP</h3>'}<div class="mcp">
+      <div class="mcp-hero" aria-hidden="true"><img class="mcp-app" src="/icon-192.png" alt="" width="60" height="60"><span class="mcp-link"><i></i><i></i><i></i><i></i><i></i></span><span class="mcp-tile">${svg('mcp', 32)}</span></div>
+      <div class="mcp-label">Connector address</div>
+      ${copyHTML(address)}
+      <div class="mcp-seg" role="group" aria-label="Where to connect">${MCP_TABS.map(([k, l]) => `<button type="button" class="${k === tab ? 'on' : ''}" data-act="mcp-tab" data-v="${k}" aria-pressed="${k === tab}">${l}</button>`).join('')}</div>
+      <div class="mcp-panes">${Object.entries(panes).map(([k, h]) => `<div class="mcp-pane${k === tab ? ' is-on' : ''}" data-pane="${k}"${k === tab ? '' : ' inert'}>${h}</div>`).join('')}</div>
+    </div>`,
+  }
+})
+
+// Closing puts focus back on the avatar, since the menu item that opened the sheet is gone.
+export function mcpSheet() {
+  openLayer({ kind: 'mcp', onClose: () => { const a = $('#avatar'); if (a) a.focus({ preventScroll: true }) } })
 }
 
 /* ---- Account ---- */
@@ -145,6 +219,7 @@ layerKind('account', () => {
       ${m ? `<div class="me">${m.picture ? `<img class="me-pic" src="${esc(m.picture)}" alt="" referrerpolicy="no-referrer">` : `<span class="me-pic">${svg('user', 18)}</span>`}<div class="me-t"><b>${esc(m.name || 'You')}</b><small>${esc(m.email || '')}</small></div></div>`
         : `<p>Sign in to keep Saved and your lists on every device, and to share a list.</p><button type="button" class="btn primary" data-act="sign-in">Sign in</button>`}
       <div class="acct-row"><span>Theme</span><div class="theme-seg" role="group" aria-label="Theme">${themes.map(([v, ic, l]) => `<button type="button" class="${mode === v ? 'on' : ''}" data-act="theme" data-v="${v}" aria-label="${l}" title="${l}" aria-pressed="${mode === v}">${svg(ic, 16)}</button>`).join('')}</div></div>
+      ${m ? `<button type="button" class="opt" data-act="mcp"><span class="ck">${svg('mcp', 16)}</span><span class="opt-t">Connect via MCP…</span></button>` : ''}
       ${surfaces && surfaces.analytics && me.admin ? `<a class="opt" href="${esc(surfaces.analytics)}" target="_blank" rel="noopener"><span class="ck">${svg('chartColumn', 16)}</span><span class="opt-t">Analytics</span></a>` : ''}
       ${m ? `<button type="button" class="opt" data-act="sign-out"><span class="ck">${svg('logOut', 16)}</span><span class="opt-t">Sign out</span></button>` : ''}
     </div>`,
@@ -154,6 +229,15 @@ layerKind('account', () => {
 act({
   account: (el) => { if (isOpen('account')) closeLayer(); else openLayer({ kind: 'account', anchor: el }) },
   'sign-in': () => signIn(),
+  mcp: () => mcpSheet(),
+  'mcp-tab': (el) => {
+    const v = el.dataset.v
+    if (state.layer) state.layer.tab = v
+    for (const b of $$('[data-act="mcp-tab"]')) { const on = b.dataset.v === v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)) }
+    for (const p of $$('.mcp-pane')) { const on = p.dataset.pane === v; p.classList.toggle('is-on', on); p.inert = !on }
+    fadeLong($('#layer'))
+  },
+  'copy-field': (el) => copyField(el),
   'sign-out': () => signOut(),
   theme: (el) => {
     const r = el.getBoundingClientRect()

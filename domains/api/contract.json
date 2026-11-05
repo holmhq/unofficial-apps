@@ -1,0 +1,468 @@
+{
+ "operations": {
+  "names.suggest": {
+   "handler": "namesSuggest",
+   "auth": "user",
+   "risk": "read",
+   "summary": "Suggest short domain names",
+   "description": "Makes short domain names from a name or idea the way Domains’ search does: shorter spellings, sound-alikes, initials, and optionally prefixes and suffixes (getzach, zachhq) and domain hacks (inter.net), paired with extensions: what was typed first, then the rest shortest first, each with why it was made and the extension’s list price. These tools can’t ask a registry, so a name’s status is what Domains last knew (a registry answer from the last ten minutes, or the status when the person saved it) and is usually \"unchecked\": never call an unchecked name available. Give the person the check_live link, which opens the search and checks every name live. Defaults to Domains’ short picks: com, io, co, ai, so, sh, me, to, app, dev, xyz, net.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "A name, a few words or an address, such as \"Zacharia\", \"harbour labs\" or \"zack.io\"."
+     },
+     "extensions": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 20
+      },
+      "maxItems": 40,
+      "description": "Extensions to pair with, such as [\"com\", \"io\", \"co.uk\"]."
+     },
+     "max_length": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 16,
+      "description": "Longest label to make, before the dot (default 8). What was typed is always included."
+     },
+     "affixes": {
+      "type": "boolean",
+      "description": "Also try prefixes and suffixes such as get-, try-, -hq and -app (default false)."
+     },
+     "domain_hacks": {
+      "type": "boolean",
+      "description": "Also try names where the extension finishes the word, like inter.net (default true)."
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "How many names (default 40)."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "saved.list": {
+   "handler": "savedList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "See your saved names",
+   "description": "Lists the names the person starred in Domains, newest first: each with when it was saved, what Domains found when it was last checked (status and checked; not live), its first-year and renewal list price, and any note. Signed-out stars stay in that browser and aren’t here.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300,
+      "description": "How many (default 100)."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "saved.update": {
+   "handler": "savedUpdate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Save or unsave names",
+   "idempotency": "optional",
+   "description": "Stars names for the person, or unstars them. Names must be whole domains with an extension Domains knows (zack.io, not zack). Names added here have no status until the person checks them in Domains. Up to 300 saved names.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "add": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 120
+      },
+      "maxItems": 50,
+      "description": "Domains to save, such as [\"zack.io\"]."
+     },
+     "remove": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 120
+      },
+      "maxItems": 50,
+      "description": "Saved domains to unsave."
+     },
+     "note": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "A short note on the names being added."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "lists.list": {
+   "handler": "listsList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "See your lists",
+   "description": "Lists the person’s lists of names (for a friend, a project): each with its id, name, note, how many names, its share link if shared, and a link to open it in Domains. lists_get gives one list’s names.",
+   "input": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "lists.get": {
+   "handler": "listsGet",
+   "auth": "user",
+   "risk": "read",
+   "summary": "Read a list",
+   "description": "Returns one list with its note, share link if shared, and every name on it, with what Domains last knew about each (not live) and its list price.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "list": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "The list’s id or name from lists_list."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "list"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "lists.create": {
+   "handler": "listsCreate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Make a list",
+   "idempotency": "optional",
+   "description": "Makes a list with a name, an optional note for whoever it’s shared with, and optional names to start with. share: true also gives it a link that opens for anyone, no sign-in, with every name checked live as it opens. Up to 50 lists of 200 names.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "The list’s name, such as \"For Maya\"."
+     },
+     "note": {
+      "type": "string",
+      "maxLength": 280,
+      "description": "A note for whoever sees the list."
+     },
+     "names": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 120
+      },
+      "maxItems": 50,
+      "description": "Domains to put on it."
+     },
+     "share": {
+      "type": "boolean",
+      "description": "Make a share link now."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "name"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "lists.update": {
+   "handler": "listsUpdate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Change a list",
+   "idempotency": "optional",
+   "description": "Renames a list, changes its note, adds or removes names, or turns its share link on or off (off stops the link at once; on again makes a new one). Returns the list with its names and link.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "list": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "The list’s id or name from lists_list."
+     },
+     "name": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "A new name."
+     },
+     "note": {
+      "type": "string",
+      "maxLength": 280,
+      "description": "A new note; an empty string clears it."
+     },
+     "add": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 120
+      },
+      "maxItems": 50,
+      "description": "Domains to add."
+     },
+     "remove": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 120
+      },
+      "maxItems": 50,
+      "description": "Domains to take off."
+     },
+     "share": {
+      "type": "boolean",
+      "description": "true for a share link, false to stop sharing."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "list"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  },
+  "lists.delete": {
+   "handler": "listsDelete",
+   "auth": "user",
+   "risk": "destructive",
+   "summary": "Delete a list",
+   "idempotency": "optional",
+   "description": "Deletes one of the person’s lists for good, and stops its share link. The names stay saved if they were starred. Only delete a list the person asked you to.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "list": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "The list’s id or name from lists_list."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "list"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    }
+   }
+  }
+ }
+}

@@ -3,7 +3,9 @@
 // The page does the searching. It makes the names to try, asks a lookup provider which are
 // available and shows them as they come in; providers are adapters in web/src/providers/. The
 // server here only does what a page can't: AI ideas, registry lookups for the RDAP adapter,
-// who is signed in, their saved names and lists, and shared lists (http.js).
+// who is signed in, their saved names and lists, and shared lists (http.js). The named
+// operations at the end are the tools Claude uses through Holm's MCP endpoint (/_holm/mcp);
+// contract.json describes them, and their code is in ops.js.
 //
 // This file stays small, since Holm loads it for every request; the routes load with
 // import(). Static files in web/ are served by Holm without running any of this.
@@ -77,3 +79,13 @@ async function shell(request, env) {
 function esc(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 }
+
+const ops = () => import('./ops.js')
+export async function namesSuggest(input, env, ctx) { return (await ops()).namesSuggest(input, env, ctx) }
+export async function savedList(input, env, ctx) { return (await ops()).savedList(input, env, ctx) }
+export async function savedUpdate(input, env, ctx) { return (await ops()).savedUpdate(input, env, ctx) }
+export async function listsList(input, env, ctx) { return (await ops()).listsList(input, env, ctx) }
+export async function listsGet(input, env, ctx) { return (await ops()).listsGet(input, env, ctx) }
+export async function listsCreate(input, env, ctx) { return (await ops()).listsCreate(input, env, ctx) }
+export async function listsUpdate(input, env, ctx) { return (await ops()).listsUpdate(input, env, ctx) }
+export async function listsDelete(input, env, ctx) { return (await ops()).listsDelete(input, env, ctx) }
