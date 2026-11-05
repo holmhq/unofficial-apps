@@ -10,7 +10,7 @@
 //    or input timing, an input that changes nothing, an input after the end.
 // Usage: node tools/check.mjs [games]   (default 40 bot games)
 
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { Game, COLS, ROWS, encode, decode, replay, MAX_FRAMES } from '../web/src/rules.js'
 
 const here = (path) => new URL('../' + path, import.meta.url)
@@ -222,6 +222,29 @@ if (longest) {
   const accepted = cases.map(([name]) => name)
   if (accepted.length) fail('accepted: ' + accepted.join(', '))
   else ok('broken records are refused')
+}
+
+/* ---- the service worker ---- */
+// It installs a version all or nothing, so it must list every page file and
+// carry the app's version, so a deploy installs the new set. A file typed
+// into the address bar is that file; every other address opens the game.
+{
+  const sw = readFileSync(here('web/sw.js'), 'utf8')
+  const listed = new Set([...sw.match(/const FILES = \[([\s\S]*?)\]/)[1].matchAll(/'([^']+)'/g)].map((m) => m[1]))
+  const missing = readdirSync(here('web/src')).filter((f) => /\.(js|css)$/.test(f)).map((f) => '/src/' + f).filter((f) => !listed.has(f))
+  const absent = [...listed].filter((f) => { if (f === '/') return false; try { readFileSync(here('web' + f)); return false } catch (_e) { return true } })
+  const version = JSON.parse(readFileSync(here('holm.json'), 'utf8')).version
+  const [, body, flags] = sw.match(/const FILE = \/(.+)\/([a-z]*)\n/)
+  const file = new RegExp(body, flags)
+  const [, passBody, passFlags] = sw.match(/const PASS = \/(.+)\/([a-z]*)\n/)
+  const pass = new RegExp(passBody, passFlags)
+  if (missing.length) fail(`sw.js doesn't list ${missing.join(', ')}`)
+  else if (absent.length) fail(`sw.js lists missing files ${absent.join(', ')}`)
+  else if ((sw.match(/const VERSION = '([^']+)'/) || [])[1] !== version) fail('sw.js VERSION must match holm.json')
+  else if (!['/icon-512.png', '/manifest.webmanifest', '/src/app.js'].every((path) => file.test(path))) fail('sw.js opens the game for a file')
+  else if (['/', '/anything'].some((path) => file.test(path))) fail('sw.js treats a page as a file')
+  else if (!['/_holm/x', '/_a/analytics', '/api/me', '/auth/login'].every((path) => pass.test(path)) || pass.test('/')) fail("sw.js must pass Holm's and the server's addresses through")
+  else ok(`sw.js keeps ${listed.size} files for ${version}`)
 }
 
 process.exit(failed ? 1 : 0)

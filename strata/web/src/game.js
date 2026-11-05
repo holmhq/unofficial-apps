@@ -342,7 +342,9 @@ export function mountPlay(container, handlers) {
       else if (!handlers.isOffline()) card.append(cta('Join the leaderboard', 'login', () => handlers.signIn(), true))
       if (finePointer.matches) card.append(el('div', { class: 'ov-hint' }, 'Enter to play again'))
     }
-    const overlay = el('div', { class: 'overlay' + (kind === 'over' ? ' calm' : '') }, card)
+    // The card that greets a fresh page is simply there: entrances play for
+    // changes, not on every load.
+    const overlay = el('div', { class: 'overlay' + (kind === 'over' ? ' calm' : '') + (info.still ? ' is-still' : '') }, card)
     cards.appendChild(overlay)
     cards.classList.add('on')
     // The card's first button takes the focus, so Enter goes on from here;
@@ -412,10 +414,10 @@ export function mountPlay(container, handlers) {
   window.addEventListener('pagehide', save)
 
   if (restore(prefs.current)) {
-    showCard('welcome')
+    showCard('welcome', { still: true })
   } else {
     prefs.saveCurrent(null)
-    showCard('start')
+    showCard('start', { still: true })
   }
   sync()
   measure()
