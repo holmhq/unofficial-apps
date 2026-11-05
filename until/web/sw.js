@@ -8,12 +8,13 @@
 // member's trackers stay with the node. An address that ends like a file (/icon-512.png) is
 // that file, even typed into the address bar; every other address is a page and gets the shell.
 
-const VERSION = '0.3.0'
+const VERSION = '0.3.1'
 const CACHE = 'until-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
   '/fonts/manrope-latin.woff2', '/fonts/manrope-latin-ext.woff2', '/src/styles.css',
-  '/src/app.js', '/src/dates.js', '/src/icons.js', '/src/mcp.js', '/src/palette.js', '/src/ui.js'
+  '/src/app.js', '/src/dates.js', '/src/icons.js', '/src/mcp.js', '/src/palette.js', '/src/ui.js',
+  '/src/feedback.js', '/vendor/feedback/embed.js'
 ]
 const FILE = /^\/.*\.[a-z0-9]+$/i
 const PASS = /^\/(_[^/]*|api|auth|cdn-cgi|\.well-known)(\/|$)|^\/sw\.js$/

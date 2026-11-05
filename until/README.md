@@ -156,6 +156,13 @@ each device. After the first deploy, inspect the settings schema and set the
 hosted sign-in page's `settings.apps.<app-id>.brand.name`, `brand.icon_url`
 and `theme.accent` on the peer.
 
+The footer's **Feedback** opens a project's form from
+[feedback.zyt.app](https://feedback.zyt.app) in a panel. `web/vendor/feedback/embed.js`
+is a copy of its widget, loaded the first time someone asks for it; point
+`PROJECT` in `web/src/feedback.js` at your own project, or drop the Feedback links. The
+form is framed from that origin, so let the app frame it:
+`holm @<peer> policy set security.csp.frame_src https://feedback.zyt.app --app <app-id>`.
+
 ## Known limits
 
 - Days are counted in the device's time zone; a tracker has no time of day.

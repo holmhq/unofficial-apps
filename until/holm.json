@@ -1,6 +1,6 @@
 {
   "name": "until",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "title": "Until",
   "shortName": "Until",
   "description": "Count down the days to anything, and rate each one as it passes. Works on your phone without an account; sign in to keep it everywhere.",

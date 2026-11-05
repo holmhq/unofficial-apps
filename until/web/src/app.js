@@ -10,6 +10,7 @@ import { icon } from './icons.js'
 import * as days from './dates.js'
 import { openMcpSheet } from './mcp.js'
 import { togglePalette } from './palette.js'
+import './feedback.js'
 
 const LOCAL = 'until:countdowns:v1'   // signed-out trackers, on this device
 const SETTINGS = 'until:settings:v1'  // colour and appearance
@@ -110,12 +111,27 @@ function drawKept() {
   render()
 }
 
+// Holm writes the addresses of its own pages for this app, analytics among them, into the
+// page it serves to the people allowed to see them. The copy of the page the service worker
+// keeps may be from before sign-in, so an admin's browser reads them from a fresh copy (the
+// worker lets a no-store request through) and puts them where the page looks for them.
+let surfacesAsked = false
+function freshSurfaces() {
+  if (surfacesAsked) return
+  surfacesAsked = true
+  fetch('/', { cache: 'no-store' }).then((r) => r.text()).then((page) => {
+    const m = /__HOLM_SURFACES__\s*=\s*(\{[^}]*\})/.exec(page)
+    globalThis.__HOLM_SURFACES__ = m ? JSON.parse(m[1]) : undefined
+  }).catch(() => { surfacesAsked = false })
+}
+
 async function start() {
   try {
     const me = await api(`/api/me?next=${encodeURIComponent(location.pathname)}`)
     const changed = (state.me?.email || null) !== (me.member?.email || null)
     state.me = me.member
     state.admin = !!me.admin
+    if (state.admin) freshSurfaces()
     state.mcp = me.mcp || null
     state.loginURL = me.loginURL
     state.logoutURL = me.logoutURL
