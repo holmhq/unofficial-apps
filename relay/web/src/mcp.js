@@ -57,6 +57,10 @@ export function openMcpSheet() {
     seg,
     el('div', { class: 'mcp-panes' }, ...Object.values(panes)),
     el('button', { class: 'btn ghost block', type: 'button', onclick: () => closeSheet() }, 'Done')));
-  // Closing puts focus back on the Settings row that opened it.
-  wrap._teardown = () => { if (opener && opener.isConnected) opener.focus(); };
+  // Closing puts focus back on what opened it: the Settings row, or the avatar button when it
+  // was the account menu or ⌘K, which are gone by then.
+  wrap._teardown = () => {
+    const back = opener && opener.isConnected && opener !== document.body ? opener : document.querySelector('.topbar .avatar-btn');
+    if (back) back.focus({ preventScroll: true });
+  };
 }

@@ -64,14 +64,23 @@ routes in `fetch(request, env)` directly, as the prompt asks.
     group) or by email; accept, decline or block. They keep Relay's privacy:
     an invite's answer never says whether a username exists.
 
-  A chat can be named by its id, a friend's `@username` or a group's handle. Settings → Connect via MCP
-  opens a sheet with the connector address (`https://<host>/_holm/mcp`) to
+  A chat can be named by its id, a friend's `@username` or a group's handle. Connect via MCP… in
+  the account menu, in ⌘K and in Settings opens a sheet with the connector address (`https://<host>/_holm/mcp`) to
   click and copy, and tabs for Claude, ChatGPT, Claude Code and what the
   tools do.
-- **Installable:** a web manifest, and a service worker that keeps the app
-  shell for offline starts. It never caches `/api/` answers.
-- Settings has Send feedback, an Analytics link for the app's admins, and an
-  "A Holm app" footer.
+- **Account and ⌘K:** a round avatar at the top right, signed out too, opens
+  who you are, Connect via MCP…, Analytics for the app's admins, a three-icon
+  theme switch and Sign in or out. ⌘K (Ctrl+K) goes to any tab or chat, and
+  does what the menu does.
+- **Opens at once:** a service worker precaches every page file at the
+  `holm.json` version, all or nothing, and serves them cache-first; a new
+  deploy takes over on the next launch. A signed-in launch draws your chat
+  list from what this browser last saw, then redraws only what changed.
+  Tabs stay alive, so switching back fetches nothing. It never caches
+  `/api/`, `/auth/` or Holm's own `/_` paths, and an address that ends like
+  a file (`/icon-512.png`) opens that file. Signing out forgets it all.
+- Settings and the welcome screen end with an "A Holm app · Feedback ·
+  Source" footer.
 
 ## How it is built
 
@@ -95,15 +104,18 @@ api/attachments.js      file uploads and downloads
 api/contacts.js         nicknames and photos for contacts
 api/previews.js         link previews and their images
 web/index.html          the page shell and the feedback embed tag
-web/sw.js               service worker: app shell, notification taps
+web/sw.js               service worker: precached shell, notification taps
 web/src/main.js         start-up, shell, router, realtime and notifications
 web/src/pages/          chats, chat, add, friends, settings, onboarding
 web/src/realtime.js     the /_ws client: reconnects and resubscribes
 web/src/mcp.js          the Connect via MCP sheet
+web/src/palette.js      ⌘K: go to a tab or chat, or do what the menu does
 web/src/styles.css      the whole look: tokens, light/dark, accents, layout
 web/src/icons.js        Lucide icons, baked in
 web/assets/             Inter, vendored, with its licence
 web/vendor/             the feedback embed and the Lucide licence
+tools/check.mjs         release checks: sw.js lists every file at the holm.json
+                        version and spares files and Holm's paths
 listing/                store listing and screenshots (not deployed)
 ```
 
@@ -160,7 +172,7 @@ links or an OAuth provider). With the app id printed by the deploy:
 - **Link previews** fetch any public site, so the app needs
   `holm @<peer> net allow-any --app <app-id>`. Without it, links show as plain
   addresses.
-- **Feedback:** Settings → Send feedback opens a form from the owner's
+- **Feedback:** Feedback in the footer opens a form from the owner's
   [feedback](../feedback/) app through a local copy of its `embed.js`. Set
   `data-project` and `data-origin` in `web/index.html` to your own project, or
   remove that tag. The site must be allowed to frame it:

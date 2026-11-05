@@ -14,9 +14,12 @@ var PROFILE_PHOTO_BYTES = 5 * 1024 * 1024, PROFILE_PHOTO_SIZE = 256
 export function handleMe(request) {
   var member = holm.auth.getMember()
   var profile = member && member.id ? getProfile(member.id) : null
+  var admin = false
+  try { admin = !!(member && holm.auth.isAppAdmin && holm.auth.isAppAdmin()) } catch (e) { admin = false }
   return ok({
     ok: true,
     loggedIn: !!member,
+    admin: admin,
     member: memberDTO(member),
     profile: profile,
     needsOnboarding: !!member && !profile,

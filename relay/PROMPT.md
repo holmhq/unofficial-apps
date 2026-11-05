@@ -35,11 +35,17 @@ build step or third-party runtime CDN; vendor fonts and icons with licences.
   without revealing whether a username exists. Settings has Connect via
   MCP with the MCP mark: a sheet with the connector address to click and
   copy, and tabs for Claude, ChatGPT, Claude Code and what the tools do.
-- A phone-first app shell where only panels scroll: Chats, Add, Friends,
-  Settings tabs, light/dark/auto themes and accent colours, sounds,
-  in-app notifications, an installable manifest and service worker. Follow
-  the guide's "feel finished" and "feel native" recipes, and draw one
-  holm.symbol.svg for every icon.
+- A phone-first app shell where only panels scroll, with no scroll bars:
+  Chats, Add, Friends, Settings tabs that stay alive between switches,
+  light/dark/auto themes and accent colours, sounds, in-app notifications,
+  an installable manifest. A round avatar button at the top right, signed
+  out too, opens a menu with who you are, Connect via MCP…, a three-icon
+  theme switch and Sign in or out; ⌘K goes to any tab or chat and does the
+  same. A service worker precaches every page file at the holm.json
+  version and opens cache-first, and a signed-in launch draws the chat list
+  at once from what the browser last saw. A footer with "A Holm app",
+  Feedback and Source. Follow the guide's "feel finished" and "feel native"
+  recipes, and draw one holm.symbol.svg for every icon.
 - For this repository's store, use holm.json version, holm.symbol.svg (one
   black path, no strokes, 0 0 24 24) and listing/listing.json with subtitle,
   category, description, whatsNew and sample screenshots. These are repo
@@ -75,3 +81,10 @@ Relay 0.3.0 came from this request, when the repository made MCP standard:
 Its tools grew from a follow-up the same day:
 
 > I hope relay also has the ability to list friends, see unread messages, invite folks etc?
+
+**Iteration 3**
+
+Relay 0.4.0 came from a sweep of every app against the repository's
+cookbook, which found it without the avatar button and ⌘K:
+
+> Sure do cookbook sweep

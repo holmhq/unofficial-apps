@@ -2,14 +2,16 @@
 // #app is the persistent shell container. Screens mount into it directly.
 // Routing uses the History API (clean URLs) on Holm's --spa fallback.
 
-import { el, clear, iconEl, toast, avatarEl, openSheet, closeSheet, holmFooter } from './ui.js';
+import { el, clear, iconEl, toast, avatarEl, openSheet, closeSheet, holmFooter, menu, closeMenu, themeSwitch } from './ui.js';
 import * as rt from './realtime.js';
-import { init as initTheme } from './theme.js';
-import { loadSession, openSignIn, session } from './auth.js';
-import { data, on, emit, prefs, conversationSync } from './state.js';
+import { init as initTheme, apply as applyTheme, THEMES } from './theme.js';
+import { loadSession, openSignIn, signOut, session } from './auth.js';
+import { data, on, emit, prefs, setPref, conversationSync, kept } from './state.js';
 import { api } from './api.js';
 import { unlock as unlockSound } from './sound.js';
 import { navigate, back, chatPath } from './router.js';
+import { openMcpSheet } from './mcp.js';
+import { togglePalette } from './palette.js';
 
 import * as onboarding from './pages/onboarding.js';
 import * as conversations from './pages/conversations.js';
@@ -122,6 +124,8 @@ function buildShell() {
 function render() {
   const s = session.status;
   if (currentCleanup) { try { currentCleanup(); } catch (_e) {} currentCleanup = null; }
+  resetHosts();
+  closeMenu();
 
   if (s === 'loading') {
     clear(root);
@@ -148,7 +152,9 @@ function render() {
 
 function signInScreen() {
   const invited = !!pendingJoinToken();
-  return el('div', { class: 'center fade-in' },
+  return el('div', { class: 'welcome' },
+    el('div', { class: 'topbar bare' }, el('div', { class: 'spacer' }), accountButton()),
+    el('div', { class: 'center' },
     el('img', { class: 'crest', src: '/favicon.svg', alt: 'Relay', width: '84', height: '84' }),
     el('h1', { text: 'Relay' }),
     el('p', { text: invited
@@ -156,7 +162,7 @@ function signInScreen() {
       : 'A private, mobile-first messenger. Connect by username — Relay never reveals who’s here.' }),
     el('button', { class: 'btn', style: { marginTop: '4px' }, onclick: () => openSignIn() }, invited ? 'Sign in to connect' : 'Sign in'),
     holmFooter()
-  );
+  ));
 }
 
 // ── router (clean URLs) ────────────────────────────────────────────────────
@@ -178,14 +184,35 @@ function parsePath() {
 // conversation fetch) can bail if a newer navigation supersedes it — prevents a
 // stale continuation from mounting a chat twice.
 let routeGen = 0;
+
+// Tabs stay alive: each keeps its page and its scroll, so switching back redraws and fetches
+// nothing. A chat (or the "no such chat" screen) is mounted fresh and dropped on the way out.
+let tabHosts = {};
+let chatHost = null;
+function dropChat() {
+  if (!chatHost) return;
+  if (chatHost.cleanup) { try { chatHost.cleanup(); } catch (_e) {} }
+  chatHost.node.remove();
+  chatHost = null;
+}
+function hideTabs() {
+  Object.values(tabHosts).forEach((t) => { if (!t.node.hidden) { t.scroll = t.node.scrollTop; t.node.hidden = true; } });
+}
+function resetHosts() {
+  dropChat();
+  Object.values(tabHosts).forEach((t) => { if (t.cleanup) { try { t.cleanup(); } catch (_e) {} } });
+  tabHosts = {};
+}
+
 async function route() {
   const gen = ++routeGen;
   const r = parsePath();
-  if (currentCleanup) { try { currentCleanup(); } catch (_e) {} currentCleanup = null; }
-  clear(stage);
+  closeMenu();
 
   if (r.name === 'chat') {
     root.classList.add('chat-mode');
+    hideTabs();
+    dropChat();
 
     // Resolve the room from my conversations list. /chat/<roomId> resolves by id;
     // /chat/@username and /chat/group/<slug> resolve from the list (which carries
@@ -217,23 +244,31 @@ async function route() {
     });
     const host = el('div', { class: 'chat fade-in' });
     stage.appendChild(host);
-    currentCleanup = chat.mount(host, { room: room, roomId: room.id }) || null;
+    chatHost = { node: host, cleanup: chat.mount(host, { room: room, roomId: room.id }) || null };
     return;
   }
 
   if (gen !== routeGen) return;                // bail if superseded mid-await
+  dropChat();
   root.classList.remove('chat-mode');
   highlightTab(r.name);
 
   let page;
-  if (r.name === 'chats') { setTopbar({ title: 'Relay', brand: true, actions: [newChatBtn()] }); page = conversations; }
-  else if (r.name === 'discover') { setTopbar({ title: 'Add someone' }); page = discover; }
-  else if (r.name === 'friends') { setTopbar({ title: 'Friends' }); page = friends; }
-  else { setTopbar({ title: 'Settings' }); page = settings; }
+  if (r.name === 'chats') { setTopbar({ title: 'Relay', brand: true, actions: [newChatBtn()], account: true }); page = conversations; }
+  else if (r.name === 'discover') { setTopbar({ title: 'Add someone', account: true }); page = discover; }
+  else if (r.name === 'friends') { setTopbar({ title: 'Friends', account: true }); page = friends; }
+  else { setTopbar({ title: 'Settings', account: true }); page = settings; }
 
+  hideTabs();
+  const alive = tabHosts[r.name];
+  if (alive) {
+    alive.node.hidden = false;
+    alive.node.scrollTop = alive.scroll || 0;
+    return;
+  }
   const host = el('div', { class: 'view' });
   stage.appendChild(host);
-  currentCleanup = page.mount(host) || null;
+  tabHosts[r.name] = { node: host, cleanup: page.mount(host) || null, scroll: 0 };
 }
 
 // /chat/@username or /chat/group/<slug> where I have no such room: a neutral
@@ -263,7 +298,7 @@ function mountNoRoom(r) {
     );
   }
   stage.appendChild(body);
-  currentCleanup = null;
+  chatHost = { node: body, cleanup: null };
 }
 
 function newChatBtn() {
@@ -446,6 +481,41 @@ function setTopbar(opts) {
   topbar.appendChild(titleNode);
   topbar.appendChild(el('div', { class: 'spacer' }));
   if (opts.actions) opts.actions.forEach((a) => topbar.appendChild(a));
+  if (opts.account) topbar.appendChild(accountButton());
+}
+
+// ── account button and menu ─────────────────────────────────────────────────
+// Always a round avatar at the top right: your picture signed in, a neutral one signed out.
+function accountButton() {
+  const p = session.status === 'ready' ? session.profile : null;
+  const btn = el('button', { class: 'avatar-btn', type: 'button', 'aria-haspopup': 'menu', 'aria-expanded': 'false',
+    'aria-label': p ? 'Account: ' + (p.displayName || '@' + p.username) : 'Sign in', title: p ? (p.displayName || '@' + p.username) : 'Sign in' },
+    p ? avatarEl({ picture: p.picture, username: p.username, displayName: p.displayName }, 32) : el('span', { class: 'avatar ghost' }, iconEl('user', { size: '17px' })));
+  btn.addEventListener('click', () => accountMenu(btn));
+  return btn;
+}
+on('profile', () => {
+  const old = topbar && topbar.querySelector('.avatar-btn');
+  if (old) old.replaceWith(accountButton());
+});
+
+function accountMenu(anchor) {
+  const p = session.status === 'ready' ? session.profile : null;
+  const surfaces = globalThis.__HOLM_SURFACES__;
+  const head = p
+    ? el('div', { class: 'menu-me' }, avatarEl({ picture: p.picture, username: p.username, displayName: p.displayName }, 38),
+        el('div', { class: 'grow' }, el('b', { text: p.displayName || '@' + p.username }), el('small', { class: 'mono', text: '@' + p.username })))
+    : el('div', { class: 'menu-me' }, el('span', { class: 'avatar ghost' }, iconEl('user', { size: '20px' })),
+        el('div', { class: 'grow' }, el('b', { text: 'Not signed in' }), el('small', { text: 'Sign in to chat' })));
+  menu(anchor, [
+    head,
+    'sep',
+    p ? { label: 'Connect via MCP…', icon: 'mcp', onclick: () => openMcpSheet() } : null,
+    p && session.admin && surfaces && surfaces.analytics ? { label: 'Analytics', icon: 'chart-column', onclick: () => window.open(surfaces.analytics, '_blank', 'noopener') } : null,
+    el('div', { class: 'menu-theme' }, themeSwitch(prefs.theme, (id) => { setPref('theme', id); applyTheme(); }, THEMES)),
+    'sep',
+    p ? { label: 'Sign out', icon: 'log-out', onclick: () => signOut() } : { label: 'Sign in', icon: 'log-in', onclick: () => openSignIn() }
+  ]);
 }
 
 function highlightTab(name) {
@@ -564,6 +634,7 @@ function refreshConversations() {
     .then((res) => {
       if (gen !== conversationSync.generation) return;
       data.conversations = (res && res.conversations) || [];
+      if (session.status === 'ready') kept.set('conversations', data.conversations);
       conversationSync.applied++;
       emit('conversations', { refreshed: true });
     })
@@ -629,6 +700,13 @@ document.addEventListener('visibilitychange', scheduleSync);
 // Escape: close whatever overlay is on top (auth modal → sheet/lightbox);
 // only otherwise does it back out of an open chat. One press does one thing.
 document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === 'k' || e.key === 'K')) {
+    if (session.status !== 'ready' || document.body.classList.contains('auth-open') || document.querySelector('.overlay-wrap')) return;
+    e.preventDefault();
+    closeMenu();
+    togglePalette();
+    return;
+  }
   if (e.key !== 'Escape') return;
   if (document.body.classList.contains('auth-open')) {
     const c = document.querySelector('.authmodal__close'); if (c) c.click(); return;

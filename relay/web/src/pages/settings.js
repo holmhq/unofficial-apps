@@ -2,7 +2,7 @@
 
 import { el, clear, avatarEl, openSheet, closeSheet, toast, holmFooter } from '../ui.js';
 import { iconEl } from '../icons.js';
-import { prefs, setPref, session } from '../state.js';
+import { prefs, setPref, session, on } from '../state.js';
 import { apply as applyTheme, ACCENTS, THEMES } from '../theme.js';
 import { signOut } from '../auth.js';
 import { api } from '../api.js';
@@ -110,19 +110,13 @@ export function mount(container) {
       el('div', { class: 'st' }, el('b', { text: 'Connect via MCP' }), el('small', { text: 'Let Claude or ChatGPT read your chats and send messages' })),
       iconEl('chevron-right', { size: '18px' }))));
 
-  // ── about: analytics for those Holm lets see it, feedback, and the footer ──
+  // ── about: analytics for those Holm lets see it; feedback is in the footer ──
   const surfaces = globalThis.__HOLM_SURFACES__;
   const extras = [];
-  if (surfaces && surfaces.analytics) {
+  if (surfaces && surfaces.analytics && session.admin) {
     extras.push(el('a', { class: 'setting', href: surfaces.analytics, target: '_blank', rel: 'noopener' },
       el('div', { class: 'si' }, iconEl('chart-column', { size: '18px' })),
       el('div', { class: 'st' }, el('b', { text: 'Analytics' }), el('small', { text: 'Visits to Relay, for its admins' })),
-      iconEl('chevron-right', { size: '18px' })));
-  }
-  if (globalThis.HolmFeedback) {
-    extras.push(el('button', { class: 'setting', type: 'button', style: { width: '100%', textAlign: 'left' }, onclick: () => globalThis.HolmFeedback.open() },
-      el('div', { class: 'si' }, iconEl('message-circle', { size: '18px' })),
-      el('div', { class: 'st' }, el('b', { text: 'Send feedback' }), el('small', { text: 'What works, what doesn’t, what you’d like' })),
       iconEl('chevron-right', { size: '18px' })));
   }
   if (extras.length) {
@@ -134,7 +128,7 @@ export function mount(container) {
   view.appendChild(el('div', { class: 'card' },
     el('button', { class: 'setting', style: { width: '100%', textAlign: 'left' }, onclick: () => signOut() },
       el('div', { class: 'si danger-si' }, iconEl('log-out', { size: '18px' })),
-      el('div', { class: 'st' }, el('b', { text: 'Sign out', style: { color: '#ef4444' } }))
+      el('div', { class: 'st' }, el('b', { class: 'danger-text', text: 'Sign out' }))
     )
   ));
 
@@ -143,7 +137,9 @@ export function mount(container) {
   container.appendChild(view);
   syncTheme();
   syncAccent();
-  return () => {};
+  // The account menu and ⌘K change the theme too; this page stays alive between tabs.
+  const offPrefs = on('prefs', () => { syncTheme(); syncAccent(); });
+  return () => offPrefs();
 }
 
 function openProfileEditor(onProfileChange) {

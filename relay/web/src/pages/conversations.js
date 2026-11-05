@@ -2,7 +2,6 @@
 
 import { el, clear, avatarEl, relTime } from '../ui.js';
 import { iconEl } from '../icons.js';
-import { api } from '../api.js';
 import { data, on } from '../state.js';
 import { navigate, chatPath } from '../router.js';
 
@@ -25,7 +24,7 @@ export function mount(container) {
           el('div', { class: 'top' },
             el('div', { class: 'name', text: c.title }),
             c.unread > 0 ? el('span', { class: 'badge', text: String(c.unread) }) : null,
-            el('div', { class: 'time', text: relTime(c.lastAt) })
+            el('div', { class: 'time', 'data-ts': c.lastAt ? String(c.lastAt) : null, text: relTime(c.lastAt) })
           ),
         el('div', { class: 'preview', text: c.lastPreview || 'Tap to chat' })
       )
@@ -42,9 +41,16 @@ export function mount(container) {
     );
   }
 
+  // Redraw only when what the list shows changed, so a refresh that brings the same chats
+  // doesn't rebuild the rows (and reload their pictures).
+  let drawn = '';
   function render() {
-    clear(list);
     const convs = data.conversations;
+    const sig = searchInput.value.trim().toLowerCase() + '\n' + JSON.stringify(convs.map((c) =>
+      [c.id, c.title, c.realTitle, c.alias, c.username, c.picture, c.avatar, c.unread, c.lastAt, c.lastPreview]));
+    if (sig === drawn) return;
+    drawn = sig;
+    clear(list);
     searchWrap.hidden = !convs.length;
     if (!convs.length) { list.appendChild(emptyState()); return; }
 
@@ -62,11 +68,12 @@ export function mount(container) {
   }
 
   searchInput.addEventListener('input', render);
+  // main.js loads the list when the session starts and keeps it current; this page stays
+  // alive between tabs, so it only draws what it's told changed.
   const off = on('conversations', render);
-  api.conversations()
-    .then((res) => { data.conversations = (res && res.conversations) || []; render(); })
-    .catch(() => render());
+  // relTime ("5m") moves on while the page is open.
+  const tick = setInterval(() => list.querySelectorAll('.time[data-ts]').forEach((t) => { t.textContent = relTime(Number(t.dataset.ts)); }), 60000);
 
   render();
-  return () => off();
+  return () => { off(); clearInterval(tick); };
 }

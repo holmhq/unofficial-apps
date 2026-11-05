@@ -47,7 +47,16 @@ export const data = {
   typing: {}         // roomId -> Set<memberId>
 };
 
+// What this browser last saw, so a signed-in launch draws at once: who you are and your chat
+// list. Signing out empties it.
+export const kept = {
+  get(key) { try { return JSON.parse(localStorage.getItem('relay:' + key) || 'null'); } catch (_e) { return null; } },
+  set(key, value) { try { if (value == null) localStorage.removeItem('relay:' + key); else localStorage.setItem('relay:' + key, JSON.stringify(value)); } catch (_e) {} }
+};
+
 export function resetData() {
+  kept.set('me', null);
+  kept.set('conversations', null);
   conversationSync.generation++;
   conversationSync.reads = {};
   data.conversations = [];

@@ -1,26 +1,42 @@
 // Relay — auth: embedded Holm sign-in, session load, sign-out.
 
 import { api } from './api.js';
-import { session, resetData, emit } from './state.js';
+import { session, resetData, emit, kept, data } from './state.js';
 
 let overlay = null;
 
+// A signed-in launch draws at once from what this browser last saw; the server's answer
+// redraws the page only if it says something else (signed out, or someone else).
 export function loadSession() {
-  session.status = 'loading';
+  const cached = kept.get('me');
+  const fromCache = session.status === 'loading' && !!(cached && cached.member && cached.profile);
+  if (fromCache) {
+    Object.assign(session, { member: cached.member, profile: cached.profile, channel: cached.channel || '', mcp: cached.mcp || '', admin: !!cached.admin, status: 'ready' });
+    data.conversations = kept.get('conversations') || [];
+    emit('session', session);
+  }
   return api.me()
     .then((res) => {
+      const status = !res.loggedIn ? 'signed-out' : !res.profile ? 'needs-onboarding' : 'ready';
+      const same = status === 'ready' && session.status === 'ready' && session.member && res.member &&
+        session.member.id === res.member.id && session.channel === (res.channel || '');
       session.member = res.member || null;
       session.profile = res.profile || null;
       session.channel = res.channel || '';
       session.mcp = res.mcp || '';
-      if (!res.loggedIn) session.status = 'signed-out';
-      else if (!res.profile) session.status = 'needs-onboarding';
-      else session.status = 'ready';
+      session.admin = !!res.admin;
       session.suggestedUsername = res.suggestedUsername || '';
-      emit('session', session);
+      session.status = status;
+      kept.set('me', status === 'ready' ? { member: session.member, profile: session.profile, channel: session.channel, mcp: session.mcp, admin: session.admin } : null);
+      if (status !== 'ready') kept.set('conversations', null);
+      // The kept session was stale (signed out, or someone else): start clean from the server's.
+      if (fromCache && !same) { location.reload(); return session; }
+      emit(same ? 'profile' : 'session', session);
       return session;
     })
-    .catch((e) => {
+    .catch(() => {
+      // Offline with a kept session: stay on it rather than showing the sign-in screen.
+      if (session.status === 'ready') return session;
       session.status = 'signed-out';
       session.member = null;
       session.profile = null;

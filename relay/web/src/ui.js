@@ -137,6 +137,75 @@ export function copyField(value) {
   return field;
 }
 
+// A popover menu under its button. Its own button again closes it, and so do Escape and a
+// click anywhere else. items: { label, icon, onclick, danger } | 'sep' | a Node.
+let openMenuState = null;
+export function menu(anchor, items) {
+  const again = openMenuState && openMenuState.anchor === anchor;
+  closeMenu();
+  if (again) return null;
+  const box = el('div', { class: 'menu', role: 'menu' });
+  items.forEach((item) => {
+    if (!item) return;
+    if (item === 'sep') { box.appendChild(el('hr')); return; }
+    if (item instanceof Node) { box.appendChild(item); return; }
+    box.appendChild(el('button', { class: 'menu-item' + (item.danger ? ' danger' : ''), type: 'button', role: 'menuitem',
+      onclick: () => { closeMenu(); if (item.onclick) item.onclick(); } },
+      item.icon ? _iconEl(item.icon, { size: '18px' }) : null, el('span', { class: 'grow', text: item.label })));
+  });
+  document.body.appendChild(box);
+  const r = anchor.getBoundingClientRect();
+  const left = Math.max(10, Math.min(r.right - box.offsetWidth, innerWidth - box.offsetWidth - 10));
+  box.style.left = left + 'px';
+  box.style.top = (r.bottom + 8) + 'px';
+  box.style.transformOrigin = (r.left + r.width / 2 - left) + 'px 0';
+  anchor.setAttribute('aria-expanded', 'true');
+  requestAnimationFrame(() => box.classList.add('open'));
+  const first = box.querySelector('button');
+  if (first && anchor.matches(':focus-visible')) first.focus({ preventScroll: true });
+  const away = (e) => {
+    if (e.type === 'keydown') {
+      if (e.key === 'Escape') { e.stopPropagation(); closeMenu(); anchor.focus({ preventScroll: true }); return; }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const list = Array.from(box.querySelectorAll('button'));
+        const i = list.indexOf(document.activeElement);
+        list[(i + (e.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length].focus();
+        e.preventDefault();
+      }
+      return;
+    }
+    if (box.contains(e.target) || anchor.contains(e.target)) return;
+    closeMenu();
+  };
+  setTimeout(() => {
+    document.addEventListener('pointerdown', away, true);
+    document.addEventListener('keydown', away, true);
+  });
+  openMenuState = { box, away, anchor };
+  return box;
+}
+export function closeMenu() {
+  if (!openMenuState) return false;
+  const { box, away, anchor } = openMenuState;
+  openMenuState = null;
+  document.removeEventListener('pointerdown', away, true);
+  document.removeEventListener('keydown', away, true);
+  anchor.setAttribute('aria-expanded', 'false');
+  box.classList.remove('open');
+  setTimeout(() => box.remove(), 160);
+  return true;
+}
+
+// Three icons for light, dark and this device's choice: no words, which would widen the menu.
+export function themeSwitch(value, onpick, themes) {
+  const box = el('div', { class: 'seg theme-seg', role: 'group', 'aria-label': 'Appearance' });
+  const buttons = themes.map((t) => el('button', { type: 'button', 'aria-label': t.label, title: t.label, 'aria-pressed': String(t.id === value),
+    onclick: () => { buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(themes[i].id === t.id))); onpick(t.id); } },
+    _iconEl(t.icon, { size: '17px' })));
+  buttons.forEach((b) => box.appendChild(b));
+  return box;
+}
+
 // Shared bottom sheet (contact details, etc.). One active at a time;
 // tapping the scrim dismisses. Mirrors the chat-thread sheet styling.
 let activeSheet = null;
@@ -254,11 +323,19 @@ export function relTime(ts) {
 
 export { _iconEl as iconEl, _svg as svg };
 
-// "A Holm app" and a source link, at the foot of Settings and the welcome screen.
+// "A Holm app", Feedback and Source, at the foot of Settings and the welcome screen.
 const HOLM_MARK = '<svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4.667 0h22.666A4.667 4.667 0 0 1 32 4.667v22.666A4.667 4.667 0 0 1 27.333 32H4.667A4.667 4.667 0 0 1 0 27.333V4.667A4.667 4.667 0 0 1 4.667 0ZM6.75 16h18.5c.414 0 .75.336.75.75v10.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75v4.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-10.5c0-.414.336-.75.75-.75Zm0-12h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Zm14 0h4.5c.414 0 .75.336.75.75v7.5c0 .414-.336.75-.75.75h-4.5a.75.75 0 0 1-.75-.75v-7.5c0-.414.336-.75.75-.75Z"/></svg>';
+export function openFeedback() {
+  const widget = globalThis.HolmFeedback || globalThis.ZytFeedback;
+  if (widget && widget.open) widget.open();
+  else toast('Feedback isn’t available right now', 'alert-triangle');
+}
 export function holmFooter() {
   return el('footer', { class: 'settings-foot' },
     el('a', { href: 'https://holmhq.com', target: '_blank', rel: 'noopener', html: HOLM_MARK + '<span>A Holm app</span>' }),
+    el('span', { class: 'dot', 'aria-hidden': 'true' }),
+    el('button', { type: 'button', onclick: openFeedback, text: 'Feedback' }),
+    el('span', { class: 'dot', 'aria-hidden': 'true' }),
     el('a', { href: 'https://github.com/holmhq/unofficial-apps/tree/main/relay', target: '_blank', rel: 'noopener', text: 'Source' })
   );
 }

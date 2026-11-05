@@ -294,7 +294,10 @@ export function mount(container, ctx) {
   function jumpToMessage(id) {
     const row = rowMap.get(id);
     if (!row) { toast('Original message is further up', 'reply'); return; }
-    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    // Scroll the thread itself: scrollIntoView would also move the fixed shell around it.
+    const top = row.getBoundingClientRect().top - thread.getBoundingClientRect().top + thread.scrollTop;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    thread.scrollTo({ top: Math.max(0, top - (thread.clientHeight - row.offsetHeight) / 2), behavior: reduce ? 'auto' : 'smooth' });
     row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
     setTimeout(() => row.classList.remove('flash'), 1400);
   }
@@ -303,6 +306,7 @@ export function mount(container, ctx) {
     if (!replyingTo) return;
     const q = replySnapshot(replyingTo);
     replyHost.appendChild(el('div', { class: 'reply-chip' },
+      el('span', { class: 'reply-chip-ic', 'aria-hidden': 'true' }, iconEl('reply', { size: '15px' })),
       el('div', { class: 'reply-chip-body' },
         el('div', { class: 'reply-chip-name', text: 'Replying to ' + quoteName(q) }),
         el('div', { class: 'reply-chip-text', text: quoteSnippet(q) })),

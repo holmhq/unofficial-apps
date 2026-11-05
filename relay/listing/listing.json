@@ -9,7 +9,7 @@
     "ralk"
   ],
   "description": "A messenger for the people who share your Holm node. Pick a username, add friends by theirs, and chat one to one or in groups. Messages, typing and unread counts arrive live, on your phone and your desktop at once.\n\nReply to a message by swiping it, forward it, copy it or delete it for everyone. Send photos, which shrink on your phone before they upload, and videos, audio or any other file up to 16 MB. Links unfold into previews that the server fetches, so the sites you share never see who's reading.\n\nRelay never says whether a username exists: an invite arrives quietly, and you only learn when someone accepts. Invite a friend who isn't here yet with a one-time email link, block anyone, and give contacts your own nicknames and photos. It installs like an app, with light and dark themes and your choice of colour.",
-  "whatsNew": "Connect Relay to Claude, ChatGPT or Claude Code: Settings → Connect via MCP shows how. Ask what you missed, have a chat summed up, send a message, or invite a friend and answer invites, without leaving the conversation.",
+  "whatsNew": "A round avatar at the top right now holds your account, Connect via MCP… and a three-icon theme switch, and ⌘K jumps to any chat or tab. Relay opens straight to your chats from the last visit, keeps each tab where you left it, and quoted replies lose their coloured bar for a soft tint.",
   "screenshots": [
     {
       "file": "chats.webp",

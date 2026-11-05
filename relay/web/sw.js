@@ -1,165 +1,78 @@
-// Relay service worker — app-shell precache + offline fallback + notification
-// clicks. (No `push` handler: Holm has no Web Push yet.)
-// Holm serves /sw.js with short/revalidating cache headers so update checks stay fresh.
+// Relay's app shell. Installing a version keeps every page file of that version, all or
+// nothing, and from then on Relay opens straight from them, like an app on a phone: no
+// request waits on the network. A new deploy changes VERSION (tools/check.mjs keeps it equal
+// to holm.json), so the browser installs the new set next time it looks; it takes over on
+// the next launch.
+//
+// Nothing under /api/, /auth/ or /_ (Holm's own pages and the realtime socket) is ever
+// answered from here. An address that ends like a file (/icon-512.png) is that file, even
+// typed into the address bar; every other address is a page and gets the shell.
+// (No `push` handler: Holm has no Web Push yet. Notifications are shown by the page.)
 
-const VERSION = 'relay-v0.3.0'; // the version in holm.json
-const CACHE_PREFIX = 'relay-v';
-const SHELL = [
-  '/',
-  '/index.html',
-  '/src/styles.css',
-  '/favicon.svg',
-  '/manifest.webmanifest'
-];
-
-function relayVersionParts(key) {
-  if (!key.startsWith(CACHE_PREFIX)) return null;
-  const parts = key.slice(CACHE_PREFIX.length).split('.').map((part) => Number(part));
-  return parts.length && parts.every((part) => Number.isInteger(part)) ? parts : null;
-}
-
-function compareRelayVersions(a, b) {
-  const left = relayVersionParts(a);
-  const right = relayVersionParts(b);
-  if (!left || !right) return 0;
-  const length = Math.max(left.length, right.length);
-  for (let i = 0; i < length; i += 1) {
-    const diff = (left[i] || 0) - (right[i] || 0);
-    if (diff) return diff;
-  }
-  return 0;
-}
-
-function isAppOwnedRoute(pathname) {
-  if (pathname === '/' || pathname === '/index.html') return true;
-  if (
-    pathname.startsWith('/auth/') ||
-    pathname.startsWith('/api/') ||
-    pathname.startsWith('/_') ||
-    pathname.startsWith('/cdn-cgi/')
-  ) return false;
-  return !/\/[^/]+\.[^/]+$/.test(pathname);
-}
-
-function shouldCacheNavigationShell(req, res) {
-  if (!res || !res.ok) return false;
-  const contentType = res.headers.get('content-type') || '';
-  if (!contentType.toLowerCase().includes('text/html')) return false;
-  const finalUrl = new URL(res.url || req.url, self.location.origin);
-  return finalUrl.origin === self.location.origin && isAppOwnedRoute(finalUrl.pathname);
-}
-
-function offlineNavigationResponse() {
-  return new Response(
-    '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Relay offline</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><main><h1>Relay is offline</h1><p>The app shell is not available right now. Check your connection and retry.</p></main></body></html>',
-    { status: 503, statusText: 'Service Unavailable', headers: { 'content-type': 'text/html; charset=utf-8' } }
-  );
-}
+const VERSION = '0.4.0'
+const CACHE = 'relay-' + VERSION
+const FILES = [
+  '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
+  '/assets/inter-latin.woff2', '/src/styles.css',
+  '/src/main.js', '/src/api.js', '/src/auth.js', '/src/icons.js', '/src/mcp.js', '/src/palette.js', '/src/realtime.js',
+  '/src/router.js', '/src/sound.js', '/src/state.js', '/src/theme.js', '/src/ui.js',
+  '/src/pages/chat.js', '/src/pages/conversations.js', '/src/pages/discover.js', '/src/pages/friends.js',
+  '/src/pages/onboarding.js', '/src/pages/settings.js',
+  '/vendor/feedback/embed.js'
+]
+const FILE = /^\/.*\.[a-z0-9]+$/i
+const PASS = /^\/(_[^/]*|api|auth|cdn-cgi|\.well-known)(\/|$)|^\/sw\.js$/
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(VERSION).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())
-  );
-});
+  event.waitUntil(caches.open(CACHE)
+    .then((cache) => cache.addAll(FILES.map((path) => new Request(path, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()))
+})
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      const relayKeys = keys.filter((key) => relayVersionParts(key)).sort(compareRelayVersions);
-      const newestPrior = relayKeys.filter((key) => key !== VERSION).pop();
-      const keep = new Set([VERSION, newestPrior].filter(Boolean));
-      return Promise.all(
-        relayKeys.filter((key) => !keep.has(key)).map((key) => caches.delete(key))
-      );
-    }).then(() => self.clients.claim())
-  );
-});
+  event.waitUntil(caches.keys()
+    .then((keys) => Promise.all(keys.filter((key) => key.startsWith('relay-') && key !== CACHE).map((key) => caches.delete(key))))
+    .then(() => self.clients.claim()))
+})
 
 self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
+  const { request } = event
+  const url = new URL(request.url)
+  if (request.method !== 'GET' || request.cache === 'no-store' || url.origin !== location.origin) return
+  if (PASS.test(url.pathname)) return
+  event.respondWith(answer(request, url))
+})
 
-  const url = new URL(req.url);
-
-  // Never cache API or realtime socket — always go to network.
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_ws')) return;
-
-  // App navigations: network-first, fall back to cached shell when offline.
-  // respondWith MUST resolve to a Response — never undefined — or the browser
-  // throws "Failed to convert value to 'Response'". Guard every fallback.
-  if (req.mode === 'navigate') {
-    let cacheWrite = Promise.resolve();
-    const responsePromise = fetch(req)
-      .then((res) => {
-        if (shouldCacheNavigationShell(req, res)) {
-          const copy = res.clone();
-          cacheWrite = caches.open(VERSION)
-            .then((c) => c.put('/index.html', copy))
-            .catch(() => undefined);
-        }
-        return res;
-      })
-      .catch(() => caches.match('/index.html')
-        .then((r) => r || caches.match('/'))
-        .then((r) => r || offlineNavigationResponse()));
-    event.respondWith(responsePromise);
-    event.waitUntil(responsePromise.then(() => cacheWrite, () => cacheWrite));
-    return;
+async function answer(request, url) {
+  const cache = await caches.open(CACHE)
+  if (request.mode === 'navigate' && !FILE.test(url.pathname)) {
+    const shell = await cache.match('/')
+    if (shell) return shell
+    return fetch(request)
   }
-
-  // Mutable source files: network-first so online clients see current bytes.
-  if (url.origin === self.location.origin && url.pathname.startsWith('/src/')) {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          if (res && res.status === 200) {
-            const copy = res.clone();
-            caches.open(VERSION).then((c) => c.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => caches.match(req).then((r) => r || Response.error()))
-    );
-    return;
-  }
-
-  // Same-origin static assets: stale-while-revalidate.
-  if (url.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(req).then((cached) => {
-        const network = fetch(req)
-          .then((res) => {
-            if (res && res.status === 200) {
-              const copy = res.clone();
-              caches.open(VERSION).then((c) => c.put(req, copy));
-            }
-            return res;
-          })
-          // If the network fails (offline, blocked by an extension, etc.) fall
-          // back to cache; if there's no cache either, yield a real (error)
-          // Response so respondWith never receives undefined.
-          .catch(() => cached || Response.error());
-        return cached || network;
-      })
-    );
-  }
-});
+  const hit = await cache.match(url.pathname)
+  if (hit) return hit
+  // Anything else of ours (an icon, the social image) is kept once fetched.
+  const response = await fetch(request)
+  if (response.ok && response.type === 'basic' && !response.redirected) cache.put(url.pathname, response.clone())
+  return response
+}
 
 // Notification tap: focus an open Relay window and route it to the chat, or
 // open one. Notifications are shown by the page via registration.showNotification
 // (tag `relay:<roomId>`, data.url = chat path) so they also work in installed PWAs.
 self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  const path = (event.notification.data && event.notification.data.url) || '/';
-  const target = new URL(path, self.location.origin).href;
+  event.notification.close()
+  const path = (event.notification.data && event.notification.data.url) || '/'
+  const target = new URL(path, self.location.origin).href
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
-      const win = wins.find((w) => new URL(w.url).origin === self.location.origin);
+      const win = wins.find((w) => new URL(w.url).origin === self.location.origin)
       if (win) {
-        win.postMessage({ type: 'relay:navigate', url: path });
-        return win.focus();
+        win.postMessage({ type: 'relay:navigate', url: path })
+        return win.focus()
       }
-      return self.clients.openWindow(target);
+      return self.clients.openWindow(target)
     })
-  );
-});
+  )
+})
