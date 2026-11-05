@@ -4,6 +4,7 @@
 
 import { h, fill, ic, wide, menu, toast, segmented, haptic, $ } from './ui.js'
 import { mark, HOLM } from './icons.js'
+import { openFeedback, FEEDBACK_URL } from './feedback.js'
 import * as theme from './theme.js'
 import { sound } from './sound.js'
 import { store, on, loadMe, loadState, loadThreads, loadDrafts, connect, unread, kept, keep, forget } from './store.js'
@@ -255,14 +256,13 @@ function accountMenu(anchor) {
     soundRow.firstChild.replaceWith(ic(sound.on ? 'sound' : 'mute', 19))
   } }, ic(sound.on ? 'sound' : 'mute', 19), h('span.grow', 'Sounds'), h('span.switch'))
   const surfaces = globalThis.__HOLM_SURFACES__
-  const feedback = globalThis.HolmFeedback
   menu(anchor, [
     h('div.me', avatarOf(member), h('div.grow', h('b.trunc', member.name), h('small', 'Signed in to Zend'))),
     seg,
     soundRow,
     'sep',
     surfaces && surfaces.analytics ? { label: 'Analytics', icon: 'chart', onclick: () => { location.href = surfaces.analytics } } : null,
-    feedback ? { label: 'Send feedback', icon: 'feedback', onclick: () => feedback.open() } : null,
+    { label: 'Send feedback', icon: 'feedback', onclick: () => openFeedback() },
     { label: 'Rules for texting', icon: 'shield', onclick: () => go('/phone#rules') },
     { label: 'Connect via MCP…', icon: 'mcp', onclick: () => mcpSheet(anchor) },
     { label: 'Sign out', icon: 'logout', onclick: signOut }
@@ -272,6 +272,8 @@ function accountMenu(anchor) {
 export function footNote() {
   return h('div.foot',
     h('a', { href: 'https://holmhq.com', target: '_blank', rel: 'noopener', html: `<svg width="12" height="12" viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="${HOLM}"/></svg>A Holm app` }),
+    h('span', { 'aria-hidden': 'true' }, '·'),
+    h('a', { href: FEEDBACK_URL, target: '_blank', rel: 'noopener', 'data-feedback': '' }, 'Feedback'),
     h('span', { 'aria-hidden': 'true' }, '·'),
     h('a', { href: 'https://github.com/holmhq/unofficial-apps/tree/main/zend', target: '_blank', rel: 'noopener' }, 'Source'))
 }

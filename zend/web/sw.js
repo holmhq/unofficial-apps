@@ -9,7 +9,7 @@
 // shell; an address that ends like a file (/icon-512.png) is that file, even typed into the
 // address bar.
 
-const VERSION = '0.4.0'
+const VERSION = '0.4.1'
 const CACHE = 'zend-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
@@ -17,7 +17,8 @@ const FILES = [
   '/src/main.js', '/src/ui.js', '/src/icons.js', '/src/api.js', '/src/store.js', '/src/sound.js', '/src/theme.js',
   '/src/sms.js', '/src/composer.js', '/src/mcp.js', '/src/palette.js',
   '/src/views/list.js', '/src/views/thread.js', '/src/views/compose.js', '/src/views/templates.js',
-  '/src/views/developers.js', '/src/views/phone.js', '/src/views/welcome.js'
+  '/src/views/developers.js', '/src/views/phone.js', '/src/views/welcome.js',
+  '/src/feedback.js', '/vendor/feedback/embed.js'
 ]
 const FILE = /^\/.*\.[a-z0-9]+$/i
 const PASS = /^\/(_[^/]*|api|auth|hooks|\.well-known)(\/|$)|^\/sw\.js$/

@@ -43,9 +43,24 @@ export function forget() {
   try { localStorage.removeItem(KEPT) } catch {}
 }
 
+// Holm writes the addresses of its own pages for this app, analytics among them, into the
+// page it serves to the people allowed to see them. The copy of the page the service worker
+// keeps may be from before sign-in, so an admin's browser reads them from a fresh copy (the
+// worker lets a no-store request through) and puts them where the page looks for them.
+let surfacesAsked = false
+function freshSurfaces() {
+  if (surfacesAsked) return
+  surfacesAsked = true
+  fetch('/', { cache: 'no-store' }).then((r) => r.text()).then((page) => {
+    const m = /__HOLM_SURFACES__\s*=\s*(\{[^}]*\})/.exec(page)
+    globalThis.__HOLM_SURFACES__ = m ? JSON.parse(m[1]) : undefined
+  }).catch(() => { surfacesAsked = false })
+}
+
 export async function loadMe() {
   try {
     store.me = await api.get('/api/me')
+    if (store.me.member && store.me.admin) freshSurfaces()
   } catch {
     store.me = { member: null, loginURL: '/auth/login', logoutURL: null }
   }
