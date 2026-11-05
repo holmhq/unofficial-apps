@@ -251,9 +251,6 @@ textarea.input { resize: vertical; min-height: 84px; line-height: 1.45; }
 .input.mono { font-family: var(--mono); font-size: 13.5px; }
 .input[readonly] { color: var(--ink-2); cursor: text; }
 [data-theme='dark'] .input { background: var(--raised); }
-.copy-row { display: flex; gap: 8px; margin-top: 10px; }
-.copy-row .input { flex: 1; min-width: 0; }
-.copy-row .btn { flex: none; height: 46px; }
 
 input.switch { flex: none; position: relative; width: 51px; height: 31px; margin: 0; border-radius: 16px; background: var(--fill-3); cursor: pointer; -webkit-appearance: none; appearance: none; transition: background .25s var(--ease); }
 input.switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, .15), 0 3px 1px rgba(0, 0, 0, .06); transition: transform .3s var(--spring); }
@@ -287,7 +284,6 @@ input.switch:checked::after { transform: translateX(20px); }
 .card-head svg { color: var(--accent-text); }
 .card-head b { flex: 1; font-size: 16px; letter-spacing: -.014em; }
 .card-head .num { color: var(--ink-2); font-size: 14px; font-weight: var(--w-label); }
-.card-text { color: var(--ink-2); font-size: 14.5px; }
 .card-note { margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
 .card-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
@@ -306,9 +302,7 @@ input.switch:checked::after { transform: translateX(20px); }
 .row.sound.on .row-main b { color: var(--accent-text); }
 .row.sound:active, .row.prompt:active { background: var(--fill-2); }
 @media (hover: hover) { .row.sound:hover { background: var(--fill-2); } }
-.row.prompt p, .row.tool span { flex: 1; min-width: 0; margin: 0; padding: 6px 0; font-size: 14.5px; line-height: 1.45; color: var(--ink); }
-.row.tool code { flex: none; width: 112px; color: var(--accent-text); font-size: 12.5px; }
-.row.tool span { color: var(--ink-2); }
+.row.prompt p { flex: 1; min-width: 0; margin: 0; padding: 6px 0; font-size: 14.5px; line-height: 1.45; color: var(--ink); }
 .lib-head { display: flex; align-items: baseline; gap: 8px; margin: 18px 4px 8px; }
 .lib-head b { font-size: 15px; letter-spacing: -.012em; }
 .lib-head span { font-size: 12.5px; color: var(--ink-2); }
@@ -407,9 +401,6 @@ input.switch:checked::after { transform: translateX(20px); }
 
 /* ---- Connect ----------------------------------------------------------------------- */
 
-.steps { margin: 0; padding: 0 0 0 22px; display: flex; flex-direction: column; gap: 12px; font-size: 14.5px; line-height: 1.5; }
-.steps li { padding-left: 4px; }
-.steps li::marker { color: var(--accent-text); font-weight: var(--w-strong); }
 
 /* ---- Tabs, sidebar ------------------------------------------------------------------- */
 
@@ -500,6 +491,8 @@ input.switch:checked::after { transform: translateX(20px); }
   .layer { align-items: center; padding: 24px; }
   .sheet { width: min(480px, 100%); max-height: min(780px, 100%); border-radius: 18px; transform: translateY(16px) scale(.96); opacity: 0; transition: transform .32s var(--ease), opacity .2s; }
   .sheet.wide { width: min(600px, 100%); }
+  /* Wide enough for the Claude Code command on one line, with some to spare. */
+  .sheet.wide:has(.mcp-hero) { width: min(660px, 100%); }
   .layer.open .sheet { transform: none; opacity: 1; }
   .grabber { display: none; }
   .sheet-head { min-height: 56px; }
@@ -561,7 +554,68 @@ input.switch:checked::after { transform: translateX(20px); }
 .top { view-transition-name: top-bar; }
 ::view-transition-old(top-bar), ::view-transition-new(top-bar) { animation-duration: .25s; }
 
+/* ---- Connect via MCP --------------------------------------------------------------- */
+
+.sheet-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.sheet-label { margin: 4px 4px -6px; color: var(--ink-2); font-size: 13px; font-weight: var(--w-strong); }
+.sheet-note { margin: 0 4px; color: var(--ink-2); font-size: 13.5px; line-height: 1.5; }
+.sheet-note code { padding: .1em .35em; border-radius: 5px; background: var(--fill); color: var(--ink); font: 12.5px var(--mono); }
+.mcp-panes .row { min-height: 54px; padding-left: 14px; }
+.mcp-panes .row + .row::before { left: 56px; }
+.mcp-panes .row b { display: block; font-size: 15px; font-weight: var(--w-strong); letter-spacing: -.012em; }
+.mcp-panes .row small { display: block; color: var(--ink-2); font-size: 13px; line-height: 1.38; }
+.row-ic { flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-text); }
+.row-ic.is-num { background: var(--fill); color: var(--ink-2); font: var(--w-strong) 14px/1 var(--font); font-variant-numeric: tabular-nums; }
+
+/* A wave runs from the app to the MCP mark, then rests, for as long as it shows. */
+.mcp-hero { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 0 6px; }
+.mcp-app { width: 60px; height: 60px; border-radius: 14px; box-shadow: var(--shadow-1); }
+.mcp-tile { width: 60px; height: 60px; border-radius: 14px; display: grid; place-items: center; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+[data-theme='dark'] .sheet .mcp-tile { background: #2c2c2e; }
+.mcp-link { display: flex; gap: 6px; }
+.mcp-link i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); opacity: .45; animation: mcp-flow 2.4s var(--ease) infinite; }
+.mcp-link i:nth-child(2) { animation-delay: .12s; }
+.mcp-link i:nth-child(3) { animation-delay: .24s; }
+.mcp-link i:nth-child(4) { animation-delay: .36s; }
+.mcp-link i:nth-child(5) { animation-delay: .48s; }
+@keyframes mcp-flow { 0%, 36%, 100% { opacity: .45; transform: none; } 14% { opacity: 1; transform: scale(1.3); background: var(--accent); } }
+.mcp-panes { display: grid; grid-template-columns: minmax(0, 1fr); }
+.mcp-panes > * { grid-area: 1 / 1; align-self: start; }
+.mcp-panes > :not(.is-on) { visibility: hidden; }
+.mcp-panes > .is-on { animation: mcp-pane .22s var(--ease); }
+@keyframes mcp-pane { from { opacity: 0; transform: translateY(4px); } }
+
+/* Anything to copy is one button: the value, then a copy icon that turns into a tick. */
+.copy-field { --cf-base: var(--surface); --cf-bg: var(--cf-base); display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px; border-radius: 12px; background: var(--cf-bg); box-shadow: inset 0 0 0 1px var(--line-2); color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s, box-shadow .15s; }
+[data-theme='dark'] .copy-field { --cf-base: var(--raised); }
+.copy-field:active { --cf-bg: color-mix(in srgb, var(--cf-base), var(--ink) 8%); }
+@media (hover: hover) { .copy-field:hover { --cf-bg: color-mix(in srgb, var(--cf-base), var(--ink) 4%); box-shadow: inset 0 0 0 1px var(--fill-3); } }
+.copy-value { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; white-space: nowrap; font: 12.5px/46px var(--mono); letter-spacing: 0; }
+.copy-value::-webkit-scrollbar { display: none; }
+.copy-field.is-long .copy-value { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.copy-cue { position: relative; flex: none; display: grid; color: var(--ink-3); transition: color .15s; }
+.copy-cue svg { grid-area: 1 / 1; transition: opacity .15s, transform .25s var(--spring); }
+.copy-cue .cf-tick { opacity: 0; transform: scale(.5); color: var(--green); }
+.copy-word { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); padding: 3px 7px 3px 26px; background: linear-gradient(to right, transparent, var(--cf-bg) 20px); color: var(--ink-2); font: var(--w-strong) 13px/1.2 var(--font); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; }
+@media (hover: hover) { .copy-field:hover .copy-cue, .row.prompt:hover .copy-cue { color: var(--ink); } .copy-field:hover .copy-word, .row.prompt:hover .copy-word { opacity: 1; } }
+.is-copied .copy-word { opacity: 1; color: var(--green-text); }
+.is-copied .copy-cue .cf-copy { opacity: 0; transform: scale(.5); }
+.is-copied .copy-cue .cf-tick { opacity: 1; transform: none; }
+.copy-field:focus-visible, .row.prompt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row.prompt { --cf-bg: var(--surface); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s; }
+@media (hover: hover) { .row.prompt:hover { --cf-bg: var(--fill-2); background: var(--fill-2); } }
+.row.prompt:focus-visible { outline-offset: -2px; border-radius: 16px; }
+
+/* The Connect tab's way in: the same picture as the sheet, and the button that opens it. */
+.connect-card { align-items: stretch; gap: 14px; padding: 18px; }
+.connect-card .mcp-tile { background: var(--bg-grouped); }
+.connect-text { text-align: center; }
+.connect-text b { display: block; font-size: 19px; font-weight: var(--w-title); letter-spacing: -.02em; }
+.connect-text p { margin: 4px auto 0; max-width: 34ch; color: var(--ink-2); font-size: 14.5px; line-height: 1.45; text-wrap: balance; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
   .live-dot::after { display: none; }
+  /* An endless animation at .01ms flickers, so the dots stop by name. */
+  .mcp-link i { animation: none !important; opacity: .7; }
 }

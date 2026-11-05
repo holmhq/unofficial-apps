@@ -18,3 +18,5 @@ export async function opSaySend(input, env) { return (await ops()).opSaySend(inp
 export async function opSoundsList(input, env) { return (await ops()).opSoundsList(input, env); }
 export async function opSoundsPlay(input, env) { return (await ops()).opSoundsPlay(input, env); }
 export async function opHistoryList(input, env) { return (await ops()).opHistoryList(input, env); }
+export async function opPrefsUpdate(input, env) { return (await ops()).opPrefsUpdate(input, env); }
+export async function opHistoryClear(input, env) { return (await ops()).opHistoryClear(input, env); }

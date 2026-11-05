@@ -1,6 +1,6 @@
 // What every page shares: who's signed in, the catalog of sounds, moving between pages, the
 // top bar with its round account button, the account menu and the footer.
-import { h, ic, avatar, menu, segmented, toggle, haptic, toast } from './ui.js'
+import { h, ic, avatar, menu, segmented, toggle, haptic, toast, sheet, copyField } from './ui.js'
 import { mark, holmMark } from './icons.js'
 import * as api from './api.js'
 import * as theme from './theme.js'
@@ -117,6 +117,7 @@ function accountMenu(anchor) {
       ? h('div.me', avatar({ key: m.email || m.name, name: m.name, picture: m.picture }), h('div.grow', h('b.trunc', m.name || 'You'), h('small.trunc', m.email || '')))
       : h('div.me', h('span.avatar.ghost', ic('user', 22, 2)), h('div.grow', h('b', 'Not signed in'), h('small', 'Sign in to connect Claude'))),
     'sep',
+    m ? { label: 'Connect via MCP…', icon: 'mcp', onclick: () => mcpSheet() } : null,
     themes,
     row('volume2', 'Sounds', toggle(audio.isOn(), (v) => { audio.setOn(v); if (v) audio.play('ui_pop/soft', { force: true }) }, 'Sounds')),
     m && perm !== 'unsupported' ? { label: perm === 'granted' ? 'Notifications allowed' : perm === 'denied' ? 'Notifications blocked' : 'Allow notifications', icon: perm === 'granted' ? 'bellRing' : perm === 'denied' ? 'bellOff' : 'bell', onclick: () => { if (perm === 'default') notify.ask().then((p) => toast(p === 'granted' ? 'Notifications allowed' : 'Notifications stay off', { kind: p === 'granted' ? 'good' : 'info' })); else if (perm === 'denied') toast('Allow notifications for this site in your browser’s settings.', { kind: 'info', ms: 5000 }); else toast('Browser notifications are on') } } : null,
@@ -125,6 +126,61 @@ function accountMenu(anchor) {
     m ? { label: 'Sign out', icon: 'logOut', onclick: signOut } : { label: 'Sign in', icon: 'user', onclick: signIn }
   ]
   menu(anchor, items, { align: 'end' })
+}
+
+/* ---- Connecting Claude, or any app that takes MCP connectors ---------------------- */
+
+// One sheet: the address to copy, then how to add it to Claude, ChatGPT or Claude Code, and
+// what the tools do. The address comes from /api/me, so each host shows its own.
+export function mcpSheet(tab = 'claude') {
+  const mcp = (state.me && state.me.mcp) || location.origin + '/_holm/mcp'
+  const command = 'claude mcp add --transport http ralk ' + mcp
+  const pop = () => audio.play('ui_pop/soft')
+  const step = (n, title, text) => h('div.row', h('span.row-ic.is-num', String(n)), h('div.grow', h('b', title), h('small', text)))
+  const can = (icon, title, text) => h('div.row', h('span.row-ic', ic(icon, 17, 2)), h('div.grow', h('b', title), h('small', text)))
+  // Every pane sits in the same grid cell, so the sheet is as tall as the tallest and never jumps.
+  const panes = {
+    claude: h('div.group',
+      step(1, 'Open Settings, then Connectors', 'On claude.ai or in the Claude app.'),
+      step(2, 'Add a custom connector', 'Name it Ralk and paste the address.'),
+      step(3, 'Connect and sign in', 'Allow access once. Claude sees only your notifications.')),
+    chatgpt: h('div.group',
+      step(1, 'Turn on Developer mode', 'In Settings, under Apps, then Advanced. On the web, on paid plans.'),
+      step(2, 'Create a connector', 'Name it Ralk, paste the address and choose OAuth.'),
+      step(3, 'Connect and sign in', 'Then pick Ralk from + in a chat.')),
+    code: h('div.sheet-stack',
+      copyField(command, { onCopy: pop }),
+      h('p.sheet-note', 'Run it where Claude Code runs, then type ', h('code', '/mcp'), ' in Claude Code and sign in.')),
+    tools: h('div.group',
+      can('bellRing', 'Tell you', 'A sound and a notification on your devices.'),
+      can('audioLines', 'Say it out loud', 'A line or two, in the voice you chose.'),
+      can('slidersHorizontal', 'Change your sounds', 'The voice, and the sound for each kind.'),
+      can('history', 'Look back', 'Recent notifications, or clear them.'))
+  }
+  const show = (v) => Object.entries(panes).forEach(([k, el]) => { el.classList.toggle('is-on', k === v); el.inert = k !== v })
+  show(tab)
+  return sheet({
+    title: 'Connect via MCP',
+    cancel: null,
+    done: 'Done',
+    wide: true,
+    // Opened from the account menu, whose item is gone by now: focus goes back to the avatar.
+    onClose: () => { if (!document.activeElement || document.activeElement === document.body) { const b = document.querySelector('.avatar-btn'); if (b) b.focus({ preventScroll: true }) } },
+    body: () => h('div.sheet-stack.mcp-sheet',
+      h('div.mcp-hero', { 'aria-hidden': 'true' },
+        h('img.mcp-app', { src: '/icon-192.png', alt: '', width: 60, height: 60 }),
+        h('span.mcp-link', h('i'), h('i'), h('i'), h('i'), h('i')),
+        h('span.mcp-tile', ic('mcp', 32))),
+      h('div.sheet-label', 'Connector address'),
+      copyField(mcp, { onCopy: pop }),
+      segmented([
+        { value: 'claude', label: 'Claude' },
+        { value: 'chatgpt', label: 'ChatGPT' },
+        { value: 'code', label: 'Claude Code' },
+        { value: 'tools', label: 'Tools' }
+      ], tab, (v) => { show(v); audio.play('pro_hover_tick/soft') }, { label: 'Where to connect' }),
+      h('div.mcp-panes', ...Object.values(panes)))
+  })
 }
 
 /* ---- Footer and feedback ------------------------------------------------------- */

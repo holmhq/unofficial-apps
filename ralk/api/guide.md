@@ -57,8 +57,12 @@ this month's usage; there is a monthly allowance.
 - `me_get`: who you are, listening devices, the chosen voice and sounds, usage.
 - `notify_send`: `{ title, body?, kind?, say?, sound?, project? }`.
 - `say_send`: `{ text, project?, sound? }`.
-- `sounds_list`: the kinds with their default sounds, and every sound with a name,
-  a one-line description and its length.
+- `sounds_list`: the kinds with their default sounds, every sound with a name, a
+  one-line description and its length, and the voices by language.
 - `sounds_play`: `{ sound }`.
 - `history_list`: recent notifications and which devices heard them; use it to avoid
   repeating yourself after a reconnect.
+- `prefs_update`: `{ voice?, sounds? }`, when the person asks for a different voice or
+  a different sound for a kind. Play a sound with `sounds_play` first if they want to
+  hear it before choosing.
+- `history_clear`: empties their history on every device. Only when they ask.

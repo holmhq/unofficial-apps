@@ -310,14 +310,52 @@ export function nope(el) {
   el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-7px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(2px)' }, { transform: 'none' }], { duration: 380, easing: 'ease-out' })
 }
 
-export async function copyText(text, what = 'Copied') {
-  try {
-    await navigator.clipboard.writeText(text)
-    toast(what)
-  } catch {
-    toast('Couldn’t copy. Select it and copy by hand.', { kind: 'bad' })
-  }
+// A value to copy, such as an address or a command: the whole field is one button. A click
+// (or Enter or Space) copies it, turns the icon into a tick and says Copied for a moment. A
+// value too long for the line scrolls sideways under a fade.
+export function copyField(value, options = {}) {
+  const text = h('code.copy-value', value)
+  const el = copyable(h('div.copy-field', text, copyCue()), value, { ...options, select: text })
+  const fade = () => el.classList.toggle('is-long', text.scrollLeft + text.clientWidth < text.scrollWidth - 1)
+  text.addEventListener('scroll', fade, { passive: true })
+  new ResizeObserver(fade).observe(text)
+  return el
 }
+
+// The copy icon, the tick that replaces it, and the word that fades in beside them.
+export function copyCue() {
+  const copy = ic('copy', 16, 2)
+  const tick = ic('check', 16, 2.4)
+  copy.classList.add('cf-copy')
+  tick.classList.add('cf-tick')
+  return h('span.copy-cue', h('span.copy-word', { 'aria-live': 'polite' }, 'Copy'), copy, tick)
+}
+
+// Make `el` copy `value` when clicked, as a button. If the clipboard refuses, the text is
+// selected so it can be copied by hand.
+export function copyable(el, value, { onCopy = null, select = el } = {}) {
+  const word = el.querySelector('.copy-word')
+  let timer
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(value) } catch {
+      getSelection().selectAllChildren(select)
+      toast('Couldn’t copy. It’s selected, so copy it by hand.', { kind: 'bad' })
+      return
+    }
+    haptic(5)
+    if (onCopy) onCopy()
+    el.classList.add('is-copied')
+    if (word) word.textContent = 'Copied'
+    clearTimeout(timer)
+    timer = setTimeout(() => { el.classList.remove('is-copied'); if (word) word.textContent = 'Copy' }, 1600)
+  }
+  el.setAttribute('role', 'button')
+  el.setAttribute('tabindex', '0')
+  el.addEventListener('click', copy)
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy() } })
+  return el
+}
+
 
 // Scroll the nearest panel so `el` shows, without moving the fixed shell.
 export function reveal(el, panel = el && el.closest('.panel, .sheet-body')) {

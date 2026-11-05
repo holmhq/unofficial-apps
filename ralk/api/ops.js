@@ -2,9 +2,9 @@
 // /_holm/mcp. They are open to anyone signed in (auth "user"); every one acts only on the
 // caller's own notifications, so a stranger's Claude sees nothing of yours.
 import { reject, int } from './lib/util.js';
-import { context, person, prefsDTO, usageDTO, listening } from './people.js';
-import { catalog, KINDS } from './catalog.js';
-import { createNote, listNotes, playSound, LIMITS } from './notes.js';
+import { context, person, prefsDTO, usageDTO, listening, updatePrefs } from './people.js';
+import { catalog, KINDS, VOICES, DEFAULT_VOICE } from './catalog.js';
+import { createNote, listNotes, clearNotes, playSound, LIMITS } from './notes.js';
 
 const CODES = { 400: 'APP_INVALID_INPUT', 401: 'APP_UNAUTHORIZED', 403: 'APP_FORBIDDEN', 404: 'APP_NOT_FOUND', 409: 'APP_CONFLICT', 413: 'APP_INVALID_INPUT', 422: 'APP_INVALID', 429: 'APP_RATE_LIMITED', 502: 'APP_UNAVAILABLE', 503: 'APP_UNAVAILABLE' };
 // The contract declares no error details, so what they carry is already in the message.
@@ -62,7 +62,12 @@ function next({ note, listening: n }) {
 
 export function opSoundsList() {
   const { kinds, groups, sounds } = catalog();
-  return { kinds: kinds.map(({ id, label, blurb, sound }) => ({ id, label, blurb, default_sound: sound })), groups, sounds: sounds.map(({ id, name, blurb, group, dur }) => ({ id, name, blurb, group, seconds: dur })), limits: LIMITS };
+  return {
+    kinds: kinds.map(({ id, label, blurb, sound }) => ({ id, label, blurb, default_sound: sound })), groups,
+    sounds: sounds.map(({ id, name, blurb, group, dur }) => ({ id, name, blurb, group, seconds: dur })),
+    voices: VOICES.map((l) => ({ language: l.language, ids: l.voices.map((v) => v.id) })), default_voice: DEFAULT_VOICE,
+    limits: LIMITS,
+  };
 }
 
 export function opSoundsPlay(input, env) {
@@ -76,6 +81,24 @@ export function opHistoryList(input, env) {
   return op(env, (ctx) => {
     const notes = listNotes(env, ctx, int(input.limit, 20, 1, 100));
     return { notes: notes.map((n) => ({ id: n.id, kind: n.kind, title: n.title, body: n.body || undefined, say: n.say || undefined, project: n.project || undefined, from: n.from, at: new Date(n.at).toISOString(), heard_on: n.heard.map((h) => h.device), speech: n.speech === 'none' ? undefined : n.speech })) };
+  });
+}
+
+// The voice and the sound for each kind, as the Sounds and Voice tabs set them. Open tabs
+// take the change at once (updatePrefs broadcasts it on the person's channel).
+export function opPrefsUpdate(input, env) {
+  return op(env, (ctx) => {
+    if (input.voice === undefined && (!input.sounds || !Object.keys(input.sounds).length)) reject(400, 'invalid_input', 'Say what to change: voice, or sounds for some kinds.');
+    const prefs = updatePrefs(env, ctx, { voice: input.voice, sounds: input.sounds });
+    return { voice: prefs.voice, sounds: prefs.sounds };
+  });
+}
+
+// Clear history, as the Live tab's menu does: every device's feed empties at once.
+export function opHistoryClear(input, env) {
+  return op(env, (ctx) => {
+    const out = clearNotes(env, ctx);
+    return { removed: out.deleted, left: out.more || undefined, next: out.more ? 'Some are left; call again to remove the rest.' : 'History is empty on every device.' };
   });
 }
 

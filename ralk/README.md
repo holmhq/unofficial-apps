@@ -22,12 +22,15 @@ needs `--spec-v1`; the node runs no build. Only `web/` is served as files:
 ## What it does
 
 - **Claude over MCP.** Connect Claude, Claude Code or ChatGPT to
-  `https://<your-host>/_holm/mcp`. Its tools: a guide on when to notify and
-  how to write for the ear, `notify_send` (a kind, a title, a body, an
-  optional spoken line, a project tag), `say_send` (a spoken line on its
-  own), `sounds_play`, `sounds_list`, `me_get` (how many devices are
-  listening, the voice, this month's usage) and `history_list`. Every send
-  answers with how many devices played it; zero means it shows as missed.
+  `https://<your-host>/_holm/mcp`: **Connect via MCP…** in the account menu
+  shows the address to copy and the steps for each. Its tools: a guide on
+  when to notify and how to write for the ear, `notify_send` (a kind, a
+  title, a body, an optional spoken line, a project tag), `say_send` (a
+  spoken line on its own), `sounds_play`, `sounds_list` (with the voices),
+  `me_get` (how many devices are listening, the voice, this month's usage),
+  `history_list`, `prefs_update` (the voice, and the sound for each kind) and
+  `history_clear`. Every send answers with how many devices played it; zero
+  means it shows as missed.
 - **Six kinds, each with a sound.** Done, needs you, question, problem, note
   and started. Each has a default sound you can change; Claude can also name
   any sound in the library, or none.
@@ -49,8 +52,9 @@ needs `--spec-v1`; the node runs no build. Only `web/` is served as files:
 - **The app.** Live: whether this device is listening, a test to send
   yourself, and the feed. Sounds: the volume, the sound for each kind, the
   library with a play button on every row. Voice: pick a voice with a sample,
-  say something yourself, this month's usage. Connect: the address and prompts
-  to try. Signed out, the landing page plays the sounds without an account.
+  say something yourself, this month's usage. Connect: the way into the
+  Connect via MCP sheet, and prompts to try, each copied with a tap. Signed
+  out, the landing page plays the sounds without an account.
 
 ### How it feels
 
@@ -58,16 +62,16 @@ Like a native app, the window never scrolls: a frosted bar on top, one panel
 that scrolls under it with no scroll bars, a tab bar at the bottom on a phone
 and a sidebar on a desk. Apple-like greys, one violet accent, Inter at sizes
 that mean something, light and dark. A round avatar button at the top right,
-signed out too, with the theme, a sounds switch and notifications. Cards rise
-in and flash their kind's colour when they land; a live dot pulses while the
-link is up; four bars dance on the card that is playing; the theme changes in
-a circle from where you tapped.
+signed out too, with Connect via MCP…, the theme, a sounds switch and
+notifications. Cards rise in and flash their kind's colour when they land; a
+live dot pulses while the link is up; four bars dance on the card that is
+playing; the theme changes in a circle from where you tapped.
 
 ## How it's built
 
 ```text
 api/main.js        tiny entry: loads http.js and ops.js with import()
-api/contract.json  Claude's 7 tools (auth "user"; each sees only the caller's own notes)
+api/contract.json  Claude's 9 tools (auth "user"; each sees only the caller's own notes)
 api/http.js        the web app's JSON API and the voice file routes
 api/ops.js         the named operations
 api/notes.js       notifications, the voice pipeline, the storage cache
@@ -143,8 +147,9 @@ frame the form:
 holm @<peer> policy set security.csp.frame_src "https://feedback.example.com" --app <app-id>
 ```
 
-Sign in, open Connect, and add the address to Claude: Settings → Connectors →
-Add custom connector; or in Claude Code,
+Sign in and choose **Connect via MCP…** in the account menu (or open the
+Connect tab) for the address and the steps: in Claude, Settings → Connectors →
+Add custom connector; in Claude Code,
 `claude mcp add --transport http ralk https://ralk.<your-domain>/_holm/mcp`.
 
 ## Known limits

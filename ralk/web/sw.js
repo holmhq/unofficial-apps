@@ -3,7 +3,7 @@
 // four seconds. Nothing under /api/ or /auth/ is ever cached: notifications stay on the
 // server. A click on a notification brings the open tab to the front.
 
-const CACHE = 'ralk-shell-v1'
+const CACHE = 'ralk-shell-v2'
 const SHELL = [
   '/', '/src/styles.css', '/src/main.js', '/src/shell.js', '/src/ui.js', '/src/icons.js', '/src/api.js', '/src/live.js',
   '/src/theme.js', '/src/audio.js', '/src/notify.js', '/src/inbox.js', '/src/render-worker.js',

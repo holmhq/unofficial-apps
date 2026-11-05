@@ -35,7 +35,7 @@ async function api(request, env, url) {
   const body = async () => readJSON(request);
   const [a, b, c] = parts;
 
-  if (a === 'me' && parts.length === 1 && method === 'GET') return json(me(env, ctx, url.searchParams.get('return')));
+  if (a === 'me' && parts.length === 1 && method === 'GET') return json(me(env, ctx, url.searchParams.get('return'), originOf(url)));
   if (a === 'sounds' && parts.length === 1 && method === 'GET') return json(catalog(), 200, { 'Cache-Control': 'public, max-age=600' });
 
   requireMember(ctx);
@@ -60,7 +60,7 @@ async function api(request, env, url) {
 }
 
 // Who you are, your channel, your preferences and this month's voice usage.
-export function me(env, ctx, back) {
+export function me(env, ctx, back, origin) {
   const auth = env.holm.auth;
   // Claude's tools cannot read secrets, so the web route leaves them a note of whether the voice is set up.
   const ready = configured(env);
@@ -76,6 +76,8 @@ export function me(env, ctx, back) {
     logout_url: auth.getLogoutURL(),
     voice_ready: ready,
     limits: LIMITS,
+    // This host's connector address, for the Connect via MCP sheet.
+    mcp: origin + '/_holm/mcp',
   };
   if (ctx.member) {
     const doc = person(env, ctx);

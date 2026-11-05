@@ -26,8 +26,13 @@ there.
   a guide on when to notify and how to write for the ear; notify_send with a
   kind (done, attention, question, error, info, start), a title, a body, an
   optional spoken line and a project tag; say_send for a spoken line alone;
-  sounds_play; sounds_list; me_get (listening devices, voice, usage);
-  history_list. Every send answers with how many devices are listening.
+  sounds_play; sounds_list (with the voices); me_get (listening devices,
+  voice, usage); history_list; prefs_update for the voice and each kind's
+  sound; history_clear. Every send answers with how many devices are
+  listening. Connect via MCP… in the account menu, with the MCP mark, opens a
+  sheet with the connector address to click and copy, and tabs for Claude,
+  ChatGPT, Claude Code and what the tools do; the Connect tab leads to it and
+  has prompts to try, each copied with a tap.
 - Sounds are made from code in the browser, not downloaded: vendor earshotjs
   (MIT) and render in a worker. Six kinds with default sounds the person can
   change; a library with a play button on every row; a volume for the device.
@@ -106,3 +111,8 @@ another app's account menu (Domains), and applied here:
 > Avoid the labels for light/dark/auto; its stupidly makes the memu wider
 
 > yes, fix ralk, zend and 3dsvg; then /close
+
+Version 0.2.0 came from the owner's reply to an offer to give Kalendar, Deck,
+Margin and Ralk the Connect via MCP sheet, and tools to Zend, Roll and Until:
+
+> yes, do both batches

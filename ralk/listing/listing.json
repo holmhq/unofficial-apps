@@ -9,7 +9,7 @@
     "margin"
   ],
   "description": "Claude Code runs in a VM, a container or a server with no speaker. Ralk is the tab on the machine in front of you: a chime when the build finishes, Olivia's voice when something needs you, a browser notification when you're in another window.\n\nConnect Claude, Claude Code or ChatGPT once. From then on Claude can tell you a task is done, that it needs your approval, that something broke, or ask a question: each kind has its own sound, and a spoken line follows a few seconds later. Every device you have open plays it; the card says which one heard it.\n\nThe 52 sounds are made from code in your browser, nothing to download, and you pick which one goes with each kind. The voice is Inworld TTS on fal.ai, Olivia by default, any of its voices with a sample; a line said before plays again at once and costs nothing.\n\nIt feels like an app: a bar that stays put, one panel that scrolls, a tab bar on your phone, light and dark, and sounds you can try before you sign in.",
-  "whatsNew": "The account menu closes when you tap the avatar again, its theme switch is three icons, and the Holm credit stays in the footer.",
+  "whatsNew": "Connect via MCP in the account menu: one sheet with the address to copy, the steps for Claude, ChatGPT and Claude Code, and what the tools do. Claude can now change your voice and sounds, and clear your history when you ask.",
   "screenshots": [
     {
       "file": "live.webp",
@@ -25,7 +25,7 @@
     },
     {
       "file": "connect.webp",
-      "alt": "The Connect tab: the address for Claude, Claude Code and ChatGPT, and prompts to try"
+      "alt": "The Connect tab: Connect via MCP, and prompts to try once Claude is connected"
     },
     {
       "file": "landing-dark.webp",
