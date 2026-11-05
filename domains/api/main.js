@@ -22,7 +22,9 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' wss://domain-search.namecheap.com",
+  // The footer's Feedback form is framed from feedback.zyt.app and reads its look from there.
+  "connect-src 'self' wss://domain-search.namecheap.com https://feedback.zyt.app",
+  "frame-src https://feedback.zyt.app",
   "manifest-src 'self'",
   "worker-src 'self'",
   "object-src 'none'",
