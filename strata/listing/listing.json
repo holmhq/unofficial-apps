@@ -9,7 +9,7 @@
     "3dsvg"
   ],
   "description": "Fit the falling pieces into full rows. Each full row dissolves from the middle out, then the layers above drop into place. The pace starts slow and levels off, the sounds are soft, and nothing shakes.\n\nTap to turn, drag to move, flick down to drop and swipe up to hold; on a computer, the arrow keys and Space. Pause whenever you like: a hidden tab pauses for you, and a reload carries on the same game.\n\nIt plays straight away on your phone with no account, and offline once installed. Sign in and your best game goes on the leaderboard, after the server has replayed it piece by piece to check the score. Four colour sets in warm earth tones, in light and dark.",
-  "whatsNew": "Strata now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line.",
+  "whatsNew": "Strata now opens straight away, even offline: every file of a version is kept on your device and a new version arrives on the next launch. Your avatar and the last leaderboard you saw show at once, the start card no longer pops in on every load, and long messages stay on one line. The footer has a Feedback link: tell us what you think in a short form without leaving the app.",
   "screenshots": [
     {
       "file": "board.webp",
