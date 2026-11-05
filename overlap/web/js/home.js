@@ -1,4 +1,4 @@
-import { h, api, avatar, icon, reducedMotion } from './ui.js'
+import { h, api, avatar, icon, reducedMotion, store } from './ui.js'
 import { session, signIn } from './app.js'
 import { dayLabel, minutes } from './time.js'
 
@@ -26,30 +26,37 @@ export async function homeView(view) {
     return { destroy: () => timers.forEach(clearTimeout) }
   }
 
-  const list = h('div', { class: 'plans' }, h('div', { class: 'skeleton', style: { height: '8.5rem' } }), h('div', { class: 'skeleton', style: { height: '8.5rem' } }))
+  // Your plans draw at once from this device's copy and redraw only if the server's answer
+  // differs. Cards rise in only when they arrive after the skeleton, never on a reload.
+  const slot = h('div', {})
   view.append(h('section', {},
     h('div', { class: 'section-head' }, h('h2', {}, 'Your plans'), h('a', { class: 'button small quiet', href: '/new' }, icon('plus'), 'New plan')),
-    list))
-  try {
-    const { owned, joined } = await api('/api/plans')
-    const all = [...owned, ...joined]
-    if (!all.length) {
-      list.replaceWith(h('div', { class: 'card empty' },
+    slot))
+  const key = `plans:${session.me.id}`
+  const cached = store.get(key)
+  const draw = (all, enter) => slot.replaceChildren(all.length
+    ? h('div', { class: 'plans' }, all.map((plan, i) => planCard(plan, i, enter)))
+    : h('div', { class: 'card empty' },
         h('h3', { class: 'title' }, 'No plans yet'),
         h('p', {}, 'Start one, and it will wait here for you.'),
         h('a', { class: 'button accent', href: '/new' }, icon('plus'), 'Plan a meeting')))
-    } else list.replaceChildren(...all.map((plan, i) => planCard(plan, i)))
-  } catch (e) {
-    list.replaceChildren(h('p', { class: 'muted' }, e.message))
-  }
+  if (cached) draw(cached, false)
+  else slot.append(h('div', { class: 'plans' }, h('div', { class: 'skeleton', style: { height: '8.5rem' } }), h('div', { class: 'skeleton', style: { height: '8.5rem' } })))
+  api('/api/plans').then(({ owned, joined }) => {
+    const all = [...owned, ...joined]
+    store.set(key, all)
+    if (!slot.isConnected) return
+    if (cached && JSON.stringify(cached) === JSON.stringify(all)) return
+    draw(all, !cached)
+  }).catch(e => { if (!cached) slot.replaceChildren(h('p', { class: 'muted' }, e.message)) })
   return { destroy: () => timers.forEach(clearTimeout) }
 }
 
 const step = (title, text) => h('li', { class: 'card' }, h('h3', {}, title), h('p', {}, text))
 
-function planCard(plan, i) {
+function planCard(plan, i, enter) {
   const dates = plan.days.length === 1 ? dayLabel(plan.days[0]) : `${dayLabel(plan.days[0])} – ${dayLabel(plan.days.at(-1))}`
-  return h('a', { class: 'card plan-card', href: `/p/${plan.slug}`, vars: { '--i': String(i) } },
+  return h('a', { class: 'card plan-card' + (enter ? ' enter' : ''), href: `/p/${plan.slug}`, vars: { '--i': String(i) } },
     h('h3', {}, plan.title),
     h('div', { class: 'meta' },
       h('span', {}, dates),

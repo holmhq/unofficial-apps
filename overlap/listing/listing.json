@@ -9,7 +9,7 @@
     "zend"
   ],
   "description": "Pick a few dates and the hours you could meet, then share one link. Everyone paints the times they're free, with just a name and no account, and the grid deepens in colour where people overlap, live, on every open screen.\n\nThe best times rise to the top as answers come in, with who can make each one. Pick a time and everyone sees it settle at once, with a calendar file and a Google Calendar link.\n\nPainting plays a soft note for each slot, and the page answers with small motions: it is built to be pleasant to use on a phone and a big screen, in light and dark.",
-  "whatsNew": "Connect overlap to Claude, ChatGPT or Claude Code from the account menu. Ask who's free when, start a plan, add your times from your calendar, or settle on the best time, and every open page updates live. A plan's link now copies with one click.",
+  "whatsNew": "overlap now feels like an app: the header and a small footer stay put while the page scrolls under them, pages open at once, and Your plans shows straight away from your last visit. The round avatar at the top right, signed out too, holds sound and the theme, and ⌘K jumps to your plans, a new plan or Connect via MCP.",
   "screenshots": [
     {
       "file": "home.webp",

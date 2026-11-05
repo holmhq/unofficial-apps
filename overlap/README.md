@@ -44,7 +44,7 @@ as files: `api/` and `holm.json` are not public URLs.
   quiet sound; avatars show who has the page open now.
 - **Sound and motion:** painting plays a pentatonic note per slot, lower for
   later times, synthesised with the Web Audio API (no audio files). Sound can
-  be turned off; motion respects "reduce motion".
+  be turned off in the account menu; motion respects "reduce motion".
 - **Claude and other AI apps:** eight MCP tools, open to anyone signed in:
   - `plans_list`: the plans you organised or answered.
   - `plans_get`: who is free when, the best times with who is missing, and
@@ -63,7 +63,15 @@ as files: `api/` and `holm.json` are not public URLs.
   (`https://<host>/_holm/mcp`) to click and copy, and tabs for Claude,
   ChatGPT, Claude Code and what the tools do.
 - A plan's link, in its share sheet, copies with one click.
-- Light, dark and system themes; phones and big screens.
+- **Feels like an app:** the window never scrolls; the page scrolls in its
+  own panel under a frosted header, with a small footer at the bottom. The
+  round avatar at the top right, signed out too, opens the account menu:
+  your plans, Connect via MCP…, sound, and a light / auto / dark switch.
+  ⌘K (Ctrl+K) opens the same places and actions from the keyboard. A
+  service worker keeps this version's page files on the device, so pages
+  open at once, and Your plans draws from the last visit while the server
+  is asked. Plans themselves always come from the server.
+- Phones and big screens.
 
 ## How it is built
 
@@ -76,8 +84,10 @@ api/main.js             every route: plans, people, presence, plan pages;
 api/contract.json       the MCP tools: named operations, their input and errors
 api/ops.js              the tools, sent through the same /api/ routes
 web/index.html          the page shell
+web/sw.js               service worker: keeps this version's page files, never a plan
 web/css/app.css         the whole look: tokens, light/dark, layout, motion
-web/js/app.js           router, theme and sound toggles, the account menu
+web/js/app.js           router, the account menu with sound and theme, ⌘K
+web/js/palette.js       the ⌘K command menu
 web/js/home.js          home page and its looping demo grid
 web/js/create.js        the new-plan form and its calendar
 web/js/plan.js          a plan: grid, panels, sharing, settling, live updates
@@ -86,7 +96,7 @@ web/js/live.js          the realtime channel and presence heartbeats
 web/js/time.js          time zones, labels, best times, calendar files
 web/js/sound.js         the synthesised sounds
 web/js/mcp.js           the Connect via MCP sheet
-web/js/ui.js            DOM helpers, avatars, toasts, confetti, copy fields
+web/js/ui.js            DOM helpers, avatars, toasts, confetti, copy fields, panel scrolling
 web/fonts/              Instrument Serif (OFL), vendored
 listing/                store listing and screenshots (not deployed)
 ```
@@ -146,11 +156,14 @@ peer.
 - The tools give times in the plan's own zone: the server has no `Intl`, so
   converting to the person's zone is left to Claude. Their links use the
   address overlap was last opened at.
-- Signed out, the header shows a Sign in button rather than a round avatar.
+- The footer has no Feedback link: this copy has no project on a feedback
+  app yet.
 
 ## Testing
 
-Run it on a scratch node: `holm test create-session` makes a signed-in
+Run `node overlap/tools/check.mjs` after changing any web file or the
+version: the service worker must list every file and carry holm.json's
+version. Then run it on a scratch node: `holm test create-session` makes a signed-in
 session for a member on the app's exact host, so a browser test can play the
 organiser while a second browser context answers anonymously. Check that the
 second context's paint appears live in the first, that settling a time shows

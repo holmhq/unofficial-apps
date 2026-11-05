@@ -1,4 +1,4 @@
-import { h, api, avatar, icon, toast, confetti, segmented, store, personColor, copyField } from './ui.js'
+import { h, api, avatar, icon, toast, confetti, segmented, store, personColor, copyField, reveal } from './ui.js'
 import { session, signIn, navigate } from './app.js'
 import { createGrid } from './grid.js'
 import { connect, presence } from './live.js'
@@ -21,6 +21,7 @@ export async function planView(view, slug) {
 
   let plan = data.plan
   let people = data.people
+  const cleanups = []
   const keys = store.get('keys', {})
   let me = people.find(p => p.me) || people.find(p => keys[slug]?.id === p.id) || null
   let mode = me && !me.slots.includes('1') ? 'mine' : 'all'
@@ -55,14 +56,22 @@ export async function planView(view, slug) {
         plan.mine ? ownerMenu() : null))
   }
 
+  // A second click, Escape or a click anywhere else closes it. Made once; the head reuses it.
+  let ownerMenuEl = null
   function ownerMenu() {
+    if (ownerMenuEl) return ownerMenuEl
     const menu = h('div', { class: 'menu', hidden: true, role: 'menu' },
-      h('button', { type: 'button', role: 'menuitem', onclick: editPlan }, icon('edit'), 'Edit name and note'),
+      h('button', { type: 'button', role: 'menuitem', onclick: editPlan }, icon('edit'), 'Edit plan'),
       h('button', { type: 'button', role: 'menuitem', class: 'danger', onclick: deletePlan }, icon('trash'), 'Delete plan'))
-    const button = h('button', { class: 'icon-button', type: 'button', 'aria-haspopup': 'menu', title: 'More' }, icon('more'))
-    button.addEventListener('click', e => { e.stopPropagation(); menu.hidden = !menu.hidden })
-    document.addEventListener('click', () => { menu.hidden = true })
-    return h('div', { class: 'menu-wrap' }, button, menu)
+    const button = h('button', { class: 'icon-button', type: 'button', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: 'More', 'aria-label': 'More' }, icon('more'))
+    const set = open => { menu.hidden = !open; button.setAttribute('aria-expanded', String(open)) }
+    button.addEventListener('click', e => { e.stopPropagation(); set(menu.hidden) })
+    const onClick = () => set(false)
+    const onKey = e => { if (e.key === 'Escape' && !menu.hidden) { set(false); button.focus() } }
+    document.addEventListener('click', onClick)
+    document.addEventListener('keydown', onKey)
+    cleanups.push(() => { document.removeEventListener('click', onClick); document.removeEventListener('keydown', onKey) })
+    return (ownerMenuEl = h('div', { class: 'menu-wrap' }, button, menu))
   }
 
   // The settled time
@@ -179,7 +188,7 @@ export async function planView(view, slug) {
   function nudgeJoin() {
     const input = youPanel.querySelector('.join input')
     if (!input) return
-    youPanel.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    reveal(youPanel, { smooth: true })
     input.focus({ preventScroll: true })
     youPanel.classList.remove('nudge'); void youPanel.offsetWidth; youPanel.classList.add('nudge')
     sound.tick()
@@ -337,7 +346,7 @@ export async function planView(view, slug) {
   function celebrate() {
     sound.settle()
     confetti([...people.map(p => personColor(p.color)), '#e6a100'])
-    settledSlot.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    reveal(settledSlot, { smooth: true })
   }
   async function leave() {
     if (!confirm('Leave this plan? Your times will be removed.')) return
@@ -512,6 +521,7 @@ export async function planView(view, slug) {
       flush()
       removeEventListener('pagehide', flush)
       grid.destroy()
+      cleanups.forEach(fn => fn())
     }
   }
 }

@@ -37,7 +37,16 @@ export function icon(name) {
     edit: 'M5 19h4L19 9l-4-4L5 15z',
     eraser: 'M8 19h11 M4.5 14.5l8-8a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L12 17H8z',
     out: 'M14 5h5v5 M19 5l-8 8 M17 13.5V19H5V7h5.5',
-    copy: 'M9 9h10v10H9z M5 15V5h10'
+    copy: 'M9 9h10v10H9z M5 15V5h10',
+    sun: 'M12 8.2a3.8 3.8 0 1 0 0 7.6a3.8 3.8 0 0 0 0-7.6z M12 2.8v2 M12 19.2v2 M4.6 4.6l1.4 1.4 M18 18l1.4 1.4 M2.8 12h2 M19.2 12h2 M4.6 19.4L6 18 M18 6l1.4-1.4',
+    moon: 'M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z',
+    auto: 'M3.5 5h17v11h-17z M8.5 20h7 M12 16v4',
+    user: 'M12 4.8a3.7 3.7 0 1 0 0 7.4a3.7 3.7 0 0 0 0-7.4z M4.8 20c1.2-3.5 3.9-5.3 7.2-5.3s6 1.8 7.2 5.3',
+    search: 'M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 0 0 0-13z M20 20l-4.3-4.3',
+    home: 'M4.5 11L12 4.5l7.5 6.5 M6.5 9.5V19.5h11V9.5',
+    sound: 'M4 9.5h3.2L12 5.6v12.8l-4.8-3.9H4z M15.5 9a4.2 4.2 0 0 1 0 6 M18 6.6a7.6 7.6 0 0 1 0 10.8',
+    mute: 'M4 9.5h3.2L12 5.6v12.8l-4.8-3.9H4z M15.5 9.5l5 5 M20.5 9.5l-5 5',
+    signout: 'M14 4.5h4.5v15H14 M10 8l-4 4 4 4 M6 12h10'
   }
   const svg = document.createElementNS(SVG, 'svg')
   svg.setAttribute('viewBox', '0 0 24 24')
@@ -195,4 +204,29 @@ export const store = {
   get(key, fallback = null) { try { const v = localStorage.getItem(`overlap:${key}`); return v == null ? fallback : JSON.parse(v) } catch { return fallback } },
   set(key, value) { try { localStorage.setItem(`overlap:${key}`, JSON.stringify(value)) } catch {} },
   remove(key) { try { localStorage.removeItem(`overlap:${key}`) } catch {} }
+}
+
+// The window never scrolls: #view is the page's one scrolling panel. scrollIntoView would move
+// the fixed shell too, so this scrolls the element's own scrolling boxes, up to and including
+// the panel, by hand. block/inline: 'nearest' or 'center'.
+export function reveal(el, { block = 'nearest', inline = 'nearest', smooth = false } = {}) {
+  const panel = document.getElementById('view')
+  if (!el || !panel || !panel.contains(el)) return
+  const behavior = smooth && !reducedMotion() ? 'smooth' : 'auto'
+  for (let box = el.parentElement; box; box = box.parentElement) {
+    const style = getComputedStyle(box)
+    const scrollsY = /(auto|scroll)/.test(style.overflowY) && box.scrollHeight > box.clientHeight
+    const scrollsX = /(auto|scroll)/.test(style.overflowX) && box.scrollWidth > box.clientWidth
+    if (scrollsY || scrollsX) {
+      const r = el.getBoundingClientRect()
+      const b = box.getBoundingClientRect()
+      const delta = (lo, hi, blo, bhi, how) => how === 'center'
+        ? (lo + hi) / 2 - (blo + bhi) / 2
+        : lo < blo ? lo - blo - 8 : hi > bhi ? hi - bhi + 8 : 0
+      const top = scrollsY ? delta(r.top, r.bottom, b.top, b.bottom, block) : 0
+      const left = scrollsX ? delta(r.left, r.right, b.left, b.right, inline) : 0
+      if (top || left) box.scrollBy({ top, left, behavior })
+    }
+    if (box === panel) break
+  }
 }

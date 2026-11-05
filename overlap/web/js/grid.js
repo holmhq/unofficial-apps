@@ -5,7 +5,7 @@
 // faintly underneath. In "all" mode the heat is the point: the more people
 // free, the deeper the colour. Keyboard: arrows move, Space toggles.
 
-import { h, personColor } from './ui.js'
+import { h, personColor, reveal } from './ui.js'
 import { dayParts, hourLabel } from './time.js'
 import * as sound from './sound.js'
 
@@ -188,7 +188,7 @@ export function createGrid(plan, { describe, onPaint, onBlocked }) {
     focus = p
     const c = cells[p.d][p.r]
     c.classList.add('focus')
-    c.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    reveal(c)
     const text = describe(p.d, p.r)?.textContent
     if (text) live.textContent = text
   }
@@ -227,7 +227,7 @@ export function createGrid(plan, { describe, onPaint, onBlocked }) {
     pulse(run) {
       const first = cells[run.day]?.[run.from]
       if (!first) return
-      first.scrollIntoView({ block: 'center', inline: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+      reveal(first, { block: 'center', inline: 'center', smooth: true })
       for (let r = run.from; r < run.to; r++) {
         const c = cells[run.day][r]
         c.classList.remove('pulse')

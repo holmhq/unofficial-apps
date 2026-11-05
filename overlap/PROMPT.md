@@ -34,6 +34,12 @@ any font with its licence.
   themes, excellent on phones and desktop. Soft Web Audio sounds (a
   pentatonic note per painted slot, a chord when a time settles) with a mute
   switch, small spring motions and confetti, all respecting reduced motion.
+- It feels like an app: the window never scrolls, only the page's panel
+  does, under a frosted header and a small frosted footer ("A Holm app",
+  Source). A round avatar at the top right, signed out too, opens the
+  account menu, which holds sound and a three-icon theme switch; ⌘K has the
+  same places and actions. A versioned service worker keeps every page
+  file, never a plan, and the plan list draws at once from the last visit.
 - MCP tools as named operations with auth "user", each sent through the
   app's own routes so the same checks apply and open pages update live:
   list plans, see who is free when with the best times, start a plan, mark
@@ -77,3 +83,11 @@ and, sent while the agent was working:
 overlap 0.2.0 came from this request, when the repository made MCP standard:
 
 > Can we now add it for overlap, domains, pastebin
+
+**Iteration 3**
+
+overlap 0.3.0 came from a sweep of every app in the repository against its
+cookbook (the fixed shell, the avatar menu, ⌘K, the service worker), started
+by the owner's:
+
+> Sure do cookbook sweep
