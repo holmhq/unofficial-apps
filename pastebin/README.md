@@ -50,10 +50,25 @@ deploy. They are still public source in this repository.
   - Video and audio players.
   - Attached text files are highlighted.
 - **Automate:** API keys, an HTTP API and the `pb` CLI.
+- **Claude and other AI apps:** seven MCP tools, open to anyone signed in:
+  - `pastes_list` and `pastes_read`: your pastes, and the text of any of
+    them, in parts when it's long. Reading your own one-time paste never
+    burns it.
+  - `pastes_create`: text or code with a title, language, expiry, one-time
+    link and your name as options. It returns the link to share.
+  - `pastes_update`, `pastes_revoke` and `pastes_delete`: rename, change the
+    expiry or whether your name shows, stop a link, or delete a paste.
+  - `pastes_open`: read a paste from a link someone sent you. It counts a
+    view, and a one-time paste comes back sealed until you say to burn it.
+
+  **Connect via MCP…** in the avatar menu opens a sheet with the connector
+  address (`https://<host>/_holm/mcp`) to click and copy, and tabs for
+  Claude, ChatGPT, Claude Code and what the tools do.
 - **Look:** a minimal "cyanotype" design. Light is Prussian ink on white
   paper; dark is the print itself, pale ink on Prussian blue. Ember marks
   anything that burns. The header holds only the brand and an avatar menu
-  (your pastes, API keys, the light / system / dark switch, sign-out). A small
+  (your pastes, API keys, Connect via MCP, the light / system / dark switch,
+  sign-out). A small
   footer says it's a Holm app, links here, and has Send feedback, which opens
   a feedback form over the page. Fonts and the highlighter are vendored, so
   nothing loads from a CDN.
@@ -68,17 +83,22 @@ for static files and SPA fallback. There is no build step or dependency to
 install.
 
 ```text
-holm.json               name, version, colour, SPA routing, store metadata
+holm.json               name, version, colour, SPA routing, no generated web
+                        surface, store metadata
 web/                    public files, served as-is:
   index.html            shell; applies the saved theme before first paint
-  src/                  browser app: router, composer, viewer, lists, Markdown (ES modules)
+  src/                  browser app: router, composer, viewer, lists, Markdown,
+                        the Connect via MCP sheet (ES modules)
   vendor/highlight/     highlight.js 11.11.1 (BSD-3-Clause)
   vendor/marked/        marked 18.0.14, GFM parser (MIT), loaded only for Markdown
   vendor/dompurify/     DOMPurify 3.4.16, HTML sanitizer (Apache-2.0 or MPL-2.0)
   vendor/feedback/      embed.js from this repository's feedback app (MIT)
   assets/               icons, social card, fonts (SIL OFL 1.1)
   cli/pb                POSIX sh CLI (curl + jq)
-api/main.js             v1 entry: hands /api and /raw requests to the router
+api/main.js             v1 entry: hands /api and /raw requests to the router,
+                        and the MCP tools' handlers, which load ops.js
+api/contract.json       the MCP tools: named operations, their input and errors
+api/ops.js              the tools, run through the same handlers as /api/
 api/_holm.js            gives the router its `holm` and `respond` for each request
 api/_legacy_main.js     router, written in Holm's original app format
 api/pastes.js           create, list, owner actions, public read, burn claim, files
@@ -106,6 +126,14 @@ The v1 primitives described in <https://holmhq.com/llms-full.txt> are:
 - **`env.holm.image.thumbnail`:** gallery previews.
 - **`env.holm.auth`:** the signed-in owner. API keys are app-owned bearer
   tokens, stored as SHA-256 hashes made with `crypto.subtle`.
+- **Named operations and MCP:** `api/contract.json` declares seven
+  operations with `auth: "user"`, which Holm serves as tools at
+  `/_holm/mcp` with OAuth sign-in. Each runs the app's own handler for the
+  signed-in person, so ownership checks live in one place. Reading tools
+  never write, so they show a burned or expired paste's state without
+  cleaning it up; the next write does that.
+- **Key-value store, `env.holm.app.kv`:** the address pastebin was last
+  opened at, for the links the tools return.
 
 The inherited handlers also use DS `{ ifRevision }` updates and blob
 `ttlMs` options. The public v1 guide does not document those options; local
@@ -129,11 +157,10 @@ own deployed copy, repeat the deploy with `--force`. Use `--move` only when
 you explicitly approve moving an existing older-format app; it is one-way
 and preserves its id, domains, members and stored data.
 
-Set `DEFAULT_ORIGIN` in `pastebin/api/lib.js` to your public origin first.
-This adapter's link helper falls back to it when no `Host` header is
-available. That is an app implementation detail, not a v1 limitation:
-`request.url` is available to a fresh fetch handler. The browser UI builds
-links from its own origin.
+API replies build their links from the request's own address. The MCP tools
+have no request, so they use the address pastebin was last opened at, and
+before that `DEFAULT_ORIGIN` in `pastebin/api/lib.js`: set it to your public
+origin. The browser UI builds links from its own origin.
 
 Holm's sign-in presentation has separate node settings. Inspect the target's
 `settings schema --json` (the guide's operator chapters retain an older
@@ -224,6 +251,10 @@ pb revoke <slug>                  # kill the link now
   V1 itself supports `request.text()`; a fresh handler can read plain text.
 - The inherited revision and blob-expiry options above need runtime checks,
   especially two simultaneous opens and cleanup after a link expires.
+- The MCP tools take text up to about 48 KB, because Holm caps a tool's
+  input; longer text and files go in the app or through the API. They can't
+  manage API keys. `pastes_open` has no retry key on purpose: Holm keeps a
+  keyed result for 24 hours, which would keep a burned paste's text.
 
 ## Testing
 

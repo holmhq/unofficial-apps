@@ -5,9 +5,12 @@ import { mountCompose } from './views/compose.js'
 import { mountView } from './views/view.js'
 import { mountMine } from './views/mine.js'
 import { mountKeys } from './views/keys.js'
+import { mcpSheet } from './mcp.js'
 
 const main = document.getElementById('main')
 let me = null
+// This host's MCP connector address, from the server.
+let mcp = null
 let current = null
 let meReady = null
 
@@ -64,6 +67,7 @@ async function refreshMe() {
   try {
     const res = await api('GET', '/api/me')
     me = res.authenticated ? res.member : null
+    mcp = res.mcp || null
   } catch (e) {
     me = null
   }
@@ -93,6 +97,7 @@ function openMenu(anchor) {
         h('div.menu-head', h('strong', me.name || 'Signed in'), me.email ? h('span', me.email) : null),
         h('a', { href: '/mine', 'data-link': true, role: 'menuitem' }, icon('list'), 'My pastes'),
         h('a', { href: '/keys', 'data-link': true, role: 'menuitem' }, icon('key'), 'API keys'),
+        h('button', { type: 'button', role: 'menuitem', onclick: () => mcpSheet(mcp, anchor) }, icon('mcp'), 'Connect via MCP…'),
         h('div.menu-sep'),
         theme,
         h('div.menu-sep'),
@@ -111,6 +116,9 @@ function openMenu(anchor) {
     if (e.type === 'keydown' && e.key !== 'Escape') return
     // Theme buttons and the menu's own padding keep it open.
     if (e.type === 'click' && menu.contains(e.target) && (!e.target.closest('a,button') || e.target.closest('.theme'))) return
+    // A second click on the avatar only closes the menu; it never reaches the avatar's own
+    // handler, which would open it again.
+    if (e.type === 'click' && anchor.contains(e.target)) e.stopPropagation()
     menu.remove()
     anchor.setAttribute('aria-expanded', 'false')
     document.removeEventListener('click', close, true)

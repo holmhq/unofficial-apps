@@ -1,5 +1,7 @@
 // Holm App Spec v1 entry for server code written in Holm's original app format, which is kept
 // unchanged in ./_legacy_main.js. API paths go to that handler; everything else is web/.
+// The named operations at the end are the tools Claude uses through Holm's MCP endpoint
+// (/_holm/mcp); contract.json describes them, and their code is in ops.js.
 import { bind, takeResponded } from "./_holm.js";
 import handler from "./_legacy_main.js";
 
@@ -13,6 +15,8 @@ export default {
       return env.holm.web.fetch(request);
     }
     bind(env.holm);
+    // Tools have no request to read the address from, so their links use the last one seen.
+    if (url.pathname === "/api/me" && env.holm.app.kv.get("site:origin") !== url.origin) env.holm.app.kv.set("site:origin", url.origin);
     const req = await originalRequest(request, url);
     if (req instanceof Response) return req;
     const result = await handler(req);
@@ -30,7 +34,7 @@ async function originalRequest(request, url) {
     const name = k.replace(/(^|-)([a-z])/g, (_, d, c) => d + c.toUpperCase());
     if (!(name in headers)) headers[name] = v;
   }
-  const out = { method: request.method, path: url.pathname, query, headers };
+  const out = { method: request.method, path: url.pathname, origin: url.origin, query, headers };
   if (request.method === "GET" || request.method === "HEAD") return out;
   const type = request.headers.get("content-type") || "";
   if (JSON_TYPE.test(type)) {
@@ -93,3 +97,12 @@ function base64OrText(s) {
     return s;
   }
 }
+
+const ops = () => import("./ops.js");
+export async function pastesList(input, env, ctx) { return (await ops()).pastesList(input, env, ctx); }
+export async function pastesRead(input, env, ctx) { return (await ops()).pastesRead(input, env, ctx); }
+export async function pastesCreate(input, env, ctx) { return (await ops()).pastesCreate(input, env, ctx); }
+export async function pastesUpdate(input, env, ctx) { return (await ops()).pastesUpdate(input, env, ctx); }
+export async function pastesRevoke(input, env, ctx) { return (await ops()).pastesRevoke(input, env, ctx); }
+export async function pastesDelete(input, env, ctx) { return (await ops()).pastesDelete(input, env, ctx); }
+export async function pastesOpen(input, env, ctx) { return (await ops()).pastesOpen(input, env, ctx); }

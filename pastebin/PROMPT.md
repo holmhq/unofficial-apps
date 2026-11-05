@@ -32,6 +32,12 @@ vendor the Markdown parser, sanitizer, highlighter and fonts with licenses.
   SHA-256 hashes, check ownership on every owner route. Add JSON/multipart
   HTTP creation and a small POSIX sh CLI using curl/jq. Read form files via
   request.formData() and arrayBuffer(); do not expose private files directly.
+- Expose the main actions as MCP tools (named operations, auth "user", each
+  checking the owner): list and read your pastes without burning one-time
+  ones, create, change, revoke and delete, and open a shared link, sealed
+  until the person agrees to burn a one-time paste. Put Connect via MCP… in
+  the avatar menu: a sheet with the connector address to click and copy,
+  and tabs for Claude, ChatGPT, Claude Code and what the tools do.
 - Add safe file downloads, no-referrer/noindex, a Holm/source footer, and an
   optional footer feedback link only if I supply a feedback project.
 - For this repository's store, use holm.json version, holm.symbol.svg (one
@@ -126,6 +132,11 @@ covered the create button on phones.
 owner's message (`llms-full.txt` is the full guide's name):
 
 > I think we should move to llms.txt & llm-full.txt; and update all apps which points to old links
+
+**Iteration 7** added the MCP tools and Connect via MCP, after Relay and
+Feedback had them:
+
+> Can we now add it for overlap, domains, pastebin
 
 The build request uses the current public v1 reference and spells out the
 repository's listing conventions. It does not require private docs or a

@@ -1,4 +1,4 @@
-import { ds, now, iso, ok, reject, header, random, sha256, member, cookieOwner, body, text, absolute } from './lib.js'
+import { ds, now, iso, ok, reject, header, random, sha256, member, cookieOwner, body, text, absolute, origin } from './lib.js'
 
 export async function owner(request) {
   const auth = header(request, 'Authorization')
@@ -21,7 +21,8 @@ export function me(request) {
   const found = ds().findOne('profiles', { id: value.id })
   if (found) ds().update('profiles', { id: value.id }, { $set: profile })
   else ds().insert('profiles', Object.assign({ id: value.id }, profile))
-  return ok({ authenticated: true, member: { id: value.id, name: profile.name, email: value.email || '', avatar: absolute(request, profile.avatar) } })
+  // mcp: this host's connector address, for the Connect via MCP sheet.
+  return ok({ authenticated: true, member: { id: value.id, name: profile.name, email: value.email || '', avatar: absolute(request, profile.avatar) }, mcp: origin(request) + '/_holm/mcp' })
 }
 export async function keys(request, id) {
   const user = cookieOwner()

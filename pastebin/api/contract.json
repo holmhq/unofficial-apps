@@ -1,0 +1,507 @@
+{
+ "operations": {
+  "pastes.list": {
+   "handler": "pastesList",
+   "auth": "user",
+   "risk": "read",
+   "summary": "List your pastes",
+   "description": "Lists the person’s own pastes, newest first: id, title (or the first line when untitled), language, whether it is live, burned, expired or revoked, size, attached files, one-time, views, when it expires and its link. Pass before to see older ones. Read one with pastes_read.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "live_only": {
+      "type": "boolean",
+      "description": "Only pastes whose link still works."
+     },
+     "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "How many to return (default 30)."
+     },
+     "before": {
+      "type": "string",
+      "maxLength": 4000,
+      "description": "The before value from an earlier answer, for older pastes."
+     }
+    },
+    "additionalProperties": false
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_GONE": {
+     "status": 410,
+     "public": true
+    },
+    "APP_TOO_LARGE": {
+     "status": 413,
+     "public": true
+    },
+    "APP_UNAVAILABLE": {
+     "status": 503,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "pastes.read": {
+   "handler": "pastesRead",
+   "auth": "user",
+   "risk": "read",
+   "summary": "Read one of your pastes",
+   "description": "Returns the text of one of the person’s own pastes, with its details and attached files by name. Reading your own one-time paste never burns it. Long pastes come in parts: pass next_offset as offset to read on. A burned, expired or revoked paste has no text left.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "minLength": 12,
+      "maxLength": 300,
+      "description": "The paste’s id from pastes_list, or its link."
+     },
+     "offset": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Character to start from (default 0)."
+     },
+     "length": {
+      "type": "integer",
+      "minimum": 2000,
+      "maximum": 60000,
+      "description": "Characters to return (default 30000)."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_GONE": {
+     "status": 410,
+     "public": true
+    },
+    "APP_TOO_LARGE": {
+     "status": 413,
+     "public": true
+    },
+    "APP_UNAVAILABLE": {
+     "status": 503,
+     "public": true
+    }
+   },
+   "sensitive": true
+  },
+  "pastes.create": {
+   "handler": "pastesCreate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Make a paste",
+   "idempotency": "optional",
+   "description": "Saves text or code as a new paste and returns its link to share. Optionally a title, a language for highlighting (detected if left out), when the link expires (never by default), one_time to make a link that opens once and is then deleted, and with_your_name to show the person’s name on it. Text only, up to about 48 KB through this tool, since Holm caps a tool’s input; longer text and files go in pastebin itself or through its API. Tell the person the link; only they decide who gets it.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 48000,
+      "description": "The paste’s text or code."
+     },
+     "title": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "A title."
+     },
+     "language": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "A language for highlighting, like python or markdown."
+     },
+     "expires": {
+      "type": "string",
+      "enum": [
+       "never",
+       "10m",
+       "1h",
+       "1d",
+       "7d",
+       "30d"
+      ],
+      "description": "When the link stops working: never, or after 10 minutes, an hour, a day, a week or 30 days."
+     },
+     "one_time": {
+      "type": "boolean",
+      "description": "The link opens once, then the paste is deleted."
+     },
+     "with_your_name": {
+      "type": "boolean",
+      "description": "Show the person’s name on the paste."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "text"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_GONE": {
+     "status": 410,
+     "public": true
+    },
+    "APP_TOO_LARGE": {
+     "status": 413,
+     "public": true
+    },
+    "APP_UNAVAILABLE": {
+     "status": 503,
+     "public": true
+    }
+   }
+  },
+  "pastes.update": {
+   "handler": "pastesUpdate",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Change a paste",
+   "idempotency": "optional",
+   "description": "Changes one of the person’s live pastes: its title, whether it shows their name, or when its link expires (counted from now). The text can’t be changed; make a new paste instead.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "minLength": 12,
+      "maxLength": 300,
+      "description": "The paste’s id from pastes_list, or its link."
+     },
+     "title": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "A new title; empty removes it."
+     },
+     "expires": {
+      "type": "string",
+      "enum": [
+       "never",
+       "10m",
+       "1h",
+       "1d",
+       "7d",
+       "30d"
+      ],
+      "description": "When the link stops working: never, or after 10 minutes, an hour, a day, a week or 30 days."
+     },
+     "with_your_name": {
+      "type": "boolean",
+      "description": "Show the person’s name on the paste, or not."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_GONE": {
+     "status": 410,
+     "public": true
+    },
+    "APP_TOO_LARGE": {
+     "status": 413,
+     "public": true
+    },
+    "APP_UNAVAILABLE": {
+     "status": 503,
+     "public": true
+    }
+   }
+  },
+  "pastes.revoke": {
+   "handler": "pastesRevoke",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Stop a paste’s link",
+   "idempotency": "optional",
+   "description": "Stops one of the person’s pastes at once: its link no longer opens and its text and files are cleared, but it stays in their list as revoked. Only do this when the person asks.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "minLength": 12,
+      "maxLength": 300,
+      "description": "The paste’s id from pastes_list, or its link."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_GONE": {
+     "status": 410,
+     "public": true
+    },
+    "APP_TOO_LARGE": {
+     "status": 413,
+     "public": true
+    },
+    "APP_UNAVAILABLE": {
+     "status": 503,
+     "public": true
+    }
+   }
+  },
+  "pastes.delete": {
+   "handler": "pastesDelete",
+   "auth": "user",
+   "risk": "destructive",
+   "summary": "Delete a paste",
+   "idempotency": "optional",
+   "description": "Deletes one of the person’s pastes for good, with its files, and removes it from their list. Only do this when the person asks; pastes_revoke stops a link but keeps the record.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "minLength": 12,
+      "maxLength": 300,
+      "description": "The paste’s id from pastes_list, or its link."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "id"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_GONE": {
+     "status": 410,
+     "public": true
+    },
+    "APP_TOO_LARGE": {
+     "status": 413,
+     "public": true
+    },
+    "APP_UNAVAILABLE": {
+     "status": 503,
+     "public": true
+    }
+   }
+  },
+  "pastes.open": {
+   "handler": "pastesOpen",
+   "auth": "user",
+   "risk": "write",
+   "summary": "Open a shared paste",
+   "description": "Reads a paste from a pastebin link someone shared with the person, the way opening it in pastebin would: it counts a view. A one-time paste comes back sealed: opening it shows it once and deletes it for everyone, so ask the person first, then call again with burn true; its whole text comes back at once. Otherwise long pastes come in parts, as in pastes_read.",
+   "input": {
+    "type": "object",
+    "properties": {
+     "link": {
+      "type": "string",
+      "minLength": 12,
+      "maxLength": 300,
+      "description": "The paste’s link, or its id."
+     },
+     "burn": {
+      "type": "boolean",
+      "description": "Open a one-time paste, which deletes it. Only when the person agreed."
+     },
+     "offset": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Character to start from (default 0)."
+     },
+     "length": {
+      "type": "integer",
+      "minimum": 2000,
+      "maximum": 60000,
+      "description": "Characters to return (default 30000)."
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "link"
+    ]
+   },
+   "output": {
+    "type": "object"
+   },
+   "errors": {
+    "APP_UNAUTHORIZED": {
+     "status": 401,
+     "public": true
+    },
+    "APP_FORBIDDEN": {
+     "status": 403,
+     "public": true
+    },
+    "APP_NOT_FOUND": {
+     "status": 404,
+     "public": true
+    },
+    "APP_INVALID_INPUT": {
+     "status": 400,
+     "public": true
+    },
+    "APP_CONFLICT": {
+     "status": 409,
+     "public": true
+    },
+    "APP_GONE": {
+     "status": 410,
+     "public": true
+    },
+    "APP_TOO_LARGE": {
+     "status": 413,
+     "public": true
+    },
+    "APP_UNAVAILABLE": {
+     "status": 503,
+     "public": true
+    }
+   },
+   "sensitive": true
+  }
+ }
+}

@@ -24,10 +24,11 @@ export function header(request, name) {
   for (const key in headers) if (key.toLowerCase() === name.toLowerCase()) return String(Array.isArray(headers[key]) ? headers[key][0] : headers[key])
   return null
 }
-// Links in API replies are absolute. The runtime does not pass the request
-// host to apps yet, so replies fall back to this. Set it to your own host.
+// Links in API replies are absolute: the request's own origin, which api/main.js
+// passes in, else its Host header, else this. Set it to your own host.
 export const DEFAULT_ORIGIN = 'https://pastebin.zyt.app'
 export function origin(request) {
+  if (request && typeof request.origin === 'string' && /^https?:\/\/[^/]+$/.test(request.origin)) return request.origin
   const host = String(header(request, 'Host') || '').trim()
   return /^(?:[a-z0-9.-]+|\[[a-f0-9:]+\])(?::\d+)?$/i.test(host) ? 'https://' + host : DEFAULT_ORIGIN
 }
