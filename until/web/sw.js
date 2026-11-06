@@ -8,7 +8,7 @@
 // member's trackers stay with the node. An address that ends like a file (/icon-512.png) is
 // that file, even typed into the address bar; every other address is a page and gets the shell.
 
-const VERSION = '0.3.1'
+const VERSION = '0.3.2'
 const CACHE = 'until-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',

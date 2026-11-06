@@ -76,3 +76,10 @@ repository's cookbook, which found Until without ⌘K and with a service worker
 that waited on the network:
 
 > Sure do cookbook sweep
+
+**Iteration 4.** Version 0.3.2 came from the follow-up, after the agent listed what the sweep had left for the owner to decide: a
+Feedback link in the footer that opens Until's own form, and the admin's
+Analytics item showing right after sign-in even when the page came from the
+service worker:
+
+> pick the fixes you think is sensible & implememt
