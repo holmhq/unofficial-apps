@@ -286,6 +286,12 @@ worker), started by the owner's:
 
 > Sure do cookbook sweep
 
+**Iteration 24** raised the number of projects a person can have from 20 to
+30, so that every app in the repository could have its own, in the follow-up
+after the agent listed what the sweep had left for the owner to decide:
+
+> pick the fixes you think is sensible & implememt
+
 The build request now uses the current public v1 guide, keeps stats inside
 app storage, and makes CSP and runtime checks explicit. It needs no private
 documentation, downloaded icon attachment or pre-existing feedback app.
