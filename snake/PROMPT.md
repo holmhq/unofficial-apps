@@ -75,3 +75,8 @@ Version 0.1.2 came from a sweep of every app in the repository against its
 cookbook (COOKBOOK.md), after the owner was offered one:
 
 > Sure do cookbook sweep
+
+Version 0.1.4 came from the follow-up, after the agent listed what the sweep had left for the owner to decide: a Feedback link in the
+footer that opens Snake's own form:
+
+> pick the fixes you think is sensible & implememt
