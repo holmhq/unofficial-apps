@@ -100,3 +100,8 @@ top bar, and loading animations that stand still with reduced motion. The
 owner asked:
 
 > Sure do cookbook sweep
+
+Version 0.3.2 came from the follow-up, after the agent listed what the sweep had left for the owner to decide: the admin's Analytics item
+shows right after sign-in, even when the page came from the service worker:
+
+> pick the fixes you think is sensible & implememt
