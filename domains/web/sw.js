@@ -9,11 +9,11 @@
 // shell; an address that ends like a file (/icon-512.png) is that file, even typed into the
 // address bar.
 
-const VERSION = '0.4.2'
+const VERSION = '0.4.3'
 const CACHE = 'domains-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
-  '/fonts/inter-latin.woff2', '/data/tlds.json', '/src/styles.css?v=0.4.2', '/src/main.js?v=0.4.2',
+  '/fonts/inter-latin.woff2', '/data/tlds.json', '/src/styles.css?v=0.4.3', '/src/main.js?v=0.4.3',
   '/src/main.js', '/src/dom.js', '/src/icons.js', '/src/api.js', '/src/theme.js', '/src/shell.js', '/src/settings.js', '/src/palette.js',
   '/src/catalog.js', '/src/gen.js', '/src/search.js', '/src/saved.js', '/src/lists.js',
   '/src/providers/index.js', '/src/providers/namecheap.js', '/src/providers/rdap.js',

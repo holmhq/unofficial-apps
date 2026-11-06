@@ -182,3 +182,9 @@ cookbook, which brought ⌘K, the footer line on every page and 44 px touch
 targets. The owner's message was:
 
 > Sure do cookbook sweep
+
+Version 0.4.3 came from the follow-up, after the agent listed what the sweep had left for the owner to decide: a Feedback link in the
+footer that opens Domains' own form (the page's own CSP now lets it in), and
+the admin's Analytics item showing right after sign-in:
+
+> pick the fixes you think is sensible & implememt
