@@ -9,7 +9,7 @@
 // shell; an address that ends like a file (/icon-512.png) is that file, even typed into the
 // address bar.
 
-const VERSION = '0.4.1'
+const VERSION = '0.4.2'
 const CACHE = 'zend-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',

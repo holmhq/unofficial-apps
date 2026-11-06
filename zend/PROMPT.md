@@ -123,3 +123,9 @@ avatar, the footer on every tab, and a launch that draws at once. The
 owner's message was:
 
 > Sure do cookbook sweep
+
+**Iteration 6** (0.4.2) came from the follow-up, after the agent listed what the sweep had left for the owner to decide: a Feedback link
+in the footer and a working Send feedback in the menu, both opening Zend's
+own form, and the admin's Analytics item showing right after sign-in:
+
+> pick the fixes you think is sensible & implememt
