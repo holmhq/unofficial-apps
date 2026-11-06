@@ -88,3 +88,10 @@ Relay 0.4.0 came from a sweep of every app against the repository's
 cookbook, which found it without the avatar button and ⌘K:
 
 > Sure do cookbook sweep
+
+**Iteration 4**
+
+Relay 0.4.2 came from the follow-up, after the agent listed what the sweep had left for the owner to decide: the admin's Analytics item
+shows right after sign-in, even when the page came from the service worker:
+
+> pick the fixes you think is sensible & implememt

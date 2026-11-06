@@ -9,7 +9,7 @@
 // typed into the address bar; every other address is a page and gets the shell.
 // (No `push` handler: Holm has no Web Push yet. Notifications are shown by the page.)
 
-const VERSION = '0.4.1'
+const VERSION = '0.4.2'
 const CACHE = 'relay-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
