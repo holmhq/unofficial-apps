@@ -195,3 +195,11 @@ service worker, answers kept across reloads, the avatar at the top right, a
 sidebar that hides, a footer, designed dropdowns and ⌘K. The owner's word was:
 
 > Sure do cookbook sweep
+
+**Margin 0.8.3: the sweep's loose ends**
+
+The follow-up, after the agent listed what the sweep had left for the owner to decide, put the round avatar on the signed-out Studio,
+made the reader pages' theme switch three icons, and let Studio frame the
+Feedback form:
+
+> pick the fixes you think is sensible & implememt
