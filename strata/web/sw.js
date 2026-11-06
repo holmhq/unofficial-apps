@@ -11,7 +11,7 @@
 // that ends like a file (/icon-512.png) is that file, even typed into the
 // address bar; every other address is a page and gets the shell.
 
-const VERSION = '0.1.3'
+const VERSION = '0.1.4'
 const CACHE = 'strata-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',
