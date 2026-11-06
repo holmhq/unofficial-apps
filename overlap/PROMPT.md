@@ -36,7 +36,7 @@ any font with its licence.
   switch, small spring motions and confetti, all respecting reduced motion.
 - It feels like an app: the window never scrolls, only the page's panel
   does, under a frosted header and a small frosted footer ("A Holm app",
-  Source). A round avatar at the top right, signed out too, opens the
+  Feedback to a project I supply, Source). A round avatar at the top right, signed out too, opens the
   account menu, which holds sound and a three-icon theme switch; ⌘K has the
   same places and actions. A versioned service worker keeps every page
   file, never a plan, and the plan list draws at once from the last visit.
@@ -91,3 +91,10 @@ cookbook (the fixed shell, the avatar menu, ⌘K, the service worker), started
 by the owner's:
 
 > Sure do cookbook sweep
+
+**Iteration 4**
+
+overlap 0.3.2 came from the follow-up, after the agent listed what the sweep had left for the owner to decide: a Feedback link in the
+footer that opens Overlap's own form:
+
+> pick the fixes you think is sensible & implememt

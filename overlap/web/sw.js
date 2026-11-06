@@ -8,7 +8,7 @@
 // /p/<slug>) opens the same shell. An address that ends like a file (/icon-512.png) is that
 // file, even typed into the address bar.
 
-const VERSION = '0.3.1'
+const VERSION = '0.3.2'
 const CACHE = 'overlap-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/favicon.ico', '/apple-touch-icon.png', '/icon-192.png',
