@@ -221,6 +221,10 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 - **Headings, labels and buttons are Title Case**: "Park Jobs", "See Where
   You Stand", "Delete My Data…". Sentences stay sentences. Small labels
   aren't set in capitals either.
+- **Pages behind sign-in are tools, not stories.** A title row with its
+  actions, a strip of the few numbers that matter, then panels whose rows
+  line up as tables, with short notes instead of paragraphs. Story-telling
+  (big headlines, scrolling scenes) belongs on the public pages.
 - **Controls sit a little proud.** A lit top edge, a hairline and a short,
   soft shadow; pressing one sinks it with an inset shadow instead of
   shrinking it. Segmented controls are a sunk track with a raised thumb
