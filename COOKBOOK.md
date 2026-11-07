@@ -218,6 +218,13 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 - **Refined like Apple Messages, Telegram or Relay.** That means vendored
   Inter, font weights that mean something, one accent colour, and colour only
   where it means something. No regional or cultural theming.
+- **Headings, labels and buttons are Title Case**: "Park Jobs", "See Where
+  You Stand", "Delete My Data…". Sentences stay sentences. Small labels
+  aren't set in capitals either.
+- **Controls sit a little proud.** A lit top edge, a hairline and a short,
+  soft shadow; pressing one sinks it with an inset shadow instead of
+  shrinking it. Segmented controls are a sunk track with a raised thumb
+  that slides; fields are sunk into the surface.
 - **Banned: a coloured left border or stripe on a rounded rectangle**, whether
   done with `border-left`, an inset shadow, a `::before` bar or a thin div.
   It's the clearest AI-made tell. To tag an item with a colour, use a dot, a
@@ -249,8 +256,14 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   app. To design ones already in use, draw a menu button beside each and keep
   the select in the page, hidden, so code that reads its `value` and listens
   for `change` still works (Margin's `designSelect`).
-- **Hover is subtle.** Icons don't grow, links in the chrome don't underline,
-  and cards lift a little at most.
+- **Hover changes only colour.** Nothing under the pointer grows, lifts or
+  moves: no scale, no translate, no bolder text that widens a chip. Links in
+  the chrome don't underline.
+- **Hover waits for intent.** Tooltips, previews and prefetches fire once
+  the pointer settles (still for about 80 ms), not as it passes on its way
+  elsewhere, then stay warm so neighbouring marks answer at once. Mouse
+  only; touch taps. Use it to prefetch a place's data when its nav item is
+  pointed at, so the page opens with nothing to wait for.
 - **Grids line up.** Separators touch each other, cards in a row share their
   edges, and a grid is squarer than a list.
 - **No clipped text.** Try every field with long, short and empty values,
@@ -338,6 +351,22 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   rest. Keep memos in `env.holm.app.kv`, not in module variables.
 - **Keep sizes still.** A sheet or modal never shrinks while someone types in
   its search field, and every search field fits its box.
+- **Zero layout shift, measured.** Run a `layout-shift` PerformanceObserver
+  on every page, cold and warm, on a desk and a phone: the total is 0.
+  Reserve heights (charts, an `aspect-ratio` box for a component that loads
+  late), draw from cache, give status badges a fixed width, and hide the
+  footer while a page shows its loading line, or it sits under the line and
+  is pushed away when the page arrives.
+
+## Judgements
+
+- **Scores never flatter.** Wherever an app judges someone, such as a
+  practice interview, the headline number can't be higher than the share
+  they got right, a result near chance is called that ("about what
+  guessing scores"), one right answer isn't counted as a strength, and the
+  verdict is fixed text written from the numbers. AI-written advice is
+  filtered for praise and exclamation marks, with fixed advice when too
+  little survives.
 
 ## Pickers, menus and sheets
 
@@ -543,6 +572,8 @@ couldn't check.
       text readable in both.
 - [ ] No clipped or overflowing text with long, short or empty values;
       names on cards stay on one line at 12 and 16 characters.
+- [ ] Headings, labels and buttons are Title Case; controls are raised and
+      sink when pressed.
 - [ ] Hover is subtle (nothing grows or underlines), separators meet, and
       every dropdown is designed; long lists are found by typing, with no
       `<datalist>`, and nothing moves while you pick.
@@ -555,7 +586,8 @@ couldn't check.
 **Motion and speed**
 
 - [ ] Reloading each page shows no flicker and no replayed entrance; data
-      draws from cache at once.
+      draws from cache at once. A `layout-shift` observer reads 0 on every
+      page, cold and warm, desk and phone.
 - [ ] Switching tabs or sections doesn't refetch or redraw the whole page,
       and each tab comes back at its own scroll.
 - [ ] Reduced motion is respected: nothing jerks, jitters, or flickers in an
