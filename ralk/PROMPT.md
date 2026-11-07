@@ -44,7 +44,8 @@ there.
   a repeated line is instant and free. A monthly allowance per person.
 - When a note arrives: the kind's sound plays at once, a browser notification
   shows if the tab is not in front, the voice follows, and the card records
-  which device heard it. Tabs in one browser elect one to play.
+  which device heard it. Tabs in one browser elect one to play. Sound
+  starts at load where the browser allows it, else at the first tap or key.
 - Apple-quality UI on phone and desktop, light and dark, with a round avatar
   button top right (signed out too) whose menu closes when it's tapped again
   and holds light/dark/auto as three icons; Holm branding stays in the
@@ -133,3 +134,7 @@ Version 0.3.1 came from the owner's report:
 
 > Review ralk, its failing on voice generation
 > - it was working properly initially, now i simply cant use it
+
+Version 0.3.2 came from the owner's next message, once a test line played:
+
+> I heard the voice but why do i have to keep turning on the sounds in the app?

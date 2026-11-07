@@ -167,9 +167,15 @@ Add custom connector; in Claude Code,
 
 ## Known limits
 
-- **Browsers play sound only after a tap.** One tap on the page arms it for
-  the visit; until then cards and notifications show and the status card says
-  so. Installed as an app (Add to Home Screen), Chrome and Safari need no tap.
+- **Browsers play sound only after a tap.** One tap or key anywhere on the
+  page turns sound on until the page loads again; until then cards and
+  notifications show and the status card says so. Where the browser lets a
+  site play sound unasked (Chrome for an installed app or a site whose media
+  you often play, Safari or Firefox with auto-play allowed for the site),
+  Ralk tries at load and when the tab comes back, and needs no tap. Chrome's
+  Memory Saver puts a background tab to sleep (it stops listening) and
+  reloads it when you return, sound off: install Ralk as an app, or add it
+  to Settings → Performance → "Always keep these sites active".
 - **A tab must be open.** Nothing is pushed to a closed browser; a
   notification sent with no device listening is kept and shows as missed.
 - **iPhone Safari** shows no browser notifications unless Ralk is installed to

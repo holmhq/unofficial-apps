@@ -40,9 +40,15 @@ async function render(dir = 'none', { again = false } = {}) {
 setRenderer(render)
 addEventListener('popstate', () => render('back'))
 
-// The first tap or key anywhere arms audio, so sounds can play from then on.
+// The first tap or key anywhere arms audio, so sounds can play from then on. Where the
+// browser lets the site play sound unasked (Chrome for an installed app or a site you often
+// hear, Safari or Firefox when its auto-play is allowed), sound is on from the start and
+// again when the tab comes back, with no tap. Elsewhere Chrome holds the attempt until the
+// first tap, and the others refuse it.
 const armOnce = () => { audio.arm().then((ok) => { if (ok) inbox.catchUp() }) }
 for (const type of ['pointerdown', 'keydown']) addEventListener(type, armOnce, { capture: true, passive: true })
+armOnce()
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !audio.armed()) armOnce() })
 
 theme.apply()
 

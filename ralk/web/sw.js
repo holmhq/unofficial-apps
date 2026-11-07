@@ -10,7 +10,7 @@
 // (/icon-512.png) is that file, even typed into the address bar; every other address is a
 // page and gets the shell. A click on a notification brings the open tab to the front.
 
-const VERSION = '0.3.1'
+const VERSION = '0.3.2'
 const CACHE = 'ralk-' + VERSION
 const FILES = [
   '/', '/manifest.webmanifest', '/favicon.svg', '/favicon.png', '/apple-touch-icon.png', '/icon-192.png',

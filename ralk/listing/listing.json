@@ -9,7 +9,7 @@
     "margin"
   ],
   "description": "Claude Code runs in a VM, a container or a server with no speaker. Ralk is the tab on the machine in front of you: a chime when the build finishes, Olivia's voice when something needs you, a browser notification when you're in another window.\n\nConnect Claude, Claude Code or ChatGPT once. From then on Claude can tell you a task is done, that it needs your approval, that something broke, or ask a question: each kind has its own sound, and a spoken line follows a few seconds later. Every device you have open plays it; the card says which one heard it.\n\nThe 52 sounds are made from code in your browser, nothing to download, and you pick which one goes with each kind. The voice is Inworld TTS on fal.ai, Olivia by default, any of its voices with a sample; a line said before plays again at once and costs nothing.\n\nIt feels like an app: a bar that stays put, one panel that scrolls, a tab bar on your phone, light and dark, and sounds you can try before you sign in.",
-  "whatsNew": "Claude's spoken lines work again. A newer Holm let Claude's tools see the voice key, and Ralk took that as leave to call fal.ai from inside the tool, which a tool can't do, so every line failed at once. Now a tool only queues the line and your open tab sends it, as before.",
+  "whatsNew": "Ralk turns its sound on by itself where your browser allows it: installed as an app in Chrome, or on a site you allow to auto-play in Safari or Firefox. It tries when the page opens and when you come back to the tab. Elsewhere one tap anywhere still does it. Claude's spoken lines work again, too: on newer Holm nodes every line failed at once.",
   "screenshots": [
     {
       "file": "live.webp",
