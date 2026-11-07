@@ -421,6 +421,16 @@ current guide too, since some of them will change.
   allocations. Bench loops over user-sized input with a long input. Run
   multi-step setup, seeding or cleanup as resumable steps of about 2 seconds
   each, with progress kept in KV.
+- **The AI's wait counts toward that budget.** On zyt (0.284, gpt-4o at
+  about 120 tokens a second), a request whose `ai.chat` returns after 5
+  seconds is cut off at its next bit of JavaScript. Keep each AI request
+  under about 400 output tokens, do any heavy work in a separate request,
+  and split long answers into parts the page asks for (one interview
+  question per request, a CV draft section by section). zyt also runs only
+  about two `ai.chat` calls per app at once and refuses the rest at once
+  with `ai.concurrency_exceeded`: answer that with a retryable 429, retry
+  from the page with a growing wait, and count daily caps only after a
+  call succeeds.
 - **There's no `Intl` on the server.** Time zones come from the browser.
   `toLocaleString` with options can throw.
 - **An operation's input is validated before its sign-in check.** A
