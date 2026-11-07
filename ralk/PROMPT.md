@@ -38,7 +38,8 @@ there.
   change; a library with a play button on every row; a volume for the device.
 - Voice: fal.ai's Inworld TTS through env.holm.net.fetch with an app-scoped
   runtime secret, Olivia by default, any built-in voice with a sample. Queue
-  the line, let the browser poll once a second, play the finished file as
+  the line, let the browser poll once a second (Claude's tools can't call
+  out, so the first poll submits a line they queue), play the finished file as
   soon as fal.ai has it, then copy it into storage keyed by text and voice so
   a repeated line is instant and free. A monthly allowance per person.
 - When a note arrives: the kind's sound plays at once, a browser notification
@@ -127,3 +128,8 @@ cookbook (the sidebar that hides, ⌘K, the shell kept by a service worker,
 tabs that keep their place). Offered the sweep, the owner answered:
 
 > Sure do cookbook sweep
+
+Version 0.3.1 came from the owner's report:
+
+> Review ralk, its failing on voice generation
+> - it was working properly initially, now i simply cant use it

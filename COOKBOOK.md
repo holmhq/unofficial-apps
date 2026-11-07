@@ -434,10 +434,13 @@ current guide too, since some of them will change.
   characters, so a tool's `before` or `cursor` input needs a `maxLength` of
   a few thousand. Pass it back untouched.
 - **Calls out of the app go in raw routes.** Named operations (the ones MCP
-  exposes) can't call `net.fetch` or `ai.chat` and have no secrets, so do
-  outbound work in a `fetch` route. On 0.278 that holds for read, write and
-  destructive operations alike (`READ_EFFECT_DENIED`). `env.holm.private.read`
-  works in them.
+  exposes) can't call `net.fetch` or `ai.chat`, so do outbound work in a
+  `fetch` route. On 0.278 that holds for read, write and destructive
+  operations alike (`READ_EFFECT_DENIED`). `env.holm.private.read` works in
+  them, and by 0.283 so does `env.holm.secrets`: having the key is not leave
+  to call out. Decide by the caller (tool or web route), never by what `env`
+  carries. Ralk 0.3.0 tested for secrets, and every line Claude sent failed
+  once operations gained them.
 - **A read operation can't write**, so it can't do the app's lazy clean-up,
   such as purging an expired paste. It reports the state as it should be,
   and the next write cleans up. Nor can it reuse an app function that

@@ -13,7 +13,8 @@ export const price = (chars) => Math.ceil(chars * MILLS_PER_1000 / 1000);
 function failed(message) { throw Object.assign(new Error(message), { speech: true }); }
 export const speechError = (error) => (error && (error.speech || error.public) ? error.message : 'The voice could not be made.');
 
-// Named operations run without env.holm.secrets; the web routes have it.
+// Older nodes run named operations without env.holm.secrets; the web routes always have it.
+// Having the key is not leave to call out: operations still can't net.fetch.
 export function hasSecrets(env) {
   return !!(env.holm.secrets && typeof env.holm.secrets.get === 'function');
 }

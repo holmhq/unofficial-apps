@@ -113,9 +113,10 @@ Holm primitives it uses:
   icons, manifest and social card from `holm.symbol.svg`.
 
 The voice pipeline is shaped by two facts of the v1 runtime. Named operations
-run without `env.holm.secrets`, so a line that Claude queues is submitted to
-fal.ai by the first device that polls it, through the web route that has the
-key. And a request has about five seconds, so no request does more than one
+can't call out of the app (newer nodes let them read secrets, but not use
+`net.fetch`), so a line that Claude queues is submitted to fal.ai by the
+first device that polls it, through the web route. And a request has about
+five seconds, so no request does more than one
 outbound call: the browser polls once a second, plays the finished file
 straight from fal.ai, and then asks the server to keep a copy, keyed by the
 text and voice, for replays and repeats.

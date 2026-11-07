@@ -2,10 +2,12 @@
 // one broadcasts it at once to every device the person has open; a spoken line is queued at
 // fal.ai and followed by the browser (speech: queued → working → fetching → ready).
 //
-// Named operations (Claude's tools) run without env.holm.secrets, so a line they queue is
-// submitted to fal.ai by the first device that polls it (through the web route, which has
-// the key). The browser plays the finished file straight from fal.ai, then asks for a copy
-// to be kept, so replays and repeats of the same line come from storage and cost nothing.
+// Named operations (Claude's tools) can't call out of the app, so a line they queue is
+// submitted to fal.ai by the first device that polls it (through the web route). Newer
+// nodes give operations env.holm.secrets, but still no net.fetch: what env carries says
+// nothing about calling out, so the caller decides. The browser plays the finished file
+// straight from fal.ai, then asks for a copy to be kept, so replays and repeats of the same
+// line come from storage and cost nothing.
 import { reject, text, longText, randomId, sha256, day } from './lib/util.js';
 import { KIND_IDS, SOUND_IDS, VOICE_IDS } from './catalog.js';
 import { person, channel, prefsDTO, charge, listening, usageDTO } from './people.js';
@@ -49,6 +51,8 @@ function announce(env, doc, note, set) {
 
 // Make a note and send it. `from` is who asked: 'claude' (a tool), 'app' (the web app).
 export async function createNote(env, ctx, input, from) {
+  // Only the web route may call fal.ai; a tool's line waits for a device's poll.
+  const direct = from !== 'claude';
   const doc = person(env, ctx);
   const prefs = prefsDTO(doc);
   const ds = env.holm.app.ds;
@@ -86,7 +90,7 @@ export async function createNote(env, ctx, input, from) {
     const hit = kv.get('tts:' + hash);
     if (hit && hit.key) { speech = 'ready'; cached = true; audio = hit.key; mime = hit.mime || 'audio/wav'; }
     else if (fal.hasSecrets(env) && !fal.configured(env)) { speech = 'failed'; error = 'Voice is not set up on this node: the owner sets the FAL_KEY secret for this app.'; }
-    else { speech = 'queued'; submit = fal.hasSecrets(env); }
+    else { speech = 'queued'; submit = direct && fal.hasSecrets(env); }
     kv.set(today, lines + 1, 2 * 24 * 3600 * 1000);
   }
   const note = {
