@@ -343,6 +343,18 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 
 - **Popovers on a desk, sheets on a phone.** Every sheet has a clear Done.
 - **Tab accepts an autocomplete suggestion**, just as Enter does.
+- **Long lists are found, not scrolled.** Picking one of dozens of items
+  (skills, roles, countries) is a field that finds them as you type, best
+  match first with the typed part in bold, other names it answers to ("js",
+  "k8s") and items already picked marked. Its matches float over the page,
+  so nothing below moves; never a native `<datalist>` or a long `<select>`,
+  whose browser lists are huge and unstyled. It closes after a pick so the
+  new item shows.
+- **Sheets you add to hold still.** A sheet that grows a list keeps one
+  height, new rows land on top with a brief tint, removed rows fold away,
+  and nothing reorders while it's open; sort when it's saved.
+- **Destructive confirms start safe.** On a desk the keyboard starts on
+  Cancel; on a phone nothing is focused, so no ring sits on the red button.
 - **Keep previews live.** Changing a setting such as a colour updates its
   preview as you change it.
 
@@ -532,7 +544,8 @@ couldn't check.
 - [ ] No clipped or overflowing text with long, short or empty values;
       names on cards stay on one line at 12 and 16 characters.
 - [ ] Hover is subtle (nothing grows or underlines), separators meet, and
-      every dropdown is designed.
+      every dropdown is designed; long lists are found by typing, with no
+      `<datalist>`, and nothing moves while you pick.
 - [ ] Controls are quiet: no wall of equal-weight switches or grey chips.
 - [ ] Fields start empty, with no auto-typed demo, and anything that moves
       lands on its final size and place.
