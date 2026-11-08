@@ -29,7 +29,9 @@ references.
   scroll, and no scroll bar shows. Nothing may scroll sideways on an iPhone.
 - **Phones get a tab bar, desks a sidebar.** A sidebar holds places (Search,
   Saved, lists, pages), not filters or settings. It can be hidden, and in
-  an app whose main screen is a search it starts hidden. Settings
+  an app whose main screen is a search it starts hidden. A sidebar that
+  starts hidden slides in over the page with a scrim and closes on a pick,
+  Escape or a tap outside; the page under it never reflows. Settings
   people rarely touch go in a menu or a sheet.
 - **The layout holds still.** Moving between pages doesn't shift the frame,
   and loading data doesn't push things around. When a choice is switched off,
@@ -49,6 +51,10 @@ references.
   its final size and place, so measure the destination before animating.
 - **Start empty.** Never type into a field by itself to demo the app, and
   keep real people's names out of example searches.
+- **A first visit gets a welcome, not a blank.** A place that holds nothing
+  of yours yet says what it does, offers one clear first action, and shows
+  a worked example of what you'll get, such as a whole sample report. Never
+  an empty list or a bare form.
 - **Scroll the panel yourself.** `scrollIntoView()` and `#anchor` links also
   scroll the fixed shell and push the header away. Scroll the nearest panel
   by hand, and use buttons in place of in-page anchors.
@@ -221,6 +227,14 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 - **Headings, labels and buttons are Title Case**: "Park Jobs", "See Where
   You Stand", "Delete My Data…". Sentences stay sentences. Small labels
   aren't set in capitals either.
+- **Headings name the thing.** "Levels", not "Levels Asked"; "Employers",
+  not "Who Hires". Drop the words the context already says.
+- **Glyphs where a label won't fit.** Small tiles, such as a treemap's
+  cells, show a glyph and the count; the name shows only where it fits
+  whole, and always on hover. Vendor only the glyphs you use as path data,
+  drawn inline so they take the text colour (for Material Symbols, fetch
+  each one's SVG once in a script and keep the Apache-2.0 licence beside
+  the file). Never load them from a font CDN.
 - **Pages behind sign-in are tools, not stories.** A title row with its
   actions, a strip of the few numbers that matter, then panels whose rows
   line up as tables, with short notes instead of paragraphs. Story-telling
@@ -303,6 +317,9 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 - **Don't let motion jerk.** Animate from where the element is, with the
   right transform origin. Drive drawn shapes from state each frame; CSS
   transitions on SVG coordinates jitter.
+- **Filters move results, never swap them.** Cards that leave fade out,
+  those that stay glide to their new places, and newcomers rise in, in
+  reading order. Showing and hiding them in one frame reads as a glitch.
 - **Quick repeats don't stack.** When one card slides out as the next slides
   in, a second press must send away every card on stage, including the one
   still arriving. Shelf's review looked up "the card" with `querySelector`,
@@ -371,6 +388,10 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   verdict is fixed text written from the numbers. AI-written advice is
   filtered for praise and exclamation marks, with fixed advice when too
   little survives.
+- **Estimate rather than say "not stated".** When most records lack a
+  number people come for, such as pay, estimate it from what is known,
+  label every estimate as one, keep stated values apart, and say how well
+  the estimates match the stated ones (for example, 24 of 49 within 1.5×).
 
 ## Pickers, menus and sheets
 
@@ -383,6 +404,9 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   so nothing below moves; never a native `<datalist>` or a long `<select>`,
   whose browser lists are huge and unstyled. It closes after a pick so the
   new item shows.
+- **A search holds its shape.** The field keeps a fixed width, and the list
+  it narrows scrolls inside a box of fixed height, so typing moves nothing
+  around it.
 - **Sheets you add to hold still.** A sheet that grows a list keeps one
   height, new rows land on top with a brief tint, removed rows fold away,
   and nothing reorders while it's open; sort when it's saved.
@@ -545,7 +569,10 @@ couldn't check.
 - [ ] The window never scrolls; only panels do, with no scroll bars. Nothing
       scrolls sideways at 375 px or 390 px wide.
 - [ ] The frame doesn't jump between pages or while data loads.
-- [ ] Any sidebar holds places, not controls, and it hides.
+- [ ] Any sidebar holds places, not controls, and it hides; a hidden one
+      slides in over the page without moving it.
+- [ ] A place with nothing in it yet shows a welcome, one first action and
+      an example, not an empty list.
 - [ ] The footer is on every page, with the sidebar hidden and on a phone,
       stuck to the bottom, and Holm branding appears only there. Its
       Feedback opens the form on the live host, not a spinner.
@@ -576,8 +603,10 @@ couldn't check.
       text readable in both.
 - [ ] No clipped or overflowing text with long, short or empty values;
       names on cards stay on one line at 12 and 16 characters.
-- [ ] Headings, labels and buttons are Title Case; controls are raised and
-      sink when pressed.
+- [ ] Headings, labels and buttons are Title Case and name the thing
+      ("Levels"); controls are raised and sink when pressed.
+- [ ] Labels that don't fit whole become glyphs with the name on hover;
+      glyphs are vendored, never loaded from a font CDN.
 - [ ] Hover is subtle (nothing grows or underlines), separators meet, and
       every dropdown is designed; long lists are found by typing, with no
       `<datalist>`, and nothing moves while you pick.
@@ -597,7 +626,8 @@ couldn't check.
 - [ ] Reduced motion is respected: nothing jerks, jitters, or flickers in an
       endless loop.
 - [ ] Results that arrive in bursts still appear as a steady, ordered
-      stream, with nothing reshuffling.
+      stream, with nothing reshuffling. Filters move results out, across
+      and in; a search field keeps its width while you type.
 - [ ] The service worker version follows `holm.json`, `/icon-512.png` opens
       the file, and `/_…` paths pass through.
 
