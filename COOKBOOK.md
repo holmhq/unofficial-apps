@@ -27,6 +27,10 @@ references.
 
 - **The window never scrolls.** Bars are fixed and frosted, only panels
   scroll, and no scroll bar shows. Nothing may scroll sideways on an iPhone.
+- **Frosted means the page runs under the bar.** The panel starts behind
+  the top bar (and behind a phone's tab bar), padded by the bar's height,
+  so content blurs as it scrolls beneath. A glass bar that sits above its
+  panel shows only flat grey.
 - **Phones get a tab bar, desks a sidebar.** A sidebar holds places (Search,
   Saved, lists, pages), not filters or settings. It can be hidden, and in
   an app whose main screen is a search it starts hidden. A sidebar that
@@ -52,9 +56,11 @@ references.
 - **Start empty.** Never type into a field by itself to demo the app, and
   keep real people's names out of example searches.
 - **A first visit gets a welcome, not a blank.** A place that holds nothing
-  of yours yet says what it does, offers one clear first action, and shows
-  a worked example of what you'll get, such as a whole sample report. Never
-  an empty list or a bare form.
+  of yours yet says what it does and offers one clear first action. Never
+  an empty list or a bare form. Use the space for a hero that makes people
+  want to add their own, drawn from the app's real numbers. Worked examples
+  (a sample report, say) are listed by name and open only when picked;
+  don't hang a whole one under the welcome.
 - **Scroll the panel yourself.** `scrollIntoView()` and `#anchor` links also
   scroll the fixed shell and push the header away. Scroll the nearest panel
   by hand, and use buttons in place of in-page anchors.
@@ -571,8 +577,9 @@ couldn't check.
 - [ ] The frame doesn't jump between pages or while data loads.
 - [ ] Any sidebar holds places, not controls, and it hides; a hidden one
       slides in over the page without moving it.
-- [ ] A place with nothing in it yet shows a welcome, one first action and
-      an example, not an empty list.
+- [ ] Content scrolls under the frosted bars and shows blurred through them.
+- [ ] A place with nothing in it yet shows a welcome hero and one first
+      action, not an empty list; examples open only when picked.
 - [ ] The footer is on every page, with the sidebar hidden and on a phone,
       stuck to the bottom, and Holm branding appears only there. Its
       Feedback opens the form on the live host, not a spinner.
