@@ -390,6 +390,17 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   late), draw from cache, give status badges a fixed width, and hide the
   footer while a page shows its loading line, or it sits under the line and
   is pushed away when the page arrives.
+- **A live feed stacks its rows by transform.** Chrome counts a row that
+  moves in layout as a shift even when a transform hides the move, so a
+  feed that appends rows and slides the stack back still scores. Keep every
+  row in one place in layout (absolute at the bottom of the list) and stack
+  them with `translateY`; dropping rows off the top then moves nothing. Rows
+  that arrive together glide as one, from wherever the last glide had got
+  to, or the earlier ones jump.
+- **A part that changes with sign-in keeps one shape.** Give every state of
+  a hero's call to action the same rows (a line of buttons, a note of at
+  most two lines) and reserve that height, so the page holds still when the
+  server's answer differs from the cached one, such as right after signing in.
 
 ## Judgements
 
