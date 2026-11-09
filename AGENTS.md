@@ -24,7 +24,8 @@ or opens a pull request.
 - `PROMPT.md` is a short, plain-language request that builds the app from
   scratch. It may cite only public sources: <https://holmhq.com>,
   <https://holmhq.com/llms-full.txt>, and Holm's own libraries in
-  <https://github.com/holmhq/cdn>. Read the v1 app-building sections of
+  <https://github.com/holmhq/cdn>. A port may also cite its one public,
+  open-source upstream, pinned to a commit. Read the v1 app-building sections of
   `llms-full.txt` before writing code. Keep it short; its job is to show how simple
   a prompt can be. Quote the original request if there was one; historical
   quotes must not send the builder to private sources.
