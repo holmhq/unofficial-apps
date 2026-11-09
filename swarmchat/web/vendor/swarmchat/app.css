@@ -5,7 +5,7 @@
   src: url('/fonts/inter-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-/* SwarmChat's look on upstream's names: Ralk's greys, an ember accent, Inter. Every colour has a light and a dark
+/* SwarmChat's look on upstream's names: Ralk's greys, a green accent, Inter. Every colour has a light and a dark
    value, and light-dark() picks by color-scheme, which follows the device or the theme in the account menu. */
 :root {
   color-scheme: light dark;
@@ -15,18 +15,18 @@
   --line: light-dark(#e5e5ea, #2a2a2d); --line2: light-dark(#d1d1d6, #3a3a3d);
   --text: light-dark(#1d1d1f, #f5f5f7); --text2: light-dark(#1d1d1f, #ececf0); --text3: light-dark(#3a3a3c, #d1d1d6);
   --text4: light-dark(#3a3a3c, #e5e5ea); --muted: light-dark(#6e6e73, #98989d); --faint: light-dark(#8e8e93, #6c6c70);
-  --accent: light-dark(#d4441c, #ff6a45); --accent-soft: light-dark(#bd3a15, #ff8b6c); --accent-ink: light-dark(#8f2a0e, #ffd0c2);
+  --accent: light-dark(#127a46, #3dd68c); --accent-soft: light-dark(#0c6a3c, #5ee3a1); --accent-ink: light-dark(#09532f, #bff3d8);
   --sel-bg: light-dark(#e2e2e7, #2e2e31); --sel-text: light-dark(#1d1d1f, #f5f5f7);
-  --played: light-dark(#f0a58f, #9a4630); --unplayed: light-dark(#e3e3e8, #2c2c2e); --spoke: light-dark(#dcdce2, #2c2c30);
+  --played: light-dark(#86cfa6, #2c7a52); --unplayed: light-dark(#e3e3e8, #2c2c2e); --spoke: light-dark(#dcdce2, #2c2c30);
   --map-in: light-dark(#ffffff, #121214); --map-out: light-dark(#f5f5f7, #0b0b0c);
-  --dm: light-dark(#0a6fe0, #409cff); --channel: light-dark(#d4441c, #ff6a45); --group: light-dark(#0b7f8f, #3cc8d8);
+  --dm: light-dark(#0a6fe0, #409cff); --channel: light-dark(#127a46, #3dd68c); --group: light-dark(#0b7f8f, #3cc8d8);
   --board: light-dark(#5b3fd9, #a894ff);
-  --dm-soft: light-dark(#0a5fc2, #8cc2ff); --channel-soft: light-dark(#bd3a15, #ff9b80); --group-soft: light-dark(#0a6f7d, #7fdce8);
-  --good: light-dark(#28a745, #30d158); --warn: light-dark(#b36f0a, #ffb340); --warn-ink: light-dark(#8a5300, #ffcd7a);
+  --dm-soft: light-dark(#0a5fc2, #8cc2ff); --channel-soft: light-dark(#0c6a3c, #7fe6b2); --group-soft: light-dark(#0a6f7d, #7fdce8);
+  --good: light-dark(#1f9a53, #3dd68c); --warn: light-dark(#8f7400, #f0cf4a); --warn-ink: light-dark(#6b5700, #f7df7a);
   --bad: light-dark(#d70015, #ff6961);
-  --mention: light-dark(rgba(255, 159, 10, .11), rgba(255, 179, 64, .1));
-  --at: light-dark(#8a5300, #ffcd7a); --at-bg: light-dark(rgba(255, 159, 10, .16), rgba(255, 179, 64, .13));
-  --link: light-dark(#0a6fe0, #6cb2ff); --code-bg: light-dark(#f5f5f7, #141416);
+  --mention: light-dark(rgba(18, 122, 70, .07), rgba(61, 214, 140, .08));
+  --at: light-dark(#0c6a3c, #7fe6b2); --at-bg: light-dark(rgba(18, 122, 70, .11), rgba(61, 214, 140, .14));
+  --link: light-dark(#0c6a3c, #5ee3a1); --code-bg: light-dark(#f5f5f7, #141416);
   --msg-hover: light-dark(#f8f8fa, rgba(255, 255, 255, .03)); --post-hover: light-dark(#fafafb, #1f1f22);
   --seg-track: light-dark(rgba(118, 118, 128, .1), rgba(118, 118, 128, .2)); --seg-on: light-dark(#ffffff, #3a3a3c);
   --shadow: light-dark(rgba(0, 0, 0, .12), rgba(0, 0, 0, .5)); --shade: light-dark(rgba(0, 0, 0, .28), rgba(0, 0, 0, .55));
@@ -36,7 +36,7 @@
   /* code: keywords, strings, numbers and constants, comments, functions, tags and types, keys, variables */
   --ck: light-dark(#cf222e, #ff7b72); --cs: light-dark(#0a3069, #a5d6ff); --cn: light-dark(#0550ae, #79c0ff);
   --cc: light-dark(#6e7781, #8b949e); --cf: light-dark(#8250df, #d2a8ff); --ct: light-dark(#116329, #7ee787);
-  --ca: light-dark(#0550ae, #79c0ff); --cv: light-dark(#953800, #ffa657);
+  --ca: light-dark(#0550ae, #79c0ff); --cv: light-dark(#0a6b74, #6fd6df);
   --diff-add: light-dark(#e6ffec, rgba(46, 160, 67, .16)); --diff-del: light-dark(#ffebe9, rgba(248, 81, 73, .16));
   --diff-hunk: light-dark(#ddf4ff, rgba(56, 139, 253, .14));
   --log-err: light-dark(#fff1f0, rgba(248, 81, 73, .11)); --log-warn: light-dark(#fff8c5, rgba(210, 153, 34, .13));
@@ -46,9 +46,9 @@
   --ink: var(--text); --ink-2: var(--muted); --ink-3: var(--faint); --surface: var(--panel); --raised: light-dark(#ffffff, #2c2c2e);
   --fill: light-dark(rgba(118, 118, 128, .12), rgba(118, 118, 128, .24)); --fill-2: light-dark(rgba(118, 118, 128, .07), rgba(118, 118, 128, .14));
   --fill-3: light-dark(rgba(118, 118, 128, .2), rgba(118, 118, 128, .32)); --sunk: light-dark(rgba(118, 118, 128, .085), rgba(118, 118, 128, .14));
-  --line-2: var(--line2); --accent-text: var(--accent-soft); --accent-hover: light-dark(#c03a14, #ff7f5f);
-  --accent-soft-2: light-dark(rgba(212, 68, 28, .18), rgba(255, 106, 69, .28)); --on-accent: light-dark(#ffffff, #230b04);
-  --green: var(--good); --green-text: light-dark(#1f8a3a, #30d158); --red: var(--bad); --scrim: var(--shade);
+  --line-2: var(--line2); --accent-text: var(--accent-soft); --accent-hover: light-dark(#0d6b3c, #5ae0a0);
+  --accent-soft-2: light-dark(rgba(18, 122, 70, .17), rgba(61, 214, 140, .25)); --on-accent: light-dark(#ffffff, #03200f);
+  --green: var(--good); --green-text: light-dark(#157a3f, #5ee3a1); --red: var(--bad); --scrim: var(--shade);
   --lit: light-dark(inset 0 1px 0 rgba(255, 255, 255, .75), inset 0 1px 0 rgba(255, 255, 255, .07));
   --press: light-dark(inset 0 1px 3px rgba(0, 0, 0, .16), inset 0 1px 3px rgba(0, 0, 0, .55));
   --sink: light-dark(inset 0 1px 2px rgba(0, 0, 0, .06), inset 0 1px 2px rgba(0, 0, 0, .4));
@@ -326,7 +326,7 @@ body.replaying .replaybtn, body.layout-board .replaybtn, body.layout-map .replay
 .daysep { display: flex; align-items: center; margin: 16px 20px 6px; }
 .daysep::before, .daysep::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .daysep span { padding: 2px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text3); font-size: 12.5px; font-weight: 700; }
-.newpill { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--accent); color: #fff; font-weight: 600; font-size: 12.5px; padding: 6px 14px; border-radius: 16px; box-shadow: 0 6px 20px var(--shadow); z-index: 3; }
+.newpill { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--accent); color: var(--on-accent); font-weight: 600; font-size: 12.5px; padding: 6px 14px; border-radius: 16px; box-shadow: 0 6px 20px var(--shadow); z-index: 3; }
 
 /* right pane */
 #pane { grid-area: pane; width: 0; overflow: hidden; border-left: 1px solid var(--line); background: var(--side); display: flex; flex-direction: column; min-height: 0; }
@@ -515,8 +515,11 @@ mark { background: light-dark(rgba(250, 204, 21, .45), rgba(250, 204, 21, .28));
 /* the bar under everything: the run over time, and a replay's controls */
 #bar { grid-area: bar; display: none; align-items: center; gap: 14px; height: 60px; padding: 0 16px; border-top: 1px solid var(--line); background: var(--side); min-width: 0; }
 body.layout-map #bar, body.replaying #bar { display: flex; }
-#bar .play { flex: none; min-width: 96px; height: 36px; padding: 0 16px; border-radius: 99px; background: var(--sel-bg); color: var(--sel-text); font-weight: 600; font-size: 13px; white-space: nowrap; }
-#bar .play:hover { opacity: .88; }
+#bar .play { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 104px; height: 36px; padding: 0 16px 0 13px; border-radius: 99px; background: var(--accent-soft-2); color: var(--accent-soft); font-weight: 620; font-size: 13px; white-space: nowrap; box-shadow: inset 0 0 0 .5px color-mix(in srgb, var(--accent) 30%, transparent); transition: background-color .15s; }
+#bar .play:hover { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+#bar .play:active { box-shadow: inset 0 1px 3px rgba(0, 0, 0, .18); }
+#bar .play .pi { width: 14px; height: 14px; flex: none; fill: currentColor; }
+#bar .play .pi.is-line { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 #bar .track { position: relative; flex: 1; min-width: 120px; height: 36px; cursor: pointer; touch-action: none; }
 #bar .track canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 #bar .head { position: absolute; left: -1px; top: -3px; bottom: -3px; width: 2px; border-radius: 1px; background: var(--accent); pointer-events: none; will-change: transform; }
@@ -533,7 +536,7 @@ body.layout-map #bar, body.replaying #bar { display: flex; }
 #login form { width: min(440px, 90vw); display: flex; flex-direction: column; gap: 12px; }
 #login p { color: var(--muted); margin: 0; }
 #login input { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line2); background: var(--panel); outline: none; font-family: var(--mono); font-size: 13px; }
-#login button { padding: 10px; border-radius: 8px; background: var(--accent); color: #fff; font-weight: 700; }
+#login button { padding: 10px; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-weight: 700; }
 #login .err { color: var(--bad); }
 .prow { display: flex; gap: 8px; align-items: center; padding: 5px 14px; cursor: pointer; font-size: 13px; }
 .prow:hover { background: var(--hover); }
@@ -725,10 +728,11 @@ body.layout-map #bar, body.replaying #bar { display: flex; }
 .btn:hover, .replaybtn:hover, .as:hover, .find:hover { background: light-dark(#f2f2f5, #333336); color: var(--text); border-color: transparent; }
 .btn:active, .replaybtn:active, .as:active, .find:active, .seg button:active, .tabs button:active { box-shadow: var(--press), 0 0 0 .5px var(--line2); }
 .btn { border-radius: 8px; font-weight: 560; }
-.btn.primary { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 1px 2px rgba(150, 40, 10, .3), 0 0 0 .5px rgba(120, 30, 5, .25); }
+.btn.primary { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 1px 2px rgba(6, 58, 31, .3), 0 0 0 .5px rgba(6, 58, 31, .28); }
 .btn.primary:hover { background: var(--accent-hover); color: var(--on-accent); }
 .as.on { background: color-mix(in srgb, var(--accent) 12%, var(--raised)); box-shadow: var(--lit), 0 0 0 .5px color-mix(in srgb, var(--accent) 45%, transparent); }
-.as .chev { color: var(--faint); font-size: 11px; }
+.as .chev { width: 14px; height: 14px; margin: 0 -3px 0 -2px; flex: none; fill: none; stroke: var(--faint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.as .x svg { display: block; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 .as .aeye { display: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .replaybtn { display: inline-flex; align-items: center; gap: 6px; font-weight: 560; }
 .replaybtn svg { width: 13px; height: 13px; fill: currentColor; }
@@ -784,6 +788,7 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .menu { position: fixed; z-index: 40; top: calc(var(--top-h) + var(--top) - 4px); right: max(12px, env(safe-area-inset-right, 0px)); width: 268px; padding: 6px; border-radius: 16px; background: var(--raised); color: var(--text); box-shadow: var(--shadow-3);
   transform-origin: top right; animation: pop .22s var(--ease-out); font-size: 14.5px; }
 @keyframes pop { from { opacity: 0; transform: scale(.94) translateY(-4px); } to { opacity: 1; transform: none; } }
+.menu-scrim { display: none; }
 .menu-who { display: flex; align-items: center; gap: 11px; padding: 10px 10px 12px; min-width: 0; }
 .menu-who .face { width: 36px; height: 36px; flex: none; }
 .menu-who div { min-width: 0; }
@@ -793,6 +798,7 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
 .mi { width: 100%; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 10px; border: 0; border-radius: 10px; background: none; color: var(--text); cursor: pointer; font-size: 14.5px; font-weight: 520; text-align: left; text-decoration: none !important; transition: background-color .12s; }
 .mi svg.i { color: var(--muted); }
 .mi:hover { background: var(--fill-2); }
+.mi:focus-visible { outline: none; background: var(--fill); }
 .mi.is-accent, .mi.is-accent svg.i { color: var(--accent-soft); }
 .theme-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 6px 6px 10px; }
 .theme-row > span { font-size: 14.5px; font-weight: 520; }
@@ -808,6 +814,8 @@ svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor;
   .menu { top: auto; left: 0; right: 0; bottom: 0; width: auto; border-radius: 22px 22px 0 0; padding: 8px 10px calc(14px + var(--bottom)); animation: up .32s var(--ease); }
   @keyframes up { from { transform: translateY(100%); } to { transform: none; } }
   .menu::before { content: ""; display: block; width: 36px; height: 5px; border-radius: 3px; background: var(--fill); margin: 0 auto 6px; }
+  .menu-scrim { display: block; position: fixed; inset: 0; z-index: 39; background: var(--scrim); animation: scrim-in .25s var(--ease-out); }
+  @keyframes scrim-in { from { opacity: 0; } }
   .mi { height: 46px; }
   #top .brand .bname, .crumbs .crumb.ws { display: none !important; }
   /* the swarm's name gets the room; seeing as everyone is a glyph */
@@ -908,7 +916,7 @@ body.is-denied #side, body.is-denied #main, body.is-denied #pane, body.is-denied
 .gbtn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 12px; font-size: 15px; font-weight: 620; color: var(--text); text-decoration: none !important; background: var(--raised); box-shadow: var(--lit), 0 0 0 .5px var(--line2), 0 1px 2px var(--shadow); cursor: pointer; transition: background-color .12s; }
 .gbtn:hover { background: light-dark(#f2f2f5, #333336); }
 .gbtn:active { box-shadow: var(--press), 0 0 0 .5px var(--line2); }
-.gbtn.primary { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 1px 2px rgba(150, 40, 10, .3); }
+.gbtn.primary { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 1px 2px rgba(6, 58, 31, .3), 0 0 0 .5px rgba(6, 58, 31, .28); }
 .gbtn.primary:hover { background: var(--accent-hover); }
 .noscript { position: fixed; top: 40%; left: 0; right: 0; text-align: center; }
 /* Until the first snapshot is drawn, the bar's controls wait unseen, so they appear in their places at once. Text

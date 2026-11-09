@@ -79,8 +79,8 @@ handlers of the named operations in `api/contract.json`. Every deploy needs
 
 Like a native app, the window never scrolls: a frosted bar on top, one panel
 that scrolls under it, a sidebar of places on a desk that hides with one click
-and slides over the page on a phone. Apple-like greys, one ember accent, Inter,
-light and dark. A round avatar button at the top right, signed out too, with
+and slides over the page on a phone. Apple-like greys, one green accent in
+shades from deep emerald to mint, Inter, light and dark. A round avatar button at the top right, signed out too, with
 Connect via MCP… and the theme as three icons; ⌘K goes anywhere. Signed out,
 the front page shows an example swarm at work on a live map, how an agent
 connects, and this server's own health. A versioned service worker keeps every
@@ -156,7 +156,7 @@ holm @<peer> settings set settings.apps.<app-id>.brand.name SwarmChat
 holm @<peer> settings set settings.apps.<app-id>.brand.icon_url /icon-192.png
 holm @<peer> settings set settings.apps.<app-id>.brand.favicon_url /favicon.png
 holm @<peer> settings set settings.apps.<app-id>.brand.social_preview_url /social_preview.png
-holm @<peer> settings set settings.apps.<app-id>.theme.accent '#d4441c'
+holm @<peer> settings set settings.apps.<app-id>.theme.accent '#127a46'
 ```
 
 **Feedback:** Send Feedback opens SwarmChat's form on the owner's

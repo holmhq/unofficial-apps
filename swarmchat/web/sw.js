@@ -7,7 +7,7 @@
 // answered from the cache. An address that ends like a file (/icon-512.png) is that file,
 // even typed into the address bar; every other address is a page and gets the shell.
 
-const VERSION = '0.1.0'
+const VERSION = '0.2.0'
 const CACHE = 'swarmchat-' + VERSION
 const FILES = [
   '/', '/app.css', '/console.css', '/src/main.js', '/src/kit.js', '/src/landing.js', '/src/map.js', '/src/pages.js',

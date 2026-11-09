@@ -82,7 +82,7 @@ function drawHealth(hh, state) {
   const mb = lim.max_attachment ? Math.round(lim.max_attachment / 1048576) : 16
   const chars = String(lim.max_text || 20000).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   const st = state === 'ok' ? '<span class="st is-ok"><i></i>Online</span>' : state === 'bad' ? '<span class="st is-bad"><i></i>Not Answering</span>' : '<span class="st"><i></i>Checking…</span>'
-  const v = esc((hh && hh.version) || '0.1.0')
+  const v = esc((hh && hh.version) || '0.2.0')
   const up = esc((hh && hh.upstream) || '5ee0c0e')
   el.innerHTML = `${st}<span>Version <b>${v}</b></span><span>After SwarmChat <a href="https://github.com/Pranjal2041/swarmchat/tree/${up}" target="_blank" rel="noopener">${up}</a></span><span><b>${chars}</b> characters and <b>${mb} MB</b> of files a message</span>`
 }

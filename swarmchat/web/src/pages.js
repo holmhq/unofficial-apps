@@ -58,15 +58,17 @@ function signedOut() {
 }
 
 const face = (m) => (m.picture ? h('span.av', h('img', { src: m.picture, alt: '' })) : h('span.av', { 'aria-hidden': 'true' }, (String(m.name || m.email || '?').trim().charAt(0) || '?').toUpperCase()))
-// An agent's colour: up to eight agents get eight colours made to be told apart, in the order of their ids.
-const IDENTITY = ['#e8492a', '#3b5bdb', '#2f9e44', '#7048e8', '#d97706', '#1098ad', '#d6336c', '#9c36b5']
+// An agent's colour: up to eight agents get eight colours made to be told apart, in the order of their ids. Past
+// eight, a hue from the id, skipping oranges, yellows and greens, which belong to the app (the same rule as the viewer's).
+const IDENTITY = ['#2f9e44', '#3b5bdb', '#7048e8', '#1098ad', '#d6336c', '#9c36b5', '#e03131', '#5c677d']
 function agentColor(id, ids) {
   const sorted = [...ids].sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }))
   const i = sorted.indexOf(id)
   if (ids.length <= IDENTITY.length && i >= 0) return IDENTITY[i]
   let hh = 2166136261
   for (let k = 0; k < id.length; k++) hh = Math.imul(hh ^ id.charCodeAt(k), 16777619)
-  return `oklch(0.58 0.14 ${(hh >>> 0) % 360})`
+  const hue = (hh >>> 0) % 225
+  return `oklch(0.58 0.14 ${hue < 30 ? hue : hue + 135})`
 }
 const agentFace = (a, ids) => h('span.av.is-agent', { style: { background: agentColor(a.id, ids) }, 'aria-hidden': 'true' }, String(a.name || a.id).replace(/[^\p{L}\p{N} ]/gu, ' ').trim().split(/\s+/).slice(0, 2).map((w) => [...w][0] || '').join('').toUpperCase() || '?')
 
@@ -158,7 +160,7 @@ function workspace(el, nav, id) {
         ? h('div.rows', w.swarms.map((s) => h('div.row',
           h('span.row-ic', ic('chat')),
           h('a.row-main', { href: `/s/${s.id}/manage` }, h('b', s.name), h('small', `${s.agents === 1 ? '1 agent' : num(s.agents) + ' agents'} · ${num(s.today)} today${s.last_at ? ' · active ' + ago(s.last_at) : ''}`)),
-          h('div.row-actions', h('a.btn.small.tinted', { href: `/s/${s.id}`, html: icon('eye') + '<span>Watch</span>' })))))
+          h('div.row-actions', h('a.btn.small.tinted', { href: `/s/${s.id}`, 'aria-label': `Watch ${s.name}`, title: 'Watch', html: icon('eye') + '<span>Watch</span>' })))))
         : empty('chat', manage ? 'Make a Swarm' : 'No Swarms Yet', manage ? 'A swarm is one team of agents: its channels, direct messages and threads. Add its agents next, each with its own token.' : 'An admin of this workspace can make one.', manage ? btn('New Swarm', { icon: 'plus', kind: 'primary', run: () => newSwarm(w, nav) }) : null)),
       card('Members', {}, h('div.rows', w.members.map((m) => h('div.row',
         face(m),
@@ -262,6 +264,7 @@ function swarm(el, nav, id) {
   document.title = 'Swarm · SwarmChat'
   const view = cached('s:' + id, el, () => api(`/api/swarms/${id}`), (s, refresh) => {
     document.title = `${s.name} · SwarmChat`
+    if (s.workspace) nav.rememberSwarm(s.workspace, s)
     const manage = s.can_manage
     const list = s.agents_list || []
     const ids = list.map((a) => a.id)

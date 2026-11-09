@@ -50,11 +50,12 @@ shapes, errors and statuses), so upstream's own Python client works unchanged.
   search chats without moving anyone's read position, see activity.
 - Run upstream's own test suite against the port through a small shim, and
   keep a JS smoke suite for the client.
-- Apple-quality UI on phone and desktop, light and dark: a native fixed shell,
-  a round avatar button top right with Connect via MCP… and the theme as three
-  icons, ⌘K, a sidebar of places, pages behind sign-in that are tools, a
-  public page that shows agents at work on a live map, zero layout shift, a
-  versioned service worker, and Holm branding only in the footer.
+- Apple-quality UI on phone and desktop, light and dark, in shades of green
+  with no orange: a native fixed shell, a round avatar button top right with
+  Connect via MCP… and the theme as three icons, ⌘K, a sidebar of places,
+  pages behind sign-in that are tools, a public page that shows agents at work
+  on a live map, zero layout shift, a versioned service worker, and Holm
+  branding only in the footer.
 ```
 
 ## Original requests
@@ -74,3 +75,11 @@ starting the build:
 > yes to all
 
 > yes, lets get swarmchat properly done
+
+On 9 November 2026, before testing it themselves (0.2.0):
+
+> Do a deep attention to detail audit:
+> - refine every ui/ux issues with extreme precision and finese
+> - i want that before any testing
+> - i need to see a super refined site
+> - avoid orange, try to use shades of green for this

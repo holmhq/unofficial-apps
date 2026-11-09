@@ -364,13 +364,16 @@ export async function signOut() {
 /* ---------- The account menu: who you are, the app's places, Connect via MCP…, theme, sign in or out ---------- */
 export function accountMenu(btn, places = () => []) {
   const menu = h('div.menu', { role: 'menu', hidden: true })
-  document.body.append(menu)
+  // On a phone the menu is a sheet over a scrim; a tap on the scrim closes it without reaching the page below.
+  const scrim = h('div.menu-scrim', { hidden: true, 'aria-hidden': 'true', onclick: () => close() })
+  document.body.append(scrim, menu)
   const draw = () => { $('.face', btn).outerHTML = faceHTML(session.me); btn.setAttribute('aria-label', session.me.signed_in ? `Account: ${session.me.name || session.me.email}` : 'Account') }
   draw()
   onMe(draw)
   const close = (refocus) => {
     if (menu.hidden) return
     menu.hidden = true
+    scrim.hidden = true
     btn.setAttribute('aria-expanded', 'false')
     if (refocus) btn.focus({ preventScroll: true })
   }
@@ -378,7 +381,7 @@ export function accountMenu(btn, places = () => []) {
     const m = session.me
     const items = places(m).filter(Boolean)
     fill(menu)
-    menu.innerHTML = `<div class="menu-who">${faceHTML(m)}<div><b>${m.signed_in ? esc(m.name || 'You') : 'Not Signed In'}</b><small>${m.signed_in ? esc(m.email || '') : 'Sign in to make and watch swarms.'}</small></div></div>`
+    menu.innerHTML = `<div class="menu-who">${faceHTML(m)}<div><b>${m.signed_in ? esc(m.name || 'You') : 'Not Signed In'}</b><small>${m.signed_in ? esc(m.email || '') : 'Sign in to watch your swarms.'}</small></div></div>`
     if (!m.signed_in) menu.append(h('button.mi.is-accent', { type: 'button', role: 'menuitem', 'data-act': 'signin', html: icon('in') + 'Sign In' }))
     for (const it of items) menu.append(h(it.href ? 'a.mi' : 'button.mi', { type: it.href ? null : 'button', role: 'menuitem', href: it.href || null, 'data-run': '1', html: icon(it.icon) + esc(it.label) }))
     if (m.signed_in) menu.append(h('button.mi', { type: 'button', role: 'menuitem', 'data-act': 'mcp', html: icon('mcp') + 'Connect via MCP…' }))
@@ -390,9 +393,11 @@ export function accountMenu(btn, places = () => []) {
     if (m.signed_in) menu.append(h('hr'), h('button.mi', { type: 'button', role: 'menuitem', 'data-act': 'signout', html: icon('out') + 'Sign Out' }))
     $$('[data-run]', menu).forEach((el, i) => el.addEventListener('click', () => { close(false); if (items[i].run) items[i].run() }))
     menu.hidden = false
+    scrim.hidden = false
     btn.setAttribute('aria-expanded', 'true')
+    // The keyboard lands on the first item when the keyboard opened the menu; a click leaves no ring behind.
     const first = $('.mi', menu)
-    if (first && fine()) first.focus({ preventScroll: true })
+    if (first && btn.matches(':focus-visible')) first.focus({ preventScroll: true })
   }
   btn.addEventListener('click', (e) => { e.stopPropagation(); if (menu.hidden) { closePalette(); open() } else close() })
   menu.addEventListener('click', (e) => {
@@ -411,7 +416,7 @@ export function accountMenu(btn, places = () => []) {
     e.preventDefault()
     items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus()
   })
-  document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !menu.contains(e.target) && !btn.contains(e.target)) close() })
+  document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !menu.contains(e.target) && !btn.contains(e.target) && e.target !== scrim) close() })
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) close(true) })
   return { close, open }
 }
@@ -527,7 +532,7 @@ export function mcpSheet() {
 }
 
 /* ---------- Feedback: the app's own project on feedback.zyt.app, in a panel ---------- */
-const FEEDBACK = { project: 'j38pjfac', origin: 'https://feedback.zyt.app', color: '#d4441c' }
+const FEEDBACK = { project: 'j38pjfac', origin: 'https://feedback.zyt.app', color: '#127a46' }
 export const FEEDBACK_URL = `${FEEDBACK.origin}/widget?p=${FEEDBACK.project}`
 let feedbackLoad = null
 export function openFeedback() {

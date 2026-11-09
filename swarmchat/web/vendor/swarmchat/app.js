@@ -4,7 +4,8 @@
 // instead of the view token, and there is no token form (src/viewer.js shows sign-in or a dead link); the live feed
 // is a realtime wake on the swarm's channel plus an immediate view_feed instead of a long poll; the map's layout
 // worker is its own file; the theme follows SwarmChat's account menu; ⌘K also lists SwarmChat's places and actions;
-// labels are in Title Case; scrolling a message into view moves only its own panel.
+// labels are in Title Case; scrolling a message into view moves only its own panel; colours follow the app's green look
+// and buttons draw their icons instead of typing glyphs.
 //
 // swarmchat view: watch every chat on a server, live. Plain JavaScript with no build step, served as one page.
 // Every bit of text an agent wrote goes through esc() or html``, and the page's Content-Security-Policy lets only
@@ -21,6 +22,13 @@ const part = v => v == null || v === false ? '' : v instanceof Safe ? v.s : Arra
 // A template that escapes everything put into it, except what is already Safe.
 const html = (strings, ...vals) => new Safe(strings.reduce((out, s, i) => out + part(vals[i - 1]) + s));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// The replay button's faces: drawn icons, never text glyphs (a phone may draw ▶ as an emoji).
+const PLAY = {
+  pause: '<svg class="pi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.3"/><rect x="13.5" y="5" width="4" height="14" rx="1.3"/></svg><span>Pause</span>',
+  play: '<svg class="pi" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4a1 1 0 0 0 1.5.86l10-6.2a1 1 0 0 0 0-1.72l-10-6.2a1 1 0 0 0-1.5.86z"/></svg><span>Play</span>',
+  again: '<svg class="pi is-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.3-5.4M4.5 4.8v4.4h4.4"/></svg><span>Replay</span>',
+  replay: '<svg class="pi" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4a1 1 0 0 0 1.5.86l10-6.2a1 1 0 0 0 0-1.72l-10-6.2a1 1 0 0 0-1.5.86z"/></svg><span>Replay</span>',
+};
 const num = n => (n || 0).toLocaleString('en-US');
 const plural = (n, one, many) => `${num(n)} ${n === 1 ? one : many || one + 's'}`;
 const ms = at => typeof at === 'number' ? at * 1000 : Date.parse(at);
@@ -62,8 +70,8 @@ const span = s => {  // a stretch of time as a clock shows it: 4:05, or 1:02:03
 function hashHue(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return (h >>> 0) % 360; }
 // Each agent's own colour, on its avatar, its place on the map and its messages in flight. A team of up to eight has
 // eight colours made to be told apart, given in the order of their ids, so a1 to a8 always look the same. A larger
-// swarm takes a hue from each id, all at one lightness, so white initials read on every one.
-const IDENTITY = ['#e8492a', '#3b5bdb', '#2f9e44', '#7048e8', '#d97706', '#1098ad', '#d6336c', '#9c36b5'];
+// swarm takes a hue from each id, all at one lightness, so white initials read on every one, skipping oranges, yellows and the app's greens.
+const IDENTITY = ['#2f9e44', '#3b5bdb', '#7048e8', '#1098ad', '#d6336c', '#9c36b5', '#e03131', '#5c677d'];
 let RANK = null;  // id -> its place in IDENTITY. Worked out again when people change.
 function userColor(id) {
   if (!RANK) {
@@ -71,7 +79,8 @@ function userColor(id) {
     RANK = new Map(ids.length <= IDENTITY.length ? ids.map((u, i) => [u, i]) : []);
   }
   const i = RANK.get(id);
-  return i != null ? IDENTITY[i] : `oklch(0.58 0.14 ${hashHue(id)})`;
+  const hue = hashHue(id) % 225;
+  return i != null ? IDENTITY[i] : `oklch(0.58 0.14 ${hue < 30 ? hue : hue + 135})`;
 }
 function initials(name) {
   const w = String(name).replace(/[^\p{L}\p{N} ]/gu, ' ').trim().split(/\s+/).filter(Boolean);
@@ -339,8 +348,8 @@ function renderTop() {
   $('#stats').innerHTML = html`<b>${num(agents)}</b> agents · <b>${num(chats)}</b> chats · <b>${num(S.total)}</b> messages${replay.on ? ' so far' : ''}${rate ? html` · <b>${rate < 10 ? rate.toFixed(1) : Math.round(rate)}</b>/s` : ''}`;
   const as = $('#as');
   as.classList.toggle('on', !!r.as);
-  as.innerHTML = r.as ? html`${avatar(r.as, 'sm')}<span><span class="pre">As </span><b>${name(r.as)}</b></span><span class="x" data-clear-as title="See everything again">×</span>`
-    : html`<svg class="aeye" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg><span class="aall"><span class="pre">As </span><span class="who">Everyone</span></span><span class="chev">▾</span>`;
+  as.innerHTML = r.as ? html`${avatar(r.as, 'sm')}<span><span class="pre">As </span><b>${name(r.as)}</b></span><span class="x" data-clear-as title="See everything again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></span>`
+    : html`<svg class="aeye" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg><span class="aall"><span class="pre">As </span><span class="who">Everyone</span></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>`;
 }
 setInterval(() => renderTop(), 2000);
 
@@ -1113,7 +1122,7 @@ class ChatView {
     if (!c) return;
     const kind = c.kind === 'channel' ? (c.public ? 'public' : 'private') : c.kind;
     const made = replay.on ? `at ${span(ms(c.created_at) / 1000 - replay.act.start)}` : ago(c.created_at);
-    this.head.innerHTML = html`<span class="ico ${c.kind}">${KIND[c.kind]}</span><h1 title="${title(c, null)}">${c.name ? '#' + c.name : title(c, null)}</h1><span class="pill ${kind}">${kind[0].toUpperCase() + kind.slice(1)}</span>
+    this.head.innerHTML = html`<span class="ico ${c.kind}">${KIND[c.kind]}</span><h1 title="${title(c, null)}">${c.name || title(c, null)}</h1><span class="pill ${kind}">${kind[0].toUpperCase() + kind.slice(1)}</span>
 ${c.archived ? html`<span class="pill archived">Archived</span>` : ''}
 <span class="sub"><span class="link" data-members="${c.id}">${plural(c.members.length, 'member')}</span> · ${plural(c.messages, 'message')}${replay.on ? ' so far' : ''}${this.o.inPane ? '' : ` · made by ${name(c.created_by)} ${made}`}</span>
 <div class="grow"></div>${this.o.inPane ? html`<button class="btn" data-open="${c.id}" title="Open this chat on its own">Open</button>` : html`<button class="btn" data-goto="board">Open as Board</button>`}
@@ -2258,7 +2267,7 @@ const replay = {
     const state = this.on ? (this.playing ? 'pause' : this.atEnd() ? 'again' : 'play') : 'replay';
     if (all || state !== this.drawn.state) {
       const play = $('[data-play]', el);
-      play.innerHTML = {pause: '❚❚ Pause', play: '▶ Play', again: '↻ Replay', replay: '▶ Replay'}[state];
+      play.innerHTML = PLAY[state];
       play.title = this.on ? 'Play or pause (space)' : 'Play the run again from its start (R)';
       for (const b of $$('[data-speed]', el)) b.classList.toggle('on', +b.dataset.speed === this.speed);
       $('[data-quiet]', el).classList.toggle('on', this.quiet);
@@ -2295,7 +2304,7 @@ const replay = {
 // ---------------------------------------------------------------------- the map: everyone at once
 
 // Categorical colours in a fixed order, made to be told apart on a light or a dark background. Past eight, the rest are "other".
-const PALETTE = ['#4269d0', '#efb118', '#ff725c', '#6cc5b0', '#3ca951', '#ff8ab7', '#a463f2', '#97bbf5'];
+const PALETTE = ['#4269d0', '#3ca951', '#a463f2', '#ff8ab7', '#6cc5b0', '#e0484f', '#97bbf5', '#8a8f2d'];
 const OTHER = '#7b8394';
 const MAP = {pos: new Map(), view: null, colorBy: null, lens: !COARSE.matches, mode: null};  // kept while the page is open
 const RING = 300;  // the radius of the ring agents sit on, in the map's own units

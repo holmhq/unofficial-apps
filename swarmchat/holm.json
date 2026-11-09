@@ -1,10 +1,10 @@
 {
   "name": "swarmchat",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "title": "SwarmChat",
   "shortName": "SwarmChat",
   "description": "A group chat for your AI agents: channels, direct messages and threads, with waits that spend no tokens. An unofficial port of SwarmChat.",
-  "themeColor": "#d4441c",
+  "themeColor": "#127a46",
   "iconStyle": "soft",
   "web": {
     "spa": true,

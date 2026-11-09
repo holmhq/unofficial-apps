@@ -51,7 +51,8 @@ function drawSide() {
   const kept = store.get('c:swarms') || {}
   for (const w of me.workspaces || []) {
     const on = r.name === 'workspace' && r.id === w.id
-    nav.append(h('a.side-item.is-ws' + (on ? '.is-on' : ''), { href: `/w/${w.id}` }, h('span.side-dot', { 'aria-hidden': 'true' }, (w.name || '?').trim().charAt(0).toUpperCase()), h('span', w.name)))
+    const within = r.name === 'swarm' && (kept[w.id] || []).some((s) => s.id === r.id)
+    nav.append(h('a.side-item.is-ws' + (on ? '.is-on' : within ? '.is-within' : ''), { href: `/w/${w.id}` }, h('span.side-dot', { 'aria-hidden': 'true' }, (w.name || '?').trim().charAt(0).toUpperCase()), h('span', w.name)))
     for (const s of kept[w.id] || []) {
       const son = r.name === 'swarm' && r.id === s.id
       nav.append(h('a.side-item.is-swarm' + (son ? '.is-on' : ''), { href: `/s/${s.id}/manage` }, h('span', s.name)))
@@ -59,6 +60,18 @@ function drawSide() {
   }
   if (me.admin) nav.append(h('hr'), h('a.side-item' + (r.name === 'admin' ? '.is-on' : ''), { href: '/admin', html: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 5 6v5.5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z"/></svg><span>Admin</span>' }))
   side.append(nav)
+}
+// A swarm's own page adds it under its workspace, so the sidebar marks where you are even before the workspace's page
+// has listed its swarms in this browser.
+export function rememberSwarm(workspace, swarm) {
+  const kept = store.get('c:swarms') || {}
+  const list = kept[workspace] || []
+  const at = list.findIndex((s) => s.id === swarm.id)
+  if (at >= 0 && list[at].name === swarm.name) { drawSide(); return }
+  if (at >= 0) list[at] = { id: swarm.id, name: swarm.name }; else list.push({ id: swarm.id, name: swarm.name })
+  kept[workspace] = list
+  store.set('c:swarms', kept)
+  drawSide()
 }
 export function rememberSwarms(workspace, swarms) {
   const kept = store.get('c:swarms') || {}
@@ -105,7 +118,7 @@ async function render() {
   const el = h('div.page')
   $('#console').append(el)
   panel.scrollTop = 0
-  current = { key, el, ...(pages.show(r, el, { go, rememberSwarms }) || {}) }
+  current = { key, el, ...(pages.show(r, el, { go, rememberSwarms, rememberSwarm }) || {}) }
 }
 
 /* ---------- The account menu and ⌘K ---------- */

@@ -14,7 +14,7 @@ export function startMap({ panel, reduce }) {
   const GROUPS = {
     plan: { name: 'Planners', one: 'Planner', tone: 'blue' },
     build: { name: 'Builders', one: 'Builder', tone: 'violet' },
-    review: { name: 'Reviewers', one: 'Reviewer', tone: 'amber' },
+    review: { name: 'Reviewers', one: 'Reviewer', tone: 'rose' },
     test: { name: 'Testers', one: 'Tester', tone: 'teal' },
   }
   const AGS = [['atlas', 'Atlas', 'plan'], ['north', 'North', 'plan'], ['forge', 'Forge', 'build'], ['rivet', 'Rivet', 'build'], ['spark', 'Spark', 'build'], ['weld', 'Weld', 'build'],
@@ -103,8 +103,8 @@ export function startMap({ panel, reduce }) {
     const cs = getComputedStyle(document.documentElement), g = (n) => cs.getPropertyValue(n).trim()
     col = { ink: g('--ink'), ink2: g('--ink-2'), ink3: g('--ink-3'), line: g('--line'), line2: g('--line-2'), surface: g('--surface'), raised: g('--raised'),
       accent: g('--accent'), accentSoft: g('--accent-soft-2'),
-      blue: g('--blue'), violet: g('--violet'), amber: g('--amber'), teal: g('--teal'),
-      blueSoft: g('--blue-soft'), violetSoft: g('--violet-soft'), amberSoft: g('--amber-soft'), tealSoft: g('--teal-soft') }
+      blue: g('--blue'), violet: g('--violet'), rose: g('--rose'), teal: g('--teal'),
+      blueSoft: g('--blue-soft'), violetSoft: g('--violet-soft'), roseSoft: g('--rose-soft'), tealSoft: g('--teal-soft') }
   }
   function layout() {
     const r = cv.getBoundingClientRect()
@@ -298,7 +298,7 @@ export function startMap({ panel, reduce }) {
       const v = val(i), bh = Math.max(2, (v / max) * (h - 8))
       const played = (i + 0.5) * BIN <= clock
       hctx.fillStyle = played ? col.accent : col.ink3
-      hctx.globalAlpha = played ? 0.85 : 0.4
+      hctx.globalAlpha = played ? 0.62 : 0.32
       hctx.fillRect(i * bw + 0.6, h - bh, Math.max(1, bw - 1.6), bh)
     }
     hctx.globalAlpha = 1

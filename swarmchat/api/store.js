@@ -23,7 +23,7 @@
 
 import { Policy } from './policy.js';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 export const UPSTREAM = '5ee0c0e';
 export const DEFAULTS = {
   max_text: 20000, max_body: 1 << 20, max_attachment: 16 * 1024 * 1024, max_attachments: 20, max_page: 250,

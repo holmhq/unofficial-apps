@@ -1,27 +1,27 @@
 {
-  "digest": "sha256:465914816eee100fed5f0070abe86e779d28602b17144e56722e0708c840f6db",
+  "digest": "sha256:44dce681b4a50c4f3043932c9db425ffb0a909fd79590ae9d56e8ffe5f0a0db9",
   "inputs": {
     "symbolHash": "sha256:840c8b3654561c50e30f46d7289e89bb34cdbcd80f7aa47504cb99a8b0a787df",
-    "themeColor": "#d4441c",
+    "themeColor": "#127a46",
     "name": "SwarmChat",
     "subtitle": "A group chat for your AI agents: channels, direct messages and threads, with waits that spend no tokens. An unofficial port of SwarmChat.",
     "iconStyle": "soft"
   },
   "generator": {
     "id": "holm app identity generate",
-    "version": "0.290.1",
+    "version": "0.291.0",
     "dependencies": {}
   },
   "outputs": {
-    "web/404.html": "sha256:e810f7b217ab618c630d3cded31b13be7e5c1ada364bd4e74decf6c4b9f9c689",
-    "web/apple-touch-icon.png": "sha256:6e8a12ad244f1c5ff7abf008ece96bb08b39edc8c26c48f91469a9f1dc9b5ce8",
-    "web/favicon.ico": "sha256:03dfa63d484577b5a5ba36dc244dc18489742db684c6c7c338f1fd08542c55da",
-    "web/favicon.png": "sha256:10f99930dde463ca2bab5f609a3f4d43e56f0501b2662c517aaf5694f4340cdb",
-    "web/favicon.svg": "sha256:288a3cd15e8563211b63ec58d28368d9afe9e78e91a5deadfb874ae851480af9",
-    "web/icon-192.png": "sha256:4eb7624333481e2f85ccf01da614cbd91d598bbdd2282b540e765148c0b3bac6",
-    "web/icon-512.png": "sha256:0fb3df695788953bed07ce90bea68e9ac78682387c88e222cd24c997302053b1",
-    "web/icon-maskable-512.png": "sha256:1148392cc70c64752b1b538505ac345c316886582480fc91c5f819eb227bc28a",
-    "web/manifest.webmanifest": "sha256:9882ac801910330f3202df504310c63c81fdfebaac5c2ab2fd4e91d49a052b71",
-    "web/social_preview.png": "sha256:d1679df9a598212efc783ab29b10be6319d339a037b3de9ec12fb1d0ce2f4304"
+    "web/404.html": "sha256:9ac226fd298d9bd4de5b287284cae63c5b98aea6469a3a4d12f5ddcd2694a0b1",
+    "web/apple-touch-icon.png": "sha256:e724c8454d2d6f620caae2da452b8c39ecb1a56f6a4606b4f7a1e644daf43c6a",
+    "web/favicon.ico": "sha256:48578f3b5982638a15793b5dca2361f354eaade47b03a28f71a624c13c0cf6ac",
+    "web/favicon.png": "sha256:a166f457a838f8981f4d9af347c8bce4ccfeabdf6e3bf5ae33fa4dcfc937516a",
+    "web/favicon.svg": "sha256:fdfc0e5e3c86a852927c02725bd0e9f587480da658bcaa10d47357632e916285",
+    "web/icon-192.png": "sha256:7d8e488e17c104201e7c7e6c4515acc5540841a65c4635abff4699fa2c8d3f1a",
+    "web/icon-512.png": "sha256:9b3a20d4f2f52775757e6b2a2cded10ad31adb046d34eadc5c20936fca5a7c25",
+    "web/icon-maskable-512.png": "sha256:afb1d6f3ad7bb3b866380d2916432065229ed937767f9284e1bdba44a4fb70cb",
+    "web/manifest.webmanifest": "sha256:6141cbc27f76af140ad223e98f60e1be21b096c524299dedf8640d4c19688c68",
+    "web/social_preview.png": "sha256:b5b54ea62a4c3e52b372e98fba0a268422cab5b452b574457a11b8a847c24b0f"
   }
 }
