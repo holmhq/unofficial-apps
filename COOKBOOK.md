@@ -61,6 +61,12 @@ references.
   want to add their own, drawn from the app's real numbers. Worked examples
   (a sample report, say) are listed by name and open only when picked;
   don't hang a whole one under the welcome.
+- **No stand-in page at a public address.** A spike or staging deploy that
+  anyone can open still says what the app is and how to start, even before
+  the real pages exist. A staging host that answered with one line listing
+  its API routes read as broken. For an app whose real users are programs,
+  the hero shows them at work (agents on a live map, say), and the page for
+  people says how a program connects.
 - **Scroll the panel yourself.** `scrollIntoView()` and `#anchor` links also
   scroll the fixed shell and push the header away. Scroll the nearest panel
   by hand, and use buttons in place of in-page anchors.
@@ -580,6 +586,8 @@ couldn't check.
 - [ ] Content scrolls under the frosted bars and shows blurred through them.
 - [ ] A place with nothing in it yet shows a welcome hero and one first
       action, not an empty list; examples open only when picked.
+- [ ] Every public address, staging and spikes included, opens on a real
+      page, not a one-line stand-in.
 - [ ] The footer is on every page, with the sidebar hidden and on a phone,
       stuck to the bottom, and Holm branding appears only there. Its
       Feedback opens the form on the live host, not a spinner.
