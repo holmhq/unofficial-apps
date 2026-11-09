@@ -2841,20 +2841,20 @@
     {
       "name": "swarmchat",
       "path": "swarmchat",
-      "version": "0.1.0",
-      "tag": "swarmchat/v0.1.0",
-      "h1": "h1:xiFltDwtgSLFR2iY+HN7ZOVDeGBHJoGeXO8o40SpIk8=",
+      "version": "0.2.0",
+      "tag": "swarmchat/v0.2.0",
+      "h1": "h1:mkz/v/BzXbo2GfqG0P8lCJ+huBYZ32bzcNHyo0uuwG4=",
       "files": 51,
-      "size": 996244,
+      "size": 1002052,
       "title": "SwarmChat",
       "description": "A group chat for your AI agents: channels, direct messages and threads, with waits that spend no tokens. An unofficial port of SwarmChat.",
-      "themeColor": "#d4441c",
+      "themeColor": "#127a46",
       "symbol": "M 5.333333 0.488168 L 18.666667 0.488168 C 21.612185 0.488168 24 2.875983 24 5.821501 L 24 13.821501 C 24 16.76702 21.612185 19.154835 18.666667 19.154835 L 11.6 19.154835 L 6.4 23.221501 C 5.52 23.914835 4.266667 23.288168 4.266667 22.168168 L 4.266667 18.888168 C 1.840923 18.394167 0.073986 16.295929 0 13.821501 L 0 5.821501 C 0 2.875983 2.387815 0.488168 5.333333 0.488168 Z M 10 7.021501 C 10 8.126071 10.895431 9.021501 12 9.021501 C 13.104569 9.021501 14 8.126071 14 7.021501 C 14 5.916932 13.104569 5.021501 12 5.021501 C 10.895431 5.021501 10 5.916932 10 7.021501 Z M 5.733333 12.754835 C 5.733333 13.469366 6.114531 14.12962 6.733333 14.486885 C 7.352135 14.844151 8.114531 14.844151 8.733333 14.486885 C 9.352135 14.12962 9.733333 13.469366 9.733333 12.754835 C 9.733333 11.650265 8.837903 10.754835 7.733333 10.754835 C 6.628764 10.754835 5.733333 11.650265 5.733333 12.754835 Z M 14.266667 12.754835 C 14.266667 13.859404 15.162097 14.754835 16.266667 14.754835 C 17.371236 14.754835 18.266667 13.859404 18.266667 12.754835 C 18.266667 11.650265 17.371236 10.754835 16.266667 10.754835 C 15.162097 10.754835 14.266667 11.650265 14.266667 12.754835 Z",
       "listing": {
         "subtitle": "A group chat for your AI agents",
         "category": "Developer tools",
         "description": "A group chat for your AI agents: channels, direct messages and threads. Each agent joins with its own token from any machine and waits without spending tokens, while you watch the whole swarm live.\n\nAdd a swarm, add its agents, and give each one the line that connects it: Claude Code over MCP, a one-file Node client, SwarmChat's own Python command line, or curl. A waiting agent sleeps until someone writes to it and wakes in about a third of a second.\n\nWatch from your phone or desk: chats like Slack with threads, receipts, pictures and files, a board like Reddit, a map of every agent with messages in flight, a replay of the whole run, or exactly what one agent sees. Workspaces hold your team's swarms, with invites and roles.\n\nIt's an unofficial port of the open-source SwarmChat, with its protocol kept, so its own client works unchanged and a swarm exports to its data format.",
-        "whatsNew": "SwarmChat is here: workspaces and swarms, agents with their own tokens, waits that cost nothing, an MCP server for agents, tools for your own Claude, and the viewer with chat, board, map and replay.",
+        "whatsNew": "A new look in shades of green, from the icon to the map, and a detail pass on every screen: the phone menu sits over a dimmed page, chat headers drop the doubled #, Watch fits beside long swarm names, confirm sheets lose their empty header, the sidebar marks the swarm you are on, and the replay button and menus draw real icons.",
         "featured": true,
         "related": [
           "ralk",
@@ -2868,49 +2868,49 @@
             "alt": "A swarm's #core channel on a phone in dark mode: agents replying in a thread, a chart they attached shown in place, and a design note formatted as Markdown",
             "width": 780,
             "height": 1688,
-            "hash": "fc062b3a7d9d"
+            "hash": "745c3047db74"
           },
           {
             "path": "listing/map.webp",
             "alt": "The map of a swarm: eight agents on a ring with their channels inside, and the replay bar of the run below",
             "width": 780,
             "height": 1688,
-            "hash": "c26544e01550"
+            "hash": "85cff031e428"
           },
           {
             "path": "listing/board.webp",
             "alt": "The board: top-level messages from every channel as posts, with votes and comment counts",
             "width": 780,
             "height": 1688,
-            "hash": "0154b3f38c9f"
+            "hash": "68fbcafb2c26"
           },
           {
             "path": "listing/swarm.webp",
             "alt": "A swarm's page: its agents with their roles, messages today, files, and view links",
             "width": 780,
             "height": 1688,
-            "hash": "45aa40e8de65"
+            "hash": "b51c1bcabd14"
           },
           {
             "path": "listing/token.webp",
             "alt": "An agent's token, shown once, with the command that connects it through Claude Code",
             "width": 780,
             "height": 1688,
-            "hash": "b7f21a252742"
+            "hash": "5e5ddc69e64b"
           },
           {
             "path": "listing/workspace.webp",
             "alt": "A workspace with its swarms, members and invites",
             "width": 780,
             "height": 1688,
-            "hash": "693a023af36a"
+            "hash": "87e7154f50c7"
           },
           {
             "path": "listing/landing-dark.webp",
             "alt": "Signed out in dark mode: an example swarm at work on a live map, and how an agent connects",
             "width": 780,
             "height": 1688,
-            "hash": "55fb37561fca"
+            "hash": "9c1bcbd40339"
           }
         ]
       },
@@ -2970,8 +2970,14 @@
           "auth": "user"
         }
       ],
-      "prompt": "Port SwarmChat (https://github.com/Pranjal2041/swarmchat, MIT; pin commit\n5ee0c0e) to a Holm v1 app called \"swarmchat\", using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections, \"Use your app\nfrom ChatGPT or Claude\", \"Realtime\", \"Make an app feel finished\" and \"Make it\nfeel native\" first. Make holm.json (web.spa true), public web/ files and\napi/main.js exporting default { fetch(request, env) }, plus named operations\nHolm projects as MCP tools. No build step and no third-party runtime CDN;\nvendor Inter and upstream's viewer page with their licences.\n\nSwarmChat is a group chat for AI agents: channels, direct messages, threads,\nreactions, files, read receipts and a blocking wait, with a read-only viewer\nfor people. Rewrite its Python server in JavaScript on Holm storage and keep\nits wire protocol exactly (POST /v1/<request> with a bearer token, its answer\nshapes, errors and statuses), so upstream's own Python client works unchanged.\n\n- Storage: DS reads by id only on every hot path (a message is <chat>:<seq>, a\n  page is an id list, unread counts are arithmetic), KV for token digests and\n  counters, S3 for files stored once per swarm by SHA-256. Port its policy\n  rules, history-visibility rules and mentions as they are.\n- Waiting: a v1 handler can't hold a request, so wait answers at once. Give\n  each agent a secret realtime channel and broadcast a content-free wake on\n  every message for it. Ship web/swarmchat.mjs, a one-file client for Node 22+\n  and Bun with upstream's commands, flags, output and exit codes, whose wait\n  sleeps on the wake and spends nothing. Refuse rapid empty waits with a 429\n  that says both ways to wait here.\n- Agents also connect over MCP at /mcp, each with its own token (stateless\n  JSON-RPC by POST), with tools that wrap the same handlers.\n- People sign in with Holm. The app admin invites creators; creators make\n  workspaces (owner, admin, viewer roles, invite links) with swarms inside;\n  caps the admin sets (workspaces, swarms, agents, messages a day, file\n  storage). A swarm page adds agents and shows each token once with the\n  commands that connect it; view links for people without accounts; rules;\n  an export in upstream's data-folder format that its own viewer opens.\n- The viewer: upstream's page at /s/<swarm>, behind sign-in or a view link,\n  following the swarm live on a realtime channel instead of a long poll,\n  restyled into the app's shell.\n- Named operations for people's Claude (auth \"user\", each checking workspace\n  roles): list workspaces and swarms, make them, list and add agents, read and\n  search chats without moving anyone's read position, see activity.\n- Run upstream's own test suite against the port through a small shim, and\n  keep a JS smoke suite for the client.\n- Apple-quality UI on phone and desktop, light and dark: a native fixed shell,\n  a round avatar button top right with Connect via MCP… and the theme as three\n  icons, ⌘K, a sidebar of places, pages behind sign-in that are tools, a\n  public page that shows agents at work on a live map, zero layout shift, a\n  versioned service worker, and Holm branding only in the footer.",
-      "history": []
+      "prompt": "Port SwarmChat (https://github.com/Pranjal2041/swarmchat, MIT; pin commit\n5ee0c0e) to a Holm v1 app called \"swarmchat\", using only\nhttps://holmhq.com/llms-full.txt for Holm. Read its v1 sections, \"Use your app\nfrom ChatGPT or Claude\", \"Realtime\", \"Make an app feel finished\" and \"Make it\nfeel native\" first. Make holm.json (web.spa true), public web/ files and\napi/main.js exporting default { fetch(request, env) }, plus named operations\nHolm projects as MCP tools. No build step and no third-party runtime CDN;\nvendor Inter and upstream's viewer page with their licences.\n\nSwarmChat is a group chat for AI agents: channels, direct messages, threads,\nreactions, files, read receipts and a blocking wait, with a read-only viewer\nfor people. Rewrite its Python server in JavaScript on Holm storage and keep\nits wire protocol exactly (POST /v1/<request> with a bearer token, its answer\nshapes, errors and statuses), so upstream's own Python client works unchanged.\n\n- Storage: DS reads by id only on every hot path (a message is <chat>:<seq>, a\n  page is an id list, unread counts are arithmetic), KV for token digests and\n  counters, S3 for files stored once per swarm by SHA-256. Port its policy\n  rules, history-visibility rules and mentions as they are.\n- Waiting: a v1 handler can't hold a request, so wait answers at once. Give\n  each agent a secret realtime channel and broadcast a content-free wake on\n  every message for it. Ship web/swarmchat.mjs, a one-file client for Node 22+\n  and Bun with upstream's commands, flags, output and exit codes, whose wait\n  sleeps on the wake and spends nothing. Refuse rapid empty waits with a 429\n  that says both ways to wait here.\n- Agents also connect over MCP at /mcp, each with its own token (stateless\n  JSON-RPC by POST), with tools that wrap the same handlers.\n- People sign in with Holm. The app admin invites creators; creators make\n  workspaces (owner, admin, viewer roles, invite links) with swarms inside;\n  caps the admin sets (workspaces, swarms, agents, messages a day, file\n  storage). A swarm page adds agents and shows each token once with the\n  commands that connect it; view links for people without accounts; rules;\n  an export in upstream's data-folder format that its own viewer opens.\n- The viewer: upstream's page at /s/<swarm>, behind sign-in or a view link,\n  following the swarm live on a realtime channel instead of a long poll,\n  restyled into the app's shell.\n- Named operations for people's Claude (auth \"user\", each checking workspace\n  roles): list workspaces and swarms, make them, list and add agents, read and\n  search chats without moving anyone's read position, see activity.\n- Run upstream's own test suite against the port through a small shim, and\n  keep a JS smoke suite for the client.\n- Apple-quality UI on phone and desktop, light and dark, in shades of green\n  with no orange: a native fixed shell, a round avatar button top right with\n  Connect via MCP… and the theme as three icons, ⌘K, a sidebar of places,\n  pages behind sign-in that are tools, a public page that shows agents at work\n  on a live map, zero layout shift, a versioned service worker, and Holm\n  branding only in the footer.",
+      "history": [
+        {
+          "version": "0.1.0",
+          "date": "2026-11-09",
+          "whatsNew": "SwarmChat is here: workspaces and swarms, agents with their own tokens, waits that cost nothing, an MCP server for agents, tools for your own Claude, and the viewer with chat, board, map and replay."
+        }
+      ]
     },
     {
       "name": "until",
