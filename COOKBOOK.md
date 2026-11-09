@@ -401,6 +401,13 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   a hero's call to action the same rows (a line of buttons, a note of at
   most two lines) and reserve that height, so the page holds still when the
   server's answer differs from the cached one, such as right after signing in.
+- **Switching between the public page and the tool pages moves nothing.**
+  When the first answer of who's here turns the page into an app with a
+  sidebar, the panel keeps its box and only its content is padded; a button
+  that appears in the bar sits over its edge and the brand slides aside by
+  `transform`, and a bar button that goes away keeps its box with
+  `visibility: hidden` (SwarmChat's first signed-in visit scored 0.17 when
+  its panel moved over for the sidebar).
 
 ## Judgements
 
