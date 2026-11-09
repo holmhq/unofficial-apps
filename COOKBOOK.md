@@ -259,6 +259,15 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   done with `border-left`, an inset shadow, a `::before` bar or a thin div.
   It's the clearest AI-made tell. To tag an item with a colour, use a dot, a
   tinted icon tile, a tinted surface or coloured text.
+- **Icons are drawn, never typed.** A ▾, ▶, ❚❚, ↻ or × in a button takes
+  whatever font is at hand, sits off centre and can turn into an emoji on an
+  iPhone. Draw it as an SVG, and centre icons in buttons and segmented
+  controls with flex: an inline SVG rides on the text's baseline and sits high
+  (SwarmChat's replay button and theme switch).
+- **Data colours keep out of the accent.** Colours handed out to people,
+  agents or tags skip the accent's hue and its near neighbours, so a green
+  agent never reads as a green button (SwarmChat's hashed agent hues skip
+  oranges, yellows and its greens).
 - **Quiet controls.** Walls of equal-weight controls look dirty. So do grey
   fills on every chip and big switches stacked in rows. Prefer check-mark
   menus, a few clear choices and plain text that turns bold when chosen.
@@ -270,7 +279,8 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   control a gesture already covers, such as zoom buttons where pinch works,
   before clipping a name (Kalendar's booking page showed "Sing…").
 - **No lines that repeat what the screen already shows**, such as a count
-  of results above the results, or a sentence explaining the chips under it.
+  of results above the results, a sentence explaining the chips under it, or
+  a `#` icon beside "#general".
   Put a count inside a chip ("All 16") and longer explanations in a tooltip.
 - **Filters are one compact panel** opened from one button, with each row a
   single control: presets above toggleable tokens, a segmented ruler for a
@@ -303,6 +313,8 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   ellipsis and a `title` only as a last resort. Never break a word.
 - **Dark mode isn't an inversion.** Check every colour in both themes,
   especially red and muted grey text, which went unreadable in dark before.
+  A filled button needs its own deeper colour in dark: the light red or mint
+  that reads as text there leaves white lettering on top unreadable.
   An app with colour themes must check every theme in both light and dark.
 - **Carousels play by themselves**, pause under the mouse and can be dragged.
   Don't add control buttons.
@@ -426,6 +438,15 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
 ## Pickers, menus and sheets
 
 - **Popovers on a desk, sheets on a phone.** Every sheet has a clear Done.
+  A menu that becomes a sheet on a phone sits over a scrim, and a tap on the
+  scrim closes it without reaching the page below. A sheet without a title,
+  such as a confirm, has no empty head row above its text.
+- **Panes that share one grid cell align to their start.** The cell keeps the
+  tallest pane's height so the sheet never jumps, but each pane's card keeps
+  its own height; stretched, the shorter cards showed an empty block
+  (SwarmChat's Connect via MCP sheet).
+- **Menus mark the keyboard's item with a tint**, not an outline ring that
+  spills past the menu, and a menu opened by a click focuses nothing.
 - **Tab accepts an autocomplete suggestion**, just as Enter does.
 - **Long lists are found, not scrolled.** Picking one of dozens of items
   (skills, roles, countries) is a field that finds them as you type, best
@@ -475,8 +496,9 @@ after the first deploy.
   padding otherwise spills out of its box.
 - **Keep class names from colliding.** A state class on one component must
   not match another component's class. A field's hidden state named `.pre`
-  picked up the filter preset's `height: 28px`, and a star's `.pop` bounce
-  picked up the popover's `position: absolute`. Name states `is-…` or make
+  picked up the filter preset's `height: 28px`, a star's `.pop` bounce
+  picked up the popover's `position: absolute`, and SwarmChat's landing icon
+  `.tile` took the workspace tile's padding and slid off centre. Name states `is-…` or make
   them specific, and search the stylesheet before reusing a short name.
 - **Nothing invisible takes a tap.** A control that fades out must stop
   taking pointer events too. Roll's date rail, hidden on a phone until you
