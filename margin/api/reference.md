@@ -76,7 +76,8 @@ Triple braces print HTML. Only these may use them:
 | `{{{margin.foot}}}` | layout, before `</body>` | Margin's scripts |
 | `{{{body}}}` | layout | the page template's output |
 | `{{{margin.account}}}` | layout, in the header | the round avatar button and account menu |
-| `{{{margin.credit}}}` | layout, in the footer | "Written on Margin", the Holm mark and Send feedback; its three parts join the footer's own row |
+| `{{{margin.credit}}}` | layout, in the footer | "Written on Margin", the Holm mark and Send feedback; its three parts join the footer's own row. Empty when the workspace hides Margin's credit |
+| `{{{margin.footer}}}` | layout, in the footer (optional) | the workspace's own footer line, with its links, or empty: print your own line inside `{{^margin.footer}}…{{/margin.footer}}` |
 | `{{{post.body}}}` | post.html | the post |
 | `{{{margin.actions}}}` | post.html | clap, comment count, share (print it once or twice) |
 | `{{{margin.comments}}}` | post.html | responses and the comment box |
@@ -120,11 +121,17 @@ Lists are computed only when a template reads them.
 `excerpt` (the first real paragraph), `cover` (`url`, `alt`, `width`, `height`, `drawn`:
 every post has one, a photo or a drawing in the workspace's style; a photo also has
 `srcset`, its smaller copies, so print `{{#srcset}} srcset="{{srcset}}" sizes="…"{{/srcset}}`
-with the width it shows at), `has_cover`, `date` ("October 16, 2026"), `date_short` ("Oct 16"), `date_iso`,
+with the width it shows at), `has_cover`, `date` ("October 16, 2026"), `date_short` ("Oct 16, 2026": always with the year), `date_iso`,
 `year`, `updated`, `updated_iso`, `reading_time` ("6 min read"), `minutes`, `words`,
 `tags` (each `name`, `url`, `first`), `has_tags`, `blog`, `claps`, `comments`,
 `claps_label` ("214 claps"), `comments_label` ("1 response"), `featured`, `workspace`
-(`slug`, `name`, `url`, `logo`). On post pages also `body` (print with `{{{post.body}}}`) and `is_updated`.
+(`slug`, `name`, `url`, `logo`), `is_page`. On post pages also `body` (print with `{{{post.body}}}`) and `is_updated`.
+
+**Pages.** A workspace's pages (About, say) render through `post.html` with `post.is_page`
+set. Wrap whatever only posts have in `{{^post.is_page}}…{{/post.is_page}}`: the date, the
+byline, topics, "Written by" and the lists after the post. On a page `margin.actions` and
+`margin.comments` are empty and `related`, `more`, `newer` and `older` are too. Pages never
+appear in `latest`, `featured`, `posts` or `q` lists; link them from the menu (`site.nav`).
 
 ### A blog
 

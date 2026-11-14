@@ -15,8 +15,10 @@ const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'imag
 // Holm's image tools read these (and write JPEG, or PNG for PNG).
 const RESIZABLE = new Set(['image/jpeg', 'image/png', 'image/webp']);
 export const WIDTHS = [320, 640, 960, 1280, 1600, 2048];
-// og: the 1200 × 630 crop link previews use.
-const VARIANT = /^(?:w(\d{3,4})|og)$/;
+// og: the 1200 × 630 crop link previews use. s180, s192 and s512: square crops for a
+// workspace logo as a home-screen icon, an app icon and a link preview.
+const VARIANT = /^(?:w(\d{3,4})|og|s(180|192|512))$/;
+export const canIcon = (m) => !!m && canVary(m);
 
 // Addresses carry an extension so Markdown alone tells a video from a photo.
 export const mediaPath = (id, mime) => `/media/${id}.${EXT[mime] || 'bin'}`;
@@ -298,14 +300,15 @@ const HEADERS = {
   'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
 };
 
-// /media/<id>.<ext>, or a smaller copy: /media/<id>-w640.jpg, /media/<id>-og.jpg.
+// /media/<id>.<ext>, or a smaller copy: /media/<id>-w640.jpg, /media/<id>-og.jpg, /media/<id>-s180.png.
 export function serve(env, request, id, variant) {
   if (!/^[a-z0-9]{6,20}$/.test(id)) return new Response('Not found', { status: 404 });
   if (variant) {
     const m = VARIANT.exec(variant);
     const width = m && m[1] ? Number(m[1]) : 0;
+    const square = m && m[2] ? Number(m[2]) : 0;
     if (!m || (width && !WIDTHS.includes(width))) return new Response('Not found', { status: 404 });
-    const copy = variantOf(env, id, variant, width);
+    const copy = variantOf(env, id, variant, width, square);
     if (copy) return new Response(copy.data, { headers: { ...HEADERS, 'Content-Type': copy.mime, 'Content-Length': String(copy.data.byteLength) } });
   }
   const object = env.holm.app.s3.get(`media/${id}`);
@@ -327,16 +330,20 @@ export function serve(env, request, id, variant) {
 
 // A smaller copy, made on first request and kept. Null means "serve the original" (a GIF, a
 // drawing, a video, a turned photo, or a size it already is).
-function variantOf(env, id, variant, width) {
+function variantOf(env, id, variant, width, square = 0) {
   const key = `media/${id}/${variant}`;
   const kept = env.holm.app.s3.get(key);
   if (kept) return { data: kept.data, mime: kept.mime };
   const row = env.holm.app.ds.find('media', { mediaId: id }, { limit: 1 })[0];
   if (!row || !canVary(row)) return null;
   if (width && width >= row.width) return null;
+  // A square logo no bigger than the icon is the icon already.
+  if (square && row.width === row.height && square >= row.width) return null;
   const original = env.holm.app.s3.get(`media/${id}`);
   if (!original) return null;
-  const options = width ? { width, quality: 82 } : { width: 1200, height: 630, fit: 'cover', quality: 82 };
+  const options = width ? { width, quality: 82 }
+    : square ? { width: square, height: square, fit: 'cover', quality: 90 }
+      : { width: 1200, height: 630, fit: 'cover', quality: 82 };
   let made;
   try { made = env.holm.image.resize(original.data, options); } catch (error) {
     console.warn('media resize failed', id, variant, String(error && error.message || error).slice(0, 200));

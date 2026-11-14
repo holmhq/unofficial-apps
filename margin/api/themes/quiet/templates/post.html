@@ -1,8 +1,9 @@
-<article class="q-article">
+<article class="q-article{{#post.is_page}} q-page{{/post.is_page}}">
   <header class="q-article-head">
-    {{#post.has_tags}}<div class="q-tags">{{#post.tags}}<a class="q-tag{{#first}} q-tag-first{{/first}}" href="{{url}}">{{name}}</a>{{/post.tags}}</div>{{/post.has_tags}}
+    {{^post.is_page}}{{#post.has_tags}}<div class="q-tags">{{#post.tags}}<a class="q-tag{{#first}} q-tag-first{{/first}}" href="{{url}}">{{name}}</a>{{/post.tags}}</div>{{/post.has_tags}}{{/post.is_page}}
     <h1 class="q-title">{{post.title}}</h1>
     {{#post.subtitle}}<p class="q-subtitle">{{post.subtitle}}</p>{{/post.subtitle}}
+    {{^post.is_page}}
     <div class="q-byline">
       <a href="{{blog.url}}" aria-label="{{blog.name}}"><img class="q-avatar" src="{{blog.avatar}}" alt="" width="40" height="40"></a>
       <div class="q-byline-text">
@@ -10,6 +11,7 @@
         <span class="q-byline-meta"><time datetime="{{post.date_iso}}">{{post.date}}</time> · {{post.reading_time}}</span>
       </div>
     </div>
+    {{/post.is_page}}
   </header>
 
   {{#post.cover}}
@@ -20,6 +22,7 @@
     {{{post.body}}}
   </div>
 
+  {{^post.is_page}}
   <div class="q-dock">{{{margin.actions}}}</div>
 
   <footer class="q-article-foot">
@@ -33,8 +36,10 @@
       </span>
     </a>
   </footer>
+  {{/post.is_page}}
 </article>
 
+{{^post.is_page}}
 <div class="q-after">
   {{{margin.comments}}}
 
@@ -51,3 +56,4 @@
   </section>
   {{/more.length}}{{/related.length}}
 </div>
+{{/post.is_page}}

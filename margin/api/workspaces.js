@@ -18,7 +18,17 @@ const MAX_OWNED = 5;
 export const WS_DEFAULTS = {
   tagline: '', description: '', logo: null, theme: 'quiet', themeSettings: {}, home: 'latest', featured: [],
   moderation: 'outsiders', nav: [], cover: { look: 'paper', tone: 'lilac' }, suspended: false,
+  footer: '', credit: true,
 };
+
+// A footer line: plain text, where [label](address) makes a link and {year} prints the year.
+export const FOOTER_LINK = /\[([^\]\n]{1,80})\]\(((?:https?:\/\/|mailto:|\/(?!\/))[^\s)]{0,300})\)/g;
+function footerText(value) {
+  const out = text(value, 200, 'Footer') || '';
+  const links = out.replace(FOOTER_LINK, '');
+  if (/\[[^\]]*\]\([^)]*\)/.test(links)) reject(400, 'invalid_input', 'A footer link is [label](address), with an address starting https://, / or mailto:.');
+  return out;
+}
 
 export function wsView(doc) {
   return { ...WS_DEFAULTS, ...doc, cover: { ...WS_DEFAULTS.cover, ...(doc.cover || {}) } };
@@ -172,6 +182,11 @@ export function updateWorkspace(env, ctx, input) {
   if (input.theme !== undefined) set.theme = text(input.theme, 40, 'Theme', true);
   if (input.themeSettings !== undefined) set.themeSettings = input.themeSettings;
   if (input.cover !== undefined) set.cover = cleanCover(input.cover) || ws.cover;
+  if (input.footer !== undefined) set.footer = footerText(input.footer);
+  if (input.credit !== undefined) {
+    if (typeof input.credit !== 'boolean') reject(400, 'invalid_input', 'Credit is true (show Margin\'s credit in the footer) or false (hide it).');
+    set.credit = input.credit;
+  }
   const doc = one(env, 'workspaces', { slug: ws.slug });
   mutate(env, 'workspaces', doc.id, () => ({ $set: set }));
   const voice = blogByHandle(env, ws.slug);

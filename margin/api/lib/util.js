@@ -104,7 +104,8 @@ export function dates(ms) {
   return {
     iso: d.toISOString(),
     long: `${month} ${d.getUTCDate()}, ${d.getUTCFullYear()}`,
-    short: `${month.slice(0, 3)} ${d.getUTCDate()}`,
+    // Always with the year: "Dec 27, 2025". Where it can't fit, drop the day, never the year.
+    short: `${month.slice(0, 3)} ${d.getUTCDate()}, ${d.getUTCFullYear()}`,
     year: d.getUTCFullYear(),
   };
 }

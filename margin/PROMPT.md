@@ -41,7 +41,14 @@ script is in the folder.
   a 304 before loading the rest of the app, keep Margin's own CSS and
   scripts in the browser under versioned addresses, and prefetch links on
   hover. Every footer has a small Holm mark ("A Holm app") and Send
-  feedback, from this repository's feedback app. Posts are Markdown underneath, with
+  feedback, from this repository's feedback app; a workspace can write its
+  own footer line and hide that credit. A workspace's logo is its tab and
+  home-screen icon, its web-app manifest and its link-preview fallback.
+  Owners and admins can also make pages (About) in the same editor: written
+  as the workspace, undated, without claps or comments, left out of lists
+  and feeds but in the sitemap, and linked from the menu. Margin's admins
+  can date a post (a draft keeps the date until it is published), and every
+  short date carries its year. Posts are Markdown underneath, with
   callouts, embeds from a bare link, cards for other posts, and figures.
 - A post can have a photo or a drawn cover, chosen by the writer (none until
   then): an isometric technical line
@@ -221,3 +228,21 @@ owner asked (the address is replaced with `[host]`):
 
 > This page's placeholder is wonky: https://[host]/new?first=1
 > - may be in this page, we should enable hosting it in root?
+
+**Margin 0.10.0: your logo everywhere, your own footer, pages and dates**
+
+With the owner's blog running, its logo showed only in the tab; the home-screen
+icon, the app manifest and link previews were still Margin's. The owner asked:
+
+> Yes, we need that margine change so that the logo will propogate
+> - also, we need ability to customise footer
+> - so that holm/margine related branding can be removed if need be
+
+Then, while the old blog's posts moved in, the owner asked:
+
+> Shouldnt margin get dedicated pages?
+
+> Isnt there a provision to set dates for these blogs?
+
+> thats still! why show only date & month only?
+> - if you had to desperately skip, it should have to be date; not year!!

@@ -107,6 +107,7 @@ export function createComment(env, ctx, postId, input, via = 'web') {
   if (!ctx.member) reject(401, 'unauthorized', 'Sign in to comment.');
   const post = postById(env, postId);
   if (!post || (post.status !== 'published' && !canEdit(env, ctx, post))) reject(404, 'not_found', 'No such post.');
+  if (post.page) reject(400, 'invalid_input', 'Pages take no comments.');
   if (!ctx.ws || ctx.ws.slug !== post.ws) useWorkspace(env, ctx, wsCached(env, ctx, post.ws));
   if (marginSettings(env).signups === 'invite' && !ctx.admin && !(ctx.person && ctx.person.handle)) reject(403, 'signups_closed', 'Margin is invite-only here. Ask someone on a workspace for an invite.');
   const body = longText(input.body ?? input.text ?? input.markdown, MAX_BODY, 'Comment', true);

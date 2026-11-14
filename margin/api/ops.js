@@ -110,12 +110,13 @@ export function opPostsList(input, env) {
       list = postsOf(env, ctx, blog ? blog.handle : '-', input.status, ctx.ws.slug);
     } else if (ctx.wsAdmin) list = postsOf(env, ctx, null, input.status, ctx.ws.slug);
     else list = myIdentities(env, ctx).flatMap((b) => postsOf(env, ctx, b.handle, input.status, ctx.ws.slug));
+    if (typeof input.page === 'boolean') list = list.filter((p) => !!p.page === input.page);
     list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     const limit = int(input.limit, 30, 1, 100);
     return {
       posts: list.slice(0, limit).map((p) => {
         const card = cardDTO(env, ctx, p);
-        return { id: p.id, title: p.title, status: p.status, as: p.blog, url: absolute(env, card.url), preview_url: absolute(env, `/studio/preview/${p.id}`), date: card.date, tags: p.tags, claps: p.claps || 0, comments: p.comments || 0, pending_comments: p.pending || 0, words: p.words || 0 };
+        return { id: p.id, title: p.title, status: p.status, page: !!p.page, as: p.blog, url: absolute(env, card.url), preview_url: absolute(env, `/studio/preview/${p.id}`), date: card.date, tags: p.tags, claps: p.claps || 0, comments: p.comments || 0, pending_comments: p.pending || 0, words: p.words || 0 };
       }),
       total: list.length,
     };
@@ -149,7 +150,7 @@ export function opPostsGet(input, env) {
 function postResult(env, ctx, post) {
   const dto = editorDTO(env, ctx, post);
   return {
-    id: post.id, title: post.title, status: post.status, workspace: post.ws, as: post.blog, slug: post.slug,
+    id: post.id, title: post.title, status: post.status, page: !!post.page, workspace: post.ws, as: post.blog, slug: post.slug,
     url: absolute(env, dto.url), preview_url: absolute(env, `/studio/preview/${post.id}`), edit_url: absolute(env, `/studio/write/${post.id}`),
     words: post.words, reading_time: dto.reading_time, excerpt: post.excerpt, drawing: dto.drawing,
   };
@@ -247,7 +248,7 @@ export function opWorkspaceUpdate(input, env) {
     requireWsAdmin(ctx);
     const { workspace, ...change } = input;
     const ws = updateWorkspace(env, ctx, change);
-    return { ...wsDTO(ws), home: ws.home, moderation: ws.moderation, cover: ws.cover, theme: ws.theme, url: absolute(env, wsPath(ws.slug)) };
+    return { ...wsDTO(ws), home: ws.home, moderation: ws.moderation, cover: ws.cover, theme: ws.theme, footer: ws.footer || '', credit: ws.credit !== false, url: absolute(env, wsPath(ws.slug)) };
   });
 }
 export function opWorkspaceGet(input, env) {
@@ -256,7 +257,8 @@ export function opWorkspaceGet(input, env) {
     const ws = ctx.ws;
     return {
       ...wsDTO(ws), role: ctx.wsRole, description: ws.description || '', home: ws.home, moderation: ws.moderation,
-      cover: ws.cover, theme: ws.theme, nav: ws.nav || [], featured: ws.featured || [], url: absolute(env, wsPath(ws.slug)),
+      cover: ws.cover, theme: ws.theme, nav: ws.nav || [], featured: ws.featured || [], footer: ws.footer || '', credit: ws.credit !== false,
+      url: absolute(env, wsPath(ws.slug)),
     };
   }, true);
 }

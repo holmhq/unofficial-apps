@@ -88,7 +88,7 @@ export function ago(iso) {
   if (s < 86400) return `${Math.round(s / 3600)} h ago`;
   if (s < 604800) return `${Math.round(s / 86400)} d ago`;
   const d = new Date(t);
-  return `${MONTHS[d.getMonth()]} ${d.getDate()}${d.getFullYear() !== new Date().getFullYear() ? `, ${d.getFullYear()}` : ''}`;
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
 const P = (d) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
@@ -239,6 +239,8 @@ export function designSelect(select) {
     label: o.textContent, checked: o.selected,
     run: () => { if (select.value === o.value) return; select.value = o.value; show(); select.dispatchEvent(new Event('change', { bubbles: true })); },
   }))));
+  // Code that sets the value or disables the select says so with a change event.
+  select.addEventListener('change', show);
   select.hidden = true;
   select.after(button);
   show();

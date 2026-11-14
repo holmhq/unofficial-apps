@@ -6,14 +6,14 @@ import { escapeHTML, dates, rfc822, int } from './lib/util.js';
 import { assetVersion, pageTag, pageHeaders, storePage } from './lib/cache.js';
 import { marginSettings } from './settings.js';
 import { blogByHandle, blogDTO, avatarSVG, HANDLE, RESERVED } from './blogs.js';
-import { published, findByPath, postById, bodyOf, cardDTO, canEdit, postPath, wsCached } from './posts.js';
+import { published, publishedAll, findByPath, postById, bodyOf, cardDTO, canEdit, postPath, wsCached, PAGE_NAMES } from './posts.js';
 import { publicComments } from './comments.js';
 import { loadTheme, renderPage, settingValues } from './themes.js';
 import { EMBED_ORIGINS } from './markdown.js';
-import { workspaceBySlug, useWorkspace, logoURL, teamHandles } from './workspaces.js';
+import { workspaceBySlug, useWorkspace, logoURL, teamHandles, FOOTER_LINK } from './workspaces.js';
 import { render as renderDrawing, normalize as normalizeDrawing, MOTIFS, LOOKS, TONES } from './covers.js';
 import { landingPage } from './landing.js';
-import { srcsetFor } from './media.js';
+import { srcsetFor, mediaInfo, mediaPath, variantPath, canIcon } from './media.js';
 import { wsPath, rootSlug } from './lib/paths.js';
 
 const PAGE_SIZE = 12;
@@ -170,11 +170,61 @@ function baseView(env, ctx, scope, theme, origin, template, extra) {
 
 export function absolute(origin, url) { return !url ? '' : /^https?:/.test(url) ? url : origin + url; }
 
+// A workspace logo's other sizes: a manifest of its own, and square crops of a photo for the
+// home screen (180) and link previews (512). An SVG stays the tab icon and the manifest's
+// only; Holm can't turn it into pixels.
+function logoIcons(env, scope) {
+  const id = scope.ws && scope.ws.logo;
+  if (!id) return null;
+  const info = mediaInfo(env, id);
+  if (!info) return null;
+  const photo = canIcon(info) && Math.min(info.width, info.height) >= 180;
+  return {
+    id, info,
+    manifest: wsPath(scope.slug, 'site.webmanifest'),
+    touch: photo ? variantPath(id, info.mime, 's180') : null,
+    card: photo && Math.min(info.width, info.height) >= 512 ? variantPath(id, info.mime, 's512') : photo ? variantPath(id, info.mime, 's180') : null,
+  };
+}
+
+// /site.webmanifest (or /<workspace>/site.webmanifest): a workspace with a logo, installed
+// from a browser, carries its own name and icon instead of Margin's.
+function siteManifest(env, ctx, slug) {
+  const ws = slug ? workspaceBySlug(env, slug) : null;
+  if (!ws || suspendedFor(ctx, ws)) return null;
+  const logo = logoIcons(env, { ws, slug: ws.slug });
+  if (!logo) return null;
+  const { id, info } = logo;
+  const icons = [];
+  if (canIcon(info)) {
+    const side = Math.min(info.width, info.height);
+    const type = info.mime === 'image/png' ? 'image/png' : 'image/jpeg';
+    for (const n of [192, 512]) if (side >= n) icons.push({ src: variantPath(id, info.mime, `s${n}`), sizes: `${n}x${n}`, type, purpose: 'any' });
+  }
+  if (!icons.length) icons.push({ src: mediaPath(id, info.mime), sizes: info.mime === 'image/svg+xml' ? 'any' : `${info.width}x${info.height}`, type: info.mime, purpose: 'any' });
+  let accent = '#1a7f64';
+  try {
+    const theme = loadTheme(env, ctx, ws.theme || 'quiet');
+    accent = settingValues(theme, (ws.themeSettings || {})[theme.id]).accent || accent;
+  } catch { /* Margin's green */ }
+  const name = ws.name || ws.slug;
+  const manifest = {
+    name, short_name: name.length <= 15 ? name : name.split(/\s+/)[0].slice(0, 15), description: ws.tagline || ws.description || '',
+    start_url: wsPath(ws.slug), scope: '/', display: 'standalone', theme_color: accent, background_color: '#ffffff', icons,
+  };
+  return new Response(JSON.stringify(manifest, null, 2), { headers: { 'Content-Type': 'application/manifest+json; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'X-Content-Type-Options': 'nosniff' } });
+}
+
 function head(env, ctx, scope, theme, origin, page, bits, v, ld) {
   const values = settingValues(theme, (scope.themeSettings || {})[theme.id]);
   const colors = theme.settings.filter((s) => s.type === 'color').map((s) => `--${s.key.replace(/_/g, '-')}:${values[s.key]}`).join(';');
-  // A workspace with a logo uses it as the tab icon.
-  const icons = scope.logo ? bits.head.replace(/<link\b[^>]*\brel=["']?icon["']?[^>]*>/gi, '') + `\n<link rel="icon" href="${escapeHTML(scope.logo)}">` : bits.head;
+  // A workspace with a logo uses it as the tab icon, its own manifest, and (when it is a
+  // photo Margin can crop) the home-screen icon and the picture of links without a cover.
+  const logo = logoIcons(env, scope);
+  let icons = scope.logo ? bits.head.replace(/<link\b[^>]*\brel=["']?icon["']?[^>]*>/gi, '') + `\n<link rel="icon" href="${escapeHTML(scope.logo)}">` : bits.head;
+  if (logo) icons = icons.replace(/<link\b[^>]*\brel=["']?manifest["']?[^>]*>/gi, '') + `\n<link rel="manifest" href="${escapeHTML(logo.manifest)}">`;
+  if (logo && logo.touch) icons = icons.replace(/<link\b[^>]*\brel=["']?apple-touch-icon["']?[^>]*>/gi, '') + `\n<link rel="apple-touch-icon" href="${escapeHTML(logo.touch)}">`;
+  const fallbackImage = logo && logo.card ? absolute(origin, logo.card) : `${origin}/social_preview.png`;
   const tags = [
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
@@ -182,11 +232,11 @@ function head(env, ctx, scope, theme, origin, page, bits, v, ld) {
     `<meta name="description" content="${escapeHTML(page.description || '')}">`,
     `<link rel="canonical" href="${escapeHTML(page.canonical)}">`,
     `<meta property="og:site_name" content="${escapeHTML(scope.name)}">`,
-    `<meta property="og:type" content="${page.type === 'post' ? 'article' : 'website'}">`,
+    `<meta property="og:type" content="${page.og_type || (page.type === 'post' ? 'article' : 'website')}">`,
     `<meta property="og:title" content="${escapeHTML(page.og_title || page.title)}">`,
     `<meta property="og:description" content="${escapeHTML(page.description || '')}">`,
     `<meta property="og:url" content="${escapeHTML(page.canonical)}">`,
-    page.image ? `<meta property="og:image" content="${escapeHTML(absolute(origin, page.image))}">` : `<meta property="og:image" content="${escapeHTML(origin)}/social_preview.png">`,
+    `<meta property="og:image" content="${escapeHTML(page.image ? absolute(origin, page.image) : fallbackImage)}">`,
     `<meta name="twitter:card" content="${page.image ? 'summary_large_image' : 'summary'}">`,
     page.published ? `<meta property="article:published_time" content="${page.published}">` : '',
     page.noindex ? '<meta name="robots" content="noindex">' : '',
@@ -214,9 +264,25 @@ const HOLM_MARK = '<svg viewBox="0 0 32 32" width="12" height="12" aria-hidden="
 export const HOLM_LINK = `<a class="m-holm" href="https://holmhq.com" target="_blank" rel="noopener">${HOLM_MARK}<span>A Holm app</span></a>`;
 export const FEEDBACK_BUTTON = '<button type="button" class="m-feedback" data-m-feedback aria-label="Send feedback"><span class="m-long">Send feedback</span><span class="m-short">Feedback</span></button>';
 
-// {{{margin.credit}}}: the line every theme's footer carries.
-function credit(margin) {
+// {{{margin.credit}}}: the line every theme's footer carries, unless the workspace hides it.
+function credit(margin, scope) {
+  if (scope.ws && scope.ws.credit === false) return '';
   return `<span class="m-credit"><a href="/">Written on ${escapeHTML(margin.name)}</a>${HOLM_LINK}${FEEDBACK_BUTTON}</span>`;
+}
+
+// {{{margin.footer}}}: the workspace's own footer line, or nothing (the theme prints its own).
+// Plain text, where [label](address) is a link and {year} the year.
+export function footerHTML(text, year = new Date().getUTCFullYear()) {
+  if (!text) return '';
+  const value = String(text).replace(/\{year\}/g, String(year));
+  let out = '';
+  let last = 0;
+  for (const m of value.matchAll(FOOTER_LINK)) {
+    out += escapeHTML(value.slice(last, m.index));
+    out += `<a href="${escapeHTML(m[2])}"${/^https?:/.test(m[2]) ? ' rel="noopener"' : ''}>${escapeHTML(m[1])}</a>`;
+    last = m.index + m[0].length;
+  }
+  return out + escapeHTML(value.slice(last));
 }
 
 export const ACCOUNT = '<div class="m-account" data-m-account><a class="m-avatar-button" href="/auth/login" aria-label="Sign in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></a></div>';
@@ -255,7 +321,7 @@ function commentsSection(list, card, signin) {
   return `<section class="m-responses" id="responses" data-m-comments data-post="${card.id}">`
     + `<h2 class="m-responses-title">Responses${card.comments ? ` <span class="m-count">(${card.comments})</span>` : ''}</h2>`
     + `<div class="m-composer-slot" data-m-composer><a class="m-signin-link" href="${escapeHTML(signin)}">Sign in to respond</a></div>`
-    + `<div class="m-thread-list" data-m-threads>${html || '<p class="m-empty" data-m-empty>No responses yet.</p>'}</div>`
+    + `<div class="m-thread-list" data-m-threads>${html || '<p class="m-empty" data-m-empty>No responses yet. Be the first, or select a passage to comment on it.</p>'}</div>`
     + '</section>';
 }
 
@@ -326,7 +392,8 @@ async function respond(env, ctx, request, scope, template, data) {
     head: head(env, ctx, scope, theme, origin, page, bits, v, data.ld),
     foot: foot(boot, bits, v),
     account: ACCOUNT,
-    credit: credit(marginSettings(env)),
+    credit: credit(marginSettings(env), scope),
+    footer: footerHTML(scope.ws && scope.ws.footer),
     actions: data.actions || '',
     comments: data.comments || '',
   };
@@ -431,9 +498,11 @@ export async function postPage(env, ctx, request, scope, post, options = {}) {
   const card = cardDTO(env, ctx, post);
   const body = bodyOf(env, post);
   const html = responsive(fillCards(env, ctx, body ? body.html : ''));
-  const comments = post.status === 'published' ? publicComments(env, ctx, post) : [];
+  // A page has no date, byline, claps, comments or neighbours: the theme shows its words.
+  const isPage = !!post.page;
+  const comments = post.status === 'published' && !isPage ? publicComments(env, ctx, post) : [];
   const signin = env.holm.auth.getLoginURL(url.pathname);
-  const list = published(env, ctx, post.ws).filter((p) => p.blog === post.blog);
+  const list = isPage ? [] : published(env, ctx, post.ws).filter((p) => p.blog === post.blog);
   const index = list.findIndex((p) => p.id === post.id);
   const neighbour = (p) => (p ? cardDTO(env, ctx, p) : null);
   const view = {
@@ -448,15 +517,18 @@ export async function postPage(env, ctx, request, scope, post, options = {}) {
   const out = {
     page: {
       title: `${post.title} — ${blog ? blog.name : scope.name}`, og_title: post.title,
-      description: card.description, path: card.url, image,
-      published: card.date_iso, noindex: !!options.preview, styles: html.includes('class="katex') ? ['/vendor/katex/katex.css'] : [], feed: blog ? blogDTO(blog, post.ws).feed_url : null, feed_title: blog ? blog.name : '',
+      description: card.description, path: card.url, image, og_type: isPage ? 'website' : null,
+      published: isPage ? null : card.date_iso, noindex: !!options.preview, styles: html.includes('class="katex') ? ['/vendor/katex/katex.css'] : [], feed: blog ? blogDTO(blog, post.ws).feed_url : null, feed_title: blog ? blog.name : '',
     },
     view,
-    actions: post.status === 'published' ? actions(card) : '',
-    comments: post.status === 'published' ? commentsSection(comments, card, signin) : '',
-    boot: { post: post.id, blog: post.blog, title: post.title, draft: post.status !== 'published', drawing: card.cover && card.cover.drawn ? card.cover.drawing : null },
+    actions: post.status === 'published' && !isPage ? actions(card) : '',
+    comments: post.status === 'published' && !isPage ? commentsSection(comments, card, signin) : '',
+    boot: { post: isPage ? null : post.id, blog: post.blog, title: post.title, draft: post.status !== 'published', drawing: card.cover && card.cover.drawn ? card.cover.drawing : null },
     private: !!options.preview,
-    ld: {
+    ld: isPage ? {
+      '@context': 'https://schema.org', '@type': 'WebPage', name: post.title, description: card.description,
+      dateModified: card.updated_iso, url: url.origin + card.url,
+    } : {
       '@context': 'https://schema.org', '@type': 'BlogPosting', headline: post.title, description: card.description,
       datePublished: card.date_iso, dateModified: card.updated_iso, mainEntityOfPage: url.origin + card.url,
       image: image ? absolute(url.origin, image) : undefined,
@@ -465,7 +537,7 @@ export async function postPage(env, ctx, request, scope, post, options = {}) {
       wordCount: post.words || undefined,
     },
   };
-  lazy(view, 'related', () => related(env, ctx, post, 3));
+  lazy(view, 'related', () => (isPage ? [] : related(env, ctx, post, 3)));
   lazy(view, 'more', () => list.filter((p) => p.id !== post.id).slice(0, 3).map((p) => cardDTO(env, ctx, p)));
   return respond(env, ctx, request, scope, 'post', out);
 }
@@ -476,7 +548,7 @@ export async function errorPage(env, ctx, request, scope, status) {
     403: ['Not available', "You don't have access to this page."],
   };
   const [title, message] = messages[status] || ['Something went wrong', 'Try again in a moment.'];
-  const s = scope || marginScope(env);
+  const s = scope || rootScope(env, ctx) || marginScope(env);
   return respond(env, ctx, request, s, 'error', {
     status,
     page: { title: `${title} — ${s.name}`, description: message, noindex: true },
@@ -522,7 +594,8 @@ function feed(env, ctx, request, scope, blog) {
 
 function sitemap(env, ctx, request) {
   const origin = new URL(request.url).origin;
-  const list = published(env, ctx, null);
+  // Pages are in the sitemap, though no list shows them.
+  const list = publishedAll(env, ctx, null);
   const urls = new Set([`${origin}/`]);
   for (const p of list) urls.add(origin + wsPath(p.ws));
   const entries = [...urls].map((u) => `<url><loc>${escapeHTML(u)}</loc></url>`);
@@ -552,6 +625,12 @@ function drawingResponse(spec, labels) {
 
 function suspendedFor(ctx, ws) { return ws.suspended && !ctx.admin; }
 
+// When one workspace is the whole site, pages outside it (a missing address) wear its look.
+function rootScope(env, ctx) {
+  const ws = rootSlug() ? workspaceBySlug(env, rootSlug()) : null;
+  return ws && !suspendedFor(ctx, ws) ? wsScope(env, ws) : null;
+}
+
 export async function page(request, env, ctx) {
   const url = new URL(request.url);
   const path = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : '/';
@@ -579,6 +658,8 @@ export async function page(request, env, ctx) {
   }
   m = DRAWING.exec(path);
   if (m) return drawingResponse({ motif: m[1], look: m[2], tone: m[3], seed: Number(m[4]) }, url.searchParams.get('labels') !== '0');
+  m = /^(?:\/([a-z0-9_-]+))?\/site\.webmanifest$/.exec(path);
+  if (m) return siteManifest(env, ctx, m[1] || rootSlug());
 
   // When one workspace is the whole site, its addresses have no /<workspace> in front: the
   // prefixed ones redirect, and the rest of this router reads the address as /<workspace>/….
@@ -652,7 +733,8 @@ function rootInner(env, ctx, root, path) {
   let m = /^\/@([a-z0-9_-]+)(?:\/(?:feed\.xml|[a-z0-9-]+))?$/.exec(path);
   if (m) return teamHandles(env, ctx, root).has(m[1]) ? `/${root}${path}` : path;
   m = /^\/([a-z0-9][a-z0-9-]*)$/.exec(path);
-  if (m && !RESERVED.has(m[1]) && !workspaceBySlug(env, m[1])) return `/${root}${path}`;
+  // /about is reserved for names, but the whole site's page may live there.
+  if (m && (!RESERVED.has(m[1]) || PAGE_NAMES.has(m[1])) && !workspaceBySlug(env, m[1])) return `/${root}${path}`;
   return path;
 }
 

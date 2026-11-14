@@ -951,19 +951,51 @@ export async function editorView(root, { me, id, go }) {
   publishBtn.addEventListener('click', () => publishSheet());
   function publishSheet() {
     const blog = blogs.find((b) => b.handle === as) || { handle: as };
+    // Owners and admins write as the workspace, which is what a page is.
+    const canPage = !!blogs.find((b) => b.handle === ws.slug);
+    let kind = post && post.page ? 'page' : 'post';
+    const noun = () => (kind === 'page' ? 'page' : 'post');
+    // The date a post shows, for Margin's admins (moving an old blog in). A date-only pick
+    // keeps the time of day it had, or noon UTC.
+    const dateValue = post && post.published_at ? post.published_at.slice(0, 10) : '';
     const form = h(`<form novalidate>
       <div class="group">
+        ${canPage ? `<div class="field"><div class="seg wide" data-f-kind>${[['post', 'Post'], ['page', 'Page']].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${kind === v}">${l}</button>`).join('')}</div><small data-kind-note></small></div>` : ''}
         <div class="field"><label>Post as</label><select class="select" data-f-as>${blogs.map((b) => `<option value="${esc(b.handle)}"${b.handle === as ? ' selected' : ''}>${esc(b.name)} (@${esc(b.handle)})</option>`).join('')}</select></div>
         <div class="field"><label for="f-slug">Address</label><div class="ed-slug"><span data-prefix>${esc(prefixFor(blog.handle))}</span><input id="f-slug" class="input" maxlength="100" autocapitalize="none" spellcheck="false" value="${esc(post ? post.slug : '')}" placeholder="from-the-title"></div><small>${published() ? 'Changing it keeps the old address working.' : 'Made from the title until you publish.'}</small></div>
         <div class="field"><label for="f-desc">Search and social description</label><textarea id="f-desc" class="textarea" rows="2" maxlength="300" placeholder="${esc(post ? post.excerpt || '' : '')}">${esc(post ? post.description && post.description !== post.subtitle && post.description !== post.excerpt ? post.description : '' : '')}</textarea></div>
-        <div class="field"><label for="f-tags">Topics</label><input id="f-tags" class="input" maxlength="200" placeholder="design, engineering" value="${esc(post ? post.tags.map((t) => t.name).join(', ') : '')}"><small>Up to 8, separated by commas.</small></div>
+        ${kind === 'page' ? '' : `<div class="field" data-post-only><label for="f-tags">Topics</label><input id="f-tags" class="input" maxlength="200" placeholder="design, engineering" value="${esc(post ? post.tags.map((t) => t.name).join(', ') : '')}"><small>Up to 8, separated by commas.</small></div>`}
+        ${me.admin && kind !== 'page' ? `<div class="field" data-post-only><label for="f-date">Publish Date</label><input id="f-date" class="input" type="date" value="${esc(dateValue)}" max="9999-12-31"><small>${published() ? 'The date readers see.' : 'Kept until you publish. Leave it empty for the day you do.'}</small></div>` : ''}
         ${coverURL ? `<div class="field"><label for="f-alt">Cover description</label><input id="f-alt" class="input" maxlength="200" value="${esc(post && post.cover ? post.cover.alt : '')}" placeholder="What the cover shows"></div>` : ''}
-        ${ws.admin ? `<label class="row link"><span class="row-main"><span class="row-title" style="font-weight:500">Pin on ${esc(ws.name)}’s home</span></span><span class="switch"><input type="checkbox" data-f-featured${post && post.featured ? ' checked' : ''}><span></span></span></label>` : ''}
+        ${ws.admin && kind !== 'page' ? `<label class="row link" data-post-only><span class="row-main"><span class="row-title" style="font-weight:500">Pin on ${esc(ws.name)}’s home</span></span><span class="switch"><input type="checkbox" data-f-featured${post && post.featured ? ' checked' : ''}><span></span></span></label>` : ''}
       </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">${published() ? '<button type="button" class="btn" data-unpublish>Unpublish</button><span style="flex:1"></span>' : ''}<button class="btn primary" type="submit">${published() ? 'Update post' : 'Publish now'}</button></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">${published() ? '<button type="button" class="btn" data-unpublish>Unpublish</button><span style="flex:1"></span>' : ''}<button class="btn primary" type="submit" data-f-go>${published() ? `Update ${noun()}` : 'Publish now'}</button></div>
     </form>`);
-    const s = sheet(published() ? 'Update post' : 'Publish', form);
+    const s = sheet(published() ? `Update ${noun()}` : 'Publish', form);
     $('[data-f-as]', form).addEventListener('change', (e) => { $('[data-prefix]', form).textContent = prefixFor(e.target.value); });
+    // Post or page: a page is written as the workspace; what only posts have is crossed out
+    // in place, so the sheet keeps its size.
+    const paintKind = () => {
+      const note = $('[data-kind-note]', form);
+      if (note) note.textContent = kind === 'page' ? 'Undated and unlisted: link it from the menu.' : 'Dated and listed, with claps and comments.';
+      const asSelect = $('[data-f-as]', form);
+      if (kind === 'page') asSelect.value = ws.slug;
+      asSelect.disabled = kind === 'page';
+      asSelect.dispatchEvent(new Event('change'));
+      for (const el of $$('[data-post-only]', form)) {
+        el.classList.toggle('is-off', kind === 'page');
+        for (const input of $$('input, select, textarea', el)) input.disabled = kind === 'page';
+      }
+      $('[data-f-go]', form).textContent = published() ? `Update ${noun()}` : 'Publish now';
+    };
+    $('[data-f-kind]', form)?.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-v]');
+      if (!b) return;
+      kind = b.dataset.v;
+      $$('[data-f-kind] button', form).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      paintKind();
+    });
+    paintKind();
     $('#f-slug', form).addEventListener('input', (e) => { e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'); });
     $('[data-unpublish]', form)?.addEventListener('click', async () => {
       if (!confirm('Take this post down? It becomes a draft again, and its address stops working until you publish.')) return;
@@ -974,11 +1006,17 @@ export async function editorView(root, { me, id, go }) {
       if (!titleEl.value.trim()) { s.close(); titleEl.focus(); toast('Give it a title first.'); return; }
       as = $('[data-f-as]', form).value;
       paintAs();
-      const extra = { status: 'published', tags: $('#f-tags', form).value.split(',').map((t) => t.trim()).filter(Boolean), description: $('#f-desc', form).value.trim() };
+      const extra = { status: 'published', description: $('#f-desc', form).value.trim() };
+      if (canPage) extra.page = kind === 'page';
+      if (kind !== 'page') {
+        extra.tags = $('#f-tags', form).value.split(',').map((t) => t.trim()).filter(Boolean);
+        if (ws.admin) extra.featured = $('[data-f-featured]', form).checked;
+        const day = $('#f-date', form) ? $('#f-date', form).value : '';
+        if (day && day !== dateValue) extra.published_at = `${day}T${post && post.published_at ? post.published_at.slice(11) : '12:00:00.000Z'}`;
+      }
       const slug = $('#f-slug', form).value.replace(/^-+|-+$/g, '');
       if (slug && (!post || slug !== post.slug)) extra.slug = slug;
       if ($('#f-alt', form)) extra.cover_alt = $('#f-alt', form).value;
-      if (ws.admin) extra.featured = $('[data-f-featured]', form).checked;
       try {
         const was = published();
         // Link previews need a plain image: save the drawing as one.
@@ -993,7 +1031,7 @@ export async function editorView(root, { me, id, go }) {
         const done = h(`<div style="text-align:center;padding:8px 8px 4px"><div class="empty-icon" style="margin:0 auto 14px">${icons.check}</div>
           <h2 style="margin:0 0 6px;font-size:21px">${was ? 'Updated' : 'Published'}</h2><p style="margin:0 0 18px;color:var(--muted)">It’s live at</p>
           <div data-link style="margin-bottom:16px;text-align:left"></div>
-          <div style="display:flex;gap:8px;justify-content:center"><a class="btn primary" href="${esc(post.url)}" target="_blank" rel="noopener">View post</a><a class="btn" href="${home}" data-nav>Back to posts</a></div></div>`);
+          <div style="display:flex;gap:8px;justify-content:center"><a class="btn primary" href="${esc(post.url)}" target="_blank" rel="noopener">View ${noun()}</a><a class="btn" href="${home}" data-nav>Back to posts</a></div></div>`);
         const s2 = sheet(post.title, done);
         const field = copyField(url);
         field.style.cssText = 'margin-bottom:16px;text-align:left';

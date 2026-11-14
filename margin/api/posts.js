@@ -3,7 +3,8 @@
 // A post belongs to one workspace and is written as one identity: /<ws>/@<handle>/<slug>,
 // or /<ws>/<slug> when the workspace writes as itself (without the /<ws> when it is the
 // whole site: lib/paths.js). Without a photo, a post gets a drawn cover in its
-// workspace's style.
+// workspace's style. A page is a post the workspace writes as itself with `page` set: it
+// keeps the same address, editor and drafts, and stays out of every list and feed.
 import { byId, claim, one, rows, touch, mutate } from './lib/store.js';
 import { reject, text, longText, slugify, dates, bool } from './lib/util.js';
 import { render } from './markdown.js';
@@ -15,6 +16,8 @@ import { wsPath, rootSlug } from './lib/paths.js';
 
 export const MAX_MARKDOWN = 60000;
 const VOICE_RESERVED = new Set(['latest', 'tag', 'feed', 'about']);
+// Reserved names a page may take: /about was kept back for one, and no route uses it.
+export const PAGE_NAMES = new Set(['about']);
 
 export function postPath(post) {
   return wsPath(post.ws, post.blog === post.ws ? post.slug : `@${post.blog}/${post.slug}`);
@@ -112,10 +115,10 @@ export function postById(env, id) { return byId(env, 'posts', id); }
 export function bodyOf(env, post) { return post.bodyId ? byId(env, 'bodies', post.bodyId) : null; }
 
 // Claim a free slug for this identity: "intro", then "intro-2", "intro-3"…
-function claimSlug(env, blog, base, postId, voice) {
+function claimSlug(env, blog, base, postId, voice, page = false) {
   let root = slugify(base) || 'post';
   // A workspace's own posts sit beside /<ws>/latest, or at the top when it is the whole site.
-  if (voice && (VOICE_RESERVED.has(root) || (blog === rootSlug() && RESERVED.has(root)))) root += '-post';
+  if (voice && !(page && PAGE_NAMES.has(root)) && (VOICE_RESERVED.has(root) || (blog === rootSlug() && RESERVED.has(root)))) root += page ? '-page' : '-post';
   for (let n = 1; n < 50; n++) {
     const slug = n === 1 ? root : `${root}-${n}`;
     const { doc } = claim(env, 'slugs', { blog, slug }, { blog, slug, postId, createdAt: Date.now() });
@@ -137,6 +140,7 @@ function renderBody(env, md, origin) {
 function setFeatured(env, ctx, post, on) {
   const ws = workspaceBySlug(env, post.ws);
   if (!ws || !(ctx.admin || ['owner', 'admin'].includes(roleIn(env, ctx, post.ws)))) reject(403, 'forbidden', 'Only owners and admins feature posts.');
+  if (on && post.page) reject(400, 'invalid_input', 'Pages stay off the home page; link them from the menu instead.');
   const doc = one(env, 'workspaces', { slug: post.ws });
   mutate(env, 'workspaces', doc.id, (cur) => {
     const list = (cur.featured || []).filter((id) => id !== post.id);
@@ -145,10 +149,18 @@ function setFeatured(env, ctx, post, on) {
   });
 }
 
+// Only the workspace writing as itself has pages.
+function pageCheck(page, blog) {
+  if (page && blog.kind !== 'workspace') reject(400, 'invalid_input', 'A page belongs to the workspace: write it as the workspace (its address as `as`).');
+}
+
 export function createPost(env, ctx, input, origin) {
   if (!ctx.ws || !ctx.writer) reject(403, 'forbidden', 'Join the workspace to write there.');
-  const blog = resolveAs(env, ctx, input.as);
+  const page = bool(input.page);
+  // A page is written as the workspace unless it says otherwise.
+  const blog = resolveAs(env, ctx, page && !input.as ? ctx.ws.slug : input.as);
   if (blog.kind === 'workspace' && blog.ws !== ctx.ws.slug) reject(403, 'persona_forbidden', `@${blog.handle} writes only in its own workspace.`);
+  pageCheck(page, blog);
   const title = text(input.title, 160, 'Title', true);
   const md = longText(input.markdown ?? input.body ?? '', MAX_MARKDOWN, 'Text') || '';
   const now = Date.now();
@@ -158,18 +170,20 @@ export function createPost(env, ctx, input, origin) {
   const rendered = renderBody(env, md, origin);
   const bodyId = env.holm.app.ds.insert('bodies', { md, html: rendered.html, cards: rendered.cards, updatedAt: now });
   const status = input.status === 'published' ? 'published' : 'draft';
-  let publishedAt = null;
-  if (status === 'published') publishedAt = ctx.admin && input.published_at ? Date.parse(input.published_at) || now : now;
+  // Margin's admins may date a post (moving an old blog in). A draft keeps the date for the
+  // day it is published, so it stays private and its address still follows its title.
+  const chosen = ctx.admin && input.published_at ? Date.parse(input.published_at) || null : null;
+  const publishedAt = status === 'published' ? chosen || now : null;
   const id = env.holm.app.ds.insert('posts', {
     ws: ctx.ws.slug, blog: blog.handle, writer: ctx.member.id, lastEditor: ctx.member.id, bodyId,
     title, subtitle: text(input.subtitle, 280, 'Subtitle') || '', description: text(input.description, 300, 'Description') || '',
     slug: null, customSlug: !!input.slug, cover: photo, coverAlt: text(input.cover_alt, 200, 'Cover description') || '',
     drawn, bare: !photo && !drawn, coverPng: mediaId(input.cover_png) || null,
-    tags: tags(input.tags) || [], status, publishedAt, updatedAt: now,
+    tags: tags(input.tags) || [], status, publishedAt, dateAt: status === 'published' ? null : chosen, updatedAt: now,
     excerpt: rendered.excerpt, words: rendered.words, minutes: rendered.minutes,
-    claps: 0, clappers: 0, comments: 0, pending: 0,
+    claps: 0, clappers: 0, comments: 0, pending: 0, page,
   });
-  const slug = claimSlug(env, blog.handle, input.slug || title, id, blog.kind === 'workspace');
+  const slug = claimSlug(env, blog.handle, input.slug || title, id, blog.kind === 'workspace', page);
   env.holm.app.ds.update('posts', { id }, { $set: { slug } });
   env.holm.app.ds.update('bodies', { id: bodyId }, { $set: { postId: id } });
   stampImage(env, id);
@@ -194,6 +208,10 @@ export function updatePost(env, ctx, id, input, origin) {
     set.blog = blog;
     if (next.kind !== 'workspace') addIdentity(env, post.ws, ctx.member.id, next.handle);
   }
+  // A post becomes a page (or a page a post) where it is: its address stays.
+  if (input.page !== undefined && input.page !== null) set.page = bool(input.page);
+  const page = 'page' in set ? set.page : !!post.page;
+  if (page) pageCheck(true, blogByHandle(env, blog) || {});
   if (input.title !== undefined) set.title = text(input.title, 160, 'Title', true);
   if (input.subtitle !== undefined) set.subtitle = text(input.subtitle, 280, 'Subtitle') || '';
   if (input.description !== undefined) set.description = text(input.description, 300, 'Description') || '';
@@ -224,14 +242,14 @@ export function updatePost(env, ctx, id, input, origin) {
   const voice = blog === post.ws;
   let slug = post.slug;
   if (input.slug !== undefined && input.slug !== null && slugify(input.slug) !== post.slug) {
-    slug = claimSlug(env, blog, input.slug, post.id, voice);
+    slug = claimSlug(env, blog, input.slug, post.id, voice, page);
     set.customSlug = true;
     if (!wasPublished) releaseSlug(env, post.blog, post.slug, post.id);
   } else if (blog !== post.blog) {
-    slug = claimSlug(env, blog, post.slug, post.id, voice);
+    slug = claimSlug(env, blog, post.slug, post.id, voice, page);
     if (!wasPublished) releaseSlug(env, post.blog, post.slug, post.id);
   } else if (!wasPublished && !post.customSlug && set.title && slugify(set.title) !== post.slug.replace(/-\d+$/, '')) {
-    const next = claimSlug(env, blog, set.title, post.id, voice);
+    const next = claimSlug(env, blog, set.title, post.id, voice, page);
     if (next !== post.slug) releaseSlug(env, post.blog, post.slug, post.id);
     slug = next;
   }
@@ -239,18 +257,24 @@ export function updatePost(env, ctx, id, input, origin) {
   if (input.status !== undefined) {
     if (!['draft', 'published'].includes(input.status)) reject(400, 'invalid_input', 'Status is draft or published.');
     set.status = input.status;
-    if (input.status === 'published' && !post.publishedAt) set.publishedAt = now;
+    if (input.status === 'published' && !post.publishedAt) { set.publishedAt = post.dateAt || now; set.dateAt = null; }
   }
   if (input.published_at !== undefined && input.published_at) {
     if (!ctx.admin) reject(403, 'forbidden', "Only Margin's admins set the publish date.");
     const at = Date.parse(input.published_at);
     if (!at) reject(400, 'invalid_input', 'published_at is an ISO date.');
-    set.publishedAt = at;
+    // A draft that has never been out keeps the date until it is published.
+    if (!post.publishedAt && !set.publishedAt) set.dateAt = at;
+    else set.publishedAt = at;
   }
   env.holm.app.ds.update('posts', { id: post.id }, { $set: set });
   if (set.coverPng) stampImage(env, post.id);
   const next = postById(env, post.id);
   if (input.featured !== undefined) setFeatured(env, ctx, next, bool(input.featured));
+  else if (next.page && !post.page) {
+    const ws = workspaceBySlug(env, post.ws);
+    if (ws && (ws.featured || []).includes(post.id)) setFeatured(env, ctx, next, false);
+  }
   if (post.status === 'published' || next.status === 'published') touch(env);
   return next;
 }
@@ -274,10 +298,10 @@ export function deletePost(env, ctx, id) {
 const live = (p) => p.publishedAt && p.publishedAt <= Date.now() + 60000;
 const newest = (a, b) => b.publishedAt - a.publishedAt;
 
-// Published posts, newest first: in one workspace, or across Margin (suspended
+// Published posts and pages, newest first: in one workspace, or across Margin (suspended
 // workspaces left out). Metadata only, so a few thousand fit one request.
-export function published(env, ctx, ws) {
-  const key = 'published:' + (ws || '*');
+export function publishedAll(env, ctx, ws) {
+  const key = 'published+pages:' + (ws || '*');
   if (ctx.cache.has(key)) return ctx.cache.get(key);
   let list;
   if (ws) list = rows(env, 'posts', { ws, status: 'published' }, 3000).filter(live).sort(newest);
@@ -287,6 +311,13 @@ export function published(env, ctx, ws) {
   }
   ctx.cache.set(key, list);
   return list;
+}
+
+// Published posts only: what homes, lists, topics, feeds and counts show. Pages stay out.
+export function published(env, ctx, ws) {
+  const key = 'published:' + (ws || '*');
+  if (!ctx.cache.has(key)) ctx.cache.set(key, publishedAll(env, ctx, ws).filter((p) => !p.page));
+  return ctx.cache.get(key);
 }
 
 export function postsOf(env, ctx, handle, status, ws) {
@@ -335,7 +366,7 @@ export function coverDTO(env, ctx, post) {
 export function cardDTO(env, ctx, post) {
   const blog = cached(ctx, 'b:' + post.blog, () => blogByHandle(env, post.blog));
   const ws = wsCached(env, ctx, post.ws);
-  const d = dates(post.publishedAt || post.updatedAt);
+  const d = dates(post.publishedAt || post.dateAt || post.updatedAt);
   const u = dates(post.updatedAt);
   const coverInfo = coverDTO(env, ctx, post);
   return {
@@ -363,6 +394,7 @@ export function cardDTO(env, ctx, post) {
     comments_label: `${post.comments || 0} response${post.comments === 1 ? '' : 's'}`,
     featured: !!(ws && (ws.featured || []).includes(post.id)),
     draft: post.status !== 'published',
+    is_page: !!post.page,
   };
 }
 
@@ -373,6 +405,7 @@ export function editorDTO(env, ctx, post) {
   return {
     ...card,
     ws: post.ws,
+    page: !!post.page,
     status: post.status,
     as: post.blog,
     markdown: body ? body.md : '',
@@ -382,7 +415,7 @@ export function editorDTO(env, ctx, post) {
     bare: !card.cover,
     own_drawing: post.drawn || null,
     cover_png: post.coverPng || null,
-    published_at: post.publishedAt ? new Date(post.publishedAt).toISOString() : null,
+    published_at: post.publishedAt || post.dateAt ? new Date(post.publishedAt || post.dateAt).toISOString() : null,
     updated_at: new Date(post.updatedAt).toISOString(),
     pending_comments: post.pending || 0,
     custom_slug: !!post.customSlug,

@@ -621,8 +621,8 @@ async function postsView(panel, top) {
     list.innerHTML = `<div class="group">${data.posts.map((p) => `<div class="post-row" data-id="${p.id}">
       ${p.cover ? `<img class="thumb" src="${esc(p.cover.thumb || p.cover.url)}" alt="" loading="lazy">` : `<span class="thumb thumb-empty">${icons.pen}</span>`}
       <span class="row-main"><span class="row-title">${esc(p.title)}</span>
-      <span class="row-sub">${p.status === 'draft' ? '<span class="chip amber">Draft</span>' : '<span class="chip green">Published</span>'}${p.featured ? '<span class="chip">Pinned</span>' : ''}<span>@${esc(p.blog.handle)}</span><span>${esc(ago(p.updated_at))}</span>${p.pending ? `<span class="chip amber">${p.pending} to approve</span>` : ''}</span></span>
-      <span class="stats"><span>${icons.clap}${p.claps}</span><span>${icons.comments.replace('class="ic"', 'class="ic ic-s"')}${p.comments}</span></span>
+      <span class="row-sub">${p.status === 'draft' ? '<span class="chip amber">Draft</span>' : '<span class="chip green">Published</span>'}${p.is_page ? '<span class="chip">Page</span>' : ''}${p.featured ? '<span class="chip">Pinned</span>' : ''}<span>@${esc(p.blog.handle)}</span><span>${esc(ago(p.updated_at))}</span>${p.pending ? `<span class="chip amber">${p.pending} to approve</span>` : ''}</span></span>
+      <span class="stats"${p.is_page ? ' style="visibility:hidden"' : ''}><span>${icons.clap}${p.claps}</span><span>${icons.comments.replace('class="ic"', 'class="ic ic-s"')}${p.comments}</span></span>
       <button type="button" class="icon-btn" data-more-post aria-label="More">${icons.more}</button></div>`).join('')}</div>`;
     for (const row of $$('.post-row', list)) {
       const post = data.posts.find((p) => p.id === row.dataset.id);
@@ -634,7 +634,7 @@ async function postsView(panel, top) {
           { label: post.status === 'published' ? 'View' : 'Preview', icon: icons.eye, href: post.status === 'published' ? post.url : `/studio/preview/${post.id}`, blank: true },
           { label: 'Copy link', icon: icons.copy, run: () => copy(location.origin + post.url, 'Link copied') },
         ];
-        if (w.admin && post.status === 'published') items.push({ label: post.featured ? 'Unpin from home' : 'Pin to home', icon: icons.home, run: async () => { try { await api(`/api/posts/${post.id}`, { method: 'PATCH', body: { featured: !post.featured } }); toast(post.featured ? 'Unpinned' : 'Pinned'); load(); } catch (error) { toast(error.message); } } });
+        if (w.admin && post.status === 'published' && !post.is_page) items.push({ label: post.featured ? 'Unpin from home' : 'Pin to home', icon: icons.home, run: async () => { try { await api(`/api/posts/${post.id}`, { method: 'PATCH', body: { featured: !post.featured } }); toast(post.featured ? 'Unpinned' : 'Pinned'); load(); } catch (error) { toast(error.message); } } });
         items.push('-', { label: 'Delete', icon: icons.trash, danger: true, run: async () => {
           if (!confirm(`Delete “${post.title}”? Its comments and claps go too. This can't be undone.`)) return;
           try { await api(`/api/posts/${post.id}`, { method: 'DELETE' }); toast('Deleted'); load(); } catch (error) { toast(error.message); }
@@ -830,7 +830,7 @@ async function workspaceView(panel, top) {
     page.innerHTML = `<h2 class="page-title">${esc(ws.name)}</h2>
       <p class="page-lead"><a href="${esc(ws.path)}" target="_blank" rel="noopener">${esc(location.host + (ws.path === '/' ? '' : ws.path))}</a></p>
       <div class="group-title">Identity</div><div class="group">
-        <div class="profile-edit"><button type="button" class="avatar-pick logo-pick" data-logo aria-label="Upload a logo">${wsLogo({ ...ws, logo: ws.logo ? `/media/${ws.logo}` : null, initial: ws.initial, color: ws.color }, 56)}</button><div class="row-main"><span class="row-title">Logo</span><span class="row-sub">A square image, shown in the bar, the tab and the landing page.</span></div><div class="row-actions"><button type="button" class="btn small" data-logo>${ws.logo ? 'Change' : 'Upload'}</button>${ws.logo ? '<button type="button" class="btn small" data-logo-remove>Remove</button>' : ''}</div></div>
+        <div class="profile-edit"><button type="button" class="avatar-pick logo-pick" data-logo aria-label="Upload a logo">${wsLogo({ ...ws, logo: ws.logo ? `/media/${ws.logo}` : null, initial: ws.initial, color: ws.color }, 56)}</button><div class="row-main"><span class="row-title">Logo</span><span class="row-sub">A square image for the bar and the tab. A PNG or JPEG of 512 px or more is also the home-screen icon and link preview.</span></div><div class="row-actions"><button type="button" class="btn small" data-logo>${ws.logo ? 'Change' : 'Upload'}</button>${ws.logo ? '<button type="button" class="btn small" data-logo-remove>Remove</button>' : ''}</div></div>
         <div class="field"><label for="sn">Name</label><input id="sn" class="input" maxlength="60" value="${esc(ws.name)}"></div>
         <div class="field"><label for="st">Tagline</label><input id="st" class="input" maxlength="120" value="${esc(ws.tagline)}"></div>
         <div class="field"><label for="sd">Description</label><textarea id="sd" class="textarea" maxlength="300" rows="2">${esc(ws.description)}</textarea><small>Shown to search engines and on the home page.</small></div>
@@ -851,6 +851,10 @@ async function workspaceView(panel, top) {
       <div data-theme-settings></div>
       <div class="group-title">Menu links</div><div class="group" data-nav-links></div>
       <div style="display:flex;gap:8px;margin:-12px 0 24px"><button class="btn small" data-add-link>${icons.plus}Add link</button></div>
+      <div class="group-title">Footer</div><div class="group">
+        <div class="field"><label for="sf">Text</label><input id="sf" class="input" maxlength="200" value="${esc(ws.footer || '')}" placeholder="© {year} ${esc(ws.name)}"><small>Your own line for the footer. [Label](https://…) makes a link, {year} prints the year.</small></div>
+        <label class="row link"><span class="row-main"><span class="row-title" style="font-weight:500">Margin Credit</span><span class="row-sub">Written on Margin, the Holm mark and Send feedback.</span></span><span class="switch"><input type="checkbox" data-credit${ws.credit === false ? '' : ' checked'}><span></span></span></label>
+      </div>
       <div class="save-bar"><button class="btn primary" data-save>Save changes</button></div>
       ${ws.role !== 'owner' && !me.admin ? '' : ''}`;
     // home page
@@ -864,7 +868,7 @@ async function workspaceView(panel, top) {
       else {
         const pinned = featured.map((id) => byId.get(id)).filter(Boolean);
         detail.innerHTML = `<div class="pins">${pinned.map((p, i) => `<div class="pin">${p.cover ? `<img src="${esc(p.cover.thumb || p.cover.url)}" alt="">` : '<span class="pin-empty"></span>'}<span class="row-main"><span class="row-title">${esc(p.title)}</span><span class="row-sub">${esc(p.blog.name)}</span></span><button type="button" class="icon-btn" data-up="${i}" aria-label="Move up"${i === 0 ? ' disabled' : ''}>${icons.back.replace('<svg', '<svg style="transform:rotate(90deg)"')}</button><button type="button" class="icon-btn" data-rm-pin="${i}" aria-label="Unpin">${icons.close}</button></div>`).join('') || '<p class="row-sub" style="margin:0 0 8px">Nothing pinned yet.</p>'}</div>
-          <select class="select" data-pin><option value="">Pin a post from anyone on the team…</option>${posts.posts.filter((p) => !featured.includes(p.id)).map((p) => `<option value="${esc(p.id)}">${esc(p.title)} — ${esc(p.blog.name)}</option>`).join('')}</select>
+          <select class="select" data-pin><option value="">Pin a post from anyone on the team…</option>${posts.posts.filter((p) => !featured.includes(p.id) && !p.is_page).map((p) => `<option value="${esc(p.id)}">${esc(p.title)} — ${esc(p.blog.name)}</option>`).join('')}</select>
           <p class="row-sub" style="margin:8px 0 0">Pinned posts come first, in this order. The rest follow, newest first.</p>`;
         $$('[data-up]', detail).forEach((b) => b.addEventListener('click', () => { const i = Number(b.dataset.up); [featured[i - 1], featured[i]] = [featured[i], featured[i - 1]]; paintHome(); }));
         $$('[data-rm-pin]', detail).forEach((b) => b.addEventListener('click', () => { featured.splice(Number(b.dataset.rmPin), 1); paintHome(); }));
@@ -944,6 +948,7 @@ async function workspaceView(panel, top) {
         name: $('#sn', page).value, tagline: $('#st', page).value, description: $('#sd', page).value,
         home: homeMode === 'writer' ? '@' + homeWriter : homeMode, featured, moderation, cover, logo: logo || null,
         nav: nav.filter((n) => n.label.trim() && n.url.trim()),
+        footer: $('#sf', page).value, credit: $('[data-credit]', page).checked,
       };
       try {
         if (active && active.settings.length) {

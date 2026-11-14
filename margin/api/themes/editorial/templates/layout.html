@@ -27,7 +27,7 @@
 <footer class="e-foot">
   <div class="e-foot-inner">
     <span class="e-foot-name">{{site.name}}</span>
-    {{#site.tagline}}<span>{{site.tagline}}</span>{{/site.tagline}}
+    {{#margin.footer}}<span class="e-foot-text">{{{margin.footer}}}</span>{{/margin.footer}}{{^margin.footer}}{{#site.tagline}}<span>{{site.tagline}}</span>{{/site.tagline}}{{/margin.footer}}
     <span class="e-gap"></span>
     {{#site.feed_url}}<a href="{{site.feed_url}}">RSS</a>{{/site.feed_url}}
     {{{margin.credit}}}

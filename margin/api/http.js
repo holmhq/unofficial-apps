@@ -43,7 +43,7 @@ const handler = {
       if (m && url.searchParams.has('status')) return json(await uploadLinkStatus(env, m[1]), 200, { 'Cache-Control': 'no-store' });
       if (m) return uploadPage(request, env, url);
       if (request.method !== 'GET' && request.method !== 'HEAD') return env.holm.web.fetch(request);
-      m = /^\/media\/([a-z0-9]+)(?:-(w\d{3,4}|og))?(?:\.[a-z0-9]{2,5})?$/.exec(path);
+      m = /^\/media\/([a-z0-9]+)(?:-(w\d{3,4}|og|s\d{3}))?(?:\.[a-z0-9]{2,5})?$/.exec(path);
       if (m) return serve(env, request, m[1], m[2]);
       m = /^\/t\/([a-z0-9.-]+)\/(.+)$/.exec(path);
       if (m) return serveAsset(env, m[1], m[2]);

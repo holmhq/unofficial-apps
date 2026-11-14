@@ -8,7 +8,7 @@ export const MAX_CLAPS = 50;
 export function clap(env, ctx, postId, add) {
   if (!ctx.member) reject(401, 'unauthorized', 'Sign in to clap.');
   const post = postById(env, postId);
-  if (!post || post.status !== 'published') reject(404, 'not_found', 'No such post.');
+  if (!post || post.status !== 'published' || post.page) reject(404, 'not_found', 'No such post.');
   const wanted = int(add, 1, 1, MAX_CLAPS);
   const { doc, created } = claim(env, 'claps', { postId: post.id, memberId: ctx.member.id }, { postId: post.id, memberId: ctx.member.id, count: 0, at: Date.now() });
   let added = 0;

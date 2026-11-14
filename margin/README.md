@@ -37,12 +37,22 @@ are not public URLs.
 - **Starting out.** Sign in, pick your name and handle, name your workspace,
   copy an invite link for your team, and connect Claude: four short steps
   at `/new`.
-- **Workspaces.** Each has its own address, logo, theme, home page and rules.
+- **Workspaces.** Each has its own address, logo, theme, home page, footer and rules.
   Its home is the latest posts, a curated one (posts its owners pin, in their
   order, then the rest), or one writer's page. Owners and admins invite people
   (a single-use link, optionally tied to an email, which Margin sends when the
   node can send mail) and give them roles: owner, admin or writer. One person
   can be in many workspaces.
+- **Your logo, everywhere.** A workspace's logo is its tab icon and its own
+  web-app manifest (name and icon when someone installs the site). A PNG or
+  JPEG of 512 px or more is also the home-screen icon and the picture in link
+  previews of pages without a cover; Margin crops it square at 180, 192 and
+  512 px. An SVG logo stays the tab and manifest icon only, since Holm can't
+  turn a drawing into pixels.
+- **Your own footer.** A workspace writes one line for its footer (plain
+  text, where `[label](https://…)` is a link and `{year}` the year) in place
+  of the theme's own, and can hide Margin's credit: Written on Margin, the
+  Holm mark and Send feedback. Studio's own footer keeps them.
 - **Names and personas.** Everyone has a main name and can add personas. They
   write and comment as any of them; readers see only the name chosen. The
   owners of a workspace see which names each of its members uses there, so
@@ -53,6 +63,16 @@ are not public URLs.
   across Margin, and `/@<handle>/<post>` as a short link that redirects. A
   post's earlier address keeps redirecting when its slug changes. When one
   workspace is the whole site, its addresses lose the `/<workspace>`.
+- **Pages.** A workspace's owners and admins can make a page, such as
+  About, in the same editor: Post or Page in the publish sheet, or `page:
+  true` from Claude. A page is written as the workspace and lives at its
+  address plus the slug (`/about` on a whole site, `/lumen/about`
+  otherwise), with no date, byline, claps or comments. It stays out of the
+  home page, Latest, topics, the feed and post counts, is in the sitemap,
+  and is linked from the workspace's menu. Drafts and previews work as for
+  posts, and a post the workspace wrote can become a page (or a page a
+  post) at the same address. `/about` was kept back for this, so a page may
+  use it; other reserved names stay reserved.
 - **Drawn covers.** A post can have a photo, an isometric line drawing in its
   workspace's style, or no cover at all; the editor adds none until the writer
   picks one. Drawings come on paper, in a flat colour (six tones), or in bold
@@ -78,7 +98,12 @@ are not public URLs.
   video and embeds. Drop or paste photos (shrunk in the browser first) and
   short videos; paste a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link
   to embed it, or another post's address to show it as a card. Drafts save
-  themselves; published posts change only when you press Update.
+  themselves; published posts change only when you press Update. Margin's
+  admins can set a post's Publish Date (moving an old blog in): a date-only
+  pick keeps the post's time of day, or noon UTC. On a draft that has never
+  been out, the date waits for publishing and the draft stays private, its
+  address still following its title. Dates on cards and comments always
+  carry the year ("Dec 27, 2025").
 - **Code and maths.** Code fenced with its language (```` ```python ````) is
   highlighted, with the language named above it and a Copy button. Maths is
   LaTeX: `$…$` inline and `$$` lines around a display formula, typeset on the
@@ -125,7 +150,7 @@ workspace's pages.
 | `me_get`, `identities_list` | Who you are, your names, your workspaces |
 | `workspaces_create`, `workspace_get`, `workspace_update`, `workspace_leave` | Start a workspace, see and change its settings, leave it |
 | `team_list`, `team_update`, `invites_create`, `invites_revoke` | The team and its open invites; change roles or remove someone; invite and cancel invites |
-| `posts_list`, `posts_get`, `posts_create`, `posts_update`, `posts_delete` | Write in Markdown, pick the drawn cover or a photo, draft or publish, edit, take down |
+| `posts_list`, `posts_get`, `posts_create`, `posts_update`, `posts_delete` | Write in Markdown, pick the drawn cover or a photo, draft or publish, make pages (`page: true`), edit, take down |
 | `media_upload`, `media_link`, `media_list` | Add an SVG drawing or a small photo; get a one-hour link that takes photos and videos from a browser or curl; list your files with their Markdown and smaller sizes |
 | `comments_inbox`, `comments_list`, `comments_reply`, `comments_moderate` | Answer ordinary comments; the descriptions tell Claude to leave anything sensitive, critical, legal, personal or about money to the writer |
 | `comments_create` | Comment under any of your names; `sample: true` keeps example discussion visible to the team only, for screenshots |
@@ -160,6 +185,10 @@ field and hook; Claude reads it through `themes_reference`, and
   (`wsPath`), and `api/pages.js` reads the whole site's short addresses as
   `/<workspace>/…` before routing them, so one switch in Margin's settings
   moves them all.
+- **A logo's sizes.** A workspace with a logo links its own manifest,
+  `/<workspace>/site.webmanifest` (`/site.webmanifest` for the whole site),
+  in place of Margin's, and swaps the apple-touch-icon and the fallback
+  `og:image` for its square crops when the logo is a photo.
 - **Pages.** `api/http.js` routes each request; `api/pages.js` collects the
   page's data and renders it with [mustache.js](https://github.com/janl/mustache.js)
   through `api/themes.js`, in the workspace's theme. `api/landing.js` draws
@@ -182,9 +211,13 @@ field and hook; Claude reads it through `themes_reference`, and
   pointer rests on its link. A clap count on a cached page can trail
   until the next visible change; signed-in readers see the live count.
 - **Footer.** Each theme's footer prints `{{{margin.credit}}}`: Written on
-  Margin, a Holm mark and Send feedback. The form comes from the owner's
+  Margin, a Holm mark and Send feedback, or nothing when the workspace hides
+  it. `{{{margin.footer}}}` is the workspace's own line, escaped with only its
+  links made into links, and the built-in themes print their own line when
+  it is empty. The form comes from the owner's
   [feedback](../feedback/) app through a local copy of its `embed.js`,
-  loaded only when someone points at or taps the button.
+  loaded only when someone points at or taps the button. When one workspace
+  is the whole site, a missing address shows its look too, not Margin's.
 - **Markdown.** `api/markdown.js` renders posts with
   [marked](https://github.com/markedjs/marked) when they're saved, shows raw
   HTML as text, checks every link, and adds Margin's blocks. The HTML is kept
@@ -204,7 +237,8 @@ field and hook; Claude reads it through `themes_reference`, and
   its pixel size from its header (and a video's from its MP4 or MOV track
   header), shrinks photos over 2048 px with `env.holm.image.resize`, and
   stores them in `env.holm.app.s3`. `/media/<id>-w640.jpg`, `-w1600` and
-  the others, and `-og` (1200 × 630), are made on first request and kept;
+  the others, `-og` (1200 × 630), and the square `-s180`, `-s192` and `-s512`
+  a logo uses, are made on first request and kept;
   pages add `srcset` from them, in posts saved before them too. Holm's
   resize ignores EXIF rotation, so a turned JPEG is kept as it came and
   gets no smaller copies. SVG drawings are refused if they hold scripts,
@@ -352,6 +386,10 @@ Then:
   H.264 MP4 (or MOV) for every browser, 20 MB at most. Claude's
   `media_upload` takes photos up to about 1.5 MB as base64; larger files
   and video go through an upload link.
+- Pages are one level deep (no page under another) and belong to the
+  workspace; a writer's own blog has none.
+- An SVG logo can't be a home-screen icon or a link preview: those stay
+  Margin's until the logo is a PNG or JPEG.
 - A drawn cover's PNG (for link previews and feeds) is made in the browser
   when a post is published. Posts written only through Claude get one the next
   time someone opens them in Studio; until then their social card is Margin's.

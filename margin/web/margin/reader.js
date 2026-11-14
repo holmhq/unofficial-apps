@@ -39,9 +39,9 @@ function ago(iso) {
   if (s < 86400) return `${Math.floor(s / 3600)}h`;
   if (s < 604800) return `${Math.floor(s / 86400)}d`;
   const d = new Date(t);
-  return `${MONTHS[d.getMonth()]} ${d.getDate()}${d.getFullYear() !== new Date().getFullYear() ? `, ${d.getFullYear()}` : ''}`;
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
-// "10:02 PM" today, "Yesterday 10:02 PM", "Oct 24" this year, "Oct 24, 2025" before.
+// "10:02 PM" today, "Yesterday 10:02 PM", then "Oct 24, 2025": a date always has its year.
 const clock = (iso) => {
   const d = new Date(iso);
   const now = new Date();
@@ -50,7 +50,7 @@ const clock = (iso) => {
   const days = Math.round((day(now) - day(d)) / 86400000);
   if (days === 0) return time;
   if (days === 1) return `Yesterday ${time}`;
-  return d.toLocaleDateString([], d.getFullYear() === now.getFullYear() ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
 const ICON = {
