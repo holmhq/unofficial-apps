@@ -16,14 +16,39 @@ const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'imag
 const RESIZABLE = new Set(['image/jpeg', 'image/png', 'image/webp']);
 export const WIDTHS = [320, 640, 960, 1280, 1600, 2048];
 // og: the 1200 × 630 crop link previews use. s180, s192 and s512: square crops for a
-// workspace logo as a home-screen icon, an app icon and a link preview.
-const VARIANT = /^(?:w(\d{3,4})|og|s(180|192|512))$/;
+// workspace logo as a home-screen icon, an app icon and a link preview. full: an opaque PNG
+// at its own size as a JPEG, the largest choice in its srcset.
+const VARIANT = /^(?:w(\d{3,4})|og|s(180|192|512)|full)$/;
+// Copies are JPEG at this quality, unless the original is a PNG with transparency.
+const QUALITY = 82;
 export const canIcon = (m) => !!m && canVary(m);
 
 // Addresses carry an extension so Markdown alone tells a video from a photo.
 export const mediaPath = (id, mime) => `/media/${id}.${EXT[mime] || 'bin'}`;
-const variantExt = (mime) => (mime === 'image/png' ? 'png' : 'jpg');
-export const variantPath = (id, mime, variant) => `/media/${id}-${variant}.${variantExt(mime)}`;
+// A copy's extension follows what it is: PNG only for a PNG that may have transparency (or
+// whose pixels Margin hasn't read yet). The extension is a hint; /media/<id>-w640.png and
+// .jpg answer with the same copy, so addresses written before stay good.
+const jpegCopies = (info) => !!info && (info.mime !== 'image/png' || info.alpha === false);
+const variantExt = (info) => (jpegCopies(info) ? 'jpg' : 'png');
+export const variantPath = (id, info, variant) => `/media/${id}-${variant}.${variantExt(typeof info === 'string' ? { mime: info } : info)}`;
+
+// Does a PNG have no transparency? Colour types 0 (grey) and 2 (RGB), and 3 (palette), are
+// opaque unless a tRNS chunk (which comes before the image data) adds transparency; 4 and 6
+// carry alpha, opaque or not, and stay PNG.
+export function pngOpaque(bytes) {
+  const b = new Uint8Array(bytes);
+  if (b.length < 33 || b[0] !== 0x89 || b[1] !== 0x50) return false;
+  const type = b[25];
+  if (type !== 0 && type !== 2 && type !== 3) return false;
+  for (let i = 8, n = 0; i + 8 <= b.length && n < 200; n++) {
+    const length = ((b[i] << 24) >>> 0) + (b[i + 1] << 16) + (b[i + 2] << 8) + b[i + 3];
+    const name = String.fromCharCode(b[i + 4], b[i + 5], b[i + 6], b[i + 7]);
+    if (name === 'tRNS') return false;
+    if (name === 'IDAT' || name === 'IEND') return true;
+    i += 12 + length;
+  }
+  return false;
+}
 
 // Trust the bytes, not the name: read the first few to learn the type.
 export function sniff(bytes) {
@@ -183,8 +208,11 @@ export function storeMedia(env, owner, bytes, meta = {}) {
     width: size.width, height: size.height, alt: String(meta.alt || '').slice(0, 300), upright,
     owner: owner.id, via: meta.via || 'web', createdAt: Date.now(),
   };
+  if (stored === 'image/png') record.alpha = !pngOpaque(bytes);
   env.holm.app.s3.put(`media/${id}`, bytes, stored);
   const docId = env.holm.app.ds.insert('media', record);
+  const warm = canVary(record) ? warmCopies(env, record, bytes, meta.warmMs ?? 2000) : null;
+  if (warm) console.log('media warm', id, warm.made.join(','), `${warm.ms}ms`);
   return { ...describe(record), docId };
 }
 
@@ -195,8 +223,8 @@ function describe(m) {
   out.markdown = m.mime.startsWith('video/') ? `![${m.alt || ''}](${url})` : `![${(m.alt || '').replace(/[[\]]/g, '')}](${url})`;
   if (canVary(m)) {
     out.sizes = {};
-    for (const w of WIDTHS) if (w < m.width) out.sizes[`w${w}`] = variantPath(m.mediaId, m.mime, `w${w}`);
-    out.sizes.og = variantPath(m.mediaId, m.mime, 'og');
+    for (const w of WIDTHS) if (w < m.width) out.sizes[`w${w}`] = variantPath(m.mediaId, m, `w${w}`);
+    out.sizes.og = variantPath(m.mediaId, m, 'og');
   }
   return out;
 }
@@ -282,15 +310,22 @@ export async function uploadWithLink(env, token, request) {
 export function mediaInfo(env, id) {
   if (!/^[a-z0-9]{6,20}$/.test(id || '')) return null;
   const row = env.holm.app.ds.find('media', { mediaId: id }, { limit: 1 })[0];
-  return row ? { width: row.width, height: row.height, mime: row.mime, alt: row.alt, upright: row.upright !== false } : null;
+  return row ? { width: row.width, height: row.height, mime: row.mime, alt: row.alt, upright: row.upright !== false, alpha: row.alpha } : null;
 }
 
-// srcset for a stored photo: the smaller copies below its width, and the photo itself.
+// The photo at its own size: the original, or for a PNG without transparency (or not read
+// yet) its JPEG copy, a fraction of the weight. A PNG with transparency stays itself.
+export function fullPath(id, info) {
+  if (info && info.mime === 'image/png' && info.alpha !== true && canVary({ ...info, mediaId: id })) return variantPath(id, info, 'full');
+  return mediaPath(id, info.mime);
+}
+
+// srcset for a stored photo: the smaller copies below its width, and the photo at its size.
 export function srcsetFor(id, info) {
   if (!info || !canVary({ ...info, mediaId: id })) return '';
-  const list = WIDTHS.filter((w) => w < info.width && w >= 640).map((w) => `${variantPath(id, info.mime, `w${w}`)} ${w}w`);
+  const list = WIDTHS.filter((w) => w < info.width).map((w) => `${variantPath(id, info, `w${w}`)} ${w}w`);
   if (!list.length) return '';
-  list.push(`${mediaPath(id, info.mime)} ${info.width}w`);
+  list.push(`${fullPath(id, info)} ${info.width}w`);
   return list.join(', ');
 }
 
@@ -308,7 +343,7 @@ export function serve(env, request, id, variant) {
     const width = m && m[1] ? Number(m[1]) : 0;
     const square = m && m[2] ? Number(m[2]) : 0;
     if (!m || (width && !WIDTHS.includes(width))) return new Response('Not found', { status: 404 });
-    const copy = variantOf(env, id, variant, width, square);
+    const copy = variantOf(env, id, variant, width, square).copy;
     if (copy) return new Response(copy.data, { headers: { ...HEADERS, 'Content-Type': copy.mime, 'Content-Length': String(copy.data.byteLength) } });
   }
   const object = env.holm.app.s3.get(`media/${id}`);
@@ -328,30 +363,69 @@ export function serve(env, request, id, variant) {
   return new Response(object.data, { headers: { ...headers, 'Content-Length': String(total) } });
 }
 
-// A smaller copy, made on first request and kept. Null means "serve the original" (a GIF, a
-// drawing, a video, a turned photo, or a size it already is).
-function variantOf(env, id, variant, width, square = 0) {
-  const key = `media/${id}/${variant}`;
-  const kept = env.holm.app.s3.get(key);
-  if (kept) return { data: kept.data, mime: kept.mime };
-  const row = env.holm.app.ds.find('media', { mediaId: id }, { limit: 1 })[0];
-  if (!row || !canVary(row)) return null;
-  if (width && width >= row.width) return null;
+// A smaller copy, made on first request (or right after upload: warmCopies) and kept.
+// { copy: null } means "serve the original" (a GIF, a drawing, a video, a turned photo, a size
+// it already is, or a PNG with transparency at its own size).
+//
+// Copies are JPEG, asked of Holm's image.resize with format: 'jpeg', so an opaque PNG's copies
+// weigh a tenth of PNG ones. A PNG with transparency keeps PNG copies. A PNG's copies live
+// under their own keys (…/w640.jpg), so the PNG copies kept before this are made again as
+// JPEG. If the node's resize ignores format, the copy is kept as whatever it made.
+function variantOf(env, id, variant, width, square = 0, row = null, bytes = null) {
+  row = row || env.holm.app.ds.find('media', { mediaId: id }, { limit: 1 })[0];
+  if (!row || !canVary(row)) return { copy: null };
+  let alpha = row.alpha;
+  const png = row.mime === 'image/png';
+  const key = (a) => `media/${id}/${variant}${png && a === false ? '.jpg' : ''}`;
+  if (!png || alpha !== undefined) {
+    const kept = env.holm.app.s3.get(key(alpha));
+    if (kept) return { copy: { data: kept.data, mime: kept.mime } };
+  }
+  if (width && width >= row.width) return { copy: null };
   // A square logo no bigger than the icon is the icon already.
-  if (square && row.width === row.height && square >= row.width) return null;
-  const original = env.holm.app.s3.get(`media/${id}`);
-  if (!original) return null;
-  const options = width ? { width, quality: 82 }
+  if (square && row.width === row.height && square >= row.width) return { copy: null };
+  const original = bytes ? { data: bytes } : env.holm.app.s3.get(`media/${id}`);
+  if (!original) return { copy: null };
+  // A PNG uploaded before Margin read its pixels: read them now, once.
+  if (png && alpha === undefined) {
+    alpha = !pngOpaque(original.data);
+    env.holm.app.ds.update('media', { mediaId: id }, { $set: { alpha } });
+    const kept = env.holm.app.s3.get(key(alpha));
+    if (kept) return { copy: { data: kept.data, mime: kept.mime } };
+  }
+  if (variant === 'full' && (!png || alpha)) return { copy: null };
+  const jpeg = !png || alpha === false;
+  const options = width ? { width, quality: QUALITY }
     : square ? { width: square, height: square, fit: 'cover', quality: 90 }
-      : { width: 1200, height: 630, fit: 'cover', quality: 82 };
+      : variant === 'full' ? { width: row.width, quality: 85 }
+        : { width: 1200, height: 630, fit: 'cover', quality: QUALITY };
+  if (jpeg) options.format = 'jpeg';
   let made;
   try { made = env.holm.image.resize(original.data, options); } catch (error) {
     console.warn('media resize failed', id, variant, String(error && error.message || error).slice(0, 200));
-    return null;
+    return { copy: null };
   }
-  const mime = row.mime === 'image/png' ? 'image/png' : 'image/jpeg';
-  env.holm.app.s3.put(key, made.data, mime);
-  return { data: made.data, mime };
+  const mime = sniff(made.data) || (png ? 'image/png' : 'image/jpeg');
+  env.holm.app.s3.put(key(alpha), made.data, mime);
+  return { copy: { data: made.data, mime }, made: true };
+}
+
+// The copies pages ask for first, made right after an upload so a page of new photos doesn't
+// have every reader's browser ask the node to make them at once (zyt turned such a burst away
+// as overloaded). Cards (640, 960, 1280 on a phone at 3x), the photo at its size for an
+// opaque PNG, the link-preview crop, then list thumbnails (320); it stops once the request has
+// spent its share of the budget, and pages make whatever is left on first view as before.
+const WARM = ['w640', 'w960', 'w1280', 'full', 'og', 'w320'];
+export function warmCopies(env, row, bytes, budgetMs = 2000) {
+  const start = Date.now();
+  const made = [];
+  for (const variant of WARM) {
+    if (Date.now() - start > budgetMs) break;
+    const width = variant[0] === 'w' ? Number(variant.slice(1)) : 0;
+    if (width && width >= row.width) continue;
+    if (variantOf(env, row.mediaId, variant, width, 0, row, bytes).made) made.push(variant);
+  }
+  return { made, ms: Date.now() - start };
 }
 
 export function mediaById(env, id) { return byId(env, 'media', id); }

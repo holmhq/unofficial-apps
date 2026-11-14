@@ -8,7 +8,7 @@
 import { byId, claim, one, rows, touch, mutate } from './lib/store.js';
 import { reject, text, longText, slugify, dates, bool } from './lib/util.js';
 import { render } from './markdown.js';
-import { mediaInfo, srcsetFor, variantPath } from './media.js';
+import { mediaInfo, srcsetFor, variantPath, fullPath } from './media.js';
 import { blogByHandle, blogDTO, resolveAs, RESERVED } from './blogs.js';
 import { roleIn, addIdentity, workspaceBySlug, wsDTO } from './workspaces.js';
 import { MOTIFS, LOOKS, TONES, normalize as normalizeDrawing } from './covers.js';
@@ -350,9 +350,10 @@ export function coverDTO(env, ctx, post) {
     const info = /^\/media\//.test(photo) ? mediaInfo(env, post.cover) : null;
     // Pages choose from the smaller copies (srcset); link previews get the 1200 × 630 crop.
     const srcset = info ? srcsetFor(post.cover, info) : '';
-    const url = srcset && info.width > 1600 ? variantPath(post.cover, info.mime, 'w1600') : photo;
-    const og = srcset ? variantPath(post.cover, info.mime, 'og') : photo;
-    const thumb = srcset && info.width > 320 ? variantPath(post.cover, info.mime, 'w320') : photo;
+    // An opaque PNG shows as its JPEG copy (fullPath), not the heavy original.
+    const url = srcset && info.width > 1600 ? variantPath(post.cover, info, 'w1600') : info ? fullPath(post.cover, info) : photo;
+    const og = srcset ? variantPath(post.cover, info, 'og') : photo;
+    const thumb = srcset && info.width > 320 ? variantPath(post.cover, info, 'w320') : photo;
     return { url, srcset, thumb, alt: post.coverAlt || '', width: info ? info.width : 0, height: info ? info.height : 0, drawn: false, image: og };
   }
   const ws = wsCached(env, ctx, post.ws);

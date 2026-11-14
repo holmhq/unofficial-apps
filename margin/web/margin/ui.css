@@ -125,6 +125,12 @@
 .m-action:active { transform: scale(.95); }
 .m-action:focus-visible { outline: 2px solid var(--m-accent); outline-offset: 2px; }
 .m-count { font-variant-numeric: tabular-nums; min-width: 1ch; }
+/* Clap and Responses keep room for two digits whatever they show, so a count arriving (0 to 1,
+   9 to 10) changes no layout. At 0 nothing is printed and the icon slides over that room by
+   transform to sit in the middle of its pill; a transform isn't a layout shift. */
+.m-clap .m-count, .m-comment-count .m-count { min-width: 2ch; text-align: left; }
+.m-clap > :first-child, .m-comment-count > :first-child { transition: transform .2s var(--m-ease); }
+.m-clap:has(.m-count:empty) > :first-child, .m-comment-count:has(.m-count:empty) > :first-child { transform: translateX(calc((8px + 2ch) / 2)); }
 .m-clap-icon { display: grid; place-items: center; position: relative; }
 .m-clap.m-clapped { color: var(--m-accent-text); }
 .m-burst {
@@ -142,7 +148,7 @@
 /* ---------- code and maths in posts ---------- */
 /* Token colours only; each theme owns the block's background, font and spacing. */
 :root {
-  --m-hl-keyword: #cf222e; --m-hl-string: #0a3069; --m-hl-comment: #6e7781; --m-hl-number: #0550ae;
+  --m-hl-keyword: #cf222e; --m-hl-string: #0a3069; --m-hl-comment: #636c76; --m-hl-number: #0550ae;
   --m-hl-title: #8250df; --m-hl-type: #953800; --m-hl-tag: #116329; --m-hl-meta: #57606a;
   --m-hl-add: #116329; --m-hl-add-bg: #dafbe1; --m-hl-del: #82071e; --m-hl-del-bg: #ffebe9;
 }

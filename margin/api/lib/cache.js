@@ -4,7 +4,7 @@
 import { sha256 } from './util.js';
 import { siteRev } from './store.js';
 
-export const VERSION = '0.11.0';
+export const VERSION = '0.12.0';
 
 const LOCAL = /^(127\.|localhost|\[::1\]|[a-z0-9-]+\.localhost)(:\d+)?$/;
 // Addresses that may be a rendered page (no file extension, not one of Margin's own areas).
@@ -26,7 +26,7 @@ export async function quick(request, env) {
   const m = VERSIONED.exec(path);
   if (m && !m[2].includes('..')) return versioned(request, env, url, m[1], m[2]);
   // Photos and their smaller copies: no need for the rest of Margin.
-  const media = /^\/media\/([a-z0-9]+)(?:-(w\d{3,4}|og|s\d{3}))?(?:\.[a-z0-9]{2,5})?$/.exec(path);
+  const media = /^\/media\/([a-z0-9]+)(?:-(w\d{3,4}|og|s\d{3}|full))?(?:\.[a-z0-9]{2,5})?$/.exec(path);
   if (media) return (await import('../media.js')).serve(env, request, media[1], media[2]);
   if (path === '/margin/speculation.json') return new Response(SPECULATION, { headers: { 'Content-Type': 'application/speculationrules+json', 'Cache-Control': 'public, max-age=3600' } });
   if (!PAGE.test(path)) return null;

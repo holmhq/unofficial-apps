@@ -16,7 +16,7 @@
       {{/post.is_page}}
     </header>
 
-    {{#post.cover}}<figure class="e-cover"><img src="{{url}}" alt="{{alt}}"{{#srcset}} srcset="{{srcset}}" sizes="(min-width: 1100px) 1080px, 100vw"{{/srcset}}{{#width}} width="{{width}}" height="{{height}}"{{/width}}></figure>{{/post.cover}}
+    {{#post.cover}}<figure class="e-cover"><img src="{{url}}" alt="{{alt}}" fetchpriority="high"{{#srcset}} srcset="{{srcset}}" sizes="(max-width: 760px) 100vw, 700px"{{/srcset}}{{#width}} width="{{width}}" height="{{height}}"{{/width}}></figure>{{/post.cover}}
 
     <div class="e-prose">
       {{{post.body}}}

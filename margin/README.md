@@ -123,9 +123,14 @@ are not public URLs.
   or a small photo itself, or hand out an upload link: open it on a phone
   or computer to add up to ten photos, drawings or videos in the next hour,
   or send files to it with curl. Margin keeps photos at 2048 px at most and
-  makes smaller copies when a page first asks for one (640 to 1600 px, and
-  a 1200 × 630 crop for link previews), so every page picks the size it
-  shows at.
+  makes smaller copies (320 to 1600 px, and a 1200 × 630 crop for link
+  previews), so every page picks the size it shows at. The copies are JPEG,
+  so a PNG screenshot or an AI-made image without transparency weighs a
+  tenth as much on the page; a PNG with transparency keeps PNG copies. The
+  copies a page needs first are made right after the upload, so a page of
+  new photos doesn't send every reader's browser asking for them at once.
+  The first row of pictures on a page loads straight away, the largest with
+  high priority, and the rest as they're scrolled to.
 - **Studio** at `/studio`, with a workspace switcher: posts, the comment
   inbox, the team and invites, the workspace's settings (home page, comments,
   cover style, theme, menu), your names and personas, and how to connect
@@ -245,9 +250,19 @@ field and hook; Claude reads it through `themes_reference`, and
   its pixel size from its header (and a video's from its MP4 or MOV track
   header), shrinks photos over 2048 px with `env.holm.image.resize`, and
   stores them in `env.holm.app.s3`. `/media/<id>-w640.jpg`, `-w1600` and
-  the others, `-og` (1200 × 630), and the square `-s180`, `-s192` and `-s512`
-  a logo uses, are made on first request and kept;
-  pages add `srcset` from them, in posts saved before them too. Holm's
+  the others, `-og` (1200 × 630), `-full` (an opaque PNG at its own size, as
+  JPEG) and the square `-s180`, `-s192` and `-s512` a logo uses are kept
+  once made. `w640`, `w960`, `w1280`, `full`, `og` and `w320` are made right
+  after an upload, within about 2 seconds of the request (about 0.6 s on a
+  local node for a 1536 × 1024 photo); the rest when a page first asks. Pages
+  add `srcset` from them, in posts saved before them too. Copies are asked
+  of `env.holm.image.resize` with `format: 'jpeg'`, an option Holm's image
+  binding takes (0.299) though the public guide doesn't list it yet; Margin
+  checks the result's first bytes and keeps whatever it got, so a node
+  without it serves PNG copies as before. A PNG is read for transparency
+  (colour types 0, 2 and 3 without a `tRNS` chunk are opaque; 4 and 6 keep
+  PNG). A copy's extension is only a hint: `-w640.png` and `-w640.jpg` answer
+  with the same copy, so addresses in pages cached before keep working. Holm's
   resize ignores EXIF rotation, so a turned JPEG is kept as it came and
   gets no smaller copies. SVG drawings are refused if they hold scripts,
   event handlers, embedded images or links to other files, and every file

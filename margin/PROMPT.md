@@ -78,7 +78,9 @@ script is in the folder.
   drawing or a small photo, and a one-hour upload link the person opens on
   a phone (or Claude sends files to with curl). Keep photos at 2048 px, make
   smaller copies and a link-preview crop on first request, and give every
-  photo on a page a srcset. Refuse SVG that can run code or load anything.
+  photo on a page a srcset. Copies are JPEG unless the photo has
+  transparency; make the common ones right after upload. Refuse SVG that can
+  run code or load anything.
 - Studio with a workspace switcher: posts, a comment inbox, team and invites,
   workspace settings (a logo too, also when starting one), your names and
   personas, Claude, and Margin's settings
@@ -256,3 +258,13 @@ The owner asked:
 
 > Why is JJ set as my profile pic too?
 > - JJ logo is my site's logo not to confuse with my avatar photo
+
+**Margin 0.12.0: lighter pictures, and a closer look**
+
+On the owner's blog, the covers were large PNGs and pages loaded slowly. The owner asked:
+
+> The images are loading very slowly; wasn't they optimised?
+
+> I think margin should have caught them?
+> - also, the clap component has a weird spacing when the count is 0
+> - i think you should take a deeper look

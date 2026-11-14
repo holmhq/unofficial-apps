@@ -13,7 +13,9 @@
   font-family: 'Newsreader';
   font-style: italic;
   font-weight: 200 800;
-  font-display: swap;
+  /* Italic isn't preloaded: if it's late on a first visit the page keeps the fallback rather
+     than re-wrapping a quote under the reader (a layout shift); later pages have it cached. */
+  font-display: optional;
   src: url('newsreader-latin-italic.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
@@ -32,7 +34,7 @@
   --e-ink: #16161a;
   --e-text: #26262b;
   --e-muted: #6e6e76;
-  --e-faint: #8a8a92;
+  --e-faint: #737379; /* 4.7:1 on white */
   --e-line: #ececef;
   --e-soft: #f4f4f6;
   --e-accent-text: color-mix(in srgb, var(--accent) 88%, #000);
@@ -160,7 +162,7 @@ img { max-width: 100%; height: auto; }
 .e-byline-handle { color: var(--e-faint); font-size: 15px; }
 .e-actions { margin-top: 26px; border-top: 1px solid var(--e-line); border-bottom: 1px solid var(--e-line); padding: 4px 0; }
 .e-actions .m-actions { color: var(--e-text); font-weight: 500; }
-.e-actions .m-action { padding: 0 8px; }
+.e-actions .m-action { padding: 0 8px; --m-action-pad: 8px; }
 .e-cover { margin: 36px 0 0; }
 .e-cover img { display: block; width: 100%; border-radius: 4px; }
 .e-prose { margin-top: 36px; font: 400 20.5px/1.66 var(--e-serif); color: var(--e-text); }
@@ -217,6 +219,9 @@ img { max-width: 100%; height: auto; }
   .e-more-grid .e-story-cover { width: 120px; }
 }
 @media (max-width: 640px) {
+  /* Footer links are small words; on a touch screen each takes a 44 px tap. */
+  .e-foot-inner a, .e-foot-inner button { position: relative; }
+  .e-foot-inner a::after, .e-foot-inner button::after { content: ''; position: absolute; inset: -12px -6px; }
   .e-bar-inner, .e-masthead, .e-columns, .e-article, .e-profile, .e-more { padding-left: 20px; padding-right: 20px; }
   .e-nav { display: none; }
   .e-masthead { padding-top: 40px; padding-bottom: 28px; }

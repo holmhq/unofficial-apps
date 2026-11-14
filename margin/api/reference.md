@@ -125,7 +125,11 @@ with the width it shows at), `has_cover`, `date` ("October 16, 2026"), `date_sho
 `year`, `updated`, `updated_iso`, `reading_time` ("6 min read"), `minutes`, `words`,
 `tags` (each `name`, `url`, `first`), `has_tags`, `blog`, `claps`, `comments`,
 `claps_label` ("214 claps"), `comments_label` ("1 response"), `featured`, `workspace`
-(`slug`, `name`, `url`, `logo`), `is_page`. On post pages also `body` (print with `{{{post.body}}}`) and `is_updated`.
+(`slug`, `name`, `url`, `logo`), `is_page`. In a page's own list (`posts` on home, list
+and blog pages) the first three also have `eager` and the first `lcp` when it is the page's
+largest picture: print `{{#eager}}loading="eager"{{/eager}}{{^eager}}loading="lazy"{{/eager}}{{#lcp}} fetchpriority="high"{{/lcp}}`;
+`related` and `more` cards have `wide` (they sit three across under a post). Give the post
+cover `fetchpriority="high"`. On post pages also `body` (print with `{{{post.body}}}`) and `is_updated`.
 
 **Pages.** A workspace's pages (About, say) render through `post.html` with `post.is_page`
 set. Wrap whatever only posts have in `{{^post.is_page}}…{{/post.is_page}}`: the date, the

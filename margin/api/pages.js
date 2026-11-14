@@ -13,7 +13,7 @@ import { EMBED_ORIGINS } from './markdown.js';
 import { workspaceBySlug, useWorkspace, logoURL, teamHandles, FOOTER_LINK } from './workspaces.js';
 import { render as renderDrawing, normalize as normalizeDrawing, MOTIFS, LOOKS, TONES } from './covers.js';
 import { landingPage } from './landing.js';
-import { srcsetFor, mediaInfo, mediaPath, variantPath, canIcon } from './media.js';
+import { srcsetFor, mediaInfo, mediaPath, variantPath, canIcon, fullPath } from './media.js';
 import { wsPath, rootSlug } from './lib/paths.js';
 
 const PAGE_SIZE = 12;
@@ -182,8 +182,8 @@ function logoIcons(env, scope) {
   return {
     id, info,
     manifest: wsPath(scope.slug, 'site.webmanifest'),
-    touch: photo ? variantPath(id, info.mime, 's180') : null,
-    card: photo && Math.min(info.width, info.height) >= 512 ? variantPath(id, info.mime, 's512') : photo ? variantPath(id, info.mime, 's180') : null,
+    touch: photo ? variantPath(id, info, 's180') : null,
+    card: photo && Math.min(info.width, info.height) >= 512 ? variantPath(id, info, 's512') : photo ? variantPath(id, info, 's180') : null,
   };
 }
 
@@ -198,8 +198,11 @@ function siteManifest(env, ctx, slug) {
   const icons = [];
   if (canIcon(info)) {
     const side = Math.min(info.width, info.height);
-    const type = info.mime === 'image/png' ? 'image/png' : 'image/jpeg';
-    for (const n of [192, 512]) if (side >= n) icons.push({ src: variantPath(id, info.mime, `s${n}`), sizes: `${n}x${n}`, type, purpose: 'any' });
+    for (const n of [192, 512]) {
+      if (side < n) continue;
+      const src = variantPath(id, info, `s${n}`);
+      icons.push({ src, sizes: `${n}x${n}`, type: src.endsWith('.png') ? 'image/png' : 'image/jpeg', purpose: 'any' });
+    }
   }
   if (!icons.length) icons.push({ src: mediaPath(id, info.mime), sizes: info.mime === 'image/svg+xml' ? 'any' : `${info.width}x${info.height}`, type: info.mime, purpose: 'any' });
   let accent = '#1a7f64';
@@ -424,6 +427,13 @@ function paginate(list, url) {
   };
 }
 
+// The first row of a page's cards loads at once (eager) and the first card's picture, the
+// page's largest, first of all (lcp: fetchpriority="high"); the rest wait until scrolled to.
+function firstRow(cards, lcp) {
+  cards.forEach((c, i) => { c.eager = i < 3; c.lcp = lcp && i === 0; });
+  return cards;
+}
+
 function titleOf(scope) { return scope.tagline ? `${scope.name} — ${scope.tagline}` : scope.name; }
 
 async function wsHomePage(env, ctx, request, scope) {
@@ -442,7 +452,8 @@ async function wsHomePage(env, ctx, request, scope) {
   const { slice, pagination } = paginate(list, url);
   return respond(env, ctx, request, scope, 'home', {
     page: { title: titleOf(scope), description: scope.description || scope.tagline, path: scope.home_url },
-    view: { posts: slice.map((p) => cardDTO(env, ctx, p)), pagination },
+    // A pinned post leads the first page as its largest picture; otherwise the first card does.
+    view: { posts: firstRow(slice.map((p) => cardDTO(env, ctx, p)), !(pagination.page === 1 && featuredPosts(env, ctx, scope).length)), pagination },
     ld: { '@context': 'https://schema.org', '@type': 'Blog', name: scope.name, description: scope.description, url: url.origin + scope.home_url },
   });
 }
@@ -458,7 +469,7 @@ async function blogPage(env, ctx, request, scope, blog, options = {}) {
       title: options.home ? titleOf(scope) : `${blog.name} — ${scope.name}`,
       description: blog.bio || scope.description, path, image: null, feed: dto.feed_url, feed_title: blog.name,
     },
-    view: { blog: { ...dto, posts: list.length }, posts: slice.map((p) => cardDTO(env, ctx, p)), pagination },
+    view: { blog: { ...dto, posts: list.length }, posts: firstRow(slice.map((p) => cardDTO(env, ctx, p)), true), pagination },
     ld: { '@context': 'https://schema.org', '@type': 'ProfilePage', name: blog.name, description: blog.bio || '', url: url.origin + path },
   });
 }
@@ -478,17 +489,24 @@ async function listPage(env, ctx, request, scope, kind, value) {
   const { slice, pagination } = paginate(list, url);
   return respond(env, ctx, request, scope, 'list', {
     page: { title: `${title} — ${scope.name}`, description, path: url.pathname },
-    view: { list: { title, description, kind, tag: kind === 'tag' ? value : null, count: list.length }, posts: slice.map((p) => cardDTO(env, ctx, p)), pagination },
+    view: { list: { title, description, kind, tag: kind === 'tag' ? value : null, count: list.length }, posts: firstRow(slice.map((p) => cardDTO(env, ctx, p)), true), pagination },
   });
 }
 
 // Photos in a post choose from their smaller copies, however long ago the post was saved.
 const FIGURE_IMG = /<figure class="m-figure( m-wide| m-full)?"><img src="\/media\/([a-z0-9]{6,20})\.(jpg|png|webp)" ([^>]*?)width="(\d+)" height="(\d+)">/g;
 const SIZES = { '': '(min-width: 760px) 720px, 100vw', ' m-wide': '(min-width: 1100px) 1080px, 100vw', ' m-full': '100vw' };
-function responsive(html) {
+// Each photo in a post gets its copies, however long ago the post was saved; an opaque PNG
+// shows as its JPEG copy at its own size rather than the original.
+function responsive(env, html) {
   return html.replace(FIGURE_IMG, (all, wide = '', id, ext, rest, w) => {
-    const srcset = /srcset=/.test(rest) ? '' : srcsetFor(id, { width: Number(w), mime: ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg' });
-    return srcset ? all.replace(' width=', ` srcset="${srcset}" sizes="${SIZES[wide]}" width=`) : all;
+    if (/srcset=/.test(rest)) return all;
+    const info = mediaInfo(env, id) || { width: Number(w), mime: ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg' };
+    const srcset = srcsetFor(id, { ...info, width: Number(w) || info.width });
+    let out = all;
+    const full = fullPath(id, info);
+    if (full !== `/media/${id}.${ext}`) out = out.replace(`src="/media/${id}.${ext}"`, `src="${full}"`);
+    return srcset ? out.replace(' width=', ` srcset="${srcset}" sizes="${SIZES[wide]}" width=`) : out;
   });
 }
 
@@ -497,7 +515,7 @@ export async function postPage(env, ctx, request, scope, post, options = {}) {
   const blog = blogByHandle(env, post.blog);
   const card = cardDTO(env, ctx, post);
   const body = bodyOf(env, post);
-  const html = responsive(fillCards(env, ctx, body ? body.html : ''));
+  const html = responsive(env, fillCards(env, ctx, body ? body.html : ''));
   // A page has no date, byline, claps, comments or neighbours: the theme shows its words.
   const isPage = !!post.page;
   const comments = post.status === 'published' && !isPage ? publicComments(env, ctx, post) : [];
@@ -537,8 +555,10 @@ export async function postPage(env, ctx, request, scope, post, options = {}) {
       wordCount: post.words || undefined,
     },
   };
-  lazy(view, 'related', () => (isPage ? [] : related(env, ctx, post, 3)));
-  lazy(view, 'more', () => list.filter((p) => p.id !== post.id).slice(0, 3).map((p) => cardDTO(env, ctx, p)));
+  // Cards under a post sit three across, wider than a list's thumbnails (wide).
+  const wide = (cards) => cards.map((c) => Object.assign(c, { wide: true }));
+  lazy(view, 'related', () => (isPage ? [] : wide(related(env, ctx, post, 3))));
+  lazy(view, 'more', () => wide(list.filter((p) => p.id !== post.id).slice(0, 3).map((p) => cardDTO(env, ctx, p))));
   return respond(env, ctx, request, scope, 'post', out);
 }
 

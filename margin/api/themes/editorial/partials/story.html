@@ -6,6 +6,6 @@
       {{#description}}<span class="e-story-desc">{{description}}</span>{{/description}}
       <span class="e-meta">{{date_short}} · {{reading_time}}{{#claps}} · {{claps_label}}{{/claps}}{{#comments}} · {{comments_label}}{{/comments}}</span>
     </span>
-    {{#cover}}<span class="e-story-cover"><img src="{{url}}" alt="{{alt}}" loading="lazy"{{#srcset}} srcset="{{srcset}}" sizes="(min-width: 760px) 400px, 100vw"{{/srcset}}{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
+    {{#cover}}<span class="e-story-cover"><img src="{{url}}" alt="{{alt}}" {{#eager}}loading="eager"{{/eager}}{{^eager}}loading="lazy"{{/eager}}{{#lcp}} fetchpriority="high"{{/lcp}}{{#srcset}} srcset="{{srcset}}" sizes="{{#wide}}(max-width: 900px) 120px, 360px{{/wide}}{{^wide}}(max-width: 640px) 92px, 180px{{/wide}}"{{/srcset}}{{#width}} width="{{width}}" height="{{height}}"{{/width}}></span>{{/cover}}
   </a>
 </article>
