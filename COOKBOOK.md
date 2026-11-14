@@ -292,6 +292,12 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   ahead: a helper that counts back says "just now" for any future date, so
   an invite says "expires in 6 days" with its own wording (Deck's said
   "expires just now").
+- **A field's prefix stays on one line.** A host or `@` before an input
+  (`blog.example.com/`) never wraps or pushes the text you type off its
+  line: it keeps its width, the input takes the rest (`flex: 1; min-width:
+  0`), and a prefix too long to leave room for typing shrinks to its last
+  part (`/`) while the hint below names the whole address. Test with the
+  longest host the app can run on, at 390 px.
 - **Design every dropdown.** Don't leave a bare native `<select>` in a styled
   app. To design ones already in use, draw a menu button beside each and keep
   the select in the page, hidden, so code that reads its `value` and listens
@@ -657,7 +663,8 @@ couldn't check.
 - [ ] Every screen checked in light and dark, with error, muted and accent
       text readable in both.
 - [ ] No clipped or overflowing text with long, short or empty values;
-      names on cards stay on one line at 12 and 16 characters.
+      names on cards stay on one line at 12 and 16 characters. Fields with a
+      prefix (a host, `@`) stay on one line with a long custom host.
 - [ ] Headings, labels and buttons are Title Case and name the thing
       ("Levels"); controls are raised and sink when pressed.
 - [ ] Labels that don't fit whole become glyphs with the name on hover;
