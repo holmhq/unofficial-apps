@@ -205,3 +205,19 @@ made the reader pages' theme switch three icons, and let Studio frame the
 Feedback form:
 
 > pick the fixes you think is sensible & implememt
+
+**Margin 0.9.0: one workspace as the whole site**
+
+Setting up a second Margin as the owner's own blog, on its own address, the
+owner asked (the address is replaced with `[host]`):
+
+> Question:
+> - can margin limit others from posting articles?
+> - they can sign-up, but i think we should only let them post comments
+> - i the admin should have abilities to invite folks?
+> - also, there will only be a single workspace for this instance
+> - my primary blog
+> - can we host it in [host] ; than a namespaced url
+
+> This page's placeholder is wonky: https://[host]/new?first=1
+> - may be in this page, we should enable hosting it in root?
