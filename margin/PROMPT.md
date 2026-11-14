@@ -48,7 +48,9 @@ script is in the folder.
   as the workspace, undated, without claps or comments, left out of lists
   and feeds but in the sitemap, and linked from the menu. Margin's admins
   can date a post (a draft keeps the date until it is published), and every
-  short date carries its year. Posts are Markdown underneath, with
+  short date carries its year. A workspace writing as itself shows a
+  byline photo apart from its logo (an upload or an owner's Holm profile
+  photo), and the logo when it has none. Posts are Markdown underneath, with
   callouts, embeds from a bare link, cards for other posts, and figures.
 - A post can have a photo or a drawn cover, chosen by the writer (none until
   then): an isometric technical line
@@ -246,3 +248,11 @@ Then, while the old blog's posts moved in, the owner asked:
 
 > thats still! why show only date & month only?
 > - if you had to desperately skip, it should have to be date; not year!!
+
+**Margin 0.11.0: a byline photo apart from the logo**
+
+On the owner's blog, the workspace's own name showed the site's logo beside every post.
+The owner asked:
+
+> Why is JJ set as my profile pic too?
+> - JJ logo is my site's logo not to confuse with my avatar photo

@@ -1181,7 +1181,7 @@
       "risk": "read",
       "sensitive": true,
       "summary": "See a workspace's settings (owners and admins)",
-      "description": "Returns the workspace's name, tagline, description, home, moderation, cover style, theme, menu links, pinned posts, footer line and whether Margin's credit shows, with your role. Change them with workspace.update, the theme with themes.activate, and the team with team.list and team.update.",
+      "description": "Returns the workspace's name, tagline, description, home, moderation, cover style, theme, menu links, pinned posts, footer line, whether Margin's credit shows, and its byline photo (avatar: an address, or \"\" when the logo stands in; avatar_source: photo, profile or logo), with your role. Change them with workspace.update, the theme with themes.activate, and the team with team.list and team.update.",
       "input": {
         "type": "object",
         "properties": {
@@ -1228,7 +1228,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Change a workspace's settings (owners and admins)",
-      "description": "Updates the workspace: name, tagline, description, home (\"latest\", \"curated\" for pinned posts first, or \"@handle\" to make one writer's page the home), moderation (\"off\", \"outsiders\": hold comments from names not on the team, \"all\"), cover style (look paper|flat|blocks, tone lilac|tangerine|mint|butter|sky|coral) and menu links. logo: a square image's /media address (from media_upload, media_list or an upload link); an empty string removes it. It becomes the tab icon; a PNG or JPEG of 512 px or more is also the home-screen icon, the app icon and the picture in link previews of pages without a cover, which an SVG can't be. footer: one line for the footer, plain text where [label](https://…) makes a link and {year} prints the year; an empty string brings back the theme's own. credit: false hides \"Written on Margin\", the Holm mark and Send feedback from the footer.",
+      "description": "Updates the workspace: name, tagline, description, home (\"latest\", \"curated\" for pinned posts first, or \"@handle\" to make one writer's page the home), moderation (\"off\", \"outsiders\": hold comments from names not on the team, \"all\"), cover style (look paper|flat|blocks, tone lilac|tangerine|mint|butter|sky|coral) and menu links. logo: a square image's /media address (from media_upload, media_list or an upload link); an empty string removes it. It becomes the tab icon; a PNG or JPEG of 512 px or more is also the home-screen icon, the app icon and the picture in link previews of pages without a cover, which an SVG can't be. avatar: the byline photo, the picture beside the workspace's own name on its posts, cards and comments, apart from the logo, which stays the site's mark: a /media address, \"me\" for your own Holm profile photo (it follows your profile), or \"\" to show the logo there again. footer: one line for the footer, plain text where [label](https://…) makes a link and {year} prints the year; an empty string brings back the theme's own. credit: false hides \"Written on Margin\", the Holm mark and Send feedback from the footer.",
       "input": {
         "type": "object",
         "properties": {
@@ -1317,6 +1317,10 @@
           },
           "credit": {
             "type": "boolean"
+          },
+          "avatar": {
+            "type": "string",
+            "maxLength": 80
           }
         },
         "required": [

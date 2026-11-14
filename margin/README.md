@@ -49,6 +49,14 @@ are not public URLs.
   previews of pages without a cover; Margin crops it square at 180, 192 and
   512 px. An SVG logo stays the tab and manifest icon only, since Holm can't
   turn a drawing into pixels.
+- **A byline photo apart from the logo.** When a workspace writes as itself,
+  its name on cards, bylines, the author box and comments shows its byline
+  photo: an uploaded image, or an owner's own Holm profile photo, which
+  follows their profile. The logo stays the site's mark in the bar and the
+  tab. With no byline photo the name shows the logo, as before, and a new
+  logo never replaces a byline photo. Studio → Workspace → Byline Photo, or
+  `workspace_update`'s `avatar` (a `/media` address, `"me"`, or `""` for the
+  logo).
 - **Your own footer.** A workspace writes one line for its footer (plain
   text, where `[label](https://…)` is a link and `{year}` the year) in place
   of the theme's own, and can hide Margin's credit: Written on Margin, the

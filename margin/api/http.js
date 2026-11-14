@@ -11,7 +11,7 @@ import { clap, myClaps } from './claps.js';
 import { upload, serve, listMine, uploadWithLink, uploadLinkStatus } from './media.js';
 import { createInvite, previewInvite, acceptInvite, listInvites, revokeInvite } from './invites.js';
 import { listThemes, loadTheme, validate, saveTheme, deleteTheme, themeFiles, serveAsset, settingValues } from './themes.js';
-import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, teamList, setRole, leave, allWorkspaces, setSuspended, wsDTO } from './workspaces.js';
+import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, teamList, setRole, leave, allWorkspaces, setSuspended, wsDTO, bylineOf } from './workspaces.js';
 import { page, errorPage, cards } from './pages.js';
 import { prepare } from './markdown.js';
 import { loadSamples, removeSamples } from './samples.js';
@@ -186,8 +186,11 @@ async function api(request, env, url) {
     }
   }
   if (root === 'workspace') {
-    if (!id && method === 'GET') { requireWsAdmin(ctx); const dto = wsDTO(ctx.ws); return json({ ...ctx.ws, ...dto, url: o + dto.url, path: dto.url }); }
-    if (!id && method === 'PATCH') { requireWsAdmin(ctx); const ws = updateWorkspace(env, ctx, await body()); return json({ ...ws, ...wsDTO(ws) }); }
+    // The byline photo comes back as an address (avatar), where it comes from, and what the
+    // workspace's name shows now (avatar_url: the photo, else the logo or its initials).
+    const byline = (ws) => { const voice = blogByHandle(env, ws.slug); return { ...bylineOf(ws), avatar_url: voice ? blogDTO(voice).avatar : null }; };
+    if (!id && method === 'GET') { requireWsAdmin(ctx); const dto = wsDTO(ctx.ws); return json({ ...ctx.ws, ...dto, ...byline(ctx.ws), url: o + dto.url, path: dto.url }); }
+    if (!id && method === 'PATCH') { requireWsAdmin(ctx); const ws = updateWorkspace(env, ctx, await body()); return json({ ...ws, ...wsDTO(ws), ...byline(ws) }); }
     if (id === 'leave' && method === 'POST') { requireMember(ctx); return json(leave(env, ctx)); }
   }
   if (root === 'team') {

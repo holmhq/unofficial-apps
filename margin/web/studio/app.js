@@ -810,6 +810,8 @@ function inviteSheet(done) {
 
 const MOD_LABEL = { off: ['Show right away', 'Every comment appears as soon as it’s sent.'], outsiders: ['Hold comments from outside the team', 'Names on the team post straight away; others wait.'], all: ['Hold every comment', 'Someone on the post’s side approves each one first.'] };
 const LOOKS = { paper: 'Paper', flat: 'Flat colour', blocks: 'Blocks' };
+// Beside the workspace's own name on its posts, cards and comments; the logo stays its mark.
+const BYLINE_NOTE = { logo: 'Beside the workspace’s name on posts and comments. Now the logo.', profile: 'Beside the workspace’s name on posts and comments. Now your profile photo.', photo: 'Beside the workspace’s name on posts and comments. Now its own photo.' };
 const TONES = { lilac: '#b9adff', tangerine: '#ff8a4c', mint: '#86e3c3', butter: '#ffd84d', sky: '#8ccbff', coral: '#ff9b8f' };
 
 async function workspaceView(panel, top) {
@@ -830,7 +832,8 @@ async function workspaceView(panel, top) {
     page.innerHTML = `<h2 class="page-title">${esc(ws.name)}</h2>
       <p class="page-lead"><a href="${esc(ws.path)}" target="_blank" rel="noopener">${esc(location.host + (ws.path === '/' ? '' : ws.path))}</a></p>
       <div class="group-title">Identity</div><div class="group">
-        <div class="profile-edit"><button type="button" class="avatar-pick logo-pick" data-logo aria-label="Upload a logo">${wsLogo({ ...ws, logo: ws.logo ? `/media/${ws.logo}` : null, initial: ws.initial, color: ws.color }, 56)}</button><div class="row-main"><span class="row-title">Logo</span><span class="row-sub">A square image for the bar and the tab. A PNG or JPEG of 512 px or more is also the home-screen icon and link preview.</span></div><div class="row-actions"><button type="button" class="btn small" data-logo>${ws.logo ? 'Change' : 'Upload'}</button>${ws.logo ? '<button type="button" class="btn small" data-logo-remove>Remove</button>' : ''}</div></div>
+        <div class="profile-edit"><button type="button" class="avatar-pick logo-pick" data-logo aria-label="Upload a logo">${wsLogo({ ...ws, logo: ws.logo ? (ws.logo.startsWith('/') ? ws.logo : `/media/${ws.logo}`) : null, initial: ws.initial, color: ws.color }, 56)}</button><div class="row-main"><span class="row-title">Logo</span><span class="row-sub">A square image for the bar and the tab. A PNG or JPEG of 512 px or more is also the home-screen icon and link preview.</span></div><div class="row-actions"><button type="button" class="btn small" data-logo>${ws.logo ? 'Change' : 'Upload'}</button>${ws.logo ? '<button type="button" class="btn small" data-logo-remove>Remove</button>' : ''}</div></div>
+        <div class="profile-edit"><button type="button" class="avatar-pick byline-pick" data-byline aria-label="Change the byline photo"><img class="avatar byline-photo" src="${esc(ws.avatar_url || '')}" alt="" width="56" height="56"></button><div class="row-main"><span class="row-title">Byline Photo</span><span class="row-sub">${esc(BYLINE_NOTE[ws.avatar_source] || BYLINE_NOTE.logo)}</span></div><div class="row-actions"><button type="button" class="btn small" data-byline>Change</button></div></div>
         <div class="field"><label for="sn">Name</label><input id="sn" class="input" maxlength="60" value="${esc(ws.name)}"></div>
         <div class="field"><label for="st">Tagline</label><input id="st" class="input" maxlength="120" value="${esc(ws.tagline)}"></div>
         <div class="field"><label for="sd">Description</label><textarea id="sd" class="textarea" maxlength="300" rows="2">${esc(ws.description)}</textarea><small>Shown to search engines and on the home page.</small></div>
@@ -925,6 +928,27 @@ async function workspaceView(panel, top) {
       try { const media = await upload(file, 512); await saveLogo(media.id); } catch (error) { toast(error.message); }
     });
     $('[data-logo-remove]', page)?.addEventListener('click', () => saveLogo(null));
+    // byline photo: an upload, your Holm profile photo, or the logo; saves at once like the logo.
+    const saveByline = async (next, done) => {
+      try {
+        await api('/api/workspace', { method: 'PATCH', body: { avatar: next } });
+        await loadMe(ws.slug);
+        root.dataset.shell = '';
+        toast(done);
+        shell('workspace');
+      } catch (error) { toast(error.message); }
+    };
+    for (const b of $$('[data-byline]', page)) b.addEventListener('click', (e) => {
+      menu(e.currentTarget, [
+        { label: 'Upload…', icon: icons.image, checked: ws.avatar_source === 'photo', run: async () => {
+          const file = await pickFile('image/*');
+          if (!file) return;
+          try { const media = await upload(file, 512); await saveByline(media.id, 'Byline photo updated'); } catch (error) { toast(error.message); }
+        } },
+        { label: 'Use My Profile Photo', icon: icons.user, checked: ws.avatar_source === 'profile', run: () => saveByline('me', 'Using your profile photo') },
+        { label: 'Use Logo', icon: icons.home, checked: ws.avatar_source === 'logo', run: () => saveByline('', 'Using the logo') },
+      ]);
+    });
     // theme
     const active = themes.themes.find((t) => t.id === themes.active) || themes.themes[0];
     if (active && active.settings.length) {

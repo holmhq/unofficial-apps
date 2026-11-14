@@ -13,7 +13,7 @@ import { listThemes, loadTheme, validate, saveTheme, themeFiles, settingValues, 
 import { postAtPath } from './pages.js';
 import { prepare } from './markdown.js';
 import { wsPath } from './lib/paths.js';
-import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, wsDTO, canCreateWorkspace, teamList, setRole, leave } from './workspaces.js';
+import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, wsDTO, canCreateWorkspace, teamList, setRole, leave, bylineOf } from './workspaces.js';
 
 // ---------- named operations (MCP tools) ----------
 
@@ -248,7 +248,7 @@ export function opWorkspaceUpdate(input, env) {
     requireWsAdmin(ctx);
     const { workspace, ...change } = input;
     const ws = updateWorkspace(env, ctx, change);
-    return { ...wsDTO(ws), home: ws.home, moderation: ws.moderation, cover: ws.cover, theme: ws.theme, footer: ws.footer || '', credit: ws.credit !== false, url: absolute(env, wsPath(ws.slug)) };
+    return { ...wsDTO(ws), ...bylineOf(ws), home: ws.home, moderation: ws.moderation, cover: ws.cover, theme: ws.theme, footer: ws.footer || '', credit: ws.credit !== false, url: absolute(env, wsPath(ws.slug)) };
   });
 }
 export function opWorkspaceGet(input, env) {
@@ -256,7 +256,7 @@ export function opWorkspaceGet(input, env) {
     requireWsAdmin(ctx);
     const ws = ctx.ws;
     return {
-      ...wsDTO(ws), role: ctx.wsRole, description: ws.description || '', home: ws.home, moderation: ws.moderation,
+      ...wsDTO(ws), ...bylineOf(ws), role: ctx.wsRole, description: ws.description || '', home: ws.home, moderation: ws.moderation,
       cover: ws.cover, theme: ws.theme, nav: ws.nav || [], featured: ws.featured || [], footer: ws.footer || '', credit: ws.credit !== false,
       url: absolute(env, wsPath(ws.slug)),
     };

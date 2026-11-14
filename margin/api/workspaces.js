@@ -18,7 +18,7 @@ const MAX_OWNED = 5;
 export const WS_DEFAULTS = {
   tagline: '', description: '', logo: null, theme: 'quiet', themeSettings: {}, home: 'latest', featured: [],
   moderation: 'outsiders', nav: [], cover: { look: 'paper', tone: 'lilac' }, suspended: false,
-  footer: '', credit: true,
+  footer: '', credit: true, avatar: null,
 };
 
 // A footer line: plain text, where [label](address) makes a link and {year} prints the year.
@@ -43,6 +43,40 @@ export function workspaceBySlug(env, slug) {
 export function allWorkspaces(env) { return rows(env, 'workspaces', {}, 2000).map(wsView); }
 
 export function logoURL(ws) { return ws.logo ? `/media/${ws.logo}` : null; }
+
+// The byline photo: the picture beside the workspace's own name (cards, bylines, comments),
+// apart from its logo, which stays the site's mark. Stored as an uploaded image's media id,
+// or the address of an owner's Holm profile picture; unset, the voice shows the logo.
+const isPicture = (v) => typeof v === 'string' && (v.startsWith('/') || v.startsWith('https://'));
+export function bylineOf(ws) {
+  const v = ws.avatar;
+  if (!v) return { avatar: '', avatar_source: 'logo' };
+  return isPicture(v) ? { avatar: v, avatar_source: 'profile' } : { avatar: `/media/${v}`, avatar_source: 'photo' };
+}
+
+// What the workspace's voice (its `blogs` row) shows: the byline photo, else the logo.
+function voicePicture(ws) {
+  const v = ws.avatar;
+  if (!v) return { avatar: ws.logo || null, picture: '' };
+  return isPicture(v) ? { avatar: null, picture: v } : { avatar: v, picture: '' };
+}
+
+// "me" is the caller's own Holm picture: a same-origin /_holm/members/<id>/avatar address
+// (kept without the host, so every host shows it), or an https address.
+function bylinePhoto(ctx, value) {
+  if (value === null || value === undefined || value === '') return null;
+  const v = String(value).trim();
+  if (v === 'me') {
+    const picture = String((ctx.member && ctx.member.picture) || '');
+    const own = /^(?:https?:\/\/[^/]+)?(\/_holm\/members\/[A-Za-z0-9_-]+\/avatar[^\s"'<>]{0,200})$/.exec(picture);
+    if (own) return own[1];
+    if (/^https:\/\/[^\s"'<>]{4,500}$/.test(picture)) return picture;
+    reject(400, 'invalid_input', 'Your Holm profile has no photo yet.');
+  }
+  const m = /^(?:\/media\/)?([a-z0-9]{6,20})(?:\.[a-z0-9]{2,5})?$/.exec(v);
+  if (!m) reject(400, 'invalid_input', 'A byline photo is an uploaded image (its /media address), "me" for your Holm profile photo, or "" for the logo.');
+  return m[1];
+}
 
 export function wsDTO(ws) {
   return {
@@ -155,6 +189,7 @@ export function updateWorkspace(env, ctx, input) {
   if (input.tagline !== undefined) set.tagline = text(input.tagline, 120, 'Tagline') || '';
   if (input.description !== undefined) set.description = longText(input.description, 300, 'Description') || '';
   if (input.logo !== undefined) set.logo = logoId(input.logo);
+  if (input.avatar !== undefined) set.avatar = bylinePhoto(ctx, input.avatar);
   if (input.home !== undefined) {
     const home = String(input.home || '').trim().toLowerCase();
     if (!HOMES.includes(home) && !/^@[a-z][a-z0-9_-]{0,28}[a-z0-9]$/.test(home)) reject(400, 'invalid_input', 'Home is latest, curated or a writer here such as "@maya".');
@@ -190,10 +225,11 @@ export function updateWorkspace(env, ctx, input) {
   const doc = one(env, 'workspaces', { slug: ws.slug });
   mutate(env, 'workspaces', doc.id, () => ({ $set: set }));
   const voice = blogByHandle(env, ws.slug);
-  if (voice && (set.name || set.logo !== undefined || set.tagline !== undefined)) {
+  if (voice && (set.name || set.logo !== undefined || set.avatar !== undefined || set.tagline !== undefined)) {
     const change = {};
     if (set.name) change.name = set.name;
-    if (set.logo !== undefined) change.avatar = set.logo;
+    // A new logo shows beside the workspace's name only while it has no byline photo.
+    if (set.logo !== undefined || set.avatar !== undefined) Object.assign(change, voicePicture({ ...ws, ...set }));
     if (set.tagline !== undefined) change.bio = set.tagline;
     env.holm.app.ds.update('blogs', { id: voice.id }, { $set: change });
   }

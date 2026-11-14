@@ -137,7 +137,9 @@ appear in `latest`, `featured`, `posts` or `q` lists; link them from the menu (`
 
 `handle`, `name`, `bio`, `is_workspace` (the workspace writing as itself), `url` (their page
 in this workspace), `profile_url` (their page across Margin), `feed_url`, `avatar` (always an
-image URL), `initials`, `color`. Personas and people look the same here on purpose.
+image URL; for a workspace writing as itself, its byline photo, else its logo), `initials`,
+`color`. Personas and people look the same here on purpose. `site.logo` stays the
+workspace's logo, its mark in the bar.
 
 ### pagination
 

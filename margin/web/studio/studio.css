@@ -125,6 +125,8 @@ svg { flex: none; }
 .menu .menu-head small { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .me-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; cursor: pointer; border: 0; background: transparent; text-align: left; width: 100%; position: relative; }
 .me-row img, .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--fill); flex: none; }
+.avatar.byline-photo { width: 56px; height: 56px; }
+.byline-pick { overflow: hidden; }
 .me-row span { min-width: 0; display: flex; flex-direction: column; }
 .me-row b { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .me-row small { font-size: 12.5px; color: var(--muted); }
@@ -259,6 +261,12 @@ svg { flex: none; }
 .logo-pick::after { content: none; }
 @media (hover: hover) { .logo-pick:hover .ws-logo { box-shadow: 0 0 0 3px var(--accent-soft); } }
 .row-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+/* On a phone a picture row's buttons go under its words, so the words keep the width. */
+@media (max-width: 600px) {
+  .profile-edit { flex-wrap: wrap; }
+  .profile-edit .row-main { flex: 1; min-width: 0; }
+  .profile-edit .row-actions { flex-basis: 100%; margin-left: 72px; justify-content: flex-start; }
+}
 .ws-logo-empty, .ws-logo.ws-logo-empty { display: grid; place-items: center; border-radius: 12px; background: var(--fill-2); color: var(--muted); box-shadow: inset 0 0 0 1.5px var(--line); }
 .ws-logo-empty .ic { width: 22px; height: 22px; }
 .ws-logo-empty .spinner { width: 18px; height: 18px; margin: 0; }
