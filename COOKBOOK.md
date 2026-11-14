@@ -435,6 +435,14 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   `transform`, and a bar button that goes away keeps its box with
   `visibility: hidden` (SwarmChat's first signed-in visit scored 0.17 when
   its panel moved over for the sidebar).
+- **Images people upload stay light.** Copies of an opaque PNG are JPEG,
+  and a multi-megabyte original is never a page's choice: a full-size JPEG
+  copy stands in for it. Make the common sizes when the image arrives, not
+  all at first view (Margin's 26 PNG covers made a phone's home page 9 MB,
+  and a page of new photos had zyt turn requests away as overloaded).
+- **A counter keeps its room.** A count beside an icon (claps, replies)
+  reserves its digits, so at 0 the icon sits centred with no dead gap, and
+  nothing moves when the count arrives (Margin's Clap at 0).
 
 ## Judgements
 
@@ -504,6 +512,10 @@ after the first deploy.
   the host (Feedback and Pastebin had relative ones).
 - **Logos match.** The feedback widget's icon and the tab icon match the
   app's logo.
+- **A logo is not a face.** A site's logo is its mark (bar, tab, icons,
+  link previews); the person or name beside a post shows its own photo,
+  set apart from the logo (Margin's byline photo: the owner saw their JJ
+  logo as their avatar on every card).
 
 ## CSS foundations
 
