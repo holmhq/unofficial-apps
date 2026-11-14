@@ -49,6 +49,9 @@ references.
   panel: a copy of its `embed.js` in `web/vendor/feedback/`, loaded on the
   first click with `data-button="none"`, and the link's address is the
   form's own page for a modified click or when the script can't load.
+  The one exception is a site an app hosts for someone, such as a Margin
+  workspace that is a whole blog: its owner may hide the credit and write
+  their own footer line. The app's own tool pages (Margin's Studio) keep it.
 - **Search-first apps put the search in the navbar.** The first search can
   start from a big field in a hero, which then moves up into the navbar while
   the rest of the hero fades away. A moving element must land exactly on
@@ -292,6 +295,12 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   ahead: a helper that counts back says "just now" for any future date, so
   an invite says "expires in 6 days" with its own wording (Deck's said
   "expires just now").
+- **A date keeps its year.** A date that stands on its own (a post card, a
+  list row, a comment) always shows the year: "Dec 27, 2025", even for this
+  year. If a slot is too tight, drop the day ("Dec 2025"), never the year.
+  Only a view that already shows the month and year around it, like a
+  calendar grid or a chat's day separators, may leave the year out (Margin's
+  cards said "Dec 27" for posts from 2017 to 2026).
 - **A field's prefix stays on one line.** A host or `@` before an input
   (`blog.example.com/`) never wraps or pushes the text you type off its
   line: it keeps its width, the input takes the rest (`flex: 1; min-width:
