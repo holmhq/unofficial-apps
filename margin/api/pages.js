@@ -5,7 +5,7 @@
 import { escapeHTML, dates, rfc822, int } from './lib/util.js';
 import { assetVersion, pageTag, pageHeaders, storePage } from './lib/cache.js';
 import { marginSettings } from './settings.js';
-import { blogByHandle, blogDTO, avatarSVG, HANDLE } from './blogs.js';
+import { blogByHandle, blogDTO, avatarSVG, HANDLE, RESERVED } from './blogs.js';
 import { published, findByPath, postById, bodyOf, cardDTO, canEdit, postPath, wsCached } from './posts.js';
 import { publicComments } from './comments.js';
 import { loadTheme, renderPage, settingValues } from './themes.js';
@@ -14,6 +14,7 @@ import { workspaceBySlug, useWorkspace, logoURL, teamHandles } from './workspace
 import { render as renderDrawing, normalize as normalizeDrawing, MOTIFS, LOOKS, TONES } from './covers.js';
 import { landingPage } from './landing.js';
 import { srcsetFor } from './media.js';
+import { wsPath, rootSlug } from './lib/paths.js';
 
 const PAGE_SIZE = 12;
 const SLUG = /^[a-z0-9][a-z0-9-]{0,99}$/;
@@ -84,7 +85,7 @@ function wsScope(env, ws) {
   return {
     ws, slug: ws.slug, name: ws.name, tagline: ws.tagline || '', description: ws.description || '',
     theme: ws.theme || 'quiet', themeSettings: ws.themeSettings || {}, logo: logoURL(ws), nav: ws.nav || [],
-    home_url: `/${ws.slug}`, latest_url: `/${ws.slug}/latest`, feed_url: `/${ws.slug}/feed.xml`, home_is_blog: String(ws.home || '').startsWith('@'),
+    home_url: wsPath(ws.slug), latest_url: wsPath(ws.slug, 'latest'), feed_url: wsPath(ws.slug, 'feed.xml'), home_is_blog: String(ws.home || '').startsWith('@'),
   };
 }
 
@@ -158,7 +159,7 @@ function baseView(env, ctx, scope, theme, origin, template, extra) {
     if (!scope.ws) return [];
     const counts = new Map();
     for (const p of published(env, ctx, scope.slug)) for (const t of p.tags || []) counts.set(t, (counts.get(t) || 0) + 1);
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30).map(([name, posts]) => ({ name, url: `/${scope.slug}/tag/${name}`, posts }));
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30).map(([name, posts]) => ({ name, url: wsPath(scope.slug, `tag/${name}`), posts }));
   });
   const q = {};
   for (const [name, spec] of Object.entries((theme.queries || {})[template] || {})) lazy(q, name, () => query(env, ctx, scope, spec, extra.__current));
@@ -278,6 +279,12 @@ export function postAtPath(env, path) {
   if (m) {
     const post = findByPath(env, m[1], m[2]);
     return post && post.ws === m[1] && post.blog === m[1] ? post : null;
+  }
+  const root = rootSlug();
+  m = root ? /^\/([a-z0-9][a-z0-9-]*)$/.exec(path) : null;
+  if (m) {
+    const post = findByPath(env, root, m[1]);
+    return post && post.ws === root && post.blog === root ? post : null;
   }
   return null;
 }
@@ -517,7 +524,7 @@ function sitemap(env, ctx, request) {
   const origin = new URL(request.url).origin;
   const list = published(env, ctx, null);
   const urls = new Set([`${origin}/`]);
-  for (const p of list) urls.add(`${origin}/${p.ws}`);
+  for (const p of list) urls.add(origin + wsPath(p.ws));
   const entries = [...urls].map((u) => `<url><loc>${escapeHTML(u)}</loc></url>`);
   for (const p of list) entries.push(`<url><loc>${origin}${postPath(p)}</loc><lastmod>${new Date(p.updatedAt).toISOString()}</lastmod></url>`);
   return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries.join('')}</urlset>`, {
@@ -573,12 +580,21 @@ export async function page(request, env, ctx) {
   m = DRAWING.exec(path);
   if (m) return drawingResponse({ motif: m[1], look: m[2], tone: m[3], seed: Number(m[4]) }, url.searchParams.get('labels') !== '0');
 
+  // When one workspace is the whole site, its addresses have no /<workspace> in front: the
+  // prefixed ones redirect, and the rest of this router reads the address as /<workspace>/….
+  let inner = path;
+  const root = rootSlug();
+  if (root) {
+    if (path === `/${root}` || path.startsWith(`/${root}/`)) return redirect((path.slice(root.length + 1) || '/') + url.search);
+    inner = rootInner(env, ctx, root, path);
+  }
+
   // /@handle: a writer across Margin, and the short address of their posts.
-  m = /^\/@([a-z0-9_-]+)(?:\/(feed\.xml|[a-z0-9-]+))?$/.exec(path);
+  m = /^\/@([a-z0-9_-]+)(?:\/(feed\.xml|[a-z0-9-]+))?$/.exec(inner);
   if (m && HANDLE.test(m[1])) {
     const blog = blogByHandle(env, m[1]);
     if (!blog) return errorPage(env, ctx, request, null, 404);
-    if (blog.kind === 'workspace') return redirect(`/${blog.ws}${m[2] === 'feed.xml' ? '/feed.xml' : m[2] ? '/' + m[2] : ''}`);
+    if (blog.kind === 'workspace') return redirect(wsPath(blog.ws, m[2] || ''));
     if (m[2] === 'feed.xml') return feed(env, ctx, request, marginScope(env), blog);
     if (!m[2]) return blogPage(env, ctx, request, marginScope(env), blog);
     const post = findByPath(env, blog.handle, m[2]);
@@ -595,7 +611,7 @@ export async function page(request, env, ctx) {
   }
 
   // /<workspace>/…
-  m = /^\/([a-z0-9_-]+)(?:\/(.*))?$/.exec(path);
+  m = /^\/([a-z0-9_-]+)(?:\/(.*))?$/.exec(inner);
   if (!m || !HANDLE.test(m[1])) return null;
   const ws = workspaceBySlug(env, m[1]);
   if (!ws) return movedOrNull(env, path);
@@ -612,7 +628,7 @@ export async function page(request, env, ctx) {
   if (r && HANDLE.test(r[1])) {
     const blog = blogByHandle(env, r[1]);
     if (!blog) return errorPage(env, ctx, request, scope, 404);
-    if (blog.kind === 'workspace') return redirect(`/${blog.ws}${r[2] && r[2] !== 'feed.xml' ? '/' + r[2] : ''}`);
+    if (blog.kind === 'workspace') return redirect(wsPath(blog.ws, r[2] && r[2] !== 'feed.xml' ? r[2] : ''));
     if (r[2] === 'feed.xml') return feed(env, ctx, request, scope, blog);
     if (!r[2]) {
       if (!teamHandles(env, ctx, ws.slug).has(blog.handle)) return errorPage(env, ctx, request, scope, 404);
@@ -627,6 +643,17 @@ export async function page(request, env, ctx) {
     return servePost(env, ctx, request, scope, post && post.ws === ws.slug ? post : null, path, url);
   }
   return movedOrNull(env, path) || errorPage(env, ctx, request, scope, 404);
+}
+
+// The /<workspace>/… form of an address on a site that is one workspace (root). Other
+// workspaces, Margin's own areas and writers outside the team keep their addresses.
+function rootInner(env, ctx, root, path) {
+  if (path === '/latest' || path === '/feed.xml' || /^\/tag\/[a-z0-9-]{1,30}$/.test(path)) return `/${root}${path}`;
+  let m = /^\/@([a-z0-9_-]+)(?:\/(?:feed\.xml|[a-z0-9-]+))?$/.exec(path);
+  if (m) return teamHandles(env, ctx, root).has(m[1]) ? `/${root}${path}` : path;
+  m = /^\/([a-z0-9][a-z0-9-]*)$/.exec(path);
+  if (m && !RESERVED.has(m[1]) && !workspaceBySlug(env, m[1])) return `/${root}${path}`;
+  return path;
 }
 
 function servePost(env, ctx, request, scope, post, path, url) {

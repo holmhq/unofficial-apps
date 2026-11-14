@@ -12,6 +12,7 @@ import { createInvite, listInvites, revokeInvite } from './invites.js';
 import { listThemes, loadTheme, validate, saveTheme, themeFiles, settingValues, cleanSetting } from './themes.js';
 import { postAtPath } from './pages.js';
 import { prepare } from './markdown.js';
+import { wsPath } from './lib/paths.js';
 import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, wsDTO, canCreateWorkspace, teamList, setRole, leave } from './workspaces.js';
 
 // ---------- named operations (MCP tools) ----------
@@ -54,7 +55,12 @@ export function me(env, ctx) {
     needs_handle: !!(ctx.member && ctx.person && !ctx.person.handle),
     identities: myIdentities(env, ctx).map((b) => ownDTO(b)),
     workspaces: myWorkspaces(env, ctx),
-    margin: { name: margin.name, signups: margin.signups, can_create: canCreateWorkspace(env, ctx), url: origin(env) },
+    margin: {
+      name: margin.name, signups: margin.signups, can_create: canCreateWorkspace(env, ctx), url: origin(env),
+      // The workspace that is the whole site, and (for Margin's admins) whether there are none yet.
+      root: margin.home.startsWith('ws:') ? margin.home.slice(3) : null,
+      empty: ctx.admin ? env.holm.app.ds.find('workspaces', {}, { limit: 1 }).length === 0 : false,
+    },
     workspace: ws ? { ...wsDTO(ws), role: ctx.wsRole, admin: ctx.wsAdmin, writer: ctx.writer, cover: ws.cover, moderation: ws.moderation, theme: ws.theme } : null,
     writer: ctx.writer,
     role: ctx.wsRole,
@@ -89,7 +95,7 @@ export function opWorkspacesCreate(input, env) {
   return op(env, input, (ctx) => {
     requireJoined(ctx);
     const ws = createWorkspace(env, ctx, input);
-    return { ...wsDTO(ws), url: absolute(env, `/${ws.slug}`), studio_url: absolute(env, `/studio/${ws.slug}`), role: 'owner' };
+    return { ...wsDTO(ws), url: absolute(env, wsPath(ws.slug)), studio_url: absolute(env, `/studio/${ws.slug}`), role: 'owner' };
   });
 }
 
@@ -241,7 +247,7 @@ export function opWorkspaceUpdate(input, env) {
     requireWsAdmin(ctx);
     const { workspace, ...change } = input;
     const ws = updateWorkspace(env, ctx, change);
-    return { ...wsDTO(ws), home: ws.home, moderation: ws.moderation, cover: ws.cover, theme: ws.theme, url: absolute(env, `/${ws.slug}`) };
+    return { ...wsDTO(ws), home: ws.home, moderation: ws.moderation, cover: ws.cover, theme: ws.theme, url: absolute(env, wsPath(ws.slug)) };
   });
 }
 export function opWorkspaceGet(input, env) {
@@ -250,7 +256,7 @@ export function opWorkspaceGet(input, env) {
     const ws = ctx.ws;
     return {
       ...wsDTO(ws), role: ctx.wsRole, description: ws.description || '', home: ws.home, moderation: ws.moderation,
-      cover: ws.cover, theme: ws.theme, nav: ws.nav || [], featured: ws.featured || [], url: absolute(env, `/${ws.slug}`),
+      cover: ws.cover, theme: ws.theme, nav: ws.nav || [], featured: ws.featured || [], url: absolute(env, wsPath(ws.slug)),
     };
   }, true);
 }

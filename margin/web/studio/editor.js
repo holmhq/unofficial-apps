@@ -595,7 +595,9 @@ export async function editorView(root, { me, id, go }) {
   const blogs = me.blogs;
   const ws = me.workspace;
   const home = `/studio/${ws.slug}`;
-  const prefixFor = (handle) => (handle === ws.slug ? `${location.host}/${ws.slug}/` : `${location.host}/${ws.slug}/@${handle}/`);
+  // ws.url is / when the workspace is the whole site.
+  const base = `${location.host}${ws.url === '/' ? '' : ws.url}/`;
+  const prefixFor = (handle) => (handle === ws.slug ? base : `${base}@${handle}/`);
   let as = post ? post.as : (blogs.find((b) => b.own) || blogs[0] || {}).handle;
   const covers = await import('/margin/covers.js');
   const live = await import('/margin/live-covers.js');

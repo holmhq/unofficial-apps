@@ -8,6 +8,7 @@ import { HANDLE, handle, claimHandle, blogByHandle, blogDTO, avatarURL, swatch }
 import { personByMember } from './people.js';
 import { marginSettings } from './settings.js';
 import { LOOKS, TONES } from './covers.js';
+import { wsPath } from './lib/paths.js';
 
 export const ROLES = ['owner', 'admin', 'writer'];
 export const MODERATION = ['off', 'outsiders', 'all'];
@@ -36,7 +37,7 @@ export function logoURL(ws) { return ws.logo ? `/media/${ws.logo}` : null; }
 export function wsDTO(ws) {
   return {
     slug: ws.slug, name: ws.name, tagline: ws.tagline || '', description: ws.description || '',
-    url: `/${ws.slug}`, logo: logoURL(ws), initial: (ws.name || '?').trim().charAt(0).toUpperCase(), color: swatch(ws.slug),
+    url: wsPath(ws.slug), logo: logoURL(ws), initial: (ws.name || '?').trim().charAt(0).toUpperCase(), color: swatch(ws.slug),
   };
 }
 

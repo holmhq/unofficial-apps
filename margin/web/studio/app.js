@@ -265,18 +265,26 @@ function nameStep() {
 }
 
 function workspaceStep(first) {
+  // On a Margin with no workspaces yet, its admins can make this one the whole site.
+  const canWhole = me.admin && me.margin.empty && !me.margin.root;
+  const TEAM = 'One for your team. You can be in as many as you like.';
+  const TAGLINE = 'A small team making a calm calendar';
   root.innerHTML = `<div class="center"><form class="welcome ob" novalidate>${first ? steps(1) : `<a class="ob-back" href="/studio" data-nav>${icons.back}Studio</a>`}
-    <h1>Name your workspace</h1><p>One for your team. You can be in as many as you like.</p>
+    <h1>Name your workspace</h1><p data-lead>${TEAM}</p>
     <div class="group">
       <div class="profile-edit"><button type="button" class="avatar-pick logo-pick" data-new-logo aria-label="Add a logo"><span class="ws-logo ws-logo-empty" style="width:56px;height:56px">${icons.image}</span></button><div class="row-main"><span class="row-title">Logo</span><span class="row-sub">Optional. A square image; you can change it later.</span></div></div>
       <div class="field"><label for="wn">Name</label><input id="wn" class="input" maxlength="60" placeholder="Lumen"></div>
-      <div class="field"><label for="ws">Address</label><div class="handle-input"><span>${esc(location.host)}/</span><input id="ws" class="input" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="30" placeholder="lumen"></div><small class="ob-hint" data-hint>Lowercase letters, numbers and dashes.</small></div>
+      <div class="field" data-address><label for="ws">Address</label><div class="handle-input"><span>${esc(location.host)}/</span><input id="ws" class="input" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="30" placeholder="lumen"></div><small class="ob-hint" data-hint>Lowercase letters, numbers and dashes.</small></div>
       <div class="field"><label for="wt">Tagline (optional)</label><input id="wt" class="input" maxlength="120" placeholder="A small team making a calm calendar"></div>
     </div>
+    ${canWhole ? `<div class="group"><label class="row link"><span class="row-main"><span class="row-title">The Whole Site</span><span class="row-sub">Opens at ${esc(location.host)}. Posts live at /a-post, with no workspace in the address.</span></span><span class="switch"><input type="checkbox" data-whole><span></span></span></label></div>` : ''}
     <div class="ob-addr"><span>Your page there</span><code data-addr>/${esc('yourteam')}/@${esc(me.handle)}</code></div>
     <button class="btn primary ob-go" type="submit">Create workspace</button></form></div>`;
   const name = $('#wn', root);
   const slug = $('#ws', root);
+  // A long host leaves no room to type: then the prefix is just the slash (the hint names the host).
+  const prefix = $('[data-address] .handle-input span', root);
+  if (prefix.scrollWidth > prefix.clientWidth) prefix.textContent = '/';
   const hint = $('[data-hint]', root);
   let touched = false;
   let logo = null;
@@ -287,7 +295,15 @@ function workspaceStep(first) {
     pick.innerHTML = '<span class="ws-logo ws-logo-empty" style="width:56px;height:56px"><span class="spinner"></span></span>';
     try { const media = await upload(file, 512); logo = media.id; pick.innerHTML = `<img class="ws-logo" src="${esc(media.url)}" alt="" style="width:56px;height:56px">`; } catch (error) { toast(error.message); pick.innerHTML = `<span class="ws-logo ws-logo-empty" style="width:56px;height:56px">${icons.image}</span>`; }
   });
-  const paint = () => { $('[data-addr]', root).textContent = `/${slug.value || 'yourteam'}/@${me.handle}`; };
+  let whole = false;
+  const paint = () => { $('[data-addr]', root).textContent = whole ? `/@${me.handle}` : `/${slug.value || 'yourteam'}/@${me.handle}`; };
+  $('[data-whole]', root)?.addEventListener('change', (e) => {
+    whole = e.target.checked;
+    $('[data-address]', root).hidden = whole;
+    $('[data-lead]', root).textContent = whole ? `It becomes ${location.host}. You can still invite people to write in it.` : TEAM;
+    $('#wt', root).placeholder = whole ? 'What you write about' : TAGLINE;
+    paint();
+  });
   name.addEventListener('input', () => { if (!touched) { slug.value = slugOf(name.value); slug.dispatchEvent(new Event('input')); } });
   slug.addEventListener('input', (e) => { if (e.isTrusted) touched = true; slug.value = slug.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); paint(); });
   checkAs(slug, hint, 'workspace', { empty: 'Lowercase letters, numbers and dashes.', free: (v) => `${location.host}/${v} is available.` });
@@ -296,7 +312,7 @@ function workspaceStep(first) {
     e.preventDefault();
     if (!name.value.trim()) { name.focus(); return; }
     try {
-      const ws = await api('/api/workspaces', { method: 'POST', body: { name: name.value, slug: slug.value || undefined, tagline: $('#wt', root).value || undefined, logo: logo || undefined }, workspace: false });
+      const ws = await api('/api/workspaces', { method: 'POST', body: { name: name.value, slug: slug.value || undefined, tagline: $('#wt', root).value || undefined, logo: logo || undefined, whole_site: whole || undefined }, workspace: false });
       await loadMe(ws.slug);
       first ? inviteStep(ws) : go(`/studio/${ws.slug}`, true);
     } catch (error) { hint.textContent = error.message; hint.className = 'ob-hint bad'; }
@@ -424,7 +440,7 @@ function shell(pane) {
         ${w && w.writer ? `<button type="button" class="new-post" data-new>${icons.pen}New post</button>` : '<div style="height:10px"></div>'}
         <nav class="nav">${nav.map((n) => (n.key === 'sep' ? '<div class="nav-sep"></div>' : `<a class="nav-item" href="${n.path}" data-nav data-key="${n.key}">${icons[n.icon]}<span>${esc(n.label)}</span>${n.count ? '<span class="nav-count" hidden></span>' : ''}${n.admin ? '<span class="chip nav-chip">Admin</span>' : ''}</a>`)).join('')}</nav>
         <div class="side-foot">
-          ${w ? `<a class="nav-item" href="/${esc(w.slug)}" target="_blank" rel="noopener">${icons.external}<span>View ${esc(w.name)}</span></a>` : `<a class="nav-item" href="/" target="_blank" rel="noopener">${icons.external}<span>View Margin</span></a>`}
+          ${w ? `<a class="nav-item" href="${esc(w.url || `/${w.slug}`)}" target="_blank" rel="noopener">${icons.external}<span>View ${esc(w.name)}</span></a>` : `<a class="nav-item" href="/" target="_blank" rel="noopener">${icons.external}<span>View Margin</span></a>`}
           ${credit()}
         </div>
       </aside>
@@ -812,7 +828,7 @@ async function workspaceView(panel, top) {
     const names = team.members.flatMap((m) => m.names);
     const page = $('.page', panel);
     page.innerHTML = `<h2 class="page-title">${esc(ws.name)}</h2>
-      <p class="page-lead"><a href="/${esc(ws.slug)}" target="_blank" rel="noopener">${esc(location.host)}/${esc(ws.slug)}</a></p>
+      <p class="page-lead"><a href="${esc(ws.path)}" target="_blank" rel="noopener">${esc(location.host + (ws.path === '/' ? '' : ws.path))}</a></p>
       <div class="group-title">Identity</div><div class="group">
         <div class="profile-edit"><button type="button" class="avatar-pick logo-pick" data-logo aria-label="Upload a logo">${wsLogo({ ...ws, logo: ws.logo ? `/media/${ws.logo}` : null, initial: ws.initial, color: ws.color }, 56)}</button><div class="row-main"><span class="row-title">Logo</span><span class="row-sub">A square image, shown in the bar, the tab and the landing page.</span></div><div class="row-actions"><button type="button" class="btn small" data-logo>${ws.logo ? 'Change' : 'Upload'}</button>${ws.logo ? '<button type="button" class="btn small" data-logo-remove>Remove</button>' : ''}</div></div>
         <div class="field"><label for="sn">Name</label><input id="sn" class="input" maxlength="60" value="${esc(ws.name)}"></div>
@@ -831,7 +847,7 @@ async function workspaceView(panel, top) {
       <div class="group-title">Theme</div>
       <div class="themes">${themes.themes.map((t) => `<div class="theme-card${t.id === themes.active ? ' on' : ''}" data-theme-id="${esc(t.id)}"><div class="theme-shot ${esc(t.id)}">Aa</div>
         <div class="theme-body"><b>${esc(t.name)} ${t.id === themes.active ? '<span class="chip green">Live</span>' : ''}</b><p>${esc(t.description)}</p>
-        <div class="theme-actions">${t.id === themes.active ? '' : '<button class="btn small primary" data-use>Use</button>'}<a class="btn small" href="/${esc(ws.slug)}?theme=${esc(t.id)}" target="_blank" rel="noopener">Preview</a></div></div></div>`).join('')}</div>
+        <div class="theme-actions">${t.id === themes.active ? '' : '<button class="btn small primary" data-use>Use</button>'}<a class="btn small" href="${esc(ws.path)}?theme=${esc(t.id)}" target="_blank" rel="noopener">Preview</a></div></div></div>`).join('')}</div>
       <div data-theme-settings></div>
       <div class="group-title">Menu links</div><div class="group" data-nav-links></div>
       <div style="display:flex;gap:8px;margin:-12px 0 24px"><button class="btn small" data-add-link>${icons.plus}Add link</button></div>
@@ -1095,7 +1111,7 @@ async function marginView(panel, top) {
     let homeWriter = settings.home.startsWith('@') ? settings.home.slice(1) : '';
     const paintHome = () => {
       if (homeMode === 'landing') detail.innerHTML = '<p class="row-sub" style="margin:0">Margin’s own front page, with the examples below.</p>';
-      else if (homeMode === 'workspace') detail.innerHTML = `<select class="select" data-home-ws>${list.map((w) => `<option value="${esc(w.slug)}"${w.slug === homeWs ? ' selected' : ''}>${esc(w.name)}</option>`).join('')}</select><p class="row-sub" style="margin:8px 0 0">That workspace’s home becomes ${esc(location.host)}.</p>`;
+      else if (homeMode === 'workspace') detail.innerHTML = `<select class="select" data-home-ws>${list.map((w) => `<option value="${esc(w.slug)}"${w.slug === homeWs ? ' selected' : ''}>${esc(w.name)}</option>`).join('')}</select><p class="row-sub" style="margin:8px 0 0">That workspace becomes the whole site: its home opens at ${esc(location.host)}, its posts move to /a-post, and their old addresses redirect.</p>`;
       else detail.innerHTML = `<div class="handle-input"><span>@</span><input class="input" data-home-writer maxlength="30" value="${esc(homeWriter)}" placeholder="maya" autocapitalize="none" spellcheck="false"></div><p class="row-sub" style="margin:8px 0 0">That writer’s page becomes ${esc(location.host)}.</p>`;
       $('[data-home-ws]', detail)?.addEventListener('change', (e) => { homeWs = e.target.value; });
       $('[data-home-writer]', detail)?.addEventListener('input', (e) => { homeWriter = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); });
@@ -1231,7 +1247,7 @@ function openPalette() {
     ...(w && w.writer ? [{ label: 'New post', icon: icons.plus, run: () => go(`/studio/write?ws=${w.slug}`) }] : []),
     { label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp) },
     ...(me.workspaces || []).filter((x) => !w || x.slug !== w.slug).map((x) => ({ label: x.name, icon: wsLogo(x, 18), hint: 'Workspace', run: () => go(`/studio/${x.slug}`) })),
-    { label: w ? `View ${w.name}` : 'View Margin', icon: icons.external, run: () => window.open(w ? `/${w.slug}` : '/', '_blank', 'noopener') },
+    { label: w ? `View ${w.name}` : 'View Margin', icon: icons.external, run: () => window.open(w ? w.url || `/${w.slug}` : '/', '_blank', 'noopener') },
   ];
   const score = (text, q) => {
     const t = String(text).toLowerCase();

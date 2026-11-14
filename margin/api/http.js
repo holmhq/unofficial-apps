@@ -16,6 +16,7 @@ import { page, errorPage, cards } from './pages.js';
 import { prepare } from './markdown.js';
 import { loadSamples, removeSamples } from './samples.js';
 import { me, activateTheme } from './ops.js';
+import { setRoot } from './lib/paths.js';
 
 const LOCAL = /^(127\.|localhost|\[::1\]|[a-z0-9-]+\.localhost)(:\d+)?$/;
 
@@ -25,6 +26,7 @@ const handler = {
     const path = url.pathname;
     try {
       const margin = marginSettings(env);
+      setRoot(margin.home.startsWith('ws:') ? margin.home.slice(3) : '');
       const primary = margin.primaryHost;
       // One address for everything: other hosts on this app send readers there.
       if (primary && url.host !== primary && !LOCAL.test(url.host) && (request.method === 'GET' || request.method === 'HEAD') && !path.startsWith('/api/') && !path.startsWith('/_holm') && !path.startsWith('/auth')) {
@@ -175,13 +177,16 @@ async function api(request, env, url) {
     requireMember(ctx);
     if (!id && method === 'GET') return json({ workspaces: myWorkspaces(env, ctx) });
     if (!id && method === 'POST') {
-      const ws = createWorkspace(env, ctx, await body());
+      const input = await body();
+      const ws = createWorkspace(env, ctx, input);
+      // Margin's admins can make a workspace the whole site: its home at /, its posts at /<post>.
+      if (input.whole_site === true && ctx.admin) updateMargin(env, { home: 'ws:' + ws.slug });
       useWorkspace(env, ctx, ws);
       return json({ ...wsDTO(ws), role: ctx.wsRole }, 201);
     }
   }
   if (root === 'workspace') {
-    if (!id && method === 'GET') { requireWsAdmin(ctx); return json({ ...ctx.ws, ...wsDTO(ctx.ws), url: o + '/' + ctx.ws.slug }); }
+    if (!id && method === 'GET') { requireWsAdmin(ctx); const dto = wsDTO(ctx.ws); return json({ ...ctx.ws, ...dto, url: o + dto.url, path: dto.url }); }
     if (!id && method === 'PATCH') { requireWsAdmin(ctx); const ws = updateWorkspace(env, ctx, await body()); return json({ ...ws, ...wsDTO(ws) }); }
     if (id === 'leave' && method === 'POST') { requireMember(ctx); return json(leave(env, ctx)); }
   }

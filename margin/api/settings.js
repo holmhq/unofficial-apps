@@ -2,6 +2,7 @@
 // which workspaces the landing page shows, and the one address links should use.
 import { reject, text } from './lib/util.js';
 import { touch } from './lib/store.js';
+import { setRoot } from './lib/paths.js';
 
 export const DEFAULTS = {
   name: 'Margin',
@@ -56,6 +57,7 @@ export function updateMargin(env, input) {
   }
   if (input.theme !== undefined) next.theme = text(input.theme, 40, 'Theme', true);
   env.holm.app.kv.set('margin:settings', next);
+  setRoot(next.home.startsWith('ws:') ? next.home.slice(3) : '');
   touch(env);
   return next;
 }

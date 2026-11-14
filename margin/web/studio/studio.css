@@ -257,7 +257,7 @@ svg { flex: none; }
 .logo-pick::after { content: none; }
 @media (hover: hover) { .logo-pick:hover .ws-logo { box-shadow: 0 0 0 3px var(--accent-soft); } }
 .row-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
-.ws-logo-empty { display: grid; place-items: center; border-radius: 12px; background: var(--fill-2); color: var(--muted); box-shadow: inset 0 0 0 1.5px var(--line); }
+.ws-logo-empty, .ws-logo.ws-logo-empty { display: grid; place-items: center; border-radius: 12px; background: var(--fill-2); color: var(--muted); box-shadow: inset 0 0 0 1.5px var(--line); }
 .ws-logo-empty .ic { width: 22px; height: 22px; }
 .ws-logo-empty .spinner { width: 18px; height: 18px; margin: 0; }
 .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin: 0 0 24px; }
@@ -325,7 +325,9 @@ p, .row-sub, small { text-wrap: pretty; }
 .welcome p { margin: 0 0 22px; color: var(--muted); }
 .welcome .group { text-align: left; }
 .handle-input { display: flex; align-items: center; gap: 2px; }
-.handle-input span { color: var(--faint); font-size: 16px; }
+/* The prefix (a host can be long) stays on one line; the field takes the rest. */
+.handle-input span { color: var(--faint); font-size: 16px; white-space: nowrap; flex: none; max-width: 62%; overflow: hidden; text-overflow: ellipsis; }
+.handle-input .input { flex: 1; min-width: 0; }
 
 @media (hover: hover) {
   .nav-item:hover:not(.on) { background: var(--fill-2); }

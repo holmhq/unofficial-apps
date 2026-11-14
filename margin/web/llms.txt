@@ -14,6 +14,8 @@ Margin is open source and runs on Holm: https://github.com/holmhq/unofficial-app
 - `/<workspace>/@<handle>/<post>` a post, or `/<workspace>/<post>` when the workspace writes
   as itself; `/@<handle>/<post>` redirects to the post
 - `/<workspace>/feed.xml` and `/<workspace>/@<handle>/feed.xml` RSS; `/sitemap.xml`
+- When one workspace is the whole site, its addresses drop the `/<workspace>`: `/` its home,
+  `/<post>`, `/@<handle>/<post>`, `/latest`, `/tag/<topic>`, `/feed.xml`; `/sitemap.xml` lists them
 - `/new` start a workspace; `/join/<code>` accept an invite; `/studio` write and manage
 
 ## Writing with Claude

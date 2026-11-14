@@ -31,7 +31,9 @@ script is in the folder.
 - Margin's admins (the node's) choose who can join (anyone; anyone to comment
   with workspaces by invitation; invited only), make the front page Margin's
   landing, one workspace or one writer, pick the examples, and suspend
-  workspaces. A workspace's owners make its home the latest posts, a curated
+  workspaces. A workspace on the front page is the whole site: its addresses
+  lose the /<workspace> (posts at /seo-slug) and the old ones redirect; an
+  admin can choose this when naming the first workspace. A workspace's owners make its home the latest posts, a curated
   set of pinned posts, or one writer's page.
 - Reading pages are rendered on the server, readable with no JavaScript,
   with feeds, a sitemap and social cards. They must feel instant: keep each

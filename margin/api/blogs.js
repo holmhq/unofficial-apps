@@ -8,6 +8,7 @@ import { claim, one, rows, mutate, touch } from './lib/store.js';
 import { reject, text, longText, escapeHTML } from './lib/util.js';
 import { setHandle } from './people.js';
 import { marginSettings } from './settings.js';
+import { wsPath } from './lib/paths.js';
 
 export const HANDLE = /^[a-z][a-z0-9_-]{0,28}[a-z0-9]$/;
 export const RESERVED = new Set([
@@ -68,8 +69,8 @@ export function avatarSVG(blog) {
 // The page for an identity: a workspace's voice is its home; anyone else has a page in
 // each workspace (/lumen/@maya) and one across Margin (/@maya).
 export function blogURL(blog, ws) {
-  if (blog.kind === 'workspace') return `/${blog.ws}`;
-  return ws ? `/${ws}/@${blog.handle}` : `/@${blog.handle}`;
+  if (blog.kind === 'workspace') return wsPath(blog.ws);
+  return ws ? wsPath(ws, `@${blog.handle}`) : `/@${blog.handle}`;
 }
 
 export function blogDTO(blog, ws) {
@@ -81,7 +82,7 @@ export function blogDTO(blog, ws) {
     is_workspace: blog.kind === 'workspace',
     url,
     profile_url: blog.kind === 'workspace' ? url : `/@${blog.handle}`,
-    feed_url: blog.kind === 'workspace' ? `/${blog.ws}/feed.xml` : `${url}/feed.xml`,
+    feed_url: blog.kind === 'workspace' ? wsPath(blog.ws, 'feed.xml') : `${url}/feed.xml`,
     avatar: avatarURL(blog),
     initials: initials(blog.name),
     color: swatch(blog.handle),

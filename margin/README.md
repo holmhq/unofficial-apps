@@ -27,6 +27,13 @@ are not public URLs.
 - **Margin's front page.** A short landing page with a few workspaces as
   examples, each with its latest drawn cover, and the way in. Margin's admins
   can make the front page one workspace's home, or one writer's page, instead.
+- **One workspace as the whole site.** A workspace on the front page becomes
+  the site: its home opens at `/`, its posts at `/<post>` and `/@<handle>/<post>`,
+  and `/latest`, `/tag/<topic>` and `/feed.xml` are its own. Its old
+  `/<workspace>/…` addresses redirect, and other workspaces keep theirs.
+  Margin's admins turn it on when they name the first workspace (The Whole
+  Site, at `/new`) or in Studio → Margin → Front page. That is how a personal
+  blog runs on its own address, such as `blog.example.com/a-post`.
 - **Starting out.** Sign in, pick your name and handle, name your workspace,
   copy an invite link for your team, and connect Claude: four short steps
   at `/new`.
@@ -44,7 +51,8 @@ are not public URLs.
 - **Addresses.** `/<workspace>` home, `/<workspace>/@<handle>/<post>` posts,
   `/<workspace>/latest`, `/<workspace>/tag/<topic>`, `/@<handle>` a writer
   across Margin, and `/@<handle>/<post>` as a short link that redirects. A
-  post's earlier address keeps redirecting when its slug changes.
+  post's earlier address keeps redirecting when its slug changes. When one
+  workspace is the whole site, its addresses lose the `/<workspace>`.
 - **Drawn covers.** A post can have a photo, an isometric line drawing in its
   workspace's style, or no cover at all; the editor adds none until the writer
   picks one. Drawings come on paper, in a flat colour (six tones), or in bold
@@ -148,6 +156,10 @@ field and hook; Claude reads it through `themes_reference`, and
 
 ## How it's built
 
+- **Addresses.** `api/lib/paths.js` builds every workspace address
+  (`wsPath`), and `api/pages.js` reads the whole site's short addresses as
+  `/<workspace>/…` before routing them, so one switch in Margin's settings
+  moves them all.
 - **Pages.** `api/http.js` routes each request; `api/pages.js` collects the
   page's data and renders it with [mustache.js](https://github.com/janl/mustache.js)
   through `api/themes.js`, in the workspace's theme. `api/landing.js` draws
@@ -251,6 +263,7 @@ holm.json                 identity, web settings, publish excludes
 holm.symbol.svg           the app icon: lines of text with a note beside them
 api/main.js               entry: fetch and the operation handlers
 api/lib/cache.js          the fast path: cached pages, 304s, versioned files
+api/lib/paths.js          workspace addresses, and the one that is the whole site
 api/contract.json         the operations (MCP tools)
 api/theme-assets/         copies of the built-in themes' text assets, for themes_get
 api/http.js, ops.js       the JSON API, and the operations' bodies

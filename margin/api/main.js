@@ -15,35 +15,42 @@ export default {
   },
 };
 
-export async function opMe(input, env) { return (await import('./ops.js')).opMe(input, env); }
-export async function opIdentitiesList(input, env) { return (await import('./ops.js')).opIdentitiesList(input, env); }
-export async function opWorkspacesCreate(input, env) { return (await import('./ops.js')).opWorkspacesCreate(input, env); }
-export async function opPostsList(input, env) { return (await import('./ops.js')).opPostsList(input, env); }
-export async function opPostsGet(input, env) { return (await import('./ops.js')).opPostsGet(input, env); }
-export async function opPostsCreate(input, env) { return (await import('./ops.js')).opPostsCreate(input, env); }
-export async function opPostsUpdate(input, env) { return (await import('./ops.js')).opPostsUpdate(input, env); }
-export async function opPostsDelete(input, env) { return (await import('./ops.js')).opPostsDelete(input, env); }
-export async function opInbox(input, env) { return (await import('./ops.js')).opInbox(input, env); }
-export async function opCommentsList(input, env) { return (await import('./ops.js')).opCommentsList(input, env); }
-export async function opCommentsReply(input, env) { return (await import('./ops.js')).opCommentsReply(input, env); }
-export async function opCommentsCreate(input, env) { return (await import('./ops.js')).opCommentsCreate(input, env); }
-export async function opCommentsModerate(input, env) { return (await import('./ops.js')).opCommentsModerate(input, env); }
-export async function opPersonasCreate(input, env) { return (await import('./ops.js')).opPersonasCreate(input, env); }
-export async function opPersonasUpdate(input, env) { return (await import('./ops.js')).opPersonasUpdate(input, env); }
-export async function opPersonasDelete(input, env) { return (await import('./ops.js')).opPersonasDelete(input, env); }
-export async function opMediaList(input, env) { return (await import('./ops.js')).opMediaList(input, env); }
-export async function opMediaUpload(input, env) { return (await import('./ops.js')).opMediaUpload(input, env); }
-export async function opMediaUploadLink(input, env) { return (await import('./ops.js')).opMediaUploadLink(input, env); }
-export async function opWorkspaceGet(input, env) { return (await import('./ops.js')).opWorkspaceGet(input, env); }
-export async function opWorkspaceUpdate(input, env) { return (await import('./ops.js')).opWorkspaceUpdate(input, env); }
-export async function opWorkspaceLeave(input, env) { return (await import('./ops.js')).opWorkspaceLeave(input, env); }
-export async function opTeamList(input, env) { return (await import('./ops.js')).opTeamList(input, env); }
-export async function opTeamUpdate(input, env) { return (await import('./ops.js')).opTeamUpdate(input, env); }
-export async function opThemesList(input, env) { return (await import('./ops.js')).opThemesList(input, env); }
-export async function opThemesReference(input, env) { return (await import('./ops.js')).opThemesReference(input, env); }
-export async function opThemesGet(input, env) { return (await import('./ops.js')).opThemesGet(input, env); }
-export async function opThemesValidate(input, env) { return (await import('./ops.js')).opThemesValidate(input, env); }
-export async function opThemesSave(input, env) { return (await import('./ops.js')).opThemesSave(input, env); }
-export async function opThemesActivate(input, env) { return (await import('./ops.js')).opThemesActivate(input, env); }
-export async function opInvitesCreate(input, env) { return (await import('./ops.js')).opInvitesCreate(input, env); }
-export async function opInvitesRevoke(input, env) { return (await import('./ops.js')).opInvitesRevoke(input, env); }
+// The operations build addresses too, so they learn first whether a workspace is the whole site.
+async function ops(env) {
+  const [mod, paths] = await Promise.all([import('./ops.js'), import('./lib/paths.js')]);
+  paths.useRoot(env);
+  return mod;
+}
+
+export async function opMe(input, env) { return (await ops(env)).opMe(input, env); }
+export async function opIdentitiesList(input, env) { return (await ops(env)).opIdentitiesList(input, env); }
+export async function opWorkspacesCreate(input, env) { return (await ops(env)).opWorkspacesCreate(input, env); }
+export async function opPostsList(input, env) { return (await ops(env)).opPostsList(input, env); }
+export async function opPostsGet(input, env) { return (await ops(env)).opPostsGet(input, env); }
+export async function opPostsCreate(input, env) { return (await ops(env)).opPostsCreate(input, env); }
+export async function opPostsUpdate(input, env) { return (await ops(env)).opPostsUpdate(input, env); }
+export async function opPostsDelete(input, env) { return (await ops(env)).opPostsDelete(input, env); }
+export async function opInbox(input, env) { return (await ops(env)).opInbox(input, env); }
+export async function opCommentsList(input, env) { return (await ops(env)).opCommentsList(input, env); }
+export async function opCommentsReply(input, env) { return (await ops(env)).opCommentsReply(input, env); }
+export async function opCommentsCreate(input, env) { return (await ops(env)).opCommentsCreate(input, env); }
+export async function opCommentsModerate(input, env) { return (await ops(env)).opCommentsModerate(input, env); }
+export async function opPersonasCreate(input, env) { return (await ops(env)).opPersonasCreate(input, env); }
+export async function opPersonasUpdate(input, env) { return (await ops(env)).opPersonasUpdate(input, env); }
+export async function opPersonasDelete(input, env) { return (await ops(env)).opPersonasDelete(input, env); }
+export async function opMediaList(input, env) { return (await ops(env)).opMediaList(input, env); }
+export async function opMediaUpload(input, env) { return (await ops(env)).opMediaUpload(input, env); }
+export async function opMediaUploadLink(input, env) { return (await ops(env)).opMediaUploadLink(input, env); }
+export async function opWorkspaceGet(input, env) { return (await ops(env)).opWorkspaceGet(input, env); }
+export async function opWorkspaceUpdate(input, env) { return (await ops(env)).opWorkspaceUpdate(input, env); }
+export async function opWorkspaceLeave(input, env) { return (await ops(env)).opWorkspaceLeave(input, env); }
+export async function opTeamList(input, env) { return (await ops(env)).opTeamList(input, env); }
+export async function opTeamUpdate(input, env) { return (await ops(env)).opTeamUpdate(input, env); }
+export async function opThemesList(input, env) { return (await ops(env)).opThemesList(input, env); }
+export async function opThemesReference(input, env) { return (await ops(env)).opThemesReference(input, env); }
+export async function opThemesGet(input, env) { return (await ops(env)).opThemesGet(input, env); }
+export async function opThemesValidate(input, env) { return (await ops(env)).opThemesValidate(input, env); }
+export async function opThemesSave(input, env) { return (await ops(env)).opThemesSave(input, env); }
+export async function opThemesActivate(input, env) { return (await ops(env)).opThemesActivate(input, env); }
+export async function opInvitesCreate(input, env) { return (await ops(env)).opInvitesCreate(input, env); }
+export async function opInvitesRevoke(input, env) { return (await ops(env)).opInvitesRevoke(input, env); }

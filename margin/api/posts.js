@@ -1,21 +1,23 @@
 // Posts: metadata in `posts` (small, listable), Markdown and its HTML in `bodies`, and
 // every address a post has had in `slugs`, so an old link redirects to the current one.
 // A post belongs to one workspace and is written as one identity: /<ws>/@<handle>/<slug>,
-// or /<ws>/<slug> when the workspace writes as itself. Without a photo, a post gets a
-// drawn cover in its workspace's style.
+// or /<ws>/<slug> when the workspace writes as itself (without the /<ws> when it is the
+// whole site: lib/paths.js). Without a photo, a post gets a drawn cover in its
+// workspace's style.
 import { byId, claim, one, rows, touch, mutate } from './lib/store.js';
 import { reject, text, longText, slugify, dates, bool } from './lib/util.js';
 import { render } from './markdown.js';
 import { mediaInfo, srcsetFor, variantPath } from './media.js';
-import { blogByHandle, blogDTO, resolveAs } from './blogs.js';
+import { blogByHandle, blogDTO, resolveAs, RESERVED } from './blogs.js';
 import { roleIn, addIdentity, workspaceBySlug, wsDTO } from './workspaces.js';
 import { MOTIFS, LOOKS, TONES, normalize as normalizeDrawing } from './covers.js';
+import { wsPath, rootSlug } from './lib/paths.js';
 
 export const MAX_MARKDOWN = 60000;
 const VOICE_RESERVED = new Set(['latest', 'tag', 'feed', 'about']);
 
 export function postPath(post) {
-  return post.blog === post.ws ? `/${post.ws}/${post.slug}` : `/${post.ws}/@${post.blog}/${post.slug}`;
+  return wsPath(post.ws, post.blog === post.ws ? post.slug : `@${post.blog}/${post.slug}`);
 }
 
 function tags(value) {
@@ -112,7 +114,8 @@ export function bodyOf(env, post) { return post.bodyId ? byId(env, 'bodies', pos
 // Claim a free slug for this identity: "intro", then "intro-2", "intro-3"…
 function claimSlug(env, blog, base, postId, voice) {
   let root = slugify(base) || 'post';
-  if (voice && VOICE_RESERVED.has(root)) root += '-post';
+  // A workspace's own posts sit beside /<ws>/latest, or at the top when it is the whole site.
+  if (voice && (VOICE_RESERVED.has(root) || (blog === rootSlug() && RESERVED.has(root)))) root += '-post';
   for (let n = 1; n < 50; n++) {
     const slug = n === 1 ? root : `${root}-${n}`;
     const { doc } = claim(env, 'slugs', { blog, slug }, { blog, slug, postId, createdAt: Date.now() });
@@ -350,10 +353,10 @@ export function cardDTO(env, ctx, post) {
     reading_time: `${post.minutes || 1} min read`,
     minutes: post.minutes || 1,
     words: post.words || 0,
-    tags: (post.tags || []).map((t, i) => ({ name: t, url: `/${post.ws}/tag/${t}`, first: i === 0 })),
+    tags: (post.tags || []).map((t, i) => ({ name: t, url: wsPath(post.ws, `tag/${t}`), first: i === 0 })),
     has_tags: !!(post.tags && post.tags.length),
     blog: blog ? blogDTO(blog, post.ws) : { handle: post.blog, name: post.blog, url: `/@${post.blog}`, avatar: `/a/${post.blog}.svg` },
-    workspace: ws ? wsDTO(ws) : { slug: post.ws, name: post.ws, url: `/${post.ws}` },
+    workspace: ws ? wsDTO(ws) : { slug: post.ws, name: post.ws, url: wsPath(post.ws) },
     claps: post.claps || 0,
     comments: post.comments || 0,
     claps_label: `${thousands(post.claps || 0)} clap${post.claps === 1 ? '' : 's'}`,

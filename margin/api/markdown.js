@@ -9,6 +9,7 @@
 //   $x^2$, $$ … $$, ```math  maths, typeset by KaTeX (inline, and as a block)
 import { Marked } from './vendor/marked/marked.js';
 import { escapeHTML, slugify } from './lib/util.js';
+import { rootSlug } from './lib/paths.js';
 
 // Highlighting and maths are big libraries: prepare() loads each only for Markdown that uses
 // it, before render(). Without them code shows plain and maths shows as its source.
@@ -73,6 +74,8 @@ export function localPostPath(href, origin) {
   if (origin && url.origin !== new URL(origin).origin) return null;
   if (!origin && !href.startsWith('/')) return null;
   if (POST_PATH.test(url.pathname) && !/^\/(?:studio|api|media|tag|join|c|a|t)\//.test(url.pathname)) return url.pathname.replace(/\/$/, '');
+  // A link to a post of the workspace that is the whole site: /<slug> (pages check it is one).
+  if (origin && rootSlug() && /^\/[a-z0-9][a-z0-9-]*\/?$/.test(url.pathname) && !/^\/(?:latest|new|studio)\/?$/.test(url.pathname)) return url.pathname.replace(/\/$/, '');
   return null;
 }
 
