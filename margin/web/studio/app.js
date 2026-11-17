@@ -7,6 +7,8 @@ import { makeZip, readZip } from './zip.js';
 
 const root = document.getElementById('app');
 let me = null;
+// The whole site's logo (when one workspace is the site), for sheets that show the site's own mark.
+const siteLogo = () => { const root = me && me.margin && me.margin.root; const w = root && (me.workspaces || []).find((x) => x.slug === root); return (w && w.logo) || null; };
 let counts = { pending: 0 };
 const LAST = 'margin.studio.ws';
 const HANDLE_RE = /^[a-z][a-z0-9_-]{0,28}[a-z0-9]$/;
@@ -348,7 +350,7 @@ function connectBlock() {
   return `<div class="group"><button type="button" class="row link mcp-open" data-mcp><span class="mcp-ic">${icons.mcp}</span><span class="row-main"><span class="row-title">Connect via MCP</span><span class="row-sub">Add Margin to Claude, ChatGPT or Claude Code.</span></span><span class="chev">${icons.chev}</span></button></div>`;
 }
 function wireConnect(scope) {
-  $('[data-mcp]', scope)?.addEventListener('click', (e) => mcpSheet(me.mcp, e.currentTarget));
+  $('[data-mcp]', scope)?.addEventListener('click', (e) => mcpSheet(me.mcp, e.currentTarget, me.site && me.site.name, siteLogo()));
 }
 
 function claudeStep(ws) {
@@ -557,7 +559,7 @@ function accountMenu(anchor) {
   const items = [{ custom: h(`<div class="menu-head">${me.picture ? `<img src="${esc(me.picture)}" alt="">` : `<span class="avatar avatar-empty">${icons.user}</span>`}<span><b>${esc(me.name || 'You')}</b><small>${esc(me.handle ? '@' + me.handle : '')}</small></span></div>`) }, '-'];
   if (me.handle) items.push({ label: 'Your page', icon: icons.user, href: `/@${me.handle}`, blank: true });
   if (me.admin && analytics) items.push({ label: 'Analytics', icon: icons.chart, href: analytics, blank: true });
-  items.push({ label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp, anchor) });
+  items.push({ label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp, anchor, me.site && me.site.name, siteLogo()) });
   items.push('-');
   items.push(themeChoices(), '-', { label: 'Sign out', icon: icons.out, danger: true, run: signOut });
   menu(anchor, items);
@@ -567,7 +569,7 @@ function moreMenu(anchor) {
   const items = navItems().filter((n) => n.key !== 'sep' && !['posts', 'comments', 'you'].includes(n.key)).map((n) => ({ label: n.label, icon: icons[n.icon], run: () => go(n.path) }));
   items.push({ label: 'Switch workspace', icon: icons.updown, run: () => switcher(anchor) });
   items.push('-');
-  items.push({ label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp, anchor) });
+  items.push({ label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp, anchor, me.site && me.site.name, siteLogo()) });
   items.push(themeChoices(), '-', { label: 'Sign out', icon: icons.out, danger: true, run: signOut });
   menu(anchor, items);
 }
@@ -1274,7 +1276,7 @@ function openPalette() {
     ...navItems().filter((n) => n.key !== 'sep').map((n) => ({ label: n.label, icon: icons[n.icon], hint: w && ['posts', 'comments', 'team', 'workspace'].includes(n.key) ? w.name : '', run: () => go(n.path) })),
     ...posts.map((p) => ({ label: p.title, icon: icons.pen, hint: p.status === 'draft' ? 'Draft' : 'Post', post: true, run: () => go(`/studio/write/${p.id}`) })),
     ...(w && w.writer ? [{ label: 'New post', icon: icons.plus, run: () => go(`/studio/write?ws=${w.slug}`) }] : []),
-    { label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp) },
+    { label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp, null, me.site && me.site.name, siteLogo()) },
     ...(me.workspaces || []).filter((x) => !w || x.slug !== w.slug).map((x) => ({ label: x.name, icon: wsLogo(x, 18), hint: 'Workspace', run: () => go(`/studio/${x.slug}`) })),
     { label: w ? `View ${w.name}` : 'View Margin', icon: icons.external, run: () => window.open(w ? w.url || `/${w.slug}` : '/', '_blank', 'noopener') },
   ];

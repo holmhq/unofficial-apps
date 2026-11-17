@@ -168,8 +168,11 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   MCP mark by five dots, and the connector address to click and copy. Under
   that is a segmented control: **Claude · ChatGPT · Claude Code · Tools**.
   - **Claude:** three numbered steps (open Settings, then Connectors; add a
-    custom connector named after the app with the address; connect and sign
-    in).
+    custom connector named after the app with the address; connect, sign in
+    and tick **Make changes**). Holm's Allow screen ticks only "See your data",
+    so someone who just clicks Allow gets a Claude that can read but not
+    write: every pane says to tick Make changes. An app that serves branded
+    sites (Margin) names the connector after the site, not itself.
   - **ChatGPT:** three steps (turn on Developer mode in Settings, under Apps,
     then Advanced, on the web and on paid plans; create a connector with the
     address and OAuth; connect, then pick the app from + in a chat).

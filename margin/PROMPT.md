@@ -283,3 +283,14 @@ On a company blog, the owner capped every post title at 32 characters and asked:
 > - why: so that it never goes to multiple lines
 
 > if possible, lets try for smaller titles, if not lets make the templates work well with one & two line titles
+
+**Margin 0.13.1: a connector that can write**
+
+Before inviting a stakeholder to write on the company blog through Claude, the owner asked:
+
+> I want to invite someone to onesource & have him connect his claude to it & post blogs
+> - can you help me reherse it
+
+The rehearsal found that Holm's Allow screen leaves "Make changes" unticked, so a writer who
+just clicks Allow gets a Claude that can read but not write. The Connect via MCP sheet now says
+to tick it, and names the connector after the site.
