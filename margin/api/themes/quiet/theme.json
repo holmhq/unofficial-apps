@@ -10,7 +10,8 @@
     { "key": "hero_title", "type": "text", "label": "Landing headline", "default": "" },
     { "key": "hero_text", "type": "textarea", "label": "Landing introduction", "default": "" },
     { "key": "show_writers", "type": "boolean", "label": "Show the writers on the landing page", "default": true },
-    { "key": "show_tags", "type": "boolean", "label": "Show topics on the landing page", "default": true }
+    { "key": "show_tags", "type": "boolean", "label": "Show topics on the landing page", "default": true },
+    { "key": "fit_titles", "type": "boolean", "label": "Fit titles on one line (32 characters or fewer)", "default": false }
   ],
   "queries": {
     "home": {

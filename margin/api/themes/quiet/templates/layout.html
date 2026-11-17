@@ -5,7 +5,7 @@
 <link rel="preload" href="{{theme.assets}}/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{{theme.assets}}/theme.css">
 </head>
-<body class="q-page-{{page.type}}">
+<body class="q-page-{{page.type}}{{#theme.settings.fit_titles}} q-fit{{/theme.settings.fit_titles}}">
 <header class="q-bar">
   <div class="q-bar-inner">
     <a class="q-brand" href="{{site.home_url}}">

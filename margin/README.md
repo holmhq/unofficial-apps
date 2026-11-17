@@ -180,7 +180,9 @@ A theme is `theme.json`, six Mustache templates (`layout`, `home`, `blog`,
 templates only print it. Two ship with Margin:
 
 - **Quiet**: Inter, frosted bars, a floating clap bar, and comment threads as
-  chat bubbles in a side panel.
+  chat bubbles in a side panel. Its "Fit titles on one line" setting sizes each
+  title to its column, so titles of 32 characters or fewer take one line where
+  there's room and two balanced lines where there isn't.
 - **Editorial**: Newsreader for reading, a newspaper-style home page, and the
   first note of each highlighted passage set in the margin beside it.
 

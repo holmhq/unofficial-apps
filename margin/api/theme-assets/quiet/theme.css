@@ -311,3 +311,16 @@ img { max-width: 100%; height: auto; }
 h1, h2, h3, .q-title { text-wrap: balance; }
 p { text-wrap: pretty; }
 .q-page-blog .q-empty { text-align: center; }
+
+/* Fit titles on one line (the fit_titles setting). A title of 32 characters or fewer is at most
+   about 16.3 em wide, so sized to its column's width ÷ 16.8 it stays on one line; below each
+   floor it wraps to two balanced lines instead. The featured card splits evenly to give its
+   title room, and a card's date sits at its foot so a row lines up with one- or two-line titles. */
+.q-fit .q-article-head, .q-fit .q-lead-text, .q-fit .q-card-text, .q-fit .q-row-text { container-type: inline-size; }
+.q-fit .q-title { font-size: clamp(30px, 5.95cqi, 46px); line-height: 1.08; }
+.q-fit .q-lead-title { font-size: clamp(26px, 5.9cqi, 40px); }
+.q-fit .q-card-title { font-size: clamp(18px, 5.8cqi, 21px); }
+.q-fit .q-row-title { font-size: clamp(18px, 5.8cqi, 23px); }
+@media (min-width: 761px) { .q-fit .q-lead-link { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.q-fit .q-card-text { flex: 1; }
+.q-fit .q-card-meta { margin-top: auto; }

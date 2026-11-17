@@ -274,3 +274,12 @@ On the owner's blog, the covers were large PNGs and pages loaded slowly. The own
 Setting up a company blog in its brand's green, the theme's accent setting saved but the site
 stayed blue: the theme's own default outranked it. 0.12.1 lets the chosen colour win; 0.12.2
 moves Margin's cache version with it, so every page shows the change at once.
+
+**Margin 0.13.0: titles that fit one line**
+
+On a company blog, the owner capped every post title at 32 characters and asked:
+
+> all posts get only these many characters of title text: "A Data Room That Stays Organized"
+> - why: so that it never goes to multiple lines
+
+> if possible, lets try for smaller titles, if not lets make the templates work well with one & two line titles
