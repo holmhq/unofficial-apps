@@ -268,3 +268,9 @@ On the owner's blog, the covers were large PNGs and pages loaded slowly. The own
 > I think margin should have caught them?
 > - also, the clap component has a weird spacing when the count is 0
 > - i think you should take a deeper look
+
+**Margin 0.12.1 and 0.12.2: the accent you pick**
+
+Setting up a company blog in its brand's green, the theme's accent setting saved but the site
+stayed blue: the theme's own default outranked it. 0.12.1 lets the chosen colour win; 0.12.2
+moves Margin's cache version with it, so every page shows the change at once.

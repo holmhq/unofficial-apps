@@ -736,6 +736,9 @@ couldn't check.
 
 - [ ] `holm app validate --spec-v1 <app>` passes. Handlers stay inside the
       budget with large input.
+- [ ] The app's own `tools/check.mjs`, if it has one, passes. It catches a
+      version repeated in code (a service worker, a server cache, a page's
+      `?v=`) that the bump missed.
 - [ ] After deploying, pull the app back and compare it with your files.
       Check the app's node settings.
 - [ ] `PROMPT.md` quotes the request word for word (names of people
