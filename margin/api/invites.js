@@ -6,6 +6,7 @@ import { one, rows, mutate } from './lib/store.js';
 import { reject, text, randomId, sha256 } from './lib/util.js';
 import { blogByHandle, createPersonBlog, canWriteAs } from './blogs.js';
 import { addMember, workspaceBySlug, useWorkspace } from './workspaces.js';
+import { marginSettings } from './settings.js';
 
 const DAYS_14 = 14 * 86400000;
 
@@ -22,12 +23,14 @@ export async function createInvite(env, ctx, input, origin) {
   });
   const link = `${origin}/join/${code}`;
   let emailed = null;
+  // A site that is one blog speaks as that blog; Margin's name stays out of its email.
+  const whole = marginSettings(env).home === `ws:${ctx.ws.slug}`;
   if (email && input.send_email !== false) {
     try {
       const result = env.holm.email.send({
         to: email,
         subject: `${ctx.member.name || 'Your team'} invited you to write on ${ctx.ws.name}`,
-        body: `${ctx.member.name || 'Someone on the team'} invited you to write on ${ctx.ws.name}, on Margin.\n\nOpen this link to pick your name and start writing:\n${link}\n\nThe link works once and expires in 14 days.`,
+        body: `${ctx.member.name || 'Someone on the team'} invited you to write on ${ctx.ws.name}${whole ? '' : ', on Margin'}.\n\nOpen this link to pick your name and start writing:\n${link}\n\nThe link works once and expires in 14 days.`,
       });
       emailed = result && result.ok ? { ok: true } : { ok: false, code: result && result.code, message: result && result.message };
     } catch (error) {
