@@ -221,6 +221,8 @@ function siteManifest(env, ctx, slug) {
 function head(env, ctx, scope, theme, origin, page, bits, v, ld) {
   const values = settingValues(theme, (scope.themeSettings || {})[theme.id]);
   const colors = theme.settings.filter((s) => s.type === 'color').map((s) => `--${s.key.replace(/_/g, '-')}:${values[s.key]}`).join(';');
+  // The theme's stylesheet loads after this head and sets its defaults on :root, so the
+  // chosen colours sit on html:root, which outranks :root whatever the order.
   // A workspace with a logo uses it as the tab icon, its own manifest, and (when it is a
   // photo Margin can crop) the home-screen icon and the picture of links without a cover.
   const logo = logoIcons(env, scope);
@@ -248,7 +250,7 @@ function head(env, ctx, scope, theme, origin, page, bits, v, ld) {
     icons,
     `<link rel="stylesheet" href="/v/${v}/margin/ui.css">`,
     ...(page.styles || []).map((href) => `<link rel="stylesheet" href="/v/${v}${href}">`),
-    colors ? `<style>:root{${colors}}</style>` : '',
+    colors ? `<style>html:root{${colors}}</style>` : '',
     `<script>${THEME_SCRIPT}</script>`,
     ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : '',
   ];

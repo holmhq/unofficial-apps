@@ -331,6 +331,11 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   A filled button needs its own deeper colour in dark: the light red or mint
   that reads as text there leaves white lettering on top unreadable.
   An app with colour themes must check every theme in both light and dark.
+- **A chosen colour beats the default, whatever the load order.** When a
+  setting overrides a stylesheet's custom property, give the override a
+  selector that outranks the default's (`html:root` over `:root`), then check
+  the computed colour on the live page. Margin's theme accent lost to the
+  theme's own default from 0.1.0 until 0.12.1.
 - **Carousels play by themselves**, pause under the mouse and can be dragged.
   Don't add control buttons.
 - **Drawn covers and diagrams** use one isometric projection, three line
