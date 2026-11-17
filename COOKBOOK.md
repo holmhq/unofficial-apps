@@ -115,8 +115,10 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   `discover`, like Feedback's `accounts.create`, is HTTP-only and the store
   doesn't list it. Moving tools from `member` to `user` opens them to
   everyone signed in, so check each handler first. Keep anything that
-  changes the whole node, such as Margin's `themes.save`, on `member`, and
-  Holm's own gate stays as a second check.
+  changes the whole node, such as Margin's `themes.publish` (a theme every
+  workspace can pick), on `member`, and Holm's own gate stays as a second
+  check. Something scoped to one workspace, like saving that workspace's own
+  theme, can be `user` once its handler checks the workspace role.
 - **Cover what people do in the app**, not just its first screen: Relay's
   tools catch up on unread messages, read and send, list friends, and send
   and answer invites. Wrap the app's own handlers so the access checks stay
@@ -425,6 +427,11 @@ Shelf is the reference: `mcpSheet` in `shelf/web/src/shell.js`.
   late), draw from cache, give status badges a fixed width, and hide the
   footer while a page shows its loading line, or it sits under the line and
   is pushed away when the page arrives.
+- **A loading line's margin can move the whole app.** A spinner with a
+  `margin-top` as the only child of the app's root collapses its margin
+  through the root, so the root sits that much lower until the page arrives,
+  then the whole app jumps up (Margin's Studio scored 0.2 on every page). Give
+  the root `display: flow-root`.
 - **A live feed stacks its rows by transform.** Chrome counts a row that
   moves in layout as a shift even when a transform hides the move, so a
   feed that appends rows and slides the stack back still scores. Keep every
@@ -633,6 +640,16 @@ current guide too, since some of them will change.
 - **`email.send` takes one `to` per call.** It can carry a calendar invite
   but no attachments. Serve calendar files at addresses that don't end in
   `.ics`, because Apple Mail treats those as subscriptions.
+- **Holm refuses an encoded slash in a path.** `%2F` (and an encoded
+  backslash or dot) gets a 400, "encoded slash, backslash or dot is
+  forbidden", before the app sees it. Put an id that holds a slash in the
+  query string, or write the slash as a character ids never hold (Margin's
+  Studio sends a workspace's theme `lumen/paper` as `lumen~paper`).
+- **`env.holm.private.list(dir)` can name files from other folders**, and
+  `private.read` of a file that isn't there returns `undefined` instead of
+  throwing. Keep only reads that return text. JSON drops `undefined` values,
+  which hid this in Margin's `themes_get` until a save carried the extra
+  names along.
 - **`env.holm.web.fetch('/x.html')` answers 308 to `/x`.** The SPA fallback
   skips paths that look like files (`/@bo.test`). A shell served from `fetch`
   keeps its own Content-Security-Policy.
