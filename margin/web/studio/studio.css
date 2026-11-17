@@ -506,6 +506,7 @@ p, .row-sub, small { text-wrap: pretty; }
 .solo .center { flex: 1 0 auto; min-height: 0; }
 .solo-brand { display: flex; align-items: center; gap: 8px; margin-right: auto; min-width: 0; color: var(--ink); font-size: 16px; letter-spacing: -.01em; }
 .solo-brand .mark-svg { width: 22px; height: 22px; color: var(--accent); flex: none; }
+.solo-brand .solo-logo { width: 22px; height: 22px; border-radius: 6px; object-fit: cover; flex: none; }
 .solo-brand b { font-weight: 650; }
 .solo-credit { padding: 8px 16px calc(24px + var(--sab)); }
 

@@ -55,7 +55,7 @@ export async function previewInvite(env, ctx, code) {
   if (!invite || invite.revoked || !ws || ws.suspended) return { valid: false, reason: 'This invite link is not valid.', workspace: name };
   if (invite.usedBy) return { valid: false, reason: invite.usedBy === (ctx.member && ctx.member.id) ? 'You already joined with this link.' : 'This invite was already used.', workspace: name, slug: ws.slug, used: true };
   if (invite.expiresAt < Date.now()) return { valid: false, reason: 'This invite has expired. Ask for a new one.', workspace: name };
-  return { valid: true, workspace: name, slug: ws.slug, logo: ws.logo ? `/media/${ws.logo}` : null, role: invite.role, invited_by: invite.createdByName, email: mask(invite.email) };
+  return { valid: true, workspace: name, slug: ws.slug, logo: ws.logo ? `/media/${ws.logo}` : null, credit: ws.credit !== false, role: invite.role, invited_by: invite.createdByName, email: mask(invite.email) };
 }
 
 export async function acceptInvite(env, ctx, code, input) {

@@ -180,11 +180,14 @@ function signedOut() {
 
 // Signed out, Studio keeps its top bar: Margin's name on the left, back to reading, and the
 // round avatar at the right, whose menu has the theme and Sign in. The credit sits under
-// the page.
-function solo(content) {
+// the page. brand: a whole-site workspace's own name and logo (and its credit choice) in
+// place of Margin's, so a branded blog's invite reads as that blog.
+function solo(content, brand) {
+  const mark = brand ? (brand.logo ? `<img class="solo-logo" src="${esc(brand.logo)}" alt="" width="22" height="22">` : '') : MARK;
+  const credited = !brand || brand.credit !== false;
   root.innerHTML = `<div class="solo">
-    <header class="top solo-top"><a class="solo-brand" href="/">${MARK}<b>Margin</b></a><button type="button" class="avatar-btn" data-me aria-label="Sign in" aria-haspopup="menu"><span class="avatar avatar-empty">${icons.user}</span></button></header>
-    <div class="panel"><div class="center">${content}</div><div class="solo-credit">${credit()}</div></div></div>`;
+    <header class="top solo-top"><a class="solo-brand" href="/">${mark}<b>${esc(brand ? brand.name : 'Margin')}</b></a><button type="button" class="avatar-btn" data-me aria-label="Sign in" aria-haspopup="menu"><span class="avatar avatar-empty">${icons.user}</span></button></header>
+    <div class="panel"><div class="center">${content}</div>${credited ? `<div class="solo-credit">${credit()}</div>` : ''}</div></div>`;
   $('[data-me]', root).addEventListener('click', (e) => menu(e.currentTarget, [
     { custom: h(`<div class="menu-head"><span class="avatar avatar-empty">${icons.user}</span><span><b>Not signed in</b><small>Sign in to write</small></span></div>`) }, '-',
     themeChoices(), '-', { label: 'Sign in', icon: icons.in, href: me.login_url },
@@ -374,15 +377,18 @@ async function joinView(code) {
   let invite;
   try { invite = await api(`/api/join/${code}`, { workspace: false }); } catch (error) { invite = { valid: false, reason: error.message }; }
   const logo = invite.logo ? `<img class="ob-logo" src="${esc(invite.logo)}" alt="">` : marginMark();
+  // When the invite's workspace is the whole site, the page wears that site's name, not Margin's.
+  const site = invite.slug && me.margin && me.margin.root === invite.slug ? { name: invite.workspace, logo: invite.logo, credit: invite.credit } : null;
+  if (site) document.title = `Join — ${invite.workspace}`;
   if (!invite.valid) {
-    root.innerHTML = `<div class="center"><div class="welcome ob">${logo}<h1>This invite can't be used</h1><p>${esc(invite.reason)}</p><a class="btn ob-go" href="/">Go to Margin</a></div></div>`;
+    root.innerHTML = `<div class="center"><div class="welcome ob">${logo}<h1>This invite can't be used</h1><p>${esc(invite.reason)}</p><a class="btn ob-go" href="/">Go to ${esc(site ? site.name : 'Margin')}</a></div></div>`;
     return;
   }
   const role = invite.role === 'admin' ? 'an admin' : 'a writer';
   if (!me.signed_in) {
     solo(`<div class="welcome ob">${logo}<h1>Join ${esc(invite.workspace)}</h1>
       <p>${esc(invite.invited_by || 'The team')} invited you to write in ${esc(invite.workspace)} as ${role}.${invite.email ? ` Sign in with ${esc(invite.email)}.` : ''}</p>
-      <a class="btn primary ob-go" href="${esc(me.login_url)}">Sign in to accept</a></div>`);
+      <a class="btn primary ob-go" href="${esc(me.login_url)}">Sign in to accept</a></div>`, site);
     return;
   }
   const mine = me.identities || [];

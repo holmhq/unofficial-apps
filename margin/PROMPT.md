@@ -284,7 +284,7 @@ On a company blog, the owner capped every post title at 32 characters and asked:
 
 > if possible, lets try for smaller titles, if not lets make the templates work well with one & two line titles
 
-**Margin 0.13.1: a connector that can write**
+**Margin 0.13.1 and 0.13.2: a connector that can write, an invite that looks like home**
 
 Before inviting a stakeholder to write on the company blog through Claude, the owner asked:
 
@@ -293,4 +293,5 @@ Before inviting a stakeholder to write on the company blog through Claude, the o
 
 The rehearsal found that Holm's Allow screen leaves "Make changes" unticked, so a writer who
 just clicks Allow gets a Claude that can read but not write. The Connect via MCP sheet now says
-to tick it, and names the connector after the site.
+to tick it, and names the connector after the site. 0.13.2: the invite page a newcomer opens
+first wore Margin's name; on a site that is one blog it now wears that blog's name and logo.
