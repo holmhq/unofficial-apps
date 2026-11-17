@@ -75,7 +75,7 @@ svg { flex: none; }
 [hidden] { display: none !important; }
 
 /* ---------- shell ---------- */
-#app { height: 100%; }
+#app { height: 100%; display: flow-root; } /* the loading spinner's margin stays inside, so the app never jumps up */
 .app { height: 100%; display: flex; }
 .side {
   flex: none; width: 256px; height: 100%; background: var(--side); border-right: 1px solid var(--line);
@@ -485,7 +485,7 @@ p, .row-sub, small { text-wrap: pretty; }
 .swatches { display: flex; gap: 10px; margin: 14px 0; flex-wrap: wrap; }
 .swatch { width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1); }
 .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
-.cover-preview { border-radius: 14px; overflow: hidden; }
+.cover-preview { border-radius: 14px; overflow: hidden; aspect-ratio: 16 / 9; background: var(--fill-2); }
 .cover-live { aspect-ratio: 16 / 9; }
 .cover-live svg { display: block; width: 100%; height: 100%; }
 .pins { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
@@ -515,3 +515,36 @@ p, .row-sub, small { text-wrap: pretty; }
   .avatar-btn { position: relative; }
   .avatar-btn::after { content: ''; position: absolute; inset: -5px; }
 }
+
+/* Style: theme cards' menu, the own-themes line, the cover recipe. */
+.theme-shot { position: relative; }
+.theme-shot .theme-more { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; background: color-mix(in srgb, var(--surface) 82%, transparent); color: var(--ink-2); font-size: 15px; }
+.theme-shot .theme-scope { position: absolute; top: 12px; left: 12px; font-family: var(--font); letter-spacing: 0; background: color-mix(in srgb, var(--surface) 82%, transparent); }
+.theme-body b .chip { margin-left: 6px; vertical-align: 2px; }
+.theme-own { display: flex; align-items: center; gap: 12px; margin: -10px 4px 24px; }
+.theme-own .row-sub { flex: 1; min-width: 0; }
+.theme-own .btn { flex: none; }
+.tone-list { display: flex; flex-direction: column; gap: 8px; }
+.tone-row { display: flex; align-items: center; gap: 10px; }
+.tone-row input[type="color"] { flex: none; width: 40px; height: 34px; padding: 0; border: 0; border-radius: 8px; background: none; cursor: pointer; }
+.tone-row .input { flex: 1; min-width: 0; }
+.tone-row .icon-btn { flex: none; width: 34px; height: 34px; }
+.tone-row .icon-btn:disabled { opacity: .35; cursor: default; }
+.refs { display: flex; gap: 10px; flex-wrap: wrap; }
+.ref { position: relative; width: 108px; aspect-ratio: 3 / 2; border-radius: 10px; overflow: hidden; background: var(--fill-2); box-shadow: inset 0 0 0 1px var(--line); }
+.ref img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ref .icon-btn { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; background: color-mix(in srgb, var(--surface) 88%, transparent); }
+.ref .icon-btn .ic { width: 14px; height: 14px; }
+.ref-add { border: 0; display: grid; place-items: center; color: var(--muted); cursor: pointer; }
+.ref-add .ic { width: 20px; height: 20px; }
+.ref-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.ref-grid button { padding: 0; border: 0; border-radius: 10px; overflow: hidden; aspect-ratio: 3 / 2; background: var(--fill-2); cursor: pointer; }
+.ref-grid img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.copy-field.is-block { height: auto; align-items: flex-start; padding: 12px 14px; }
+.copy-field.is-block .copy-value { white-space: pre-wrap; overflow-wrap: anywhere; overflow: visible; font: 12.5px/1.6 var(--mono); }
+.copy-field.is-block .copy-cue { margin-top: 3px; }
+.copy-field.is-block .copy-word { top: 9px; transform: none; }
+@media (max-width: 640px) { .theme-own { flex-direction: column; align-items: stretch; } .theme-own .btn { align-self: flex-start; } }
+/* While a page shows its loading line, its foot credit waits hidden: shown, it would sit under
+   the line and be pushed away when the page arrives. */
+.panel:has(> .page > .spinner:first-child, > .page > .page-title + .spinner) > .phone-credit { visibility: hidden; }

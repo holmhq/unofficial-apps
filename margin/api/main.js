@@ -52,5 +52,8 @@ export async function opThemesGet(input, env) { return (await ops(env)).opThemes
 export async function opThemesValidate(input, env) { return (await ops(env)).opThemesValidate(input, env); }
 export async function opThemesSave(input, env) { return (await ops(env)).opThemesSave(input, env); }
 export async function opThemesActivate(input, env) { return (await ops(env)).opThemesActivate(input, env); }
+export async function opThemesDelete(input, env) { return (await ops(env)).opThemesDelete(input, env); }
+export async function opThemesPublish(input, env) { return (await ops(env)).opThemesPublish(input, env); }
+export async function opCoversPrompt(input, env) { return (await ops(env)).opCoversPrompt(input, env); }
 export async function opInvitesCreate(input, env) { return (await ops(env)).opInvitesCreate(input, env); }
 export async function opInvitesRevoke(input, env) { return (await ops(env)).opInvitesRevoke(input, env); }

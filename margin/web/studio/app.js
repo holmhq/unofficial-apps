@@ -428,6 +428,7 @@ function navItems() {
     items.push({ key: 'comments', path: `${base}/comments`, label: 'Comments', icon: 'comments', count: true });
     if (w.admin) items.push({ key: 'team', path: `${base}/team`, label: 'Team', icon: 'team' });
     if (w.admin) items.push({ key: 'workspace', path: `${base}/workspace`, label: 'Workspace', icon: 'home' });
+    if (w.admin) items.push({ key: 'style', path: `${base}/style`, label: 'Style', icon: 'themes' });
   }
   items.push({ key: 'sep' });
   items.push({ key: 'you', path: '/studio/you', label: 'You', icon: 'user' });
@@ -473,7 +474,7 @@ function shell(pane) {
   }
   for (const el of $$('[data-key]', root)) el.classList.toggle('on', el.dataset.key === pane);
   paintNavCounts();
-  const views = { posts: postsView, comments: commentsView, team: teamView, workspace: workspaceView, you: youView, claude: claudeView, margin: marginView, none: noWorkspaceView };
+  const views = { posts: postsView, comments: commentsView, team: teamView, workspace: workspaceView, style: styleView, you: youView, claude: claudeView, margin: marginView, none: noWorkspaceView };
   const view = views[pane];
   const panel = $('.panel', root);
   const top = $('.top', root);
@@ -484,7 +485,7 @@ function shell(pane) {
   $('[data-actions]', top).innerHTML = '';
   panel.scrollTop = 0;
   top.classList.remove('lined');
-  const allowed = view && (!['team', 'workspace'].includes(pane) || (w && w.admin)) && (pane !== 'margin' || me.admin) && (!['posts', 'comments'].includes(pane) || w);
+  const allowed = view && (!['team', 'workspace', 'style'].includes(pane) || (w && w.admin)) && (pane !== 'margin' || me.admin) && (!['posts', 'comments'].includes(pane) || w);
   if (!allowed) {
     top.querySelector('h1').textContent = 'Not found';
     panel.innerHTML = '<div class="empty"><h2>Nothing here</h2><p>That page is not part of Studio.</p><a class="btn" href="/studio" data-nav>Go to Studio</a></div>';
@@ -829,11 +830,10 @@ async function workspaceView(panel, top) {
   const alive = ticket();
   let touched = false;
   for (const type of ['input', 'pointerdown']) $('.page', panel).addEventListener(type, () => { touched = true; }, { once: true });
-  const paint = async ([ws, posts, team, themes]) => {
+  const paint = async ([ws, posts, team]) => {
     const nav = [...(ws.nav || [])];
     let featured = [...(ws.featured || [])];
     let logo = ws.logo;
-    let cover = { ...ws.cover };
     const home = ws.home.startsWith('@') ? 'writer' : ws.home;
     const names = team.members.flatMap((m) => m.names);
     const page = $('.page', panel);
@@ -850,16 +850,6 @@ async function workspaceView(panel, top) {
         <div class="seg wide" data-home>${[['latest', 'Latest posts'], ['curated', 'Curated'], ['writer', 'One writer']].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${home === v}">${l}</button>`).join('')}</div>
         <div data-home-detail style="margin-top:14px"></div></div></div>
       <div class="group-title">Comments</div><div class="group" data-mod>${Object.entries(MOD_LABEL).map(([v, [l, n]]) => `<button type="button" class="row link choice" data-v="${v}" aria-pressed="${ws.moderation === v}"><span class="row-main"><span class="row-title" style="font-weight:500">${l}</span><span class="row-sub">${n}</span></span><span class="choice-check">${icons.check}</span></button>`).join('')}</div>
-      <div class="group-title">Covers</div><div class="group"><div class="field">
-        <p class="row-sub" style="margin:0 0 12px">Posts without a photo get a drawn cover in this style. Writers pick each drawing’s subject.</p>
-        <div class="seg wide" data-look>${Object.entries(LOOKS).map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${cover.look === v}">${l}</button>`).join('')}</div>
-        <div class="swatches" data-tones>${Object.entries(TONES).map(([v, c]) => `<button type="button" class="swatch" data-v="${v}" aria-label="${v}" aria-pressed="${cover.tone === v}" style="background:${c}"></button>`).join('')}</div>
-        <div class="cover-preview" data-preview></div></div></div>
-      <div class="group-title">Theme</div>
-      <div class="themes">${themes.themes.map((t) => `<div class="theme-card${t.id === themes.active ? ' on' : ''}" data-theme-id="${esc(t.id)}"><div class="theme-shot ${esc(t.id)}">Aa</div>
-        <div class="theme-body"><b>${esc(t.name)} ${t.id === themes.active ? '<span class="chip green">Live</span>' : ''}</b><p>${esc(t.description)}</p>
-        <div class="theme-actions">${t.id === themes.active ? '' : '<button class="btn small primary" data-use>Use</button>'}<a class="btn small" href="${esc(ws.path)}?theme=${esc(t.id)}" target="_blank" rel="noopener">Preview</a></div></div></div>`).join('')}</div>
-      <div data-theme-settings></div>
       <div class="group-title">Menu links</div><div class="group" data-nav-links></div>
       <div style="display:flex;gap:8px;margin:-12px 0 24px"><button class="btn small" data-add-link>${icons.plus}Add link</button></div>
       <div class="group-title">Footer</div><div class="group">
@@ -897,27 +887,6 @@ async function workspaceView(panel, top) {
     seg('[data-home]', (v) => { homeMode = v; paintHome(); });
     let moderation = ws.moderation;
     seg('[data-mod]', (v) => { moderation = v; });
-    // covers, previewed with a real drawing
-    const covers = await import('/margin/covers.js');
-    const live = await import('/margin/live-covers.js');
-    const preview = $('[data-preview]', page);
-    const paintPreview = () => {
-      const spec = covers.normalize({ motif: covers.MOTIFS[(ws.slug.length + (cover.look === 'paper' ? 0 : 3)) % covers.MOTIFS.length], look: cover.look, tone: cover.tone, seed: 1203 });
-      preview.innerHTML = '';
-      const box = document.createElement('div');
-      box.className = 'cover-live';
-      preview.append(box);
-      live.mount(box, spec);
-    };
-    paintPreview();
-    seg('[data-look]', (v) => { cover.look = v; paintPreview(); });
-    $('[data-tones]', page).addEventListener('click', (e) => {
-      const b = e.target.closest('[data-v]');
-      if (!b) return;
-      $$('[data-tones] button', page).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      cover.tone = b.dataset.v;
-      paintPreview();
-    });
     // logo
     // A logo saves at once, like a photo anywhere else in Studio.
     const saveLogo = async (next) => {
@@ -957,14 +926,6 @@ async function workspaceView(panel, top) {
         { label: 'Use Logo', icon: icons.home, checked: ws.avatar_source === 'logo', run: () => saveByline('', 'Using the logo') },
       ]);
     });
-    // theme
-    const active = themes.themes.find((t) => t.id === themes.active) || themes.themes[0];
-    if (active && active.settings.length) {
-      $('[data-theme-settings]', page).innerHTML = `<div class="group-title">${esc(active.name)} settings</div><div class="group">${active.settings.map((s) => settingField(s, active.values[s.key])).join('')}</div>`;
-    }
-    for (const card of $$('[data-theme-id]', page)) {
-      $('[data-use]', card)?.addEventListener('click', async () => { try { await api(`/api/themes/${card.dataset.themeId}/activate`, { method: 'POST', body: {} }); toast('Theme is live'); workspaceView(panel, top); } catch (error) { toast(error.message); } });
-    }
     // nav links
     const paintNav = () => {
       const box = $('[data-nav-links]', page);
@@ -978,16 +939,11 @@ async function workspaceView(panel, top) {
     $('[data-save]', page).addEventListener('click', async () => {
       const body = {
         name: $('#sn', page).value, tagline: $('#st', page).value, description: $('#sd', page).value,
-        home: homeMode === 'writer' ? '@' + homeWriter : homeMode, featured, moderation, cover, logo: logo || null,
+        home: homeMode === 'writer' ? '@' + homeWriter : homeMode, featured, moderation, logo: logo || null,
         nav: nav.filter((n) => n.label.trim() && n.url.trim()),
         footer: $('#sf', page).value, credit: $('[data-credit]', page).checked,
       };
       try {
-        if (active && active.settings.length) {
-          const values = {};
-          for (const s of active.settings) { const el = $(`[data-setting="${s.key}"]`, page); values[s.key] = s.type === 'boolean' ? el.checked : el.value; }
-          await api(`/api/themes/${active.id}/activate`, { method: 'POST', body: { settings: values } });
-        }
         await api('/api/workspace', { method: 'PATCH', body });
         await loadMe(ws.slug);
         root.dataset.shell = '';
@@ -998,8 +954,215 @@ async function workspaceView(panel, top) {
 
   };
   try {
-    await remembered(['/api/workspace', '/api/posts?scope=all&status=published', '/api/team', '/api/themes'], paint, () => alive() && !touched);
+    await remembered(['/api/workspace', '/api/posts?scope=all&status=published', '/api/team'], paint, () => alive() && !touched);
   } catch (error) { if (alive()) $('.page', panel).innerHTML = `<p class="group-note">${esc(error.message)}</p>`; }
+}
+
+// ---------- style: the workspace's theme, its covers and its cover recipe ----------
+// Most people change these by asking their assistant (themes_save, workspace_update's
+// cover_recipe); this page shows the same things and changes them by hand.
+
+const savedAt = (iso) => { const d = new Date(iso); return `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}, ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`; };
+const sameJSON = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// A theme in an API address: Holm refuses an encoded slash there, so <workspace>/<id> goes as <workspace>~<id>.
+const themeKey = (id) => encodeURIComponent(id.replace('/', '~'));
+const RECIPE_PART = { style: 'style', subjects: 'subjects', tones: 'backgrounds', accent: 'accent', references: 'references', alt: 'alt text' };
+const fillPrompt = (r, tone) => r.style.split('{tone}').join(`${tone.name} (${tone.hex})`).split('{accent}').join(`${r.accent.name} (${r.accent.hex})`);
+
+async function styleView(panel, top) {
+  setTop(top, 'Style');
+  panel.innerHTML = '<div class="page"><h2 class="page-title">Style</h2><div class="spinner"></div></div>';
+  const alive = ticket();
+  let touched = false;
+  for (const type of ['input', 'pointerdown']) $('.page', panel).addEventListener(type, () => { touched = true; }, { once: true });
+  const again = () => styleView(panel, top);
+  const paint = async ([ws, posts, themes]) => {
+    const page = $('.page', panel);
+    let cover = { ...ws.cover };
+    const start = ws.cover_recipe;
+    const recipe = { style: start.style, subjects: start.subjects, alt: start.alt, tones: start.tones.map((t) => ({ ...t })), accent: { ...start.accent }, references: start.references.map((r) => r.id) };
+    const active = themes.themes.find((t) => t.id === themes.active) || themes.themes[0];
+    const latest = (t) => (t.revisions && t.revisions[0] ? t.revisions[0].rev : null);
+    const card = (t) => {
+      const live = t.id === themes.active;
+      const behind = live && t.scope === 'workspace' && themes.active_rev && latest(t) !== themes.active_rev;
+      const scope = t.scope === 'workspace' ? '<span class="chip theme-scope">Yours</span>' : t.scope === 'library' ? '<span class="chip theme-scope">Library</span>' : '';
+      const use = live ? (behind ? '<button class="btn small primary" data-use title="Make the latest save live">Use Latest</button>' : '') : '<button class="btn small primary" data-use>Use</button>';
+      return `<div class="theme-card${live ? ' on' : ''}" data-theme-id="${esc(t.id)}"><div class="theme-shot ${esc(t.key || t.id)}">Aa${scope}<button type="button" class="icon-btn theme-more" data-theme-menu aria-label="More for ${esc(t.name)}" aria-haspopup="menu">${icons.more}</button></div>
+        <div class="theme-body"><b>${esc(t.name)}${live ? ' <span class="chip green">Live</span>' : ''}</b><p>${esc(t.description || (t.scope === 'workspace' ? `Only ${ws.name} sees this theme.` : ''))}</p>
+        <div class="theme-actions">${use}<a class="btn small" href="${esc(ws.path)}?theme=${encodeURIComponent(t.id)}" target="_blank" rel="noopener">Preview</a></div></div></div>`;
+    };
+    page.innerHTML = `<h2 class="page-title">Style</h2>
+      <p class="page-lead">How ${esc(ws.name)} looks, and how its covers are made. Assistants connected to ${esc(ws.name)} read and change the same settings.</p>
+      <div class="group-title">Theme</div>
+      <div class="themes">${themes.themes.map(card).join('')}</div>
+      <div class="theme-own"><span class="row-sub">${themes.own.count} of ${themes.own.max} themes of ${esc(ws.name)}’s own. Ask your assistant to make one, or upload a zip.</span><button class="btn small" data-upload-own${themes.own.count >= themes.own.max ? ' disabled' : ''}>${icons.upload}Upload Theme…</button></div>
+      <div data-theme-settings></div>
+      <div class="group-title">Drawn Covers</div><div class="group"><div class="field">
+        <p class="row-sub" style="margin:0 0 12px">A post can take a drawing in this style instead of a picture. Writers pick each drawing’s subject.</p>
+        <div class="seg wide" data-look>${Object.entries(LOOKS).map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${cover.look === v}">${l}</button>`).join('')}</div>
+        <div class="swatches" data-tones>${Object.entries(TONES).map(([v, c]) => `<button type="button" class="swatch" data-v="${v}" aria-label="${v}" aria-pressed="${cover.tone === v}" style="background:${c}"></button>`).join('')}</div>
+        <div class="cover-preview" data-preview></div></div></div>
+      <div class="group-title">Cover Recipe</div>
+      <div class="group" data-recipe>
+        <div class="field"><label for="rc-style">Style</label><textarea id="rc-style" class="textarea" rows="7" maxlength="3000">${esc(recipe.style)}</textarea><small>The fixed part of every cover prompt. {tone} and {accent} become the colours below.</small></div>
+        <div class="field"><label for="rc-subjects">Subjects</label><textarea id="rc-subjects" class="textarea" rows="3" maxlength="1000">${esc(recipe.subjects)}</textarea><small>How an assistant picks each post’s own subject.</small></div>
+        <div class="field"><label>Backgrounds</label><div class="tone-list" data-tone-list></div><div><button type="button" class="btn small" data-add-tone>${icons.plus}Add Background</button></div><small>Covers take these in turn, so covers side by side differ.</small></div>
+        <div class="field"><label for="rc-accent-name">Accent</label><div class="tone-row"><input type="color" data-accent-hex value="${esc(recipe.accent.hex.toLowerCase())}" aria-label="Accent colour"><input id="rc-accent-name" class="input" maxlength="30" data-accent-name value="${esc(recipe.accent.name)}" placeholder="Name, such as vermilion"></div><small>Used sparingly, on one small part of each cover.</small></div>
+        <div class="field"><label>References</label><div class="refs" data-refs></div><small>Up to four covers in this style for assistants to match.</small></div>
+        <div class="field"><label for="rc-alt">Alt Text</label><textarea id="rc-alt" class="textarea" rows="3" maxlength="300">${esc(recipe.alt)}</textarea><small>How to describe a cover for people who can’t see it.</small></div>
+        <div class="field"><label>Example Prompt</label><div data-example></div><small>What an assistant gets for a cover (its subject comes from the post).</small></div>
+      </div>
+      <div class="theme-own"><span class="row-sub">${start.custom.length ? `Changed from the default: ${esc(start.custom.map((k) => RECIPE_PART[k] || k).join(', '))}.` : 'This is the default, which follows the drawn covers’ look and tone.'}</span>${start.custom.length ? '<button class="btn small" data-reset-recipe>Reset to Default</button>' : ''}</div>
+      <div class="save-bar"><button class="btn primary" data-save>Save Changes</button></div>`;
+
+    // themes
+    if (active && active.settings.length) {
+      $('[data-theme-settings]', page).innerHTML = `<div class="group-title">${esc(active.name)} Settings</div><div class="group">${active.settings.map((s) => settingField(s, active.values[s.key])).join('')}</div>`;
+    }
+    const activate = async (id, done) => {
+      try { await api(`/api/themes/${themeKey(id)}/activate`, { method: 'POST', body: {} }); toast(done); again(); } catch (error) { toast(error.message); }
+    };
+    for (const el of $$('[data-theme-id]', page)) {
+      const t = themes.themes.find((x) => x.id === el.dataset.themeId);
+      $('[data-use]', el)?.addEventListener('click', () => activate(t.id, 'Theme is live'));
+      $('[data-theme-menu]', el).addEventListener('click', (e) => {
+        const items = [{ label: 'Download', icon: icons.download, run: () => downloadTheme(t.id) }];
+        if (t.scope === 'workspace') {
+          items.push({ label: 'Saves…', icon: icons.updown, run: () => themeSaves(ws, t, themes, activate) });
+          if (t.id !== themes.active) items.push('-', { label: 'Delete…', icon: icons.trash, danger: true, run: async () => {
+            if (!confirm(`Delete ${t.name} and its ${t.revisions.length} save${t.revisions.length === 1 ? '' : 's'}? This can’t be undone.`)) return;
+            try { await api(`/api/themes/${themeKey(t.id)}`, { method: 'DELETE' }); toast('Theme deleted'); again(); } catch (error) { toast(error.message); }
+          } });
+        }
+        menu(e.currentTarget, items);
+      });
+    }
+    $('[data-upload-own]', page).addEventListener('click', () => uploadTheme(again, ws));
+
+    // drawn covers, previewed with a real drawing in a box that keeps its size while it loads
+    const preview = $('[data-preview]', page);
+    let paintPreview = () => {};
+    Promise.all([import('/margin/covers.js'), import('/margin/live-covers.js')]).then(([covers, live]) => {
+      paintPreview = () => {
+        const spec = covers.normalize({ motif: covers.MOTIFS[(ws.slug.length + (cover.look === 'paper' ? 0 : 3)) % covers.MOTIFS.length], look: cover.look, tone: cover.tone, seed: 1203 });
+        preview.innerHTML = '';
+        const box = document.createElement('div');
+        box.className = 'cover-live';
+        preview.append(box);
+        live.mount(box, spec);
+      };
+      paintPreview();
+    }).catch((error) => console.warn('cover preview', error));
+    $('[data-look]', page).addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-v]');
+      if (!b) return;
+      $$('[data-look] button', page).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      cover.look = b.dataset.v;
+      paintPreview();
+    });
+    $('[data-tones]', page).addEventListener('click', (e) => {
+      const b = e.target.closest('[data-v]');
+      if (!b) return;
+      $$('[data-tones] button', page).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      cover.tone = b.dataset.v;
+      paintPreview();
+    });
+
+    // the recipe
+    const read = () => {
+      recipe.style = $('#rc-style', page).value.trim();
+      recipe.subjects = $('#rc-subjects', page).value.trim();
+      recipe.alt = $('#rc-alt', page).value.trim();
+      recipe.accent = { name: $('[data-accent-name]', page).value.trim(), hex: $('[data-accent-hex]', page).value.toUpperCase() };
+    };
+    const example = copyField('', '');
+    example.classList.add('is-block');
+    $('[data-example]', page).append(example);
+    const paintExample = () => {
+      read();
+      const tone = recipe.tones[0] || { name: 'a background', hex: '#FFFFFF' };
+      example.set(`Subject: one object or scene that stands for the post’s idea.\n\n${fillPrompt(recipe, tone)}\n\n${start.framing}`);
+    };
+    const paintTones = () => {
+      const box = $('[data-tone-list]', page);
+      box.innerHTML = recipe.tones.map((t, i) => `<div class="tone-row"><input type="color" data-tone-hex="${i}" value="${esc(t.hex.toLowerCase())}" aria-label="Background ${i + 1} colour"><input class="input" maxlength="30" data-tone-name="${i}" value="${esc(t.name)}" placeholder="Name, such as warm sand"><button type="button" class="icon-btn" data-tone-rm="${i}" aria-label="Remove ${esc(t.name || 'background')}"${recipe.tones.length === 1 ? ' disabled' : ''}>${icons.close}</button></div>`).join('');
+      for (const el of $$('[data-tone-hex]', box)) el.addEventListener('input', () => { recipe.tones[el.dataset.toneHex].hex = el.value.toUpperCase(); paintExample(); });
+      for (const el of $$('[data-tone-name]', box)) el.addEventListener('input', () => { recipe.tones[el.dataset.toneName].name = el.value; paintExample(); });
+      for (const el of $$('[data-tone-rm]', box)) el.addEventListener('click', () => { recipe.tones.splice(Number(el.dataset.toneRm), 1); paintTones(); paintExample(); });
+      $('[data-add-tone]', page).disabled = recipe.tones.length >= 8;
+    };
+    $('[data-add-tone]', page).addEventListener('click', () => { if (recipe.tones.length < 8) { recipe.tones.push({ name: '', hex: '#E6DCC8' }); paintTones(); $(`[data-tone-name="${recipe.tones.length - 1}"]`, page)?.focus(); } });
+    const paintRefs = () => {
+      const box = $('[data-refs]', page);
+      box.innerHTML = recipe.references.map((id, i) => `<div class="ref"><img src="/media/${esc(id)}" alt="" loading="lazy"><button type="button" class="icon-btn filled" data-ref-rm="${i}" aria-label="Remove reference">${icons.close}</button></div>`).join('')
+        + (recipe.references.length < 4 ? `<button type="button" class="ref ref-add" data-ref-add aria-label="Add a reference">${icons.plus}</button>` : '');
+      for (const el of $$('[data-ref-rm]', box)) el.addEventListener('click', () => { recipe.references.splice(Number(el.dataset.refRm), 1); paintRefs(); });
+      $('[data-ref-add]', box)?.addEventListener('click', () => pickReference(posts, recipe.references, (id) => { recipe.references.push(id); paintRefs(); }));
+    };
+    paintTones();
+    paintRefs();
+    paintExample();
+    for (const sel of ['#rc-style', '#rc-subjects', '[data-accent-name]', '[data-accent-hex]']) $(sel, page).addEventListener('input', paintExample);
+
+    $('[data-reset-recipe]', page)?.addEventListener('click', async () => {
+      if (!confirm('Go back to the default recipe? Your style, backgrounds, accent and references here are cleared.')) return;
+      try { await api('/api/workspace', { method: 'PATCH', body: { cover_recipe: null } }); toast('Recipe reset'); again(); } catch (error) { toast(error.message); }
+    });
+    $('[data-save]', page).addEventListener('click', async () => {
+      read();
+      const change = {};
+      for (const key of ['style', 'subjects', 'alt']) if (recipe[key] !== start[key]) change[key] = recipe[key] || null;
+      const tones = recipe.tones.map((t) => ({ name: t.name.trim(), hex: t.hex }));
+      if (!sameJSON(tones, start.tones)) change.tones = tones;
+      if (!sameJSON(recipe.accent, start.accent)) change.accent = recipe.accent;
+      if (!sameJSON(recipe.references, start.references.map((r) => r.id))) change.references = recipe.references;
+      try {
+        if (active && active.settings.length) {
+          const values = {};
+          for (const s of active.settings) { const el = $(`[data-setting="${s.key}"]`, page); values[s.key] = s.type === 'boolean' ? el.checked : el.value; }
+          // Settings stay on the save that is live (a workspace's own theme is pinned to one).
+          const id = themes.active_rev ? `${active.id}@${themes.active_rev}` : active.id;
+          await api(`/api/themes/${themeKey(id)}/activate`, { method: 'POST', body: { settings: values } });
+        }
+        const body = { cover };
+        if (Object.keys(change).length) body.cover_recipe = change;
+        await api('/api/workspace', { method: 'PATCH', body });
+        await loadMe(ws.slug);
+        toast('Saved');
+        touched = false;
+        again();
+      } catch (error) { toast(error.message); }
+    });
+  };
+  try {
+    await remembered(['/api/workspace', '/api/posts?scope=all&status=published', '/api/themes'], paint, () => alive() && !touched);
+  } catch (error) { if (alive()) $('.page', panel).innerHTML = `<p class="group-note">${esc(error.message)}</p>`; }
+}
+
+// A theme's last saves: look at any of them, or make one live (going back is just that).
+function themeSaves(ws, t, themes, activate) {
+  const live = t.id === themes.active ? themes.active_rev || (t.revisions[0] && t.revisions[0].rev) : null;
+  const box = h(`<div class="group" style="margin:0">${t.revisions.map((r, i) => `<div class="row"><span class="row-main"><span class="row-title">${esc(savedAt(r.saved_at))}${r.rev === live ? ' <span class="chip green">Live</span>' : ''}${i === 0 ? ' <span class="chip">Latest</span>' : ''}</span><span class="row-sub">Version ${esc(r.version || '—')}</span></span><span class="row-actions"><a class="btn small" href="${esc(ws.path)}?theme=${encodeURIComponent(`${t.id}@${r.rev}`)}" target="_blank" rel="noopener">Preview</a>${r.rev === live ? '' : `<button class="btn small" data-rev="${esc(r.rev)}">Use</button>`}</span></div>`).join('')}</div>`);
+  const s = sheet(`${t.name} Saves`, box);
+  for (const b of $$('[data-rev]', box)) b.addEventListener('click', () => { s.close(); activate(`${t.id}@${b.dataset.rev}`, 'That save is live'); });
+}
+
+// A reference for the cover recipe: one of the workspace's cover photos, or a new upload.
+function pickReference(posts, chosen, done) {
+  const photos = posts.posts.filter((p) => p.cover && !p.cover.drawn && /^\/media\//.test(p.cover.url || ''))
+    .map((p) => ({ id: /^\/media\/([a-z0-9]+)/.exec(p.cover.url)[1], thumb: p.cover.thumb || p.cover.url, title: p.title }))
+    .filter((p) => !chosen.includes(p.id)).slice(0, 12);
+  const box = h(`<div><div class="ref-grid">${photos.map((p) => `<button type="button" data-pick="${esc(p.id)}" title="${esc(p.title)}" aria-label="${esc(p.title)}"><img src="${esc(p.thumb)}" alt="" loading="lazy"></button>`).join('')}</div>
+    ${photos.length ? '' : '<p class="row-sub" style="margin:0 4px 12px">No cover photos here yet.</p>'}
+    <div style="display:flex;justify-content:flex-end;margin-top:14px"><button type="button" class="btn" data-upload-ref>${icons.upload}Upload…</button></div></div>`);
+  const s = sheet('Add a Reference', box);
+  for (const b of $$('[data-pick]', box)) b.addEventListener('click', () => { s.close(); done(b.dataset.pick); });
+  $('[data-upload-ref]', box).addEventListener('click', async () => {
+    const file = await pickFile('image/*');
+    if (!file) return;
+    try { const media = await upload(file, 1600); s.close(); done(media.id); } catch (error) { toast(error.message); }
+  });
 }
 
 function settingField(s, value) {
@@ -1211,14 +1374,15 @@ async function marginView(panel, top) {
 
 async function downloadTheme(id) {
   try {
-    const data = await api(`/api/themes/${id}/files`, { workspace: false });
-    const files = Object.entries(data.files).map(([name, text]) => ({ name: `${id}/${name}`, data: text }));
+    const data = await api(`/api/themes/${themeKey(id)}/files`, { workspace: false });
+    const folder = id.split('/').pop();
+    const files = Object.entries(data.files).map(([name, text]) => ({ name: `${folder}/${name}`, data: text }));
     for (const b of data.binaries) {
       const res = await fetch(b.url);
-      if (res.ok) files.push({ name: `${id}/${b.path}`, data: new Uint8Array(await res.arrayBuffer()) });
+      if (res.ok) files.push({ name: `${folder}/${b.path}`, data: new Uint8Array(await res.arrayBuffer()) });
     }
     const blob = makeZip(files);
-    const a = h(`<a download="${esc(id)}-theme.zip"></a>`);
+    const a = h(`<a download="${esc(id.replace('/', '-'))}-theme.zip"></a>`);
     a.href = URL.createObjectURL(blob);
     document.body.append(a);
     a.click();
@@ -1226,7 +1390,10 @@ async function downloadTheme(id) {
   } catch (error) { toast(error.message); }
 }
 
-async function uploadTheme(done) {
+// A theme zip: into Margin's library (its admins), or with ws into that workspace's own themes,
+// where the zip replaces the whole theme of that id and waits to be previewed and used.
+async function uploadTheme(done, ws = null) {
+  const scope = ws ? {} : { workspace: false };
   const file = await pickFile('.zip,application/zip');
   if (!file) return;
   let entries;
@@ -1246,14 +1413,19 @@ async function uploadTheme(done) {
     } else files[path] = dec.decode(e.data);
   }
   let check;
-  try { check = await api('/api/themes/validate', { method: 'POST', body: { files }, workspace: false }); } catch (error) { toast(error.message); return; }
+  try { check = await api('/api/themes/validate', { method: 'POST', body: { files, replace: true }, ...scope }); } catch (error) { toast(error.message); return; }
   const list = (items, cls) => items.map((i) => `<div class="issue ${cls}"><code>${esc(i.file)}${i.line ? ':' + i.line : ''}</code><span>${esc(i.message)}</span></div>`).join('');
   const box = h(`<div><p style="margin:0 4px 14px;color:var(--muted)">${check.ok ? `“${esc(check.id)}” is ready.` : `Fix ${check.errors.length} problem${check.errors.length === 1 ? '' : 's'} and upload again.`}</p>
     <div class="issues">${list(check.errors, 'err')}${list(check.warnings, '')}</div>
-    ${check.ok ? '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn primary" data-save>Add to the library</button></div>' : ''}</div>`);
-  const s = sheet(check.ok ? 'Upload theme' : 'This theme needs changes', box);
+    ${check.ok ? `<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn primary" data-save>${ws ? `Save to ${esc(ws.name)}` : 'Add to the Library'}</button></div>` : ''}</div>`);
+  const s = sheet(check.ok ? 'Upload Theme' : 'This Theme Needs Changes', box);
   $('[data-save]', box)?.addEventListener('click', async () => {
-    try { await api('/api/themes', { method: 'POST', body: { files }, workspace: false }); s.close(); toast('Theme added'); done(); } catch (error) { toast(error.message); }
+    try {
+      await api('/api/themes', { method: 'POST', body: { files, replace: true }, ...scope });
+      s.close();
+      toast(ws ? 'Saved. Preview it, then Use.' : 'Theme added');
+      done();
+    } catch (error) { toast(error.message); }
   });
 }
 
@@ -1279,7 +1451,7 @@ function openPalette() {
   input.focus();
   const posts = (w && (recall(`/api/posts?scope=${postsFilter.scope}&status=${postsFilter.status}`) || recall('/api/posts?scope=mine&status=all'))?.posts) || [];
   const commands = () => [
-    ...navItems().filter((n) => n.key !== 'sep').map((n) => ({ label: n.label, icon: icons[n.icon], hint: w && ['posts', 'comments', 'team', 'workspace'].includes(n.key) ? w.name : '', run: () => go(n.path) })),
+    ...navItems().filter((n) => n.key !== 'sep').map((n) => ({ label: n.label, icon: icons[n.icon], hint: w && ['posts', 'comments', 'team', 'workspace', 'style'].includes(n.key) ? w.name : '', run: () => go(n.path) })),
     ...posts.map((p) => ({ label: p.title, icon: icons.pen, hint: p.status === 'draft' ? 'Draft' : 'Post', post: true, run: () => go(`/studio/write/${p.id}`) })),
     ...(w && w.writer ? [{ label: 'New post', icon: icons.plus, run: () => go(`/studio/write?ws=${w.slug}`) }] : []),
     { label: 'Connect via MCP…', icon: icons.mcp, run: () => mcpSheet(me.mcp, null, me.site && me.site.name, siteLogo()) },

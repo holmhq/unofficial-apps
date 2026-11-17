@@ -261,7 +261,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Write a new post (draft by default) in Markdown",
-      "description": "Writers only. Body is Markdown (GitHub style): headings, lists, tables, code, links, images. Extras: a line `> [!NOTE]` (or TIP, IMPORTANT, WARNING, CAUTION) starts a callout; a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link alone on a line becomes an embed; a link to another post on Margin alone on a line becomes a card; `![alt](/media/<id>.<ext> \"caption\")` on its own line is a figure (add photos, drawings and videos with media_upload or media_link; pages pick the right size themselves), add #wide or #full to the address for width; .mp4 or uploaded videos play inline. Code: fence it with its language (```js, ```python, ```sql…) and it is highlighted. Maths: LaTeX between $…$ inline, or $$ on lines of their own around a display formula (a dollar amount like $5 stays text; write \\$ for a literal one). Leave the H1 out: the title is shown above the body. The address is made from the title unless you pass slug. Use `as` to post under one of your names, or as the workspace itself (its address) if you own or run it. `cover` takes a photo's /media address, or `drawing` gives the post a drawn cover in the workspace's style (pick its subject); with neither, the post has no cover. Status draft keeps it private; published puts it live at once. Unless the person asked to publish, create a draft and give them the preview link. Drawn covers: week (calendars, time), energy (power, hardware), people (research), network (sync, devices), stack (layers, documents, process), inbox (messages, support), bars (numbers, speed), rings (sound, quiet, focus). Pass `workspace` (its address, from me_get). `featured` pins it on the workspace home (owners and admins). `page: true` makes a page instead (owners and admins): written as the workspace, at its address plus the slug (/about may be one), with no date, byline, claps or comments, and left out of the home, Latest, topics and the feed; link it from the menu with workspace_update's nav.",
+      "description": "Writers only. Body is Markdown (GitHub style): headings, lists, tables, code, links, images. Extras: a line `> [!NOTE]` (or TIP, IMPORTANT, WARNING, CAUTION) starts a callout; a YouTube, Vimeo, Loom, CodePen, Figma or Spotify link alone on a line becomes an embed; a link to another post on Margin alone on a line becomes a card; `![alt](/media/<id>.<ext> \"caption\")` on its own line is a figure (add photos, drawings and videos with media_upload or media_link; pages pick the right size themselves), add #wide or #full to the address for width; .mp4 or uploaded videos play inline. Code: fence it with its language (```js, ```python, ```sql…) and it is highlighted. Maths: LaTeX between $…$ inline, or $$ on lines of their own around a display formula (a dollar amount like $5 stays text; write \\$ for a literal one). Leave the H1 out: the title is shown above the body. The address is made from the title unless you pass slug. Use `as` to post under one of your names, or as the workspace itself (its address) if you own or run it. `cover` takes a photo's /media address, or `drawing` gives the post a drawn cover in the workspace's style (pick its subject); with neither, the post has no cover. For a picture in the workspace's style, use covers_prompt first; pass its tone as cover_tone with the cover. Status draft keeps it private; published puts it live at once. Unless the person asked to publish, create a draft and give them the preview link. Drawn covers: week (calendars, time), energy (power, hardware), people (research), network (sync, devices), stack (layers, documents, process), inbox (messages, support), bars (numbers, speed), rings (sound, quiet, focus). Pass `workspace` (its address, from me_get). `featured` pins it on the workspace home (owners and admins). `page: true` makes a page instead (owners and admins): written as the workspace, at its address plus the slug (/about may be one), with no date, byline, claps or comments, and left out of the home, Latest, topics and the feed; link it from the menu with workspace_update's nav.",
       "input": {
         "type": "object",
         "properties": {
@@ -309,6 +309,13 @@
           "cover_alt": {
             "type": "string",
             "maxLength": 200
+          },
+          "cover_tone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 40
           },
           "status": {
             "type": "string",
@@ -380,7 +387,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Edit, publish or unpublish a post",
-      "description": "Pass the post id and only the fields to change; the rest stay. markdown replaces the whole body, so read the post first with posts.get and send back the edited text. status published puts it live (drafts) and draft takes it down. A draft's address follows its title until first published; after that it changes only when you pass slug, and the old address redirects. `as` moves the post to another blog you can write as. `drawing` changes the drawn cover (week, energy, people, network, stack, inbox, bars, rings, or none to remove the cover). `page` true turns a post the workspace wrote as itself into a page, false turns a page back into a post; the address stays. `published_at` (Margin's admins) sets the date the post shows; on a draft never published it waits until the post goes live, and the draft's address still follows its title.",
+      "description": "Pass the post id and only the fields to change; the rest stay. markdown replaces the whole body, so read the post first with posts.get and send back the edited text. status published puts it live (drafts) and draft takes it down. A draft's address follows its title until first published; after that it changes only when you pass slug, and the old address redirects. `as` moves the post to another blog you can write as. `cover` sets a photo (cover_alt describes it; cover_tone is the tone covers_prompt gave, so the next cover differs). `drawing` changes the drawn cover (week, energy, people, network, stack, inbox, bars, rings, or none to remove the cover). `page` true turns a post the workspace wrote as itself into a page, false turns a page back into a post; the address stays. `published_at` (Margin's admins) sets the date the post shows; on a draft never published it waits until the post goes live, and the draft's address still follows its title.",
       "input": {
         "type": "object",
         "properties": {
@@ -429,6 +436,13 @@
           "cover_alt": {
             "type": "string",
             "maxLength": 200
+          },
+          "cover_tone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 40
           },
           "status": {
             "type": "string",
@@ -1181,7 +1195,7 @@
       "risk": "read",
       "sensitive": true,
       "summary": "See a workspace's settings (owners and admins)",
-      "description": "Returns the workspace's name, tagline, description, home, moderation, cover style, theme, menu links, pinned posts, footer line, whether Margin's credit shows, and its byline photo (avatar: an address, or \"\" when the logo stands in; avatar_source: photo, profile or logo), with your role. Change them with workspace.update, the theme with themes.activate, and the team with team.list and team.update.",
+      "description": "Returns the workspace's name, tagline, description, home, moderation, cover style, cover recipe (cover_recipe, with custom listing the parts changed from the default), theme, menu links, pinned posts, footer line, whether Margin's credit shows, and its byline photo (avatar: an address, or \"\" when the logo stands in; avatar_source: photo, profile or logo), with your role. Change them with workspace.update, the theme with themes.activate, and the team with team.list and team.update.",
       "input": {
         "type": "object",
         "properties": {
@@ -1228,7 +1242,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Change a workspace's settings (owners and admins)",
-      "description": "Updates the workspace: name, tagline, description, home (\"latest\", \"curated\" for pinned posts first, or \"@handle\" to make one writer's page the home), moderation (\"off\", \"outsiders\": hold comments from names not on the team, \"all\"), cover style (look paper|flat|blocks, tone lilac|tangerine|mint|butter|sky|coral) and menu links. logo: a square image's /media address (from media_upload, media_list or an upload link); an empty string removes it. It becomes the tab icon; a PNG or JPEG of 512 px or more is also the home-screen icon, the app icon and the picture in link previews of pages without a cover, which an SVG can't be. avatar: the byline photo, the picture beside the workspace's own name on its posts, cards and comments, apart from the logo, which stays the site's mark: a /media address, \"me\" for your own Holm profile photo (it follows your profile), or \"\" to show the logo there again. footer: one line for the footer, plain text where [label](https://…) makes a link and {year} prints the year; an empty string brings back the theme's own. credit: false hides \"Written on Margin\", the Holm mark and Send feedback from the footer.",
+      "description": "Updates the workspace: name, tagline, description, home (\"latest\", \"curated\" for pinned posts first, or \"@handle\" to make one writer's page the home), moderation (\"off\", \"outsiders\": hold comments from names not on the team, \"all\"), cover style (look paper|flat|blocks, tone lilac|tangerine|mint|butter|sky|coral) and menu links. cover_recipe: how assistants make cover pictures in the workspace's style (covers_prompt hands it to writers); send only the parts to change, null resets a part, and cover_recipe: null resets it all. style is the prompt's fixed text, with {tone} and {accent} where the colours go; tones are the backgrounds covers take in turn (1 to 8, each { name, hex }); accent is one { name, hex } used sparingly; subjects says how to pick a post's subject; references are up to 4 /media addresses of covers in the style; alt says how to describe one. Until changed, it follows the drawn-cover style. logo: a square image's /media address (from media_upload, media_list or an upload link); an empty string removes it. It becomes the tab icon; a PNG or JPEG of 512 px or more is also the home-screen icon, the app icon and the picture in link previews of pages without a cover, which an SVG can't be. avatar: the byline photo, the picture beside the workspace's own name on its posts, cards and comments, apart from the logo, which stays the site's mark: a /media address, \"me\" for your own Holm profile photo (it follows your profile), or \"\" to show the logo there again. footer: one line for the footer, plain text where [label](https://…) makes a link and {year} prints the year; an empty string brings back the theme's own. credit: false hides \"Written on Margin\", the Holm mark and Send feedback from the footer.",
       "input": {
         "type": "object",
         "properties": {
@@ -1321,6 +1335,94 @@
           "avatar": {
             "type": "string",
             "maxLength": 80
+          },
+          "cover_recipe": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "style": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 3000
+              },
+              "subjects": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 1000
+              },
+              "tones": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "minItems": 1,
+                "maxItems": 8,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 30
+                    },
+                    "hex": {
+                      "type": "string",
+                      "pattern": "^#[0-9A-Fa-f]{6}$"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "hex"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "accent": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "hex": {
+                    "type": "string",
+                    "pattern": "^#[0-9A-Fa-f]{6}$"
+                  }
+                },
+                "required": [
+                  "name",
+                  "hex"
+                ],
+                "additionalProperties": false
+              },
+              "references": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "maxItems": 4,
+                "items": {
+                  "type": "string",
+                  "maxLength": 300
+                }
+              },
+              "alt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 300
+              }
+            },
+            "additionalProperties": false
           }
         },
         "required": [
@@ -1514,8 +1616,8 @@
       "auth": "user",
       "risk": "read",
       "sensitive": true,
-      "summary": "List themes and which one is live",
-      "description": "Admins only. Built-in themes (quiet, editorial) and any saved ones, with the active id and each theme's comment layout.",
+      "summary": "List the themes a workspace can use, and which is live",
+      "description": "Owners and admins. Built-in themes (quiet, editorial), Margin's library, and this workspace's own (scope \"workspace\", id \"<workspace>/<id>\"; up to 3, which only this workspace sees), with the live one (active; active_rev is the save of an own theme the site shows) and each theme's comment layout.",
       "input": {
         "type": "object",
         "properties": {
@@ -1599,14 +1701,18 @@
       "risk": "read",
       "sensitive": true,
       "summary": "Download every file of a theme to study or change",
-      "description": "Admins only. Returns files as path → text (theme.json, templates, partials, CSS) and lists binary assets (fonts, images) with addresses. To make a new design: get a theme, change the files, give it a new id in theme.json, check it with themes.validate, save with themes.save, then preview at <site>?theme=<id> before themes.activate.",
+      "description": "Files as path → text (theme.json, templates, partials, CSS), and binaries (fonts, images) with their /t/… addresses. Built-in and library themes: anyone signed in. A workspace's own (id \"<workspace>/<id>\", add @<rev> for an earlier save): its owners and admins; revisions lists its last saves and live_rev the one the site shows. To restyle a workspace: get a theme, change only what you need, save with themes.save (base plus the changed files), open the preview link, then themes.activate. A copy of a built-in keeps the built-in's fonts at /t/<id>.b1/…; leave those addresses as they are.",
       "input": {
         "type": "object",
         "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
           "id": {
             "type": "string",
             "minLength": 2,
-            "maxLength": 32
+            "maxLength": 70
           }
         },
         "required": [
@@ -1646,17 +1752,23 @@
       "risk": "read",
       "sensitive": true,
       "summary": "Check a theme without saving it",
-      "description": "Send files as path → text; fonts and images as path → { base64 }. Returns ok, errors (each with file, line and message) and warnings. Fix every error before themes.save.",
+      "description": "Checks a theme without saving it. files: path → text, fonts and images as { base64 }. With workspace and base, checks base with your files laid over it, exactly as themes.save would store it. Returns ok, errors (each with file, line and message) and warnings. Fix every error before themes.save.",
       "input": {
         "type": "object",
         "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "base": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 70
+          },
           "files": {
             "type": "object"
           }
         },
-        "required": [
-          "files"
-        ],
         "additionalProperties": false
       },
       "output": {
@@ -1687,21 +1799,30 @@
     },
     "themes.save": {
       "handler": "opThemesSave",
-      "auth": "member",
+      "auth": "user",
       "risk": "write",
       "idempotency": "optional",
       "sensitive": true,
-      "summary": "Save a theme (validated), optionally making it live",
-      "description": "Admins only. Same files as themes.validate. A theme with errors is not saved: the result lists them. Saving under an existing saved id replaces it. activate true makes it live at once; otherwise preview with ?theme=<id> first and call themes.activate. Only Margin's admins add themes; a workspace then picks one with themes_activate.",
+      "summary": "Save a theme of the workspace's own, to preview before it goes live",
+      "description": "Owners and admins. Saves one of the workspace's own themes (up to 3; only this workspace sees them), as a new save. Start from base (a theme you can read: \"quiet\", a library id, or \"<workspace>/<id>\", with @<rev> for an earlier save) and send only the files you change: text as strings, fonts and images as { base64 }, { from: \"<a /t/… address from themes.get>\" } to keep one, or null to remove a file. Keep each call under about 45 KB. Without base, saving under the id of one of your themes starts from its latest save. theme.json's id names the theme; a copy of a built-in needs a new id. A theme with errors is not saved: the answer lists them. Saving never changes the live site, even for the live theme: open preview_url, then themes.activate. To go back, activate <id>@<rev> from themes.get.",
       "input": {
         "type": "object",
         "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "base": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 70
+          },
           "files": {
             "type": "object"
           }
         },
         "required": [
-          "files"
+          "workspace"
         ],
         "additionalProperties": false
       },
@@ -1742,7 +1863,7 @@
       "idempotency": "optional",
       "sensitive": true,
       "summary": "Make a theme live, and optionally change its settings",
-      "description": "Admins only. id is a theme from themes.list. settings sets that theme's options (as declared in its theme.json, such as accent colour or landing text); omitted ones keep their values.",
+      "description": "Owners and admins. Makes a theme live on the workspace, and optionally sets its settings (as declared in its theme.json, such as accent colour or landing text; omitted ones keep their values). id is from themes.list. One of the workspace's own goes live at its latest save, or at an earlier one with <id>@<rev> (going back).",
       "input": {
         "type": "object",
         "properties": {
@@ -1753,7 +1874,7 @@
           "id": {
             "type": "string",
             "minLength": 2,
-            "maxLength": 32
+            "maxLength": 70
           },
           "settings": {
             "type": "object"
@@ -1763,6 +1884,170 @@
           "workspace",
           "id"
         ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
+    "themes.delete": {
+      "handler": "opThemesDelete",
+      "auth": "user",
+      "risk": "destructive",
+      "sensitive": true,
+      "summary": "Delete one of the workspace's own themes",
+      "description": "Owners and admins. Removes one of the workspace's own themes and all its saves for good; not the live one. Without confirm it answers with what would go: ask the person, then call again with confirm: true.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 70
+          },
+          "confirm": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "workspace",
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        }
+      }
+    },
+    "themes.publish": {
+      "handler": "opThemesPublish",
+      "auth": "member",
+      "risk": "write",
+      "idempotency": "optional",
+      "sensitive": true,
+      "summary": "Add a workspace's theme to Margin's library",
+      "description": "Margin's admins. Copies one of a workspace's own themes (its latest save, or <id>@<rev>) into Margin's library, under its own id or library_id, so every workspace can pick it. Replaces a library theme with that id; workspaces using it see the new one.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 70
+          },
+          "library_id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 32
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "output": {
+        "type": "object"
+      },
+      "errors": {
+        "APP_UNAUTHORIZED": {
+          "status": 401,
+          "public": true
+        },
+        "APP_FORBIDDEN": {
+          "status": 403,
+          "public": true
+        },
+        "APP_NOT_FOUND": {
+          "status": 404,
+          "public": true
+        },
+        "APP_INVALID_INPUT": {
+          "status": 400,
+          "public": true
+        },
+        "APP_CONFLICT": {
+          "status": 409,
+          "public": true
+        },
+        "APP_INVALID": {
+          "status": 422,
+          "public": true
+        }
+      }
+    },
+    "covers.prompt": {
+      "handler": "opCoversPrompt",
+      "auth": "user",
+      "risk": "read",
+      "sensitive": true,
+      "summary": "Get the workspace's cover recipe to make a cover in its style",
+      "description": "Writers. Margin makes no pictures: this hands you the workspace's cover recipe so your own image tool can make a cover in its style. Pass post_id (the post it's for) and, once you've chosen it, subject: one or two sentences on the one object or scene that stands for this post's idea (follow subjects). Returns tone (this cover's background, chosen so covers side by side differ; pass its name back as cover_tone), accent, style and framing (the fixed parts), prompt (all of it, when subject is given), references (covers in this style to match), image (size, and the safe area pages crop to), alt (how to describe it) and steps. Show the person the picture before you attach it, unless they said not to.",
+      "input": {
+        "type": "object",
+        "properties": {
+          "workspace": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "post_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 600
+          }
+        },
+        "required": [],
         "additionalProperties": false
       },
       "output": {

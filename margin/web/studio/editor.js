@@ -785,7 +785,7 @@ export async function editorView(root, { me, id, go }) {
   const drawingSheet = () => {
     const first = !drawing;
     if (first) drawing = freshDrawing();
-    const box = h(`<div><p style="margin:0 4px 14px;color:var(--muted)">Pick what the cover draws. Move over it to see it work. ${esc(ws.name)} draws in its ${esc(ws.cover.look)} style; owners change that in Workspace.</p>
+    const box = h(`<div><p style="margin:0 4px 14px;color:var(--muted)">Pick what the cover draws. Move over it to see it work. ${esc(ws.name)} draws in its ${esc(ws.cover.look)} style; owners change that in Style.</p>
       <div class="ed-motifs">${covers.MOTIFS.map((m) => `<button type="button" class="ed-motif${m === drawing.motif ? ' on' : ''}" data-motif="${m}" aria-pressed="${m === drawing.motif}"><span class="ed-motif-art">${covers.render(covers.normalize({ ...drawing, motif: m }), null, { labels: false })}</span><span>${esc(MOTIF_LABEL[m] || m)}</span></button>`).join('')}</div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button type="button" class="btn" data-shuffle>New variation</button></div></div>`);
     const s2 = sheet('Cover drawing', box);

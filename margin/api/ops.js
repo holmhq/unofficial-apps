@@ -9,7 +9,8 @@ import { createPost, updatePost, deletePost, postById, editorDTO, cardDTO, canEd
 import { listForPost, createComment, moderate, inbox } from './comments.js';
 import { listMine, storeMedia, createUploadLink, requireUploader } from './media.js';
 import { createInvite, listInvites, revokeInvite } from './invites.js';
-import { listThemes, loadTheme, validate, saveTheme, themeFiles, settingValues, cleanSetting } from './themes.js';
+import { listThemes, loadTheme, validate, saveTheme, themeFiles, settingValues, cleanSetting, parseRef, assemble, revisions, deleteTheme, publishTheme, themeExists, BUILT_IN, OWN_MAX } from './themes.js';
+import { effectiveRecipe, coverPrompt } from './recipes.js';
 import { postAtPath } from './pages.js';
 import { prepare } from './markdown.js';
 import { wsPath } from './lib/paths.js';
@@ -76,7 +77,7 @@ export function opMe(input, env) {
     out.guide = out.needs_handle
       ? 'This person has not picked a name on Margin yet. Ask them for a handle and do that in Studio first; you cannot pick it for them.'
       : out.workspaces.length
-        ? 'Pass `workspace` (an address from workspaces) to the other tools. Write posts in Markdown with posts_create (draft unless asked to publish) and share the preview link. Check comments_inbox for comments that need approval or a reply; answer only ordinary ones and ask about anything sensitive. Use `as` for one of their names; never reveal which names belong to the same person. Their names: personas_create, personas_update, personas_delete. Owners and admins run the workspace with workspace_get, workspace_update, themes_activate, team_list, team_update, invites_create and invites_revoke; confirm removals first.'
+        ? 'Pass `workspace` (an address from workspaces) to the other tools. Write posts in Markdown with posts_create (draft unless asked to publish) and share the preview link. Check comments_inbox for comments that need approval or a reply; answer only ordinary ones and ask about anything sensitive. Use `as` for one of their names; never reveal which names belong to the same person. Their names: personas_create, personas_update, personas_delete. For a cover picture in the workspace\'s style, call covers_prompt and follow its steps (you choose the subject; your own image tool makes it). Owners and admins run the workspace with workspace_get, workspace_update (including cover_recipe), team_list, team_update, invites_create and invites_revoke, and restyle it with themes_list, themes_get, themes_save (a base plus only the files you change), the preview link, then themes_activate; confirm removals first.'
         : 'They are not on a workspace yet. Offer to start one with workspaces_create (ask for its name), or they can open an invite link. They can comment on any post meanwhile.';
     return out;
   }, true);
@@ -248,7 +249,7 @@ export function opWorkspaceUpdate(input, env) {
     requireWsAdmin(ctx);
     const { workspace, ...change } = input;
     const ws = updateWorkspace(env, ctx, change);
-    return { ...wsDTO(ws), ...bylineOf(ws), home: ws.home, moderation: ws.moderation, cover: ws.cover, theme: ws.theme, footer: ws.footer || '', credit: ws.credit !== false, url: absolute(env, wsPath(ws.slug)) };
+    return { ...wsDTO(ws), ...bylineOf(ws), home: ws.home, moderation: ws.moderation, cover: ws.cover, cover_recipe: effectiveRecipe(ws, origin(env)), theme: ws.theme, theme_rev: ws.themeRev || null, footer: ws.footer || '', credit: ws.credit !== false, url: absolute(env, wsPath(ws.slug)) };
   });
 }
 export function opWorkspaceGet(input, env) {
@@ -257,7 +258,7 @@ export function opWorkspaceGet(input, env) {
     const ws = ctx.ws;
     return {
       ...wsDTO(ws), ...bylineOf(ws), role: ctx.wsRole, description: ws.description || '', home: ws.home, moderation: ws.moderation,
-      cover: ws.cover, theme: ws.theme, nav: ws.nav || [], featured: ws.featured || [], footer: ws.footer || '', credit: ws.credit !== false,
+      cover: ws.cover, cover_recipe: effectiveRecipe(ws, origin(env)), theme: ws.theme, theme_rev: ws.themeRev || null, nav: ws.nav || [], featured: ws.featured || [], footer: ws.footer || '', credit: ws.credit !== false,
       url: absolute(env, wsPath(ws.slug)),
     };
   }, true);
@@ -275,53 +276,138 @@ export function opInvitesRevoke(input, env) {
   return op(env, input, (ctx) => { requireWsAdmin(ctx); return revokeInvite(env, ctx, String(input.id || '')); });
 }
 export function opThemesList(input, env) {
-  return op(env, input, (ctx) => { requireWsAdmin(ctx); return { active: ctx.ws.theme, themes: listThemes(env) }; }, true);
+  return op(env, input, (ctx) => {
+    requireWsAdmin(ctx);
+    const themes = listThemes(env, ctx.ws.slug);
+    return { active: ctx.ws.theme, active_rev: ctx.ws.themeRev || null, themes, own: { count: themes.filter((t) => t.scope === 'workspace').length, max: OWN_MAX } };
+  }, true);
 }
 export function opThemesReference(input, env) {
   return op(env, input, (ctx) => { requireMember(ctx); return { reference: env.holm.private.read('reference.md') }; }, true);
 }
 export async function opThemesGet(input, env) {
   try {
-    const ctx = scoped(env, input, true);
+    const r = parseRef(input.id);
+    if (!r) reject(400, 'invalid_input', 'id is a theme from themes_list, such as "quiet" or "<workspace>/<id>" (add @<rev> for an earlier save).');
+    const ctx = scoped(env, { workspace: input.workspace || r.ws }, true);
     requireMember(ctx);
-    return await themeFiles(env, input.id);
+    themeReader(ctx)(r);
+    const out = await themeFiles(env, r.ref, r.rev);
+    if (!BUILT_IN.includes(r.ref)) {
+      out.revisions = revisions(env, r.ref);
+      if (r.ws) out.live_rev = ctx.ws && ctx.ws.theme === r.ref ? ctx.ws.themeRev || out.revisions[0].rev : null;
+    }
+    return out;
   } catch (error) { return fail(error); }
 }
 export function opThemesValidate(input, env) {
   return op(env, input, (ctx) => {
     requireMember(ctx);
-    const r = validate(input.files);
+    const files = input.base || input.workspace ? assemble(env, input, themeReader(ctx), ctx.ws && ctx.wsAdmin ? ctx.ws.slug : null) : input.files;
+    const r = validate(files);
     return { ok: r.ok, errors: r.errors, warnings: r.warnings, id: r.manifest ? r.manifest.id : null };
   }, true);
 }
 export function opThemesSave(input, env) {
   return op(env, input, (ctx) => {
-    requireAdmin(ctx);
-    const r = validate(input.files);
+    requireWsAdmin(ctx);
+    const files = assemble(env, input, themeReader(ctx), ctx.ws.slug);
+    const r = validate(files);
     if (!r.ok) return { ok: false, saved: false, errors: r.errors, warnings: r.warnings };
-    const saved = saveTheme(env, ctx, input.files);
-    return { ok: true, saved: true, id: saved.id, warnings: saved.warnings };
+    return { ok: true, saved: true, ...saveOwnTheme(env, ctx, files) };
   });
 }
 export function opThemesActivate(input, env) {
   return op(env, input, (ctx) => { requireWsAdmin(ctx); return activateTheme(env, ctx, input.id, input.settings); });
 }
+export function opThemesDelete(input, env) {
+  return op(env, input, (ctx) => { requireWsAdmin(ctx); return deleteOwnTheme(env, ctx, input.id, input.confirm === true); });
+}
+export function opThemesPublish(input, env) {
+  return op(env, input, (ctx) => {
+    requireAdmin(ctx);
+    const r = parseRef(input.id);
+    if (!r || !r.ws) reject(400, 'invalid_input', 'id is a workspace theme, such as "<workspace>/<id>".');
+    if (!themeExists(env, r.ref)) reject(404, 'not_found', `There is no theme ${r.ref}.`);
+    const saved = publishTheme(env, ctx, r.rev ? `${r.ref}@${r.rev}` : r.ref, input.library_id);
+    return { published: true, id: saved.id, rev: saved.rev, warnings: saved.warnings };
+  });
+}
+export function opCoversPrompt(input, env) {
+  return op(env, input, (ctx) => {
+    let post = null;
+    if (input.post_id) post = onPost(env, ctx, input.post_id);
+    requireWriter(ctx);
+    if (post && !canEdit(env, ctx, post)) reject(404, 'not_found', 'No such post.');
+    const recent = published(env, ctx, ctx.ws.slug).slice(0, 24);
+    return coverPrompt(env, ctx.ws, { recent, post, subject: input.subject, origin: origin(env) });
+  }, true);
+}
+
+// Who may read a theme: built-ins and the library, anyone signed in; a workspace's own, its
+// owners and admins (and Margin's admins). Others are told it isn't there.
+export function themeReader(ctx) {
+  return (r) => {
+    if (!r.ws || ctx.admin) return;
+    if (ctx.ws && ctx.ws.slug === r.ws && ctx.wsAdmin) return;
+    reject(404, 'not_found', `There is no theme ${r.ref}.`);
+  };
+}
+
+// A save into the workspace's own themes. It never changes the live site: the workspace stays
+// on the save it made live until themes_activate.
+export function saveOwnTheme(env, ctx, files) {
+  const ref = `${ctx.ws.slug}/${JSON.parse(files['theme.json'] || '{}').id || ''}`;
+  const live = ctx.ws.theme === ref;
+  const saved = saveTheme(env, ctx, files, ctx.ws.slug, live ? ctx.ws.themeRev : null);
+  const url = absolute(env, `${wsPath(ctx.ws.slug)}?theme=${encodeURIComponent(saved.id)}`);
+  return {
+    id: saved.id, rev: saved.rev, live: false, preview_url: url, warnings: saved.warnings,
+    next: live ? `${ctx.ws.name} still shows the save made live before. Open preview_url, then call themes_activate with id "${saved.id}" to make this save live.` : `Open preview_url to see it on ${ctx.ws.name}'s pages, then call themes_activate with id "${saved.id}".`,
+  };
+}
+
+export function deleteOwnTheme(env, ctx, id, confirm) {
+  const r = parseRef(id);
+  if (!r || !r.ws || r.rev) reject(400, 'invalid_input', 'id is one of this workspace\'s own themes, such as "<workspace>/<id>".');
+  themeReader(ctx)(r);
+  if (r.ws !== ctx.ws.slug) reject(404, 'not_found', `There is no theme ${r.ref}.`);
+  if (!themeExists(env, r.ref)) reject(404, 'not_found', `There is no theme ${r.ref}.`);
+  if (ctx.ws.theme === r.ref) reject(409, 'active', 'This theme is live. Make another one live first (themes_activate).');
+  const saves = revisions(env, r.ref).length;
+  if (!confirm) return { deleted: false, would_delete: r.ref, saves, confirm: `This removes ${r.ref} and its ${saves} save${saves === 1 ? '' : 's'} for good. Ask the person, then call again with confirm: true.` };
+  const out = deleteTheme(env, r.ref, ctx.ws.theme);
+  const settings = { ...(ctx.ws.themeSettings || {}) };
+  if (settings[r.ref]) { delete settings[r.ref]; updateWorkspace(env, ctx, { themeSettings: settings }); }
+  return out;
+}
+
 export function opInvitesCreate(input, env) {
   let ctx;
   try { ctx = scoped(env, input, false); requireWsAdmin(ctx); } catch (error) { return fail(error); }
   return createInvite(env, ctx, input, origin(env)).catch(fail);
 }
 
-// A workspace picks a theme and its settings.
+// A workspace picks a theme and its settings. Its own themes are pinned to a save: the latest,
+// or an earlier one (<ref>@<rev>) to go back. Built-in and library themes follow their latest.
 export function activateTheme(env, ctx, id, values) {
-  const theme = loadTheme(env, ctx, id);
-  if (!theme || theme.id !== id) reject(404, 'not_found', `There is no theme "${id}".`);
+  const r = parseRef(id);
+  if (!r) reject(404, 'not_found', `There is no theme "${id}".`);
+  themeReader(ctx)(r);
+  if (r.ws && r.ws !== ctx.ws.slug) reject(404, 'not_found', `There is no theme "${r.ref}".`);
+  if (!themeExists(env, r.ref)) reject(404, 'not_found', `There is no theme "${r.ref}".`);
+  if (!r.ws && r.rev) reject(400, 'invalid_input', 'Only a workspace\'s own themes go back to an earlier save.');
+  const saves = r.ws ? revisions(env, r.ref) : [];
+  if (r.rev && !saves.some((x) => x.rev === r.rev)) reject(404, 'not_found', `${r.ref} has no save ${r.rev}. themes_get lists its saves.`);
+  const rev = r.ws ? r.rev || saves[0].rev : null;
+  const theme = loadTheme(env, ctx, r.ref, rev);
+  if (!theme || theme.id !== r.ref) reject(404, 'not_found', `There is no theme "${r.ref}".`);
   const all = { ...(ctx.ws.themeSettings || {}) };
   if (values && typeof values === 'object') {
-    const current = { ...(all[id] || {}) };
+    const current = { ...(all[r.ref] || {}) };
     for (const s of theme.settings) if (values[s.key] !== undefined) current[s.key] = cleanSetting(s, values[s.key]);
-    all[id] = current;
+    all[r.ref] = current;
   }
-  updateWorkspace(env, ctx, { theme: id, themeSettings: all });
-  return { active: id, workspace: ctx.ws.slug, settings: settingValues(theme, all[id]) };
+  updateWorkspace(env, ctx, { theme: r.ref, themeRev: rev, themeSettings: all });
+  return { active: r.ref, rev, workspace: ctx.ws.slug, settings: settingValues(theme, all[r.ref]), url: absolute(env, wsPath(ctx.ws.slug)) };
 }

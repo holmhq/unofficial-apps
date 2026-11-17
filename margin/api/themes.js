@@ -31,6 +31,22 @@ const extOf = (path) => (path.match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase() 
 
 // ---------- loading ----------
 
+// A theme's ref: "quiet" (built in), "paper" (Margin's library) or "lumen/paper" (a theme of the
+// workspace lumen's own, which only lumen lists, previews and uses). "@rev" picks an earlier save.
+export const REF = /^(?:([a-z][a-z0-9_-]{0,28}[a-z0-9])\/)?([a-z][a-z0-9-]{1,31})(?:@([a-z0-9]{4,16}))?$/;
+export const OWN_MAX = 3;
+const KEEP_REVS = 5;
+// Built-in fonts and images for copies of a built-in theme: /t/<id>.b1/<file>, cached for a year.
+export const BUILT_IN_REV = 'b1';
+
+export function parseRef(value) {
+  const m = REF.exec(String(value || '').trim().toLowerCase());
+  if (!m) return null;
+  const ws = m[1] || null;
+  if (ws && BUILT_IN.includes(m[2])) return null;
+  return { ws, id: m[2], rev: m[3] || null, ref: ws ? `${ws}/${m[2]}` : m[2] };
+}
+
 function builtIn(env, id) {
   const p = env.holm.private;
   const base = `themes/${id}`;
@@ -44,31 +60,48 @@ function builtIn(env, id) {
     const path = typeof entry === 'string' ? entry : entry && (entry.path || entry.name);
     if (!path || !path.endsWith('.html')) continue;
     const name = path.split('/').pop().replace(/\.html$/, '');
-    partials[name] = p.read(`${base}/partials/${name}.html`);
+    let src = null;
+    try { src = p.read(`${base}/partials/${name}.html`); } catch { src = null; }
+    if (typeof src === 'string') partials[name] = src;
   }
-  return { ...normalize(manifest), id, builtIn: true, rev: 'b', templates, partials, assets: `/themes/${id}` };
+  return { ...normalize(manifest), id, key: id, ws: null, builtIn: true, rev: 'b', templates, partials, assets: `/themes/${id}` };
 }
 
-function saved(env, id) {
-  const row = env.holm.app.ds.find('themes', { themeId: id }, { limit: 1 })[0];
+function themeRow(env, ref) { return env.holm.app.ds.find('themes', { themeId: ref }, { limit: 1 })[0] || null; }
+const revsOf = (row) => (Array.isArray(row.revs) && row.revs.length ? row.revs : [{ rev: row.rev, at: row.updatedAt, by: row.updatedBy, version: row.version }]);
+
+function bundleAt(env, ref, rev) {
+  const object = env.holm.app.s3.get(`themes/${ref}/${rev}.json`);
+  return object ? JSON.parse(new TextDecoder().decode(object.data)) : null;
+}
+
+function saved(env, ref, rev = null) {
+  const row = themeRow(env, ref);
   if (!row) return null;
-  const object = env.holm.app.s3.get(`themes/${id}/${row.rev}.json`);
-  if (!object) return null;
-  const bundle = JSON.parse(new TextDecoder().decode(object.data));
-  return { ...normalize(bundle.manifest), id, builtIn: false, rev: row.rev, templates: bundle.templates, partials: bundle.partials || {}, assets: `/t/${id}.${row.rev}`, assetList: bundle.assets || [] };
+  const at = rev || row.rev;
+  if (!revsOf(row).some((r) => r.rev === at)) return null;
+  const bundle = bundleAt(env, ref, at);
+  if (!bundle) return null;
+  return { ...normalize(bundle.manifest), id: ref, key: bundle.manifest.id, ws: row.ws || null, builtIn: false, rev: at, templates: bundle.templates, partials: bundle.partials || {}, assets: `/t/${ref}.${at}`, assetList: bundle.assets || [] };
 }
 
-export function loadTheme(env, ctx, id) {
-  const key = 'theme:' + id;
+// A workspace's own theme is pinned to the save it made live (rev); the others follow their latest.
+export function loadTheme(env, ctx, id, rev = null) {
+  const key = 'theme:' + id + (rev ? '@' + rev : '');
   if (ctx && ctx.cache.has(key)) return ctx.cache.get(key);
   let theme = null;
-  try { theme = BUILT_IN.includes(id) ? builtIn(env, id) : saved(env, id); } catch (error) {
+  try { theme = BUILT_IN.includes(id) ? builtIn(env, id) : saved(env, id, rev) || (rev ? saved(env, id) : null); } catch (error) {
     console.error('theme failed to load', id, String(error && error.message || error).slice(0, 300));
     theme = null;
   }
   if (!theme && id !== 'quiet') theme = loadTheme(env, ctx, 'quiet');
   if (ctx) ctx.cache.set(key, theme);
   return theme;
+}
+
+// Whether a ref names a theme at all (without falling back to Quiet like loadTheme does).
+export function themeExists(env, ref) {
+  return BUILT_IN.includes(ref) || !!themeRow(env, ref);
 }
 
 function normalize(manifest) {
@@ -214,7 +247,8 @@ export function validate(files) {
     const binary = value && typeof value === 'object';
     if (binary) {
       if (!BINARY_TYPES[ext]) { errors.push({ file: path, message: 'Only fonts and images may be sent as base64.' }); continue; }
-      const size = Math.floor(String(value.base64 || '').length * 0.75);
+      if (!value[KEPT] && typeof value.base64 !== 'string') { errors.push({ file: path, message: 'Send a font or image as { base64 }, or { from: "<its /t/… address>" } to keep one a theme already has.' }); continue; }
+      const size = value[KEPT] ? value.size : Math.floor(String(value.base64 || '').length * 0.75);
       if (size > LIMITS.asset) errors.push({ file: path, message: `Assets are ${Math.round(LIMITS.asset / 1e6 * 10) / 10} MB at most.` });
       total += size;
       assets.push({ path: path.slice(7), type: BINARY_TYPES[ext], size });
@@ -303,113 +337,237 @@ export function validate(files) {
 
 // ---------- storage ----------
 
-export function listThemes(env) {
+// Built-in themes, Margin's library, and (with a workspace) that workspace's own themes.
+export function listThemes(env, ws = null) {
   const out = [];
   for (const id of BUILT_IN) {
     try {
       const m = JSON.parse(env.holm.private.read(`themes/${id}/theme.json`));
-      out.push({ id, name: m.name, version: m.version, description: m.description || '', comments: m.comments || 'panel', built_in: true });
+      out.push({ id, key: id, scope: 'built_in', name: m.name, version: m.version, description: m.description || '', comments: m.comments || 'panel', built_in: true });
     } catch { /* skip a broken built-in */ }
   }
-  for (const row of rows(env, 'themes', {}, 200)) {
-    out.push({ id: row.themeId, name: row.name, version: row.version, description: row.description || '', comments: row.comments || 'panel', built_in: false, updated_at: new Date(row.updatedAt).toISOString(), size: row.size });
-  }
+  const saved = rows(env, 'themes', {}, 500);
+  const entry = (row, scope) => ({
+    id: row.themeId, key: row.themeId.split('/').pop(), scope, name: row.name, version: row.version, description: row.description || '',
+    comments: row.comments || 'panel', built_in: false, updated_at: new Date(row.updatedAt).toISOString(), size: row.size,
+  });
+  for (const row of saved) if (!row.ws) out.push(entry(row, 'library'));
+  if (ws) for (const row of saved) if (row.ws === ws) out.push(entry(row, 'workspace'));
   return out;
 }
 
-export function saveTheme(env, ctx, files) {
+// Earlier saves of a theme, newest first; the first is the current one.
+export function revisions(env, ref) {
+  const row = themeRow(env, ref);
+  if (!row) return [];
+  return revsOf(row).map((r) => ({ rev: r.rev, version: r.version || '', saved_at: new Date(r.at || 0).toISOString(), current: r.rev === row.rev }));
+}
+
+// A font or image a theme already has, carried into a new save without sending it again.
+// Only objects made here carry this mark; files that come in as JSON never can.
+const KEPT = Symbol('kept');
+
+// The whole of a theme as files (text as strings, fonts and images as kept objects), for a save
+// that starts from it. Built-in fonts stay where they are; the copy's CSS points at them.
+function filesOf(env, ref, rev) {
+  if (BUILT_IN.includes(ref)) {
+    const files = {};
+    for (const [path, value] of Object.entries(builtInFiles(env, ref).files)) files[path] = value;
+    return files;
+  }
+  const theme = saved(env, ref, rev);
+  if (!theme) reject(404, 'not_found', `There is no theme ${ref}${rev ? '@' + rev : ''}.`);
+  const files = { 'theme.json': JSON.stringify(theme.manifest, null, 2) };
+  for (const [name, src] of Object.entries(theme.templates)) files[`templates/${name}.html`] = src;
+  for (const [name, src] of Object.entries(theme.partials)) files[`partials/${name}.html`] = src;
+  for (const asset of theme.assetList) {
+    const key = `themes/${ref}/${theme.rev}/${asset.path}`;
+    if (TEXT_TYPES[extOf(asset.path)]) {
+      const object = env.holm.app.s3.get(key);
+      if (object) files[`assets/${asset.path}`] = new TextDecoder().decode(object.data);
+    } else files[`assets/${asset.path}`] = { [KEPT]: true, s3: key, size: asset.size };
+  }
+  return files;
+}
+
+// The files a save would store: `base` (a theme the caller may read) with `files` laid over it.
+// A file set to null is removed; { from: "/t/<ref>.<rev>/<path>" } keeps a font or image that
+// theme has. `canRead(parsedRef)` throws when the caller may not use that theme.
+// With `ws` and no base, a save under the id of one of that workspace's themes starts from it
+// (unless `replace`, as Studio's zip upload sends: the zip is the whole theme).
+export function assemble(env, input, canRead, ws = null) {
+  let files = {};
+  const sentManifest = input.files && typeof input.files['theme.json'] === 'string' ? input.files['theme.json'] : null;
+  if (!input.base && !input.replace && ws && sentManifest) {
+    let id = null;
+    try { id = JSON.parse(sentManifest).id; } catch { id = null; }
+    if (typeof id === 'string' && themeRow(env, `${ws}/${id}`)) files = filesOf(env, `${ws}/${id}`, null);
+  }
+  if (input.base) {
+    const base = parseRef(input.base);
+    if (!base) reject(400, 'invalid_input', `base is a theme from themes_list, such as "quiet" or "${'<workspace>/<id>'}" (add @<rev> for an earlier save).`);
+    canRead(base);
+    if (BUILT_IN.includes(base.ref) && base.rev) reject(400, 'invalid_input', 'Built-in themes have no earlier saves.');
+    files = filesOf(env, base.ref, base.rev);
+  }
+  const sent = input.files;
+  if (sent !== undefined && (!sent || typeof sent !== 'object' || Array.isArray(sent))) reject(400, 'invalid_input', 'files is an object of path → contents.');
+  for (const [path, value] of Object.entries(sent || {})) {
+    if (value === null) { delete files[path]; continue; }
+    if (value && typeof value === 'object' && typeof value.from === 'string') {
+      const m = ASSET.exec(value.from.replace(/^https?:\/\/[^/]+/, ''));
+      const from = m && parseRef(m[1] ? `${m[1]}/${m[2]}` : m[2]);
+      if (!from || m[3] === BUILT_IN_REV) reject(400, 'invalid_input', `${path}: from is a /t/<theme>.<rev>/<file> address from themes_get. Built-in fonts stay put: point your CSS at /t/<built-in>.${BUILT_IN_REV}/<file>.`);
+      canRead(from);
+      if (!revsOf(themeRow(env, from.ref) || { rev: null }).some((r) => r.rev === m[3])) reject(404, 'not_found', `${path}: ${value.from} is not a file of that theme.`);
+      const bundle = bundleAt(env, from.ref, m[3]);
+      const asset = bundle && (bundle.assets || []).find((a) => a.path === m[4]);
+      if (!asset) reject(404, 'not_found', `${path}: ${value.from} is not a file of that theme.`);
+      files[path] = { [KEPT]: true, s3: `themes/${from.ref}/${m[3]}/${asset.path}`, size: asset.size };
+      continue;
+    }
+    files[path] = value;
+  }
+  // A save with nothing to start from and no theme.json can only be a mistake.
+  if (!Object.keys(files).length) reject(400, 'invalid_input', 'Send files, or a base to start from (with only the files you change).');
+  return files;
+}
+
+// Saves a theme into Margin's library (ws null) or a workspace's own themes, as a new revision.
+// `pinned` is the revision the workspace shows now; it is kept even past the last five.
+export function saveTheme(env, ctx, files, ws = null, pinned = null) {
   const result = validate(files);
   if (!result.ok) reject(422, 'theme_invalid', `The theme has ${result.errors.length} problem${result.errors.length === 1 ? '' : 's'}.`, { errors: result.errors, warnings: result.warnings });
   const id = result.manifest.id;
-  if (BUILT_IN.includes(id)) reject(409, 'built_in', `"${id}" is a built-in theme. Give your copy a new id, such as "${id}-2".`);
+  if (BUILT_IN.includes(id)) reject(409, 'built_in', `"${id}" is a built-in theme. Give your copy a new id in theme.json, such as "${id}-2".`);
+  const ref = ws ? `${ws}/${id}` : id;
+  const existing = themeRow(env, ref);
+  if (ws && !existing && rows(env, 'themes', {}, 500).filter((r) => r.ws === ws).length >= OWN_MAX) {
+    reject(409, 'too_many', `A workspace keeps ${OWN_MAX} themes of its own. Delete one first, or save under the id of one you have.`);
+  }
   const rev = Date.now().toString(36);
   const bundle = { manifest: result.manifest, templates: result.templates, partials: result.partials, assets: result.assets };
-  env.holm.app.s3.put(`themes/${id}/${rev}.json`, JSON.stringify(bundle), 'application/json');
+  const s3 = env.holm.app.s3;
   for (const [path, value] of Object.entries(files)) {
     if (!path.startsWith('assets/')) continue;
-    const name = path.slice(7);
-    if (value && typeof value === 'object') {
+    const key = `themes/${ref}/${rev}/${path.slice(7)}`;
+    if (value && typeof value === 'object' && value[KEPT]) {
+      const object = s3.get(value.s3);
+      if (!object) reject(404, 'not_found', `${path} is gone from the theme it came from.`);
+      s3.put(key, object.data, BINARY_TYPES[extOf(path)]);
+    } else if (value && typeof value === 'object') {
       const bin = atob(value.base64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      env.holm.app.s3.put(`themes/${id}/${rev}/${name}`, bytes.buffer, BINARY_TYPES[extOf(path)]);
+      s3.put(key, bytes.buffer, BINARY_TYPES[extOf(path)]);
     } else {
-      env.holm.app.s3.put(`themes/${id}/${rev}/${name}`, value, TEXT_TYPES[extOf(path)] || 'text/plain');
+      s3.put(key, value, TEXT_TYPES[extOf(path)] || 'text/plain');
     }
   }
+  s3.put(`themes/${ref}/${rev}.json`, JSON.stringify(bundle), 'application/json');
   const size = result.assets.reduce((n, a) => n + a.size, 0) + JSON.stringify(bundle).length;
-  const doc = { themeId: id, name: result.manifest.name, version: result.manifest.version, description: result.manifest.description || '', comments: result.manifest.comments || 'panel', rev, size, updatedBy: ctx.member.id, updatedAt: Date.now() };
-  const existing = env.holm.app.ds.find('themes', { themeId: id }, { limit: 1 })[0];
+  const all = [{ rev, at: Date.now(), by: ctx.member.id, version: result.manifest.version }, ...(existing ? revsOf(existing) : [])];
+  const revs = all.filter((r, i) => i < KEEP_REVS || r.rev === pinned);
+  for (const old of all) if (!revs.includes(old)) dropRevision(env, ref, old.rev);
+  const doc = { themeId: ref, ws: ws || null, name: result.manifest.name, version: result.manifest.version, description: result.manifest.description || '', comments: result.manifest.comments || 'panel', rev, revs, size, updatedBy: ctx.member.id, updatedAt: Date.now() };
   if (existing) env.holm.app.ds.update('themes', { id: existing.id }, { $set: doc });
   else env.holm.app.ds.insert('themes', doc);
   touch(env);
-  return { id, rev, warnings: result.warnings };
+  return { id: ref, rev, warnings: result.warnings };
+}
+
+function dropRevision(env, ref, rev) {
+  const s3 = env.holm.app.s3;
+  try {
+    const bundle = bundleAt(env, ref, rev);
+    for (const asset of (bundle && bundle.assets) || []) s3.delete(`themes/${ref}/${rev}/${asset.path}`);
+    s3.delete(`themes/${ref}/${rev}.json`);
+  } catch (error) { console.warn('theme revision clean-up', ref, rev, String(error && error.message || error).slice(0, 200)); }
 }
 
 export function deleteTheme(env, id, active) {
   if (BUILT_IN.includes(id)) reject(400, 'built_in', 'Built-in themes cannot be removed.');
   if (id === active) reject(409, 'active', 'Switch to another theme first.');
-  const row = env.holm.app.ds.find('themes', { themeId: id }, { limit: 1 })[0];
+  const row = themeRow(env, id);
   if (!row) reject(404, 'not_found', 'No such theme.');
+  for (const r of revsOf(row)) dropRevision(env, id, r.rev);
   env.holm.app.ds.delete('themes', { id: row.id });
-  return { deleted: true };
+  return { deleted: true, id };
+}
+
+// Margin's admins copy a workspace's theme into the library, under its own id or a new one.
+export function publishTheme(env, ctx, ref, libraryId) {
+  const from = parseRef(ref);
+  if (!from || !from.ws) reject(400, 'invalid_input', 'Publish a workspace theme, such as "<workspace>/<id>".');
+  const files = filesOf(env, from.ref, from.rev);
+  const manifest = JSON.parse(files['theme.json']);
+  if (libraryId) manifest.id = String(libraryId).trim().toLowerCase();
+  files['theme.json'] = JSON.stringify(manifest, null, 2);
+  return saveTheme(env, ctx, files, null);
+}
+
+// A built-in's files, with its fonts and images left in place at /t/<id>.b1/.
+function builtInFiles(env, id) {
+  const files = {};
+  const binaries = [];
+  const p = env.holm.private;
+  files['theme.json'] = p.read(`themes/${id}/theme.json`);
+  for (const name of TEMPLATES) files[`templates/${name}.html`] = p.read(`themes/${id}/templates/${name}.html`);
+  let listed = [];
+  try { listed = p.list(`themes/${id}/partials`) || []; } catch { listed = []; }
+  for (const entry of listed) {
+    const path = typeof entry === 'string' ? entry : entry && (entry.path || entry.name);
+    if (path && path.endsWith('.html')) {
+      // The listing can name files from other folders too; keep only this theme's partials.
+      const name = path.split('/').pop();
+      let src = null;
+      try { src = p.read(`themes/${id}/partials/${name}`); } catch { src = null; }
+      if (typeof src === 'string') files[`partials/${name}`] = src;
+    }
+  }
+  const manifest = JSON.parse(files['theme.json']);
+  for (const asset of manifest.assets || []) {
+    const url = `/t/${id}.${BUILT_IN_REV}/${asset}`;
+    if (TEXT_TYPES[extOf(asset)]) {
+      // The page loads these from web/themes/; the tools can't reach web/, so they read the
+      // copies in theme-assets/ (tools/theme-assets.mjs keeps them the same).
+      let text = null;
+      try { text = p.read(`theme-assets/${id}/${asset}`); } catch { text = null; }
+      // A copy keeps working without re-uploading fonts: point at the built-in's own, at an
+      // address that never changes, so they stay cached and text never swaps fonts.
+      if (typeof text === 'string') files[`assets/${asset}`] = text.replace(/url\((['"]?)(?![a-z]+:|\/)([^'")]+\.(woff2?|ttf|otf|png|jpe?g|webp|gif|avif|ico))\1\)/gi, (m, q, file) => `url(${q}/t/${id}.${BUILT_IN_REV}/${file}${q})`);
+    } else binaries.push({ path: `assets/${asset}`, url });
+  }
+  // Templates that preload a font from the theme's folder point at the built-in's too.
+  for (const b of binaries) {
+    const file = b.path.slice(7);
+    for (const path of Object.keys(files)) {
+      if (/^(templates|partials)\//.test(path)) files[path] = files[path].split(`{{theme.assets}}/${file}`).join(b.url);
+    }
+  }
+  return { files, binaries };
 }
 
 // Every file of a theme, for download, editing over MCP, or making a copy.
-export async function themeFiles(env, id) {
+export async function themeFiles(env, id, rev = null) {
+  if (BUILT_IN.includes(id)) return { id, ...builtInFiles(env, id) };
+  const theme = saved(env, id, rev);
+  if (!theme) reject(404, 'not_found', rev ? `There is no save ${rev} of ${id}.` : 'No such theme.');
   const files = {};
   const binaries = [];
-  if (BUILT_IN.includes(id)) {
-    const p = env.holm.private;
-    files['theme.json'] = p.read(`themes/${id}/theme.json`);
-    for (const name of TEMPLATES) files[`templates/${name}.html`] = p.read(`themes/${id}/templates/${name}.html`);
-    let listed = [];
-    try { listed = p.list(`themes/${id}/partials`) || []; } catch { listed = []; }
-    for (const entry of listed) {
-      const path = typeof entry === 'string' ? entry : entry && (entry.path || entry.name);
-      if (path && path.endsWith('.html')) {
-        const name = path.split('/').pop();
-        files[`partials/${name}`] = p.read(`themes/${id}/partials/${name}`);
-      }
-    }
-    const manifest = JSON.parse(files['theme.json']);
-    for (const asset of manifest.assets || []) {
-      const url = `/themes/${id}/${asset}`;
-      if (TEXT_TYPES[extOf(asset)]) {
-        // The page loads these from web/themes/; the tools can't reach web/, so they read the
-        // copies in theme-assets/ (tools/theme-assets.mjs keeps them the same).
-        let text = null;
-        try { text = p.read(`theme-assets/${id}/${asset}`); } catch { text = null; }
-        // A copy keeps working without re-uploading fonts: point at the built-in's files.
-        if (typeof text === 'string') files[`assets/${asset}`] = text.replace(/url\((['"]?)(?![a-z]+:|\/)([^'")]+\.(woff2?|ttf|otf|png|jpe?g|webp|gif|avif|ico))\1\)/gi, (m, q, file) => `url(${q}/themes/${id}/${file}${q})`);
-      } else binaries.push({ path: `assets/${asset}`, url });
-    }
-  } else {
-    const theme = saved(env, id);
-    if (!theme) reject(404, 'not_found', 'No such theme.');
-    files['theme.json'] = JSON.stringify(theme.manifest, null, 2);
-    for (const [name, src] of Object.entries(theme.templates)) files[`templates/${name}.html`] = src;
-    for (const [name, src] of Object.entries(theme.partials)) files[`partials/${name}.html`] = src;
-    for (const asset of theme.assetList) {
-      if (TEXT_TYPES[extOf(asset.path)]) {
-        const object = env.holm.app.s3.get(`themes/${id}/${theme.rev}/${asset.path}`);
-        if (object) files[`assets/${asset.path}`] = new TextDecoder().decode(object.data);
-      } else binaries.push({ path: `assets/${asset.path}`, url: `/t/${id}.${theme.rev}/${asset.path}` });
-    }
+  files['theme.json'] = JSON.stringify(theme.manifest, null, 2);
+  for (const [name, src] of Object.entries(theme.templates)) files[`templates/${name}.html`] = src;
+  for (const [name, src] of Object.entries(theme.partials)) files[`partials/${name}.html`] = src;
+  for (const asset of theme.assetList) {
+    if (TEXT_TYPES[extOf(asset.path)]) {
+      const object = env.holm.app.s3.get(`themes/${id}/${theme.rev}/${asset.path}`);
+      if (object) files[`assets/${asset.path}`] = new TextDecoder().decode(object.data);
+    } else binaries.push({ path: `assets/${asset.path}`, url: `/t/${id}.${theme.rev}/${asset.path}` });
   }
-  return { id, files, binaries };
+  return { id, rev: theme.rev, files, binaries };
 }
 
-export function serveAsset(env, key, path) {
-  const m = /^([a-z][a-z0-9-]{1,31})\.([a-z0-9]+)$/.exec(key);
-  if (!m || !/^[a-z0-9_./-]+$/i.test(path) || path.includes('..')) return new Response('Not found', { status: 404 });
-  const object = env.holm.app.s3.get(`themes/${m[1]}/${m[2]}/${path}`);
-  if (!object) return new Response('Not found', { status: 404 });
-  return new Response(object.data, { headers: {
-    'Content-Type': object.mime || TEXT_TYPES[extOf(path)] || BINARY_TYPES[extOf(path)] || 'application/octet-stream',
-    'Cache-Control': 'public, max-age=31536000, immutable',
-    'X-Content-Type-Options': 'nosniff',
-  } });
-}
+// /t/<ref>.<rev>/<path>: a saved theme's files, or a built-in's at /t/<id>.b1/.
+export const ASSET = /^\/t\/(?:([a-z][a-z0-9_-]{0,28}[a-z0-9])\/)?([a-z][a-z0-9-]{1,31})\.([a-z0-9]+)\/([a-z0-9_./-]+)$/i;
 
 export function themeId(value) { return text(value, 40, 'Theme', true); }

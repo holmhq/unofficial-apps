@@ -8,6 +8,7 @@ import { HANDLE, handle, claimHandle, blogByHandle, blogDTO, avatarURL, swatch }
 import { personByMember } from './people.js';
 import { marginSettings } from './settings.js';
 import { LOOKS, TONES } from './covers.js';
+import { cleanRecipe } from './recipes.js';
 import { wsPath } from './lib/paths.js';
 
 export const ROLES = ['owner', 'admin', 'writer'];
@@ -16,9 +17,9 @@ export const HOMES = ['latest', 'curated'];
 const MAX_OWNED = 5;
 
 export const WS_DEFAULTS = {
-  tagline: '', description: '', logo: null, theme: 'quiet', themeSettings: {}, home: 'latest', featured: [],
+  tagline: '', description: '', logo: null, theme: 'quiet', themeRev: null, themeSettings: {}, home: 'latest', featured: [],
   moderation: 'outsiders', nav: [], cover: { look: 'paper', tone: 'lilac' }, suspended: false,
-  footer: '', credit: true, avatar: null,
+  footer: '', credit: true, avatar: null, coverRecipe: null,
 };
 
 // A footer line: plain text, where [label](address) makes a link and {year} prints the year.
@@ -214,9 +215,12 @@ export function updateWorkspace(env, ctx, input) {
     if (!Array.isArray(input.nav) || input.nav.length > 8) reject(400, 'invalid_input', 'Navigation is a list of up to 8 links.');
     set.nav = input.nav.map((item) => ({ label: text(item && item.label, 30, 'Link label', true), url: text(item && item.url, 300, 'Link address', true) }));
   }
-  if (input.theme !== undefined) set.theme = text(input.theme, 40, 'Theme', true);
+  // The theme is chosen through activateTheme (ops.js), which checks the ref and pins its save.
+  if (input.theme !== undefined) set.theme = text(input.theme, 70, 'Theme', true);
+  if (input.themeRev !== undefined) set.themeRev = input.themeRev || null;
   if (input.themeSettings !== undefined) set.themeSettings = input.themeSettings;
   if (input.cover !== undefined) set.cover = cleanCover(input.cover) || ws.cover;
+  if (input.cover_recipe !== undefined) set.coverRecipe = cleanRecipe(env, input.cover_recipe, ws.coverRecipe);
   if (input.footer !== undefined) set.footer = footerText(input.footer);
   if (input.credit !== undefined) {
     if (typeof input.credit !== 'boolean') reject(400, 'invalid_input', 'Credit is true (show Margin\'s credit in the footer) or false (hide it).');

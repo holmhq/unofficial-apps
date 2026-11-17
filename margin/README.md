@@ -89,6 +89,15 @@ are not public URLs.
   point at lifts out of the calendar; the sun crosses the sky and the battery
   charges). Studio saves a PNG of it when a post is published, for link
   previews and feeds.
+- **A cover recipe for pictures.** Each workspace keeps a recipe for cover
+  pictures in its style: the fixed part of the prompt, the background colours
+  covers take in turn, one accent, how to pick a post's subject, up to four
+  reference covers and how to describe one. Margin makes no pictures. A
+  writer's own assistant asks `covers_prompt` for the recipe and the next
+  background, chooses the post's own subject, makes the picture with its own
+  image tool and attaches it, so every writer's covers match and covers side
+  by side differ. Until its owners change it, the recipe follows the drawn
+  covers' look and tone.
 - **Reading.** Every page is plain HTML from the server, readable without
   JavaScript, with a canonical address, social card, JSON-LD, RSS (each
   workspace and writer) and a sitemap. Links to other posts show a preview
@@ -133,7 +142,8 @@ are not public URLs.
   high priority, and the rest as they're scrolled to.
 - **Studio** at `/studio`, with a workspace switcher: posts, the comment
   inbox, the team and invites, the workspace's settings (home page, comments,
-  cover style, theme, menu), your names and personas, and how to connect
+  menu, footer), its Style (themes with their saves, theme settings, drawn
+  covers and the cover recipe), your names and personas, and how to connect
   Claude. Like a native app: the avatar at the top right (signed out too,
   with the theme and Sign in), a sidebar of places that hides (or a tab bar
   on a phone), the Holm credit with Feedback and Source at the foot, and ⌘K
@@ -154,21 +164,23 @@ and what the tools do. The Write with Claude page, You and the last step of
 the caller itself, with the same rules as Studio, in the workspace it names:
 writers write and edit their own posts and answer comments on them; owners
 and admins also edit everyone's posts, moderate, and run the workspace, its
-team and its invites; only owners add or remove owners. Saving a new theme
-stays with Margin's admins, the node's own, because a theme renders every
-workspace's pages.
+team and its invites, its own themes and its cover recipe; only owners add or
+remove owners. Adding a theme to Margin's library, which every workspace can
+pick, stays with Margin's admins, the node's own.
 
 | Tools | What for |
 | --- | --- |
 | `me_get`, `identities_list` | Who you are, your names, your workspaces |
 | `workspaces_create`, `workspace_get`, `workspace_update`, `workspace_leave` | Start a workspace, see and change its settings, leave it |
 | `team_list`, `team_update`, `invites_create`, `invites_revoke` | The team and its open invites; change roles or remove someone; invite and cancel invites |
-| `posts_list`, `posts_get`, `posts_create`, `posts_update`, `posts_delete` | Write in Markdown, pick the drawn cover or a photo, draft or publish, make pages (`page: true`), edit, take down |
+| `posts_list`, `posts_get`, `posts_create`, `posts_update`, `posts_delete` | Write in Markdown, pick the drawn cover or a photo (with the recipe's `cover_tone`), draft or publish, make pages (`page: true`), edit, take down |
+| `covers_prompt` | The workspace's cover recipe, the next background and the steps, for a cover picture the assistant makes itself |
 | `media_upload`, `media_link`, `media_list` | Add an SVG drawing or a small photo; get a one-hour link that takes photos and videos from a browser or curl; list your files with their Markdown and smaller sizes |
 | `comments_inbox`, `comments_list`, `comments_reply`, `comments_moderate` | Answer ordinary comments; the descriptions tell Claude to leave anything sensitive, critical, legal, personal or about money to the writer |
 | `comments_create` | Comment under any of your names; `sample: true` keeps example discussion visible to the team only, for screenshots |
 | `personas_create`, `personas_update`, `personas_delete` | Your other names (`identities_list` lists them) |
-| `themes_list`, `themes_reference`, `themes_get`, `themes_validate`, `themes_save`, `themes_activate` | Study, change and check themes; Margin's admins add them, a workspace switches |
+| `themes_list`, `themes_reference`, `themes_get`, `themes_validate`, `themes_save`, `themes_activate`, `themes_delete` | Study and check themes; save a workspace's own (a base plus the changed files), preview, make one live or go back to an earlier save, delete one |
+| `themes_publish` | Margin's admins: copy a workspace's theme into the library |
 
 Replies Claude posts are marked "Claude" in the inbox. The tool descriptions
 tell Claude never to say which names belong to the same person.
@@ -186,9 +198,15 @@ templates only print it. Two ship with Margin:
 - **Editorial**: Newsreader for reading, a newspaper-style home page, and the
   first note of each highlighted passage set in the margin beside it.
 
-Margin's admins download a theme as a .zip, change it, and upload it to the
-library; each workspace's owners pick one and its settings, and preview any
-at `/<workspace>?theme=<id>`. The validator refuses scripts, event handlers,
+Each workspace's owners and admins pick a theme and its settings, and keep up
+to three of their own, which only that workspace sees (`<workspace>/<id>`).
+They make one by asking their assistant (it saves a built-in or library theme
+with only the files it changes) or by uploading a .zip in Studio → Style, and
+preview it at `/<workspace>?theme=<workspace>/<id>` before making it live.
+Saving never changes the live site: the workspace stays on the save it made
+live, each theme keeps its last five saves, and going back is making an
+earlier one live. Margin's admins keep the library: they upload themes in
+Studio → Margin, or copy a workspace's into it. The validator refuses scripts, event handlers,
 outside URLs and raw HTML other than Margin's hooks, and warns about missing
 dark styles. [`api/reference.md`](api/reference.md) documents every file,
 field and hook; Claude reads it through `themes_reference`, and
@@ -287,10 +305,17 @@ field and hook; Claude reads it through `themes_reference`, and
   in.
 - **Tools for Claude.** `api/contract.json` declares the operations, which
   Holm serves as MCP tools at `/_holm/mcp` behind its own sign-in and consent.
-  All but `themes_save` use `auth: "user"`, open to anyone signed in on the
+  All but `themes_publish` use `auth: "user"`, open to anyone signed in on the
   node, and check workspace roles in `ops.js` through the same functions as
-  the routes; `themes_save` uses `auth: "member"`, so Holm itself keeps it to
-  the node's admins. Operations can't read `web/`, so the built-in themes'
+  the routes; `themes_publish` changes the library every workspace sees, so it
+  uses `auth: "member"` and Holm itself keeps it to the node's admins. A
+  workspace's own themes live in the `themes` collection with its slug, are
+  pinned by revision on the workspace (`themeRev`), and are served from
+  `/t/<workspace>/<id>.<rev>/` by `api/lib/cache.js` without loading the rest
+  of Margin. The cover recipe (`api/recipes.js`) stores only what a
+  workspace's owners changed over a default built from its drawn-cover style,
+  and picks the background a post's cover takes from the tones of the
+  workspace's latest posts. Operations can't read `web/`, so the built-in themes'
   stylesheets and font licences have a copy in `api/theme-assets/` for
   `themes_get`; `node tools/theme-assets.mjs` fails if a copy drifts
   (`--write` refreshes them).
@@ -328,7 +353,8 @@ api/theme-assets/         copies of the built-in themes' text assets, for themes
 api/http.js, ops.js       the JSON API, and the operations' bodies
 api/pages.js, landing.js  reading pages, feeds, sitemap, link previews; Margin's front page
 api/covers.js             the drawn covers (also served to browsers)
-api/themes.js             theme loading, rendering, validation and storage
+api/themes.js             theme loading, rendering, validation and storage (library and each workspace's own)
+api/recipes.js            the cover recipe: defaults, checks, the next background, covers_prompt's answer
 api/themes/quiet, editorial   built-in templates (their CSS and fonts: web/themes/)
 api/markdown.js           Markdown to safe HTML
 api/workspaces.js, blogs.js, people.js   workspaces and members, names and personas, accounts
@@ -418,8 +444,16 @@ Then:
 - A drawn cover's PNG (for link previews and feeds) is made in the browser
   when a post is published. Posts written only through Claude get one the next
   time someone opens them in Studio; until then their social card is Margin's.
+- Margin makes no cover pictures: Holm gives apps no image model, and the
+  tools can't call out. The recipe is for the writer's own assistant; in
+  Claude, which draws no pictures, that means an SVG drawing or a prompt for
+  another tool. A cover's background tone is known only when the assistant
+  passes `cover_tone`.
+- Themes are edited as files, through an assistant or a .zip; Studio has no
+  theme code editor. A workspace keeps three themes of its own, five saves
+  each.
 - No custom domains per workspace, no scheduled publishing (Holm v1 has no
-  schedules), no email notifications for new comments, no revision history,
+  schedules), no email notifications for new comments, no revision history of posts,
   no search page, no way to delete a workspace (Margin's admins suspend one).
 - Highlights find their passage again by its words; if the writer later
   rewrites that passage, the comment stays among the responses without a

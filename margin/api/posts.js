@@ -9,6 +9,7 @@ import { byId, claim, one, rows, touch, mutate } from './lib/store.js';
 import { reject, text, longText, slugify, dates, bool } from './lib/util.js';
 import { render } from './markdown.js';
 import { mediaInfo, srcsetFor, variantPath, fullPath } from './media.js';
+import { toneName } from './recipes.js';
 import { blogByHandle, blogDTO, resolveAs, RESERVED } from './blogs.js';
 import { roleIn, addIdentity, workspaceBySlug, wsDTO } from './workspaces.js';
 import { MOTIFS, LOOKS, TONES, normalize as normalizeDrawing } from './covers.js';
@@ -179,6 +180,7 @@ export function createPost(env, ctx, input, origin) {
     title, subtitle: text(input.subtitle, 280, 'Subtitle') || '', description: text(input.description, 300, 'Description') || '',
     slug: null, customSlug: !!input.slug, cover: photo, coverAlt: text(input.cover_alt, 200, 'Cover description') || '',
     drawn, bare: !photo && !drawn, coverPng: mediaId(input.cover_png) || null,
+    coverTone: input.cover_tone !== undefined ? toneName(ctx.ws, input.cover_tone) : null,
     tags: tags(input.tags) || [], status, publishedAt, dateAt: status === 'published' ? null : chosen, updatedAt: now,
     excerpt: rendered.excerpt, words: rendered.words, minutes: rendered.minutes,
     claps: 0, clappers: 0, comments: 0, pending: 0, page,
@@ -217,6 +219,8 @@ export function updatePost(env, ctx, id, input, origin) {
   if (input.description !== undefined) set.description = text(input.description, 300, 'Description') || '';
   if (input.cover !== undefined) set.cover = cover(input.cover);
   if (input.cover_alt !== undefined) set.coverAlt = text(input.cover_alt, 200, 'Cover description') || '';
+  // The background tone of a cover made from the workspace's recipe, so the next one differs.
+  if (input.cover_tone !== undefined) set.coverTone = toneName(ctx.ws || wsCached(env, ctx, post.ws), input.cover_tone);
   // drawing: null removes the drawing, so look for the key rather than a value.
   const drawingInput = 'drawing' in input ? input.drawing : input.cover_drawing;
   if (drawingInput !== undefined) { set.drawn = drawing(drawingInput); set.coverPng = null; }
@@ -416,6 +420,7 @@ export function editorDTO(env, ctx, post) {
     bare: !card.cover,
     own_drawing: post.drawn || null,
     cover_png: post.coverPng || null,
+    cover_tone: post.coverTone || null,
     published_at: post.publishedAt || post.dateAt ? new Date(post.publishedAt || post.dateAt).toISOString() : null,
     updated_at: new Date(post.updatedAt).toISOString(),
     pending_comments: post.pending || 0,

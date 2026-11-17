@@ -1,10 +1,11 @@
 # Margin themes
 
 A theme decides how a workspace's reading pages look: its home page, each writer's page,
-each post, the latest feed and topic pages, and errors. Each workspace picks one theme from
-Margin's library; Margin's admins add themes to it. Studio and the editor are not themed. A theme is a
-handful of plain files, so it can be downloaded, read, changed and uploaded again, by hand
-or by an assistant.
+each post, the latest feed and topic pages, and errors. Each workspace picks one: a built-in
+(`quiet`, `editorial`), one from Margin's library (Margin's admins add those), or one of up to
+three of its own, which its owners and admins save and only it sees. Studio and the editor are
+not themed. A theme is a handful of plain files, so it can be downloaded, read, changed and
+uploaded again, by hand or by an assistant.
 
 ## Files
 
@@ -48,7 +49,7 @@ All six templates are required. Limits: 80 files, 200 KB per text file, 1.5 MB p
 - `comments`: how comment threads open. `panel` slides a chat-style panel in from the side
   (a sheet on phones). `margin` puts the first comment of each highlighted passage beside
   it on wide screens and uses the sheet elsewhere.
-- `settings`: options admins change in Studio → Themes. Types: `text`, `textarea`, `color`,
+- `settings`: options owners and admins change in Studio → Style. Types: `text`, `textarea`, `color`,
   `boolean`, `select` (with `options`: values or `{ "value", "label" }`), `url`. Templates
   read them as `{{theme.settings.<key>}}`. Every `color` setting is also a CSS variable on
   `:root`: `accent` becomes `--accent`, `link_color` becomes `--link-color`.
@@ -196,17 +197,33 @@ text column with negative margins; give the column room or clip the page horizon
 
 ## Making a theme with Claude
 
-1. `themes.get` with `"id": "quiet"` (or `editorial`) returns every text file.
-2. Change the files. Give theme.json a new `id` and `name`.
-3. `themes.validate` with the files. Fix every error.
-4. `themes.save` with the files (Margin's admins only). Preview at `<host>/<workspace>?theme=<id>`
-   (the workspace's owners and admins).
-5. `themes.activate` with the workspace, the id, and optional `settings`.
+A workspace's owners and admins make its own themes. Their address (ref) is
+`<workspace>/<id>`; built-in and library themes are just `<id>`.
 
-A built-in theme's CSS comes back pointing at its own fonts (`/themes/quiet/inter-latin.woff2`),
-so a copy keeps them without uploading anything. To use other fonts or images, add them to
-`assets/` as `{ "base64": "…" }` and refer to them by file name.
+1. `themes.get` with `"id": "quiet"` (or `editorial`, or one of yours) returns every text file.
+2. Change only what you need. A copy needs its own `id` (and `name`) in theme.json.
+3. `themes.save` with `workspace`, `base` (the theme you started from) and only the files you
+   changed, as path → text; `null` removes a file. Margin lays them over the base, checks the
+   result and answers with any errors, or with the new save and a `preview_url`. Keep each call
+   under about 45 KB. Saving again under the same id needs no `base`: it starts from that
+   theme's latest save. `themes.validate` takes the same input and only checks.
+4. Open `preview_url` (`<workspace's address>?theme=<workspace>/<id>`); only the workspace's
+   owners and admins see the preview.
+5. `themes.activate` with the workspace, the id and optional `settings` makes it live.
 
-By hand: Studio → Themes → download a .zip, edit, upload it. Studio runs the same checks
+Saving never changes the live site, even for the theme that is live: the workspace stays on
+the save it made live until `themes.activate`. Each theme keeps its last five saves;
+`themes.get` lists them (`revisions`, `live_rev`). To go back, activate `<workspace>/<id>@<rev>`,
+or preview one first with `?theme=<workspace>/<id>@<rev>`. `themes.delete` removes a theme
+that isn't live (it asks for `confirm: true`). Margin's admins can copy a workspace's theme
+into the library with `themes.publish`.
+
+A copy of a built-in theme keeps the built-in's fonts at addresses that never change
+(`/t/quiet.b1/inter-latin.woff2`), in its CSS and in the layout's font preload, so it loads
+them from cache without uploading anything. To use other fonts or images, add them to
+`assets/` as `{ "base64": "…" }` and refer to them by file name; to keep one a saved theme
+already has, send `{ "from": "<its /t/… address from themes.get>" }`.
+
+By hand: Studio → Style → a theme's menu → Download, edit, then Upload Theme… (Margin's admins add library themes in Studio → Margin). Studio runs the same checks
 and shows what to fix. `node tools/theme-check.mjs <folder>` in Margin's source runs them
 on your machine.

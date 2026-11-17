@@ -4,7 +4,7 @@
 import { sha256 } from './util.js';
 import { siteRev } from './store.js';
 
-export const VERSION = '0.13.3';
+export const VERSION = '0.14.0';
 
 const LOCAL = /^(127\.|localhost|\[::1\]|[a-z0-9-]+\.localhost)(:\d+)?$/;
 // Addresses that may be a rendered page (no file extension, not one of Margin's own areas).
@@ -25,6 +25,9 @@ export async function quick(request, env) {
   const path = url.pathname;
   const m = VERSIONED.exec(path);
   if (m && !m[2].includes('..')) return versioned(request, env, url, m[1], m[2]);
+  // A saved theme's CSS, fonts and images (and built-in fonts that copies point at).
+  const asset = THEME_ASSET.exec(path);
+  if (asset && !asset[4].includes('..')) return themeAsset(request, env, url, asset);
   // Photos and their smaller copies: no need for the rest of Margin.
   const media = /^\/media\/([a-z0-9]+)(?:-(w\d{3,4}|og|s\d{3}|full))?(?:\.[a-z0-9]{2,5})?$/.exec(path);
   if (media) return (await import('../media.js')).serve(env, request, media[1], media[2]);
@@ -70,6 +73,32 @@ async function versioned(request, env, url, v, file) {
   headers.delete('content-length');
   headers.set('Cache-Control', res.status === 200 ? cache : 'no-cache');
   return new Response(request.method === 'HEAD' || res.status === 304 ? null : await res.arrayBuffer(), { status: res.status, headers });
+}
+
+// ---------- theme files ----------
+// /t/<ref>.<rev>/<path>, where a ref is a library theme's id or <workspace>/<id>. Each save is a
+// new rev, so every address is cached for a year. Copies of a built-in theme point at its fonts
+// as /t/<id>.b1/<file>, which never changes either. Keep in step with ASSET in themes.js.
+
+const THEME_ASSET = /^\/t\/(?:([a-z][a-z0-9_-]{0,28}[a-z0-9])\/)?([a-z][a-z0-9-]{1,31})\.([a-z0-9]+)\/([a-z0-9_./-]+)$/i;
+const BUILT_IN_THEMES = ['quiet', 'editorial'];
+const ASSET_TYPES = { css: 'text/css; charset=utf-8', svg: 'image/svg+xml', txt: 'text/plain; charset=utf-8', md: 'text/markdown; charset=utf-8', json: 'application/json', html: 'text/plain; charset=utf-8', woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif', ico: 'image/x-icon' };
+const notFound = () => new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-cache' } });
+
+async function themeAsset(request, env, url, [, ws, id, rev, file]) {
+  const ext = (file.match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase() || '';
+  const headers = { 'Content-Type': ASSET_TYPES[ext] || 'application/octet-stream', 'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff', 'Access-Control-Allow-Origin': '*' };
+  if (!ASSET_TYPES[ext]) return notFound();
+  if (!ws && BUILT_IN_THEMES.includes(id.toLowerCase())) {
+    if (rev !== 'b1') return notFound();
+    const res = await env.holm.web.fetch(new Request(`${url.origin}/themes/${id.toLowerCase()}/${file}`, { method: request.method }));
+    if (res.status !== 200) return notFound();
+    return new Response(request.method === 'HEAD' ? null : await res.arrayBuffer(), { headers });
+  }
+  const ref = (ws ? `${ws}/${id}` : id).toLowerCase();
+  const object = env.holm.app.s3.get(`themes/${ref}/${rev.toLowerCase()}/${file}`);
+  if (!object) return notFound();
+  return new Response(request.method === 'HEAD' ? null : object.data, { headers });
 }
 
 // ---------- rendered pages ----------

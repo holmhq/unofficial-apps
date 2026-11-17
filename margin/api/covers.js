@@ -10,7 +10,7 @@ export const LOOKS = ['paper', 'flat', 'blocks'];
 export const TONES = { lilac: '#b9adff', tangerine: '#ff8a4c', mint: '#86e3c3', butter: '#ffd84d', sky: '#8ccbff', coral: '#ff9b8f' };
 
 // Blocks: a stronger ground for each tone and three flat shapes that sit behind the drawing.
-const STRONG = { lilac: '#6b5cff', tangerine: '#ff7a45', mint: '#14a079', butter: '#e3a008', sky: '#2f7de1', coral: '#f2545b' };
+export const STRONG = { lilac: '#6b5cff', tangerine: '#ff7a45', mint: '#14a079', butter: '#e3a008', sky: '#2f7de1', coral: '#f2545b' };
 const SHAPES = {
   lilac: ['#ffd84d', '#2a1d5a', '#ff8fb1'],
   tangerine: ['#ffd84d', '#2a1d5a', '#ffb38a'],

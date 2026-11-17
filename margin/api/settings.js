@@ -55,7 +55,10 @@ export function updateMargin(env, input) {
     if (host && !/^[a-z0-9.-]{3,200}(:\d{2,5})?$/.test(host)) reject(400, 'invalid_input', 'The primary address is a host name such as margin.example.com.');
     next.primaryHost = host;
   }
-  if (input.theme !== undefined) next.theme = text(input.theme, 40, 'Theme', true);
+  if (input.theme !== undefined) {
+    next.theme = text(input.theme, 40, 'Theme', true);
+    if (next.theme.includes('/')) reject(400, 'invalid_input', 'Margin\'s own pages use a built-in or library theme.');
+  }
   env.holm.app.kv.set('margin:settings', next);
   setRoot(next.home.startsWith('ws:') ? next.home.slice(3) : '');
   touch(env);

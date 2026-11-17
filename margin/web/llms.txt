@@ -29,8 +29,14 @@ Fence code with its language to have it highlighted; write maths in LaTeX, `$…
 or `$$` lines around a display formula. Readers
 can't tell a person's personas are the same person, so never say which names belong
 together. Personas: `personas_create`, `personas_update`, `personas_delete`. Owners and
-admins run a workspace with `workspace_get`, `workspace_update`, `themes_activate`,
-`team_list`, `team_update` (roles, or remove), `invites_create` and `invites_revoke`. Photos
+admins run a workspace with `workspace_get`, `workspace_update`, `team_list`, `team_update`
+(roles, or remove), `invites_create` and `invites_revoke`, and restyle it with its own
+themes: `themes_get` one, `themes_save` a `base` plus only the files you change, open the
+preview link, then `themes_activate` (going back is activating an earlier save). A cover
+picture in the workspace's style: `covers_prompt` hands you the workspace's cover recipe and
+the next background tone; you choose the post's subject, make the picture with your own image
+tool, upload it, and attach it with `posts_update` (`cover`, `cover_alt`, `cover_tone`).
+Admins change the recipe with `workspace_update`'s `cover_recipe`. Photos
 and drawings: `media_upload` takes an SVG drawing as text or a small photo as base64;
 `media_link` returns a one-hour link the person opens to add photos and videos, or that you
 send files to with `curl -F file=@photo.jpg <link>`. Put the Markdown each returns on a line

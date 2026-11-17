@@ -8,7 +8,7 @@ import { marginSettings } from './settings.js';
 import { blogByHandle, blogDTO, avatarSVG, HANDLE, RESERVED } from './blogs.js';
 import { published, publishedAll, findByPath, postById, bodyOf, cardDTO, canEdit, postPath, wsCached, PAGE_NAMES } from './posts.js';
 import { publicComments } from './comments.js';
-import { loadTheme, renderPage, settingValues } from './themes.js';
+import { loadTheme, renderPage, settingValues, parseRef } from './themes.js';
 import { EMBED_ORIGINS } from './markdown.js';
 import { workspaceBySlug, useWorkspace, logoURL, teamHandles, FOOTER_LINK } from './workspaces.js';
 import { render as renderDrawing, normalize as normalizeDrawing, MOTIFS, LOOKS, TONES } from './covers.js';
@@ -84,7 +84,7 @@ export function csp(hashList, host, extra = []) {
 function wsScope(env, ws) {
   return {
     ws, slug: ws.slug, name: ws.name, tagline: ws.tagline || '', description: ws.description || '',
-    theme: ws.theme || 'quiet', themeSettings: ws.themeSettings || {}, logo: logoURL(ws), nav: ws.nav || [],
+    theme: ws.theme || 'quiet', themeRev: ws.themeRev || null, themeSettings: ws.themeSettings || {}, logo: logoURL(ws), nav: ws.nav || [],
     home_url: wsPath(ws.slug), latest_url: wsPath(ws.slug, 'latest'), feed_url: wsPath(ws.slug, 'feed.xml'), home_is_blog: String(ws.home || '').startsWith('@'),
   };
 }
@@ -141,7 +141,7 @@ function baseView(env, ctx, scope, theme, origin, template, extra) {
       nav: (scope.nav || []).map((n) => ({ label: n.label, url: n.url })), has_nav: !!(scope.nav && scope.nav.length),
     },
     platform: { name: margin.name, url: '/', start_url: '/new' },
-    theme: { id: theme.id, name: theme.name, assets: theme.assets, settings: settingValues(theme, (scope.themeSettings || {})[theme.id]) },
+    theme: { id: theme.key || theme.id, name: theme.name, assets: theme.assets, settings: settingValues(theme, (scope.themeSettings || {})[theme.id]) },
     year: new Date().getUTCFullYear(),
     ...extra,
   };
@@ -207,7 +207,7 @@ function siteManifest(env, ctx, slug) {
   if (!icons.length) icons.push({ src: mediaPath(id, info.mime), sizes: info.mime === 'image/svg+xml' ? 'any' : `${info.width}x${info.height}`, type: info.mime, purpose: 'any' });
   let accent = '#1a7f64';
   try {
-    const theme = loadTheme(env, ctx, ws.theme || 'quiet');
+    const theme = loadTheme(env, ctx, ws.theme || 'quiet', ws.themeRev || null);
     accent = settingValues(theme, (ws.themeSettings || {})[theme.id]).accent || accent;
   } catch { /* Margin's green */ }
   const name = ws.name || ws.slug;
@@ -375,14 +375,20 @@ async function respond(env, ctx, request, scope, template, data) {
   const url = new URL(request.url);
   const origin = url.origin;
   let themeId = scope.theme;
+  let themeRev = scope.themeRev || null;
   const preview = url.searchParams.get('theme');
-  // Studio's Preview links here; the workspace's owners and admins may try any theme.
+  // Studio's Preview links here; the workspace's owners and admins may try any library theme,
+  // and the workspace's own (any save of one: ?theme=<ws>/<id>@<rev>).
   if (preview && !ctx.admin && ctx.member && scope.slug && !ctx.ws) {
     const ws = workspaceBySlug(env, scope.slug);
     if (ws) useWorkspace(env, ctx, ws);
   }
-  if (preview && (ctx.admin || ctx.wsAdmin)) themeId = preview;
-  const theme = loadTheme(env, ctx, themeId);
+  const tried = preview ? parseRef(preview) : null;
+  if (tried && (ctx.admin || ctx.wsAdmin) && (!tried.ws || tried.ws === scope.slug || ctx.admin)) {
+    themeId = tried.ref;
+    themeRev = tried.rev;
+  }
+  const theme = loadTheme(env, ctx, themeId, themeRev);
   const v = await assetVersion(env, origin);
   const tag = preview || data.private ? null : await pageTag(env, url);
   const bits = await holmBits(env, origin);

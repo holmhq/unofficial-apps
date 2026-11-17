@@ -301,3 +301,24 @@ Then the owner asked:
 > Cant i invite with email?
 
 0.13.3: they can, and on a site that is one blog the invite email now leaves out "on Margin".
+
+**Margin 0.14.0: a workspace's own style, for assistants first**
+
+The owner asked:
+
+> Shouldnt margin store cover photo generation skills along with themes, in an editable manner?
+> - so that a new user posting content will also be able to generate a consistent cover for his post?
+
+and then:
+
+> I think proper theme management for a workspace + cover image generation recipe should also be done?
+> - so that a workspace admin could customise either
+> - we are not asking marhin to generate, we are enabling the blog creators generate their unique ideas as covers too, but according to style of the workspace
+> - we need a ui to do these, but primary way folks will use it is via their llm harness
+> - most will never see their ui
+
+A workspace's owners and admins now keep up to three themes of their own, saved through the
+tools as a base plus only the files that change, previewed before they go live, with the last
+five saves to go back to. Each workspace also keeps a cover recipe; `covers_prompt` hands it to
+a writer's assistant with the next background colour, and the assistant makes the picture
+itself. Studio shows the same things on a new Style page.

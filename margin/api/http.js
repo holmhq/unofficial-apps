@@ -10,12 +10,13 @@ import { listForPost, createComment, moderate, editComment, inbox, clearSamples 
 import { clap, myClaps } from './claps.js';
 import { upload, serve, listMine, uploadWithLink, uploadLinkStatus } from './media.js';
 import { createInvite, previewInvite, acceptInvite, listInvites, revokeInvite } from './invites.js';
-import { listThemes, loadTheme, validate, saveTheme, deleteTheme, themeFiles, serveAsset, settingValues } from './themes.js';
+import { listThemes, loadTheme, validate, saveTheme, deleteTheme, themeFiles, settingValues, parseRef, assemble, revisions, OWN_MAX } from './themes.js';
+import { effectiveRecipe } from './recipes.js';
 import { workspaceBySlug, useWorkspace, createWorkspace, updateWorkspace, myWorkspaces, teamList, setRole, leave, allWorkspaces, setSuspended, wsDTO, bylineOf } from './workspaces.js';
 import { page, errorPage, cards } from './pages.js';
 import { prepare } from './markdown.js';
 import { loadSamples, removeSamples } from './samples.js';
-import { me, activateTheme } from './ops.js';
+import { me, activateTheme, themeReader, saveOwnTheme, deleteOwnTheme } from './ops.js';
 import { setRoot } from './lib/paths.js';
 
 const LOCAL = /^(127\.|localhost|\[::1\]|[a-z0-9-]+\.localhost)(:\d+)?$/;
@@ -45,8 +46,6 @@ const handler = {
       if (request.method !== 'GET' && request.method !== 'HEAD') return env.holm.web.fetch(request);
       m = /^\/media\/([a-z0-9]+)(?:-(w\d{3,4}|og|s\d{3}|full))?(?:\.[a-z0-9]{2,5})?$/.exec(path);
       if (m) return serve(env, request, m[1], m[2]);
-      m = /^\/t\/([a-z0-9.-]+)\/(.+)$/.exec(path);
-      if (m) return serveAsset(env, m[1], m[2]);
       if (path === '/margin/covers.js') {
         return new Response(env.holm.private.read('covers.js'), { headers: { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'X-Content-Type-Options': 'nosniff' } });
       }
@@ -131,7 +130,8 @@ async function api(request, env, url) {
   const ctx = context(env);
   useWorkspace(env, ctx, namedWorkspace(env, request, url));
   const body = async () => (method === 'GET' || method === 'HEAD' ? {} : readJSON(request));
-  const [root, id, sub] = parts;
+  const [root, , sub] = parts;
+  let id = parts[1];
   const o = originOf(env, url);
 
   if (root === 'me' && !id && method === 'GET') {
@@ -189,8 +189,14 @@ async function api(request, env, url) {
     // The byline photo comes back as an address (avatar), where it comes from, and what the
     // workspace's name shows now (avatar_url: the photo, else the logo or its initials).
     const byline = (ws) => { const voice = blogByHandle(env, ws.slug); return { ...bylineOf(ws), avatar_url: voice ? blogDTO(voice).avatar : null }; };
-    if (!id && method === 'GET') { requireWsAdmin(ctx); const dto = wsDTO(ctx.ws); return json({ ...ctx.ws, ...dto, ...byline(ctx.ws), url: o + dto.url, path: dto.url }); }
-    if (!id && method === 'PATCH') { requireWsAdmin(ctx); const ws = updateWorkspace(env, ctx, await body()); return json({ ...ws, ...wsDTO(ws), ...byline(ws) }); }
+    if (!id && method === 'GET') { requireWsAdmin(ctx); const dto = wsDTO(ctx.ws); return json({ ...ctx.ws, ...dto, ...byline(ctx.ws), cover_recipe: effectiveRecipe(ctx.ws, o), url: o + dto.url, path: dto.url }); }
+    if (!id && method === 'PATCH') {
+      requireWsAdmin(ctx);
+      // The theme changes only through /api/themes/<id>/activate, which checks it.
+      const { theme, themeRev, themeSettings, ...change } = await body();
+      const ws = updateWorkspace(env, ctx, change);
+      return json({ ...ws, ...wsDTO(ws), ...byline(ws), cover_recipe: effectiveRecipe(ws, o) });
+    }
     if (id === 'leave' && method === 'POST') { requireMember(ctx); return json(leave(env, ctx)); }
   }
   if (root === 'team') {
@@ -265,23 +271,53 @@ async function api(request, env, url) {
     if (!id && method === 'GET') { requireMember(ctx); return json({ media: listMine(env, ctx) }); }
   }
 
-  // ---- themes: Margin's admins add them; a workspace's owners pick one ----
+  // ---- themes: Margin's admins keep the library; a workspace's owners and admins pick one,
+  // or save up to three of the workspace's own (only it sees them) ----
   if (root === 'themes') {
+    // A workspace's own theme comes as <workspace>~<id>: Holm refuses an encoded slash in a path.
+    if (id) id = id.replace('~', '/');
     const theme = ctx.ws ? ctx.ws.theme : marginSettings(env).theme;
     const saved = ctx.ws ? ctx.ws.themeSettings || {} : {};
     if (!id && method === 'GET') {
       if (!ctx.admin && !ctx.wsAdmin) reject(403, 'forbidden', 'Only owners and admins see themes.');
-      return json({ active: theme, can_upload: ctx.admin, themes: listThemes(env).map((t) => { const full = loadTheme(env, ctx, t.id) || { settings: [] }; return { ...t, settings: full.settings || [], values: settingValues(full, saved[t.id]) }; }) });
+      const list = listThemes(env, ctx.ws && ctx.wsAdmin ? ctx.ws.slug : null).map((t) => {
+        const full = loadTheme(env, ctx, t.id) || { settings: [] };
+        const out = { ...t, settings: full.settings || [], values: settingValues(full, saved[t.id]) };
+        if (t.scope === 'workspace') out.revisions = revisions(env, t.id);
+        return out;
+      });
+      return json({ active: theme, active_rev: ctx.ws ? ctx.ws.themeRev || null : null, can_upload: ctx.admin, can_save: !!(ctx.ws && ctx.wsAdmin), own: { count: list.filter((t) => t.scope === 'workspace').length, max: OWN_MAX }, themes: list });
     }
-    if (id === 'validate' && method === 'POST') { requireAdmin(ctx); const r = validate((await body()).files); return json({ ok: r.ok, errors: r.errors, warnings: r.warnings, id: r.manifest ? r.manifest.id : null }); }
-    if (!id && method === 'POST') {
-      requireAdmin(ctx);
+    const own = !!(ctx.ws && ctx.wsAdmin);
+    if (id === 'validate' && method === 'POST') {
+      if (!own) requireAdmin(ctx);
       const input = await readJSON(request, 9000000);
+      const r = validate(own ? assemble(env, input, themeReader(ctx), ctx.ws.slug) : input.files);
+      return json({ ok: r.ok, errors: r.errors, warnings: r.warnings, id: r.manifest ? r.manifest.id : null });
+    }
+    if (!id && method === 'POST') {
+      const input = await readJSON(request, 9000000);
+      if (own) {
+        const files = assemble(env, input, themeReader(ctx), ctx.ws.slug);
+        const r = validate(files);
+        if (!r.ok) reject(422, 'theme_invalid', `The theme has ${r.errors.length} problem${r.errors.length === 1 ? '' : 's'}.`, { errors: r.errors, warnings: r.warnings });
+        return json(saveOwnTheme(env, ctx, files), 201);
+      }
+      requireAdmin(ctx);
       return json(saveTheme(env, ctx, input.files), 201);
     }
-    if (id && sub === 'files' && method === 'GET') { requireMember(ctx); return json(await themeFiles(env, id)); }
+    if (id && sub === 'files' && method === 'GET') {
+      requireMember(ctx);
+      const r = parseRef(id);
+      if (!r) reject(404, 'not_found', 'No such theme.');
+      if (r.ws && (!ctx.ws || ctx.ws.slug !== r.ws)) useWorkspace(env, ctx, workspaceBySlug(env, r.ws));
+      themeReader(ctx)(r);
+      return json(await themeFiles(env, r.ref, url.searchParams.get('rev') || r.rev));
+    }
     if (id && sub === 'activate' && method === 'POST') { requireWsAdmin(ctx); return json(activateTheme(env, ctx, id, (await body()).settings)); }
     if (id && !sub && method === 'DELETE') {
+      const r = parseRef(id);
+      if (r && r.ws) { requireWsAdmin(ctx); return json(deleteOwnTheme(env, ctx, id, true)); }
       requireAdmin(ctx);
       const inUse = allWorkspaces(env).find((w) => w.theme === id);
       if (inUse) reject(409, 'in_use', `${inUse.name} uses this theme. Switch it first.`);
