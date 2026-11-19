@@ -49,6 +49,9 @@ public URLs.
 - **Signed in:** a new best goes to the server, which replays it and keeps it
   only if it ends on the same score. Signing in sends the best game already
   on the device, and your best follows you to other devices.
+- **Your account:** signed in, Account in the menu opens the node's account
+  page, which lists every sign-in that reaches you (Google, Telegram, email,
+  phone) and lets you add or remove one, then brings you back to the game.
 - **Looks:** four colour sets (Coral, Koi, Lagoon and Ash), each in light and
   dark or following the device, and sound, all in the account menu. The
   page never scrolls; the field sizes itself to the screen.

@@ -80,3 +80,8 @@ Version 0.1.4 came from the follow-up, after the agent listed what the sweep had
 footer that opens Snake's own form:
 
 > pick the fixes you think is sensible & implememt
+
+Version 0.1.5 came from the owner trying the node's new account page, where
+one person links several sign-ins, and having to type its address by hand:
+
+> First of all, isnt it crazy to have to type that url; the snake game should have had a link: "Account" or so?

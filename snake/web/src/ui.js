@@ -40,6 +40,12 @@ export async function loadSurfaces() {
     surfaces = m ? JSON.parse(m[1]) : null
   } catch (_e) {}
 }
+// Holm's account page, on this app's own host: every sign-in that reaches
+// this account (Google, Telegram, email, phone), added or removed there.
+// It links back here when done.
+function accountURL() {
+  return '/auth/account?redirect=' + encodeURIComponent(location.pathname + location.search)
+}
 function analyticsURL() {
   const url = surfaces && surfaces.analytics
   return typeof url === 'string' && url ? url : null
@@ -162,6 +168,8 @@ export function mountChrome(root, ctx) {
       h('div', { class: 'popover-sep' }),
       analytics && h('a', { class: 'popover-item', href: analytics, target: '_blank', rel: 'noopener', onclick: () => closeMenu() },
         svg('barchart', 19), h('span', {}, 'Analytics')),
+      me && !offline && h('a', { class: 'popover-item', href: accountURL(), onclick: () => closeMenu() },
+        svg('account', 19), h('span', {}, 'Account')),
       me
         ? h('button', { class: 'popover-item', type: 'button', onclick: () => { closeMenu(); ctx.signOut() } }, svg('logout', 19), h('span', {}, 'Sign out'))
         : !offline && h('button', { class: 'popover-item', type: 'button', onclick: () => { closeMenu(); ctx.signIn() } }, svg('login', 19), h('span', {}, 'Sign in'))
