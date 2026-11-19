@@ -52,6 +52,9 @@ public URLs.
 - **Your account:** signed in, Account in the menu opens the node's account
   page, which lists every sign-in that reaches you (Google, Telegram, email,
   phone) and lets you add or remove one, then brings you back to the game.
+- **Delete my games:** signed in, the menu removes your best game and your
+  place on the leaderboard after a confirm (`POST /api/forget`). Games kept on
+  this device stay and are not sent again.
 - **Looks:** four colour sets (Coral, Koi, Lagoon and Ash), each in light and
   dark or following the device, and sound, all in the account menu. The
   page never scrolls; the field sizes itself to the screen.

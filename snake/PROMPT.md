@@ -85,3 +85,9 @@ Version 0.1.5 came from the owner trying the node's new account page, where
 one person links several sign-ins, and having to type its address by hand:
 
 > First of all, isnt it crazy to have to type that url; the snake game should have had a link: "Account" or so?
+
+Version 0.1.6 came from the same evening: the owner's spare account held a
+Snake score, so the node would not fold that account into the main one, and
+the owner asked:
+
+> I think we should just delete snake app data in zyt and merge?

@@ -6,6 +6,7 @@
 //   GET  /api/leaderboard   the top scores, and the caller's own rank
 //   GET  /api/best          the member's best game
 //   POST /api/games         { seed, log, score } replayed, and kept if it is a new best
+//   POST /api/forget        delete the member's best game and leaderboard place
 
 import { replay, better } from './rules.js'
 
@@ -41,6 +42,17 @@ export default {
     if (route === 'GET /api/best') {
       if (!auth.isLoggedIn()) return fail(401, 'Sign in to keep your best game in your account.')
       return json({ best: publicBest(env.holm.app.member.kv.get(BEST)) })
+    }
+
+    // A player can take their games back: the best game and the leaderboard row.
+    if (route === 'POST /api/forget') {
+      if (!auth.isLoggedIn()) return fail(401, 'Sign in to delete your games.')
+      const member = auth.getMember()
+      env.holm.app.member.kv.delete(BEST)
+      for (const row of env.holm.app.ds.find(BOARD, { memberId: member.id }, { limit: 10 })) {
+        env.holm.app.ds.delete(BOARD, { id: row.id })
+      }
+      return json({ ok: true })
     }
 
     if (url.pathname === '/api/games') {

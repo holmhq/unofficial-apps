@@ -168,6 +168,8 @@ export function mountChrome(root, ctx) {
       h('div', { class: 'popover-sep' }),
       analytics && h('a', { class: 'popover-item', href: analytics, target: '_blank', rel: 'noopener', onclick: () => closeMenu() },
         svg('barchart', 19), h('span', {}, 'Analytics')),
+      me && !offline && h('button', { class: 'popover-item', type: 'button', onclick: () => { closeMenu(); openForget() } },
+        svg('trash', 19), h('span', {}, 'Delete my games')),
       me && !offline && h('a', { class: 'popover-item', href: accountURL(), onclick: () => closeMenu() },
         svg('account', 19), h('span', {}, 'Account')),
       me
@@ -220,6 +222,34 @@ export function mountChrome(root, ctx) {
       h('div', { class: 'grow' }),
       ...extra,
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close', onclick: () => closeTopSheet() }, svg('x', 20)))
+  }
+
+  /* ---- delete my games ---- */
+  // A small centred confirm: the player's best game and leaderboard place
+  // go for this account; games kept on this device stay.
+  function openForget() {
+    const status = h('p', { class: 'confirm-status', role: 'status' })
+    const del = h('button', { class: 'btn danger', type: 'button' }, 'Delete')
+    del.onclick = async () => {
+      del.disabled = true
+      status.textContent = ''
+      if (await ctx.forget()) {
+        closeTopSheet()
+        toast('Your games are deleted')
+        if (boardSheet) loadBoard()
+      } else {
+        del.disabled = false
+        status.textContent = 'Could not delete them. Check your connection and try again.'
+      }
+    }
+    const sheet = h('div', { class: 'sheet confirm', role: 'alertdialog', 'aria-labelledby': 'forget-title', 'aria-describedby': 'forget-text' },
+      h('h2', { id: 'forget-title' }, 'Delete your games?'),
+      h('p', { id: 'forget-text' }, 'Your best game and your place on the leaderboard go for this account. This can’t be undone.'),
+      status,
+      h('div', { class: 'confirm-actions' },
+        h('button', { class: 'btn ghost', type: 'button', onclick: () => closeTopSheet() }, 'Cancel'),
+        del))
+    pushSheet(sheet)
   }
 
   /* ---- leaderboard ---- */

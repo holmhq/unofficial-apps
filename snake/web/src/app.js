@@ -62,7 +62,19 @@ const chrome = mountChrome(root, {
   offline: () => state.offline,
   signIn,
   signOut,
-  loadBoard: () => api('/api/leaderboard')
+  loadBoard: () => api('/api/leaderboard'),
+  // Deletes this member's best game and leaderboard row on the server. The
+  // device's own best stays, marked sent so it doesn't go straight back up.
+  forget: async () => {
+    try {
+      await api('/api/forget', { method: 'POST', body: '{}' })
+      prefs.markSynced()
+      return true
+    } catch (e) {
+      if (e.status === 401) { state.me = null; keepMe(null); chrome.refreshAccount() }
+      return false
+    }
+  }
 })
 chrome.refreshAccount()
 

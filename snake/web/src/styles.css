@@ -383,6 +383,29 @@ a { color: inherit; }
 .btn:active { transform: scale(0.97); }
 .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border-strong); }
 .btn.ov-cta { width: 100%; }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+/* a small centred confirm (Delete my games) */
+.sheet.confirm {
+  top: 50%;
+  left: 50%;
+  width: min(360px, calc(100vw - 32px));
+  padding: 22px 20px 18px;
+  border-radius: var(--r-xl);
+  gap: 10px;
+  opacity: 0;
+  transform: translate(-50%, -46%) scale(0.98);
+  transition: transform 0.22s var(--ease), opacity 0.18s var(--ease);
+  box-shadow: var(--shadow-pop);
+}
+.sheet.confirm.show { opacity: 1; transform: translate(-50%, -50%); }
+.sheet.confirm h2 { font-size: 18px; font-weight: 650; letter-spacing: -0.01em; }
+.sheet.confirm p { color: var(--text-2); font-size: 15px; line-height: 1.45; }
+.sheet.confirm .confirm-status { color: var(--danger); font-size: 14px; }
+.sheet.confirm .confirm-status:empty { display: none; }
+.confirm-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+.confirm-actions .btn { height: 44px; padding: 0 18px; }
 
 /* first-play hint */
 .hint {
