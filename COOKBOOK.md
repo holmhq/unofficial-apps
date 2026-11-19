@@ -83,8 +83,13 @@ references.
   A click-away handler that ignores the button reopens the menu; check whether
   it's open first, and close it.
 - **What goes in it:** who you are, the app's own places (Saved, Analytics
-  for admins only), **Connect via MCP…**, the theme switch, and Sign in or
-  Sign out.
+  for admins only), **Connect via MCP…**, the theme switch, **Account**
+  (signed in, online) just above Sign out, and Sign in or Sign out.
+- **Account opens Holm's account page** on the app's own host:
+  `/auth/account?redirect=` plus the current path, encoded. There the person
+  sees every sign-in that reaches them (Google, Telegram, email, phone), adds
+  or removes one, and comes back. Nobody should have to type that address.
+  Same tab; the service worker must pass `/auth/` through.
 - **It takes a 44 px tap** even when the face is smaller: wrap a 32–36 px
   circle in a 44 px button, with negative margins so the bar doesn't move.
   Other bar buttons that look 40 px reach 44 px with an invisible
@@ -693,6 +698,8 @@ couldn't check.
 - [ ] The menu has no Holm line or Source link. The theme switch is icons
       only, and admin links show only for admins, still there after a
       reload from the worker.
+- [ ] Signed in and online, the menu and ⌘K have Account just above Sign
+      out; it opens `/auth/account` and the page's way back returns here.
 - [ ] Menu labels are one to three words. Signed in, the menu and ⌘K have
       Connect via MCP… with the MCP mark. Its sheet shows the server's
       address on one line at 390 px, has Claude, ChatGPT, Claude Code and
